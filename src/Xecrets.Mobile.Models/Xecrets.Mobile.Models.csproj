@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+
+        <!-- Fail the build on any unsuppressed warning; suppress deliberate exceptions with NoWarn. -->
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+        <PackageReference Include="JetBrains.Annotations" Version="2026.2.0" />
+        <PackageReference Include="Microsoft.Extensions.Localization.Abstractions" Version="10.0.10" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\..\xecrets-net\Xecrets.Core\Xecrets.Core.csproj" />
+        <ProjectReference Include="..\..\..\xecrets-texts\src\Xecrets.Texts\Xecrets.Texts.csproj" />
+    </ItemGroup>
+
+</Project>

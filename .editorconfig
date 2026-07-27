@@ -1,0 +1,84 @@
+# EditorConfig: https://editorconfig.org
+# This is the source of truth for formatting. Rider/ReSharper-specific settings that have
+# no EditorConfig equivalent (namespace-folder rules, spell-check dictionary) remain in the
+# .DotSettings files; anything expressible here has been removed from those files.
+root = true
+
+[*]
+indent_style = space
+indent_size = 4
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# Line endings are intentionally not pinned here: per AGENTS.md, files are normalized to the
+# host default (CRLF on Windows, LF elsewhere) rather than to a single repo-wide convention.
+
+[*.{csproj,props,targets}]
+indent_size = 4
+
+[*.slnx]
+indent_size = 2
+
+[*.{json,yml,yaml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.cs]
+indent_size = 4
+
+# Namespaces and usings
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_using_directive_placement = outside_namespace:silent
+
+# 'this.' qualification — AGENTS.md: do not qualify member access with 'this.', except when
+# calling an extension method (not expressible here; treat as a manual review exception).
+dotnet_style_qualification_for_field = false:warning
+dotnet_style_qualification_for_property = false:warning
+dotnet_style_qualification_for_method = false:warning
+dotnet_style_qualification_for_event = false:warning
+
+# Types — the codebase consistently prefers explicit types over 'var'.
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = false:suggestion
+csharp_style_var_elsewhere = false:suggestion
+
+# Braces — Allman style (opening brace on its own line).
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_new_line_before_members_in_object_initializers = true
+csharp_new_line_before_members_in_anonymous_types = true
+
+# Indentation
+csharp_indent_case_contents = true
+csharp_indent_switch_labels = true
+csharp_indent_labels = one_less_than_current
+
+# Spacing
+csharp_space_after_keywords_in_control_flow_statements = true
+csharp_space_between_method_declaration_parameter_list_parentheses = false
+csharp_space_between_method_call_parameter_list_parentheses = false
+csharp_space_after_cast = false
+
+# Nullable — enabled project-wide (see Xecrets.Mobile.csproj); keep nullable-friendly defaults
+# per AGENTS.md, e.g. string.Empty and empty collection literals instead of null.
+dotnet_style_prefer_conditional_expression_over_return = true:suggestion
+
+# Naming: private instance fields use _camelCase (AGENTS.md).
+dotnet_naming_rule.private_fields_underscore_camel_case.severity = warning
+dotnet_naming_rule.private_fields_underscore_camel_case.symbols = private_fields
+dotnet_naming_rule.private_fields_underscore_camel_case.style = underscore_camel_case
+
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_symbols.private_fields.required_modifiers =
+
+dotnet_naming_style.underscore_camel_case.capitalization = camel_case
+dotnet_naming_style.underscore_camel_case.required_prefix = _
+
+[*.xaml]
+indent_size = 4

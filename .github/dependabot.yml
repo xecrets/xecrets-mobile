@@ -1,0 +1,11 @@
+# Keeps the SHA-pinned actions in .github/workflows up to date via pull requests.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    # Only propose action releases that are at least a week old, so a compromised
+    # release is likely to have been discovered and yanked before a bump PR appears.
+    cooldown:
+      default-days: 7

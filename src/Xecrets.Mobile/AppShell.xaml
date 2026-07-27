@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+    Xecrets Ez Mobile - Copyright © 2026 Svante Seleborg, All Rights Reserved.
+
+    This code file is part of Xecrets Ez Mobile, an application that uses the Xecrets.Net library, parts of which in turn
+    are derived from AxCrypt as licensed under GPL v3 or later. This code is not derived from AxCrypt. It is separately
+    authored and copyrighted, and licensed only as follows unless explicitly licensed otherwise.
+
+    Xecrets Ez Mobile is free software: you can redistribute it and/or modify it under the terms of the GNU General
+    Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+    later version.
+
+    No additional permission is granted beyond that license. If you incorporate this code into a larger work and
+    distribute that work to others, you are responsible for complying with the GNU General Public License version 3 or
+    later. See https://www.gnu.org/licenses/ for more information.
+
+    Xecrets Ez Mobile is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+    implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+    details.
+
+    You should have received a copy of the GNU General Public License along with Xecrets Ez Mobile. If not, see
+    <https://www.gnu.org/licenses/>.
+
+    The source repository can be found at https://github.com/xecrets/xecrets-mobile please go there for more information,
+    suggestions and contributions. You may also visit https://www.axantum.com for more information about the author.
+-->
+<Shell
+    x:Class="Xecrets.Mobile.AppShell"
+    x:Name="AppShellRoot"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:controls="clr-namespace:Microsoft.Maui.Controls;assembly=Microsoft.Maui.Controls"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    xmlns:local="clr-namespace:Xecrets.Mobile"
+    xmlns:models="clr-namespace:Xecrets.Mobile.Models.Models;assembly=Xecrets.Mobile.Models"
+    xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
+    xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
+    xmlns:texts="clr-namespace:Xecrets.Texts;assembly=Xecrets.Texts"
+    FlyoutBehavior="Flyout"
+    Title="Xecrets.Mobile">
+
+    <Shell.Behaviors>
+        <toolkit:EventToCommandBehavior
+            x:TypeArguments="controls:ShellNavigatedEventArgs"
+            x:DataType="local:AppShell"
+            BindingContext="{x:Reference AppShellRoot}"
+            EventName="Navigated"
+            Command="{Binding NavigatedCommand}" />
+    </Shell.Behaviors>
+
+    <MenuItem x:Name="DebugMenuItem"
+              x:DataType="local:AppShell"
+              BindingContext="{x:Reference AppShellRoot}"
+              Text="{x:Static texts:Texts.MenuDebug}"
+              IconImageSource="{StaticResource IconDebug}"
+              Command="{Binding DebugCommand}" />
+
+    <MenuItem x:DataType="local:AppShell"
+              BindingContext="{x:Reference AppShellRoot}"
+              Text="{x:Static modelUtilities:MobileTexts.MenuAbout}"
+              IconImageSource="{StaticResource IconAbout}"
+              Command="{Binding AboutCommand}" />
+
+    <MenuItem x:DataType="local:AppShell"
+              BindingContext="{x:Reference AppShellRoot}"
+              Text="{x:Static texts:Texts.ButtonExit}"
+              IconImageSource="{StaticResource IconExit}"
+              Command="{Binding ExitCommand}" />
+
+    <ShellContent
+        Route="startup"
+        FlyoutItemIsVisible="False"
+        ContentTemplate="{DataTemplate pages:StartupPage}" />
+
+    <ShellContent
+        Route="crash"
+        FlyoutItemIsVisible="False"
+        ContentTemplate="{DataTemplate pages:CrashPage}" />
+
+    <ShellContent
+        Route="login"
+        FlyoutItemIsVisible="False"
+        ContentTemplate="{DataTemplate pages:LoginPage}" />
+
+    <ShellContent
+        Route="create-profile"
+        FlyoutItemIsVisible="False"
+        ContentTemplate="{DataTemplate pages:CreateProfilePage}" />
+
+    <ShellContent
+        Route="home"
+        FlyoutItemIsVisible="False"
+        ContentTemplate="{DataTemplate pages:HomePage}" />
+
+    <Shell.FlyoutFooter>
+        <Grid Padding="15">
+            <HorizontalStackLayout HorizontalOptions="Center"
+                                   Spacing="0"
+                                   VerticalOptions="Center">
+                <ImageButton x:Name="LightThemeButton"
+                             x:DataType="local:AppShell"
+                             BindingContext="{x:Reference AppShellRoot}"
+                             Source="{StaticResource IconLight}"
+                             WidthRequest="40"
+                             HeightRequest="40"
+                             Command="{Binding SetThemeCommand}"
+                             CommandParameter="{x:Static models:ThemePreference.Light}"
+                             SemanticProperties.Description="Light mode" />
+                <ImageButton x:Name="SystemThemeButton"
+                             x:DataType="local:AppShell"
+                             BindingContext="{x:Reference AppShellRoot}"
+                             Source="{StaticResource IconSystem}"
+                             WidthRequest="40"
+                             HeightRequest="40"
+                             Command="{Binding SetThemeCommand}"
+                             CommandParameter="{x:Static models:ThemePreference.System}"
+                             SemanticProperties.Description="Follow system theme" />
+                <ImageButton x:Name="DarkThemeButton"
+                             x:DataType="local:AppShell"
+                             BindingContext="{x:Reference AppShellRoot}"
+                             Source="{StaticResource IconDark}"
+                             WidthRequest="40"
+                             HeightRequest="40"
+                             Command="{Binding SetThemeCommand}"
+                             CommandParameter="{x:Static models:ThemePreference.Dark}"
+                             SemanticProperties.Description="Dark mode" />
+            </HorizontalStackLayout>
+        </Grid>
+    </Shell.FlyoutFooter>
+</Shell>

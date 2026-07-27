@@ -1,0 +1,475 @@
+# Continuous integration build for Xecrets Ez (Android + iOS).
+#
+# Tooling is pinned, never "latest":
+#   - .NET SDK and workload set: global.json (repo root). Keep in sync with local dev
+#     ('dotnet --version' and 'dotnet workload --version').
+#   - Xcode: .xcode-version (repo root). Keep in sync with local 'xcodebuild -version',
+#     and check the version exists on the runner image:
+#     https://github.com/actions/runner-images (macos-26 README, "Installed Xcode versions").
+#   - Runner images: versioned labels (ubuntu-24.04, macos-26), never *-latest.
+#   - Actions: pinned to full commit SHAs; Dependabot proposes updates.
+#
+# Tests:
+#   - The 'test' job runs every '*.Test.csproj' listed in Xecrets.Mobile.slnx, which is
+#     the single source of truth for what is tested (.github/scripts/Invoke-Tests.ps1).
+#     These are the unit tests of the shared encryption library in xecrets-net, run at
+#     the same commit the platform builds compile against.
+#   - A failing test fails the run and, because 'build-state' needs it, prevents the run
+#     from being recorded as built. It does not block the platform builds, which run in
+#     parallel with it, so one run reports test failures and build failures together.
+#
+# Versioning and branch semantics:
+#   - The build number is BUILD_NUMBER_OFFSET + GITHUB_RUN_NUMBER. The offset is a
+#     repository variable; the run number is assigned by GitHub to each new workflow run.
+#     The result becomes the Android versionCode and the iOS CFBundleVersion, both of
+#     which the stores require to be strictly increasing.
+#   - The app version is <major.minor>.<build-number>, where major.minor is read from
+#     ApplicationDisplayVersion in Xecrets.Mobile.csproj (single place to bump).
+#   - Builds from 'main' are release builds: the ' Beta' marker is removed (-p:IsBeta=false).
+#     Builds from any other branch keep the in-repo 'Beta' metadata.
+#   - External pull requests intentionally do not trigger this workflow and must be
+#     built by the contributor before submission. The unsigned pull-request paths below
+#     remain defensive in case pull-request validation is enabled in the future.
+#
+# Sibling repositories (xecrets-net, xecrets-texts, xecrets-localization):
+#   - Resolved from the branch matching the mobile branch; if a sibling has no branch
+#     with that name, it falls back to 'develop'. The version job resolves each selected
+#     branch to an immutable commit SHA, and every platform checks out that same SHA.
+#   - Set XECRETS_*_REF in the env block below to pin a sibling to a branch/tag/SHA instead.
+#   - Pushes to the siblings do not trigger this workflow (GitHub Actions triggers are
+#     repository-local). Instead, a nightly schedule runs the 'nightly' gate job, which
+#     rebuilds 'main' and 'develop' only when the mobile repo or a resolved sibling has
+#     new commits compared to the branch's last successful build. Each successful build
+#     records the commits it was built from in a small 'build-state' artifact; the gate
+#     reads it back, so no writable state is needed anywhere.
+
+name: CI
+
+# Pushes to 'main' and 'develop' build automatically; any other branch is built
+# manually via workflow_dispatch (Actions -> CI -> Run workflow, pick the branch).
+# External pull requests intentionally do not trigger builds on this repository's
+# GitHub Actions resources.
+on:
+  push:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+  # Nightly (03:17 UTC): runs only the 'nightly' gate job, which dispatches real
+  # builds of 'main'/'develop' when their sources have drifted (see header comment).
+  schedule:
+    - cron: '17 3 * * *'
+
+permissions:
+  contents: read
+
+# Rapid pushes to the same branch cancel the superseded in-flight build to save
+# runner minutes — except on 'main', where every build may become a store release
+# and is allowed to finish.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+# All scripting is PowerShell; pwsh is preinstalled on the GitHub-hosted
+# Ubuntu and macOS runner images used below. Short glue stays inline; the
+# substantial scripts live in .github/scripts/.
+defaults:
+  run:
+    shell: pwsh
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  # Optional overrides for the refs of the sibling source repositories consumed via
+  # ProjectReference. When empty, each sibling follows the xecrets-mobile branch being
+  # built: if the sibling has a branch with the same name it is used, otherwise it
+  # falls back to 'develop'. Set to a branch, tag or commit SHA to pin instead.
+  XECRETS_NET_REF: ''
+  XECRETS_TEXTS_REF: ''
+  XECRETS_LOCALIZATION_REF: ''
+
+jobs:
+  lint:
+    name: Lint workflow
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+
+      # Installed through the Go module system, which verifies the pinned version
+      # against the public checksum database (no floating 'latest', no curl|bash).
+      - name: Install actionlint
+        run: go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+
+      - name: Run actionlint
+        run: |
+          & (Join-Path (go env GOPATH) 'bin' 'actionlint') -color
+
+  version:
+    name: Version and build number
+    # Schedule events run only the 'nightly' gate job, not a build. Same-repo pull
+    # requests are already built by the push trigger; only build PRs from forks.
+    if: >-
+      github.event_name != 'schedule' &&
+      (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      build-number: ${{ steps.compute.outputs.build-number }}
+      display-version: ${{ steps.compute.outputs.display-version }}
+      is-beta: ${{ steps.compute.outputs.is-beta }}
+      signed: ${{ steps.compute.outputs.signed }}
+      suffix: ${{ steps.compute.outputs.suffix }}
+      xecrets-net-sha: ${{ steps.siblings.outputs.net-sha }}
+      xecrets-texts-sha: ${{ steps.siblings.outputs.texts-sha }}
+      xecrets-localization-sha: ${{ steps.siblings.outputs.localization-sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Compute version
+        id: compute
+        env:
+          BUILD_NUMBER_OFFSET: ${{ vars.BUILD_NUMBER_OFFSET }}
+        run: ./.github/scripts/Get-BuildVersion.ps1
+
+      - name: Resolve sibling repository refs
+        id: siblings
+        run: ./.github/scripts/Resolve-SiblingRefs.ps1
+
+  test:
+    name: Unit tests
+    needs: version
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout xecrets-mobile
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: xecrets-mobile
+
+      # The test projects in the solution live in xecrets-net and reference only projects
+      # within that repository, so the other siblings are not needed to run them.
+      - name: Checkout xecrets-net
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: axantum/xecrets-net
+          ref: ${{ needs.version.outputs.xecrets-net-sha }}
+          path: xecrets-net
+
+      - name: Set up .NET (pinned by global.json)
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: xecrets-mobile/global.json
+
+      - name: Run tests
+        working-directory: xecrets-mobile
+        run: ./.github/scripts/Invoke-Tests.ps1
+
+  android:
+    name: Android
+    needs: version
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout xecrets-mobile
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: xecrets-mobile
+
+      - name: Checkout xecrets-net
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: axantum/xecrets-net
+          ref: ${{ needs.version.outputs.xecrets-net-sha }}
+          path: xecrets-net
+
+      - name: Checkout xecrets-texts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: xecrets/xecrets-texts
+          ref: ${{ needs.version.outputs.xecrets-texts-sha }}
+          path: xecrets-texts
+
+      - name: Checkout xecrets-localization
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: xecrets/xecrets-localization
+          ref: ${{ needs.version.outputs.xecrets-localization-sha }}
+          path: xecrets-localization
+
+      - name: Set up .NET (pinned by global.json)
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: xecrets-mobile/global.json
+
+      - name: Set up JDK
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install .NET Android workload (pinned by global.json)
+        working-directory: xecrets-mobile
+        run: dotnet workload install maui-android
+
+      - name: Install Android SDK components
+        working-directory: xecrets-mobile
+        env:
+          MOBILE_TARGET_FRAMEWORK: net10.0-android
+        run: >
+          dotnet build src/Xecrets.Mobile/Xecrets.Mobile.csproj
+          -t:InstallAndroidDependencies
+          -p:AndroidSdkDirectory="$env:ANDROID_HOME"
+          -p:JavaSdkDirectory="$env:JAVA_HOME"
+          -p:AcceptAndroidSDKLicenses=True
+
+      - name: Restore signing keystore
+        if: needs.version.outputs.signed == 'true'
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          [IO.File]::WriteAllBytes(
+              (Join-Path $env:RUNNER_TEMP 'upload.keystore'),
+              [Convert]::FromBase64String($env:ANDROID_KEYSTORE_BASE64))
+
+      - name: Build signed Android packages
+        if: needs.version.outputs.signed == 'true'
+        working-directory: xecrets-mobile
+        env:
+          APP_DISPLAY_VERSION: ${{ needs.version.outputs.display-version }}
+          APP_BUILD_NUMBER: ${{ needs.version.outputs.build-number }}
+          APP_IS_BETA: ${{ needs.version.outputs.is-beta }}
+          ANDROID_KEY_ALIAS: ${{ vars.ANDROID_KEY_ALIAS }}
+          ANDROID_SIGNING_STORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_SIGNING_KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          MOBILE_TARGET_FRAMEWORK: net10.0-android
+        run: >
+          dotnet publish src/Xecrets.Mobile/Xecrets.Mobile.csproj
+          -c Release
+          -p:JavaSdkDirectory="$env:JAVA_HOME"
+          -p:ApplicationDisplayVersion="$env:APP_DISPLAY_VERSION"
+          -p:ApplicationVersion="$env:APP_BUILD_NUMBER"
+          -p:IsBeta="$env:APP_IS_BETA"
+          -p:AndroidKeyStore=true
+          -p:AndroidSigningKeyStore="$env:RUNNER_TEMP/upload.keystore"
+          -p:AndroidSigningKeyAlias="$env:ANDROID_KEY_ALIAS"
+          -p:AndroidSigningStorePass=env:ANDROID_SIGNING_STORE_PASS
+          -p:AndroidSigningKeyPass=env:ANDROID_SIGNING_KEY_PASS
+
+      - name: Build unsigned Android packages (fork pull request)
+        if: needs.version.outputs.signed != 'true'
+        working-directory: xecrets-mobile
+        env:
+          APP_DISPLAY_VERSION: ${{ needs.version.outputs.display-version }}
+          APP_BUILD_NUMBER: ${{ needs.version.outputs.build-number }}
+          APP_IS_BETA: ${{ needs.version.outputs.is-beta }}
+          MOBILE_TARGET_FRAMEWORK: net10.0-android
+        run: >
+          dotnet publish src/Xecrets.Mobile/Xecrets.Mobile.csproj
+          -c Release
+          -p:JavaSdkDirectory="$env:JAVA_HOME"
+          -p:ApplicationDisplayVersion="$env:APP_DISPLAY_VERSION"
+          -p:ApplicationVersion="$env:APP_BUILD_NUMBER"
+          -p:IsBeta="$env:APP_IS_BETA"
+
+      - name: Add version to Android package names
+        env:
+          PACKAGE_VERSION: ${{ needs.version.outputs.display-version }}${{ needs.version.outputs.suffix }}
+        run: |
+          $publishDirectory = 'xecrets-mobile/src/Xecrets.Mobile/bin/Release/net10.0-android/publish'
+          foreach ($extension in @('aab', 'apk')) {
+              Get-ChildItem -Path $publishDirectory -Filter "*-Signed.$extension" -File |
+                  Rename-Item -NewName "XecretsEz-$env:PACKAGE_VERSION.$extension"
+          }
+
+      - name: Upload Android app bundle
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: XecretsEz-${{ needs.version.outputs.display-version }}${{ needs.version.outputs.suffix }}-aab
+          path: xecrets-mobile/src/Xecrets.Mobile/bin/Release/net10.0-android/publish/XecretsEz-${{ needs.version.outputs.display-version }}${{ needs.version.outputs.suffix }}.aab
+          if-no-files-found: error
+
+      - name: Upload Android package
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: XecretsEz-${{ needs.version.outputs.display-version }}${{ needs.version.outputs.suffix }}-apk
+          path: xecrets-mobile/src/Xecrets.Mobile/bin/Release/net10.0-android/publish/XecretsEz-${{ needs.version.outputs.display-version }}${{ needs.version.outputs.suffix }}.apk
+          if-no-files-found: error
+
+  ios:
+    name: iOS
+    needs: version
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - name: Checkout xecrets-mobile
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: xecrets-mobile
+
+      - name: Checkout xecrets-net
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: axantum/xecrets-net
+          ref: ${{ needs.version.outputs.xecrets-net-sha }}
+          path: xecrets-net
+
+      - name: Checkout xecrets-texts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: xecrets/xecrets-texts
+          ref: ${{ needs.version.outputs.xecrets-texts-sha }}
+          path: xecrets-texts
+
+      - name: Checkout xecrets-localization
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: xecrets/xecrets-localization
+          ref: ${{ needs.version.outputs.xecrets-localization-sha }}
+          path: xecrets-localization
+
+      - name: Select Xcode (pinned by .xcode-version)
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+
+          $xcodeVersion = (Get-Content xecrets-mobile/.xcode-version -TotalCount 1).Trim()
+          sudo xcode-select -s "/Applications/Xcode_$xcodeVersion.app"
+          xcodebuild -version
+
+      - name: Set up .NET (pinned by global.json)
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: xecrets-mobile/global.json
+
+      - name: Install .NET iOS workload (pinned by global.json)
+        working-directory: xecrets-mobile
+        run: dotnet workload install maui-ios
+
+      - name: Import signing certificate and provisioning profile
+        if: needs.version.outputs.signed == 'true'
+        env:
+          APPLE_DIST_CERT_P12_BASE64: ${{ secrets.APPLE_DIST_CERT_P12_BASE64 }}
+          APPLE_DIST_CERT_PASSWORD: ${{ secrets.APPLE_DIST_CERT_PASSWORD }}
+          APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
+        run: ./xecrets-mobile/.github/scripts/Import-AppleSigningAssets.ps1
+
+      - name: Build signed iOS package
+        if: needs.version.outputs.signed == 'true'
+        working-directory: xecrets-mobile
+        env:
+          APP_DISPLAY_VERSION: ${{ needs.version.outputs.display-version }}
+          APP_BUILD_NUMBER: ${{ needs.version.outputs.build-number }}
+          APP_IS_BETA: ${{ needs.version.outputs.is-beta }}
+          APPLE_CODESIGN_KEY: ${{ vars.APPLE_CODESIGN_KEY }}
+          APPLE_CODESIGN_PROFILE: ${{ vars.APPLE_CODESIGN_PROFILE }}
+          MOBILE_TARGET_FRAMEWORK: net10.0-ios
+        run: >
+          dotnet publish src/Xecrets.Mobile/Xecrets.Mobile.csproj
+          -c Release
+          -p:RuntimeIdentifier=ios-arm64
+          -p:ApplicationDisplayVersion="$env:APP_DISPLAY_VERSION"
+          -p:ApplicationVersion="$env:APP_BUILD_NUMBER"
+          -p:IsBeta="$env:APP_IS_BETA"
+          -p:CodesignKey="$env:APPLE_CODESIGN_KEY"
+          -p:CodesignProvision="$env:APPLE_CODESIGN_PROFILE"
+
+      - name: Build iOS for simulator, unsigned (fork pull request)
+        if: needs.version.outputs.signed != 'true'
+        working-directory: xecrets-mobile
+        env:
+          APP_DISPLAY_VERSION: ${{ needs.version.outputs.display-version }}
+          APP_BUILD_NUMBER: ${{ needs.version.outputs.build-number }}
+          APP_IS_BETA: ${{ needs.version.outputs.is-beta }}
+          MOBILE_TARGET_FRAMEWORK: net10.0-ios
+        run: >
+          dotnet build src/Xecrets.Mobile/Xecrets.Mobile.csproj
+          -c Release
+          -p:RuntimeIdentifier=iossimulator-arm64
+          -p:ApplicationDisplayVersion="$env:APP_DISPLAY_VERSION"
+          -p:ApplicationVersion="$env:APP_BUILD_NUMBER"
+          -p:IsBeta="$env:APP_IS_BETA"
+
+      - name: Add version to iOS package name
+        if: needs.version.outputs.signed == 'true'
+        env:
+          PACKAGE_VERSION: ${{ needs.version.outputs.display-version }}${{ needs.version.outputs.suffix }}
+        run: |
+          $publishDirectory = 'xecrets-mobile/src/Xecrets.Mobile/bin/Release/net10.0-ios/ios-arm64/publish'
+          Get-ChildItem -Path $publishDirectory -Filter '*.ipa' -File |
+              Rename-Item -NewName "XecretsEz-$env:PACKAGE_VERSION.ipa"
+          Copy-Item `
+              -Path 'xecrets-mobile/src/Xecrets.Mobile/bin/Release/net10.0-ios/ios-arm64/Xecrets.Mobile.app.dSYM' `
+              -Destination "$publishDirectory/XecretsEz-$env:PACKAGE_VERSION.app.dSYM" `
+              -Recurse
+
+      - name: Upload iOS package
+        if: needs.version.outputs.signed == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: XecretsEz-${{ needs.version.outputs.display-version }}${{ needs.version.outputs.suffix }}-ios
+          path: |
+            xecrets-mobile/src/Xecrets.Mobile/bin/Release/net10.0-ios/ios-arm64/publish/XecretsEz-${{ needs.version.outputs.display-version }}${{ needs.version.outputs.suffix }}.ipa
+            xecrets-mobile/src/Xecrets.Mobile/bin/Release/net10.0-ios/ios-arm64/publish/XecretsEz-${{ needs.version.outputs.display-version }}${{ needs.version.outputs.suffix }}.app.dSYM
+          if-no-files-found: error
+
+  build-state:
+    name: Record built state
+    # Runs only when the tests passed and both platform builds succeeded, so the recorded
+    # state always describes a complete, successful, tested build. The nightly gate reads
+    # this artifact from the branch's most recent successful run to decide whether to
+    # rebuild; a failed test therefore also means the next night tries again.
+    needs: [version, test, android, ios]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Write built state
+        env:
+          MOBILE_SHA: ${{ github.sha }}
+          NET_SHA: ${{ needs.version.outputs.xecrets-net-sha }}
+          TEXTS_SHA: ${{ needs.version.outputs.xecrets-texts-sha }}
+          LOCALIZATION_SHA: ${{ needs.version.outputs.xecrets-localization-sha }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $stateFile = Join-Path $env:RUNNER_TEMP 'build-state.txt'
+          @(
+              "xecrets-mobile=$env:MOBILE_SHA"
+              "xecrets-net=$env:NET_SHA"
+              "xecrets-texts=$env:TEXTS_SHA"
+              "xecrets-localization=$env:LOCALIZATION_SHA"
+          ) | Set-Content -Path $stateFile
+          Get-Content $stateFile
+
+      - name: Upload built state
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: build-state
+          path: ${{ runner.temp }}/build-state.txt
+          if-no-files-found: error
+
+  nightly:
+    name: Nightly rebuild check
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: write # list runs, download the build-state artifact, dispatch rebuilds
+    steps:
+      - name: Checkout scripts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/scripts
+
+      - name: Rebuild branches whose sources changed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./.github/scripts/Invoke-NightlyGate.ps1

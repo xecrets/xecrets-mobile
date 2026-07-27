@@ -1,0 +1,225 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!-- CI sets the MOBILE_TARGET_FRAMEWORK environment variable to build exactly one platform.
+         It is read directly from the process environment so Android nested builds retain it without
+         forwarding TargetFramework to ProjectReference builds. When it is set, the single
+         TargetFramework is used and the multi-targeting TargetFrameworks list is never defined;
+         local builds fall through to the OS-appropriate list. -->
+    <PropertyGroup Condition="$([System.Environment]::GetEnvironmentVariable('MOBILE_TARGET_FRAMEWORK')) != ''">
+        <TargetFramework>$([System.Environment]::GetEnvironmentVariable('MOBILE_TARGET_FRAMEWORK'))</TargetFramework>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$([System.Environment]::GetEnvironmentVariable('MOBILE_TARGET_FRAMEWORK')) == ''">
+        <TargetFrameworks Condition="$([System.OperatingSystem]::IsMacOS())">net10.0-ios;net10.0-maccatalyst;net10.0-android</TargetFrameworks>
+        <TargetFrameworks Condition="$([System.OperatingSystem]::IsWindows())">net10.0-android;net10.0-windows10.0.19041.0</TargetFrameworks>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <RootNamespace>Xecrets.Mobile</RootNamespace>
+        <UseMaui>true</UseMaui>
+        <SingleProject>true</SingleProject>
+        <ImplicitUsings>false</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <IsTrimmable>true</IsTrimmable>
+        <IsAotCompatible>true</IsAotCompatible>
+
+        <!-- Fail the build on any unsuppressed warning: C# compiler, NuGet and MSBuild warnings,
+             and the trim/AOT analyses (ILLinkTreatWarningsAsErrors for the Android trim and
+             IlcTreatWarningsAsErrors for the iOS Native AOT compile both default to this).
+             Suppress deliberate exceptions with NoWarn. -->
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <AllowUnsafeBlocks Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows' Or $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">true</AllowUnsafeBlocks>
+        <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+
+        <!-- Enable XAML source generation for faster build times and improved performance.
+             This generates C# code from XAML at compile time instead of runtime inflation.
+             To disable, remove this line.
+             For individual files, you can override by setting Inflator metadata:
+               <MauiXaml Update="MyPage.xaml" Inflator="Default" /> (reverts to defaults: Runtime for Debug, XamlC for Release)
+               <MauiXaml Update="MyPage.xaml" Inflator="Runtime" /> (force runtime inflation) -->
+        <MauiXamlInflator>SourceGen</MauiXamlInflator>
+        <MauiEnableXamlCBindingWithSourceCompilation>true</MauiEnableXamlCBindingWithSourceCompilation>
+
+        <!-- Beta marker: builds from source are 'Beta' by default.
+             The CI build overrides this with -p:IsBeta=false for release builds from the 'main' branch. -->
+        <IsBeta Condition="'$(IsBeta)' == ''">true</IsBeta>
+
+        <!-- Display name -->
+<!--        <ApplicationTitle Condition="'$(RiderBuild)' == 'True'">Xecrets.Mobile</ApplicationTitle>-->
+        <ApplicationTitle Condition="'$(ApplicationTitle)' == '' And '$(IsBeta)' == 'true'">Xecrets Ez Beta</ApplicationTitle>
+        <ApplicationTitle Condition="'$(ApplicationTitle)' == ''">Xecrets Ez</ApplicationTitle>
+
+        <!-- Rider's Mac Catalyst runner resolves the app bundle from the assembly name.
+             Keep that bundle name stable while ApplicationTitle remains the user-facing name. -->
+        <_AppBundleName Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">Xecrets.Mobile</_AppBundleName>
+
+        <!-- App Identifier -->
+        <ApplicationId>com.axantum.xecrets-ez.app</ApplicationId>
+        <ApplicationId Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">com.axantum.xecrets_ez.app</ApplicationId>
+        <Company>Axantum Software AB</Company>
+        <Copyright>Copyright © 2026 Svante Seleborg, All Rights Reserved.</Copyright>
+        <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
+        <RepositoryUrl>https://github.com/xecrets/xecrets-mobile</RepositoryUrl>
+
+        <!-- Versions: builds from source are always 2.4.0 / build 1.
+             The CI build overrides these with -p:ApplicationDisplayVersion=2.4.[build-number]
+             and -p:ApplicationVersion=[build-number]. Only bump major.minor here; the third
+             component is reserved for the CI build number. -->
+        <ApplicationDisplayVersion>2.4.0</ApplicationDisplayVersion>
+        <ApplicationVersion>1</ApplicationVersion>
+
+        <!-- This helps to trim satellite-resource bloat from Microsoft.Maui.Controls, which ships
+             translations for dozens of locales this app doesn't use.
+             This is respected by the standard SDK publish pipeline used for iOS/MacCatalyst/Windows,
+             but NOT by Android's AOT/assembly-store packaging pipeline - see
+             RemoveUnwantedSatelliteAssemblies below, which does the equivalent filtering there. -->
+        <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+
+        <!-- Release builds produce both the store bundle (.aab) and a side-loadable .apk. -->
+        <AndroidPackageFormats Condition="'$(Configuration)' == 'Release' And $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">aab;apk</AndroidPackageFormats>
+
+        <WindowsPackageType>None</WindowsPackageType>
+        <AndroidMinSdkVersion>29</AndroidMinSdkVersion>
+        <AndroidTargetSdkVersion>36</AndroidTargetSdkVersion>
+        <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">16.4</SupportedOSPlatformVersion>
+        <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
+        <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">29.0</SupportedOSPlatformVersion>
+        <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
+        <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+    </PropertyGroup>
+
+    <!-- Android release builds use full managed trimming and R8 Java shrinking/optimization.
+        Play packages target physical ARM devices only; emulator ABIs are not distributed. -->
+    <PropertyGroup Condition="'$(Configuration)' == 'Release' And $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+        <TrimMode>full</TrimMode>
+        <AndroidLinkTool>r8</AndroidLinkTool>
+        <RuntimeIdentifiers>android-arm64</RuntimeIdentifiers>
+        <AndroidStripNativeLibraries>true</AndroidStripNativeLibraries>
+        <!-- Preserve AOT symbols for the App Bundle metadata while packaging stripped copies. -->
+        <_AndroidAotStripLibraries>false</_AndroidAotStripLibraries>
+    </PropertyGroup>
+
+    <!-- iOS builds use Native AOT, with detailed per-member trim warnings. -->
+    <PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
+        <PublishAot>true</PublishAot>
+        <TrimmerSingleWarn>false</TrimmerSingleWarn>
+
+        <!-- MAUI 10's HybridWebView is the one documented trim/AOT-incompatible control (dynamic
+             System.Text.Json serialization; dotnet/maui#27380, fixed in .NET 11 via source-generated
+             interop, not backported to 10). This app does not use HybridWebView, and under NativeAOT
+             the control is disabled anyway (MauiHybridWebViewSupported defaults to false), but its
+             ObjC-exported handler classes are rooted by the registrar's module initializer, so ILC
+             still emits IL2026/IL3050 for them. ILC has no per-type or per-assembly suppression, so
+             the codes are silenced for iOS only. Own code keeps trim/AOT analysis coverage through
+             the Android full-trim build and the Roslyn analyzers on the other TargetFrameworks.
+             Remove this (and expect zero warnings) when moving to .NET 11. -->
+        <NoWarn>$(NoWarn);IL2026;IL3050</NoWarn>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios' Or $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">
+        <MarshalManagedExceptionMode>abort</MarshalManagedExceptionMode>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <AssemblyMetadata Include="License" Value="GNU General Public License v3.0 or later" />
+        <AssemblyMetadata Include="IsBeta" Value="$(IsBeta)" />
+
+        <!-- App Icon -->
+        <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#4961AA"/>
+
+        <!-- Splash Screen -->
+        <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#4961AA" BaseSize="128,128"/>
+
+        <!-- Custom Fonts -->
+        <MauiFont Remove="Resources\Fonts\FluentUI.cs"/>
+        <MauiFont Include="Resources\Fonts\OpenSans-Regular.ttf" Alias="OpenSansRegular"/>
+        <MauiFont Include="Resources\Fonts\OpenSans-Semibold.ttf" Alias="OpenSansSemibold"/>
+        <MauiFont Include="Resources\Fonts\FluentSystemIcons-Regular.ttf" Alias="FluentUI"/>
+
+        <!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
+        <MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)"/>
+
+        <MauiAsset Include="..\..\LICENSE" LogicalName="LICENSE.txt"/>
+        <MauiAsset Include="..\..\THIRD-PARTY-NOTICES.txt" LogicalName="THIRD-PARTY-NOTICES.txt"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Maui.Controls" Version="10.0.90" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.10" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2"/>
+        <PackageReference Include="CommunityToolkit.Maui" Version="15.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\..\xecrets-net\Xecrets.Core\Xecrets.Core.csproj" />
+        <ProjectReference Include="..\..\..\xecrets-texts\src\Xecrets.Texts\Xecrets.Texts.csproj"/>
+        <ProjectReference Include="..\Xecrets.Mobile.Models\Xecrets.Mobile.Models.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios' Or $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">
+        <PartialAppManifest Include="Platforms\Apple\PartialAppManifest.plist"/>
+        <BundleResource Include="Resources\DocumentIcon\com.axantum.xecrets-ez.app-1024.png" LogicalName="com.axantum.xecrets-ez.app-1024.png" />
+        <BundleResource Include="Resources\DocumentIcon\XecretsEz.icns" LogicalName="XecretsEz.icns"/>
+    </ItemGroup>
+
+    <Target Name="IncludeApplePlatformCompileItems"
+            AfterTargets="_MauiRemovePlatformCompileItems"
+            BeforeTargets="CoreCompile"
+            Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios' Or $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">
+        <ItemGroup>
+            <Compile Include="Platforms\Apple\**\*.cs"/>
+        </ItemGroup>
+    </Target>
+
+    <Target Name="RemoveGeneratedMauiFontManifest"
+            BeforeTargets="_CompileAppManifestInputs"
+            Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios' Or $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">
+        <ItemGroup>
+            <PartialAppManifest Remove="$(_MauiIntermediateFonts)MauiInfo.plist"/>
+        </ItemGroup>
+    </Target>
+
+    <Target Name="PrepareAndroidAotLibraries"
+            BeforeTargets="_PrepareBuildApk"
+            Condition="'$(Configuration)' == 'Release' And $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+        <ItemGroup>
+            <_AndroidAotLibrary Include="@(FrameworkNativeLibrary)"
+                                Condition="Exists('%(FrameworkNativeLibrary.Identity)') And $([System.String]::Copy('%(FrameworkNativeLibrary.ArchiveFileName)').StartsWith('libaot-'))"/>
+        </ItemGroup>
+        <Copy SourceFiles="@(_AndroidAotLibrary)"
+              DestinationFolder="$(IntermediateOutputPath)stripped-aot">
+            <Output TaskParameter="CopiedFiles" ItemName="_AndroidPackagedAotLibrary"/>
+        </Copy>
+        <Exec Command="&quot;$(AndroidBinUtilsDirectory)llvm-strip$(ExecutableExtension)&quot; --strip-all &quot;%(_AndroidPackagedAotLibrary.Identity)&quot;"/>
+        <ItemGroup>
+            <AndroidAppBundleMetaDataFile
+                Include="@(_AndroidAotLibrary->'com.android.tools.build.debugsymbols/arm64-v8a/%(ArchiveFileName).dbg:%(FullPath)')"/>
+            <AndroidAppBundleMetaDataFile
+                Include="com.android.tools.build.debugsymbols/arm64-v8a/libxamarin-app.so.dbg:$(IntermediateOutputPath)app_shared_libraries/arm64-v8a/libxamarin-app.dbg.so"/>
+            <FrameworkNativeLibrary Remove="@(_AndroidAotLibrary)"/>
+            <FrameworkNativeLibrary Include="@(_AndroidPackagedAotLibrary)"/>
+        </ItemGroup>
+    </Target>
+
+    <!-- Android-specific counterpart to SatelliteResourceLanguages above: that property isn't
+         respected by this AOT/trim/assembly-store pipeline - @(_BuildApkResolvedFrameworkAssemblies)
+         and @(_BuildApkResolvedUserAssemblies), which CreateAssemblyStore packs verbatim into
+         libassembly-store.so, are populated independently of it. -->
+    <Target Name="RemoveUnwantedSatelliteAssemblies"
+            BeforeTargets="_BuildApkEmbed"
+            Condition="'$(Configuration)' == 'Release' And $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+        <ItemGroup>
+            <_BuildApkResolvedFrameworkAssemblies
+                Remove="@(_BuildApkResolvedFrameworkAssemblies)"
+                Condition="'%(_BuildApkResolvedFrameworkAssemblies.Culture)' != '' And '%(_BuildApkResolvedFrameworkAssemblies.Culture)' != 'en'"/>
+            <_BuildApkResolvedUserAssemblies
+                Remove="@(_BuildApkResolvedUserAssemblies)"
+                Condition="'%(_BuildApkResolvedUserAssemblies.Culture)' != '' And '%(_BuildApkResolvedUserAssemblies.Culture)' != 'en'"/>
+        </ItemGroup>
+    </Target>
+
+</Project>

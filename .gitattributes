@@ -1,0 +1,16 @@
+* text=auto
+
+# Binary assets: never subject to line-ending or text conversion.
+*.ttf   binary
+*.otf   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.icns  binary
+*.pdf   binary
+*.axx   binary
+
+# Language-aware diff hunk headers.
+*.cs    text diff=csharp

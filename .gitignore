@@ -1,0 +1,40 @@
+.vs
+*.csproj.user
+.DS_Store
+bin
+obj
+*.DotSettings.user
+**/.claude/settings.local.json
+
+# JetBrains IDEs. The team-shared .idea files (vcs.xml, encodings.xml, inspection
+# profiles) are committed as JetBrains recommends; the entries below are user-specific,
+# regenerated, or may carry credentials.
+**/.idea/**/workspace.xml
+**/.idea/**/tasks.xml
+**/.idea/**/usage.statistics.xml
+**/.idea/**/dictionaries
+**/.idea/**/shelf
+**/.idea/**/projectSettingsUpdater.xml
+**/.idea/**/indexLayout.xml
+**/.idea/**/contentModel.xml
+**/.idea/**/aws.xml
+**/.idea/**/dataSources/
+**/.idea/**/dataSources.ids
+**/.idea/**/dataSources.local.xml
+**/.idea/**/sqlDataSources.xml
+**/.idea/**/dynamic.xml
+**/.idea/**/uiDesigner.xml
+**/.idea/**/dbnavigator.xml
+**/.idea/libraries
+
+# Signing material. Never belongs in the repository.
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.mobileprovision
+*.provisionprofile
+*.cer
+*.certSigningRequest
+*.pem
+*.key

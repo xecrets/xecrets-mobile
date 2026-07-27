@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet workload list)",
+      "Bash(git -C * log *)",
+      "Bash(git -C * diff *)"
+    ],
+    "defaultMode": "default"
+  }
+}
