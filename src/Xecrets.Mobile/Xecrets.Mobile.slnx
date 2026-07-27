@@ -25,6 +25,14 @@
     <Project Path="../../../xecrets-net/AxCrypt.Mono/Xecrets.Net.Implementation.csproj" />
     <Project Path="../../../xecrets-net/Xecrets.Net.Cryptography/Xecrets.Net.Cryptography.csproj" />
   </Folder>
+  <Folder Name="/Solution Items/Scripts/">
+    <File Path="..\..\.github\scripts\Get-BuildVersion.ps1" />
+    <File Path="..\..\.github\scripts\Import-AppleSigningAssets.ps1" />
+    <File Path="..\..\.github\scripts\Invoke-NightlyGate.ps1" />
+    <File Path="..\..\.github\scripts\Invoke-Tests.ps1" />
+    <File Path="..\..\.github\scripts\Resolve-SiblingRefs.ps1" />
+    <File Path="..\..\.github\scripts\SiblingResolution.ps1" />
+  </Folder>
   <Folder Name="/Test/">
     <Project Path="../../../xecrets-net/AxCrypt.Common.Test/Xecrets.Net.Common.Test.csproj" />
     <Project Path="../../../xecrets-net/AxCrypt.Core.Test/Xecrets.Net.Core.Test.csproj" />

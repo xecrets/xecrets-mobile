@@ -39,6 +39,14 @@
 
 $ErrorActionPreference = 'Stop'
 
+# Some of the library tests build their (fake, in-memory) paths from the MyDocuments
+# special folder. On Linux .NET returns an empty string for a special folder that does
+# not exist on disk, and a bare account such as the one on the GitHub runner image has
+# no Documents folder, which then yields null paths and failing tests. Creating the
+# folder is what the tests expect of any normal user profile, and is a no-op where it
+# already exists, as on Windows and macOS.
+[void][Environment]::GetFolderPath([Environment+SpecialFolder]::MyDocuments, [Environment+SpecialFolderOption]::Create)
+
 $solution = 'src/Xecrets.Mobile/Xecrets.Mobile.slnx'
 $solutionDirectory = Split-Path -Parent $solution
 
