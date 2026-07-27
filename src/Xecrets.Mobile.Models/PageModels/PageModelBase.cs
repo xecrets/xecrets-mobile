@@ -46,10 +46,10 @@ public abstract partial class PageModelBase(IUserInterfaceService userInterfaceS
     private Task OpenHelp() => userInterfaceService.OpenBrowserAsync(AppTexts.XecretsHelpUrl());
 
     [RelayCommand]
-    private Task OpenInfo() => userInterfaceService.OpenBrowserAsync(AppTexts.SiteUrl);
+    private Task OpenXecretsHome() => userInterfaceService.OpenBrowserAsync(AppTexts.SiteUrl);
 
     [RelayCommand]
-    private Task OpenDesktopPricing() => userInterfaceService.OpenBrowserAsync(AppTexts.GetXecretsUrl);
+    private Task OpenXecretsDesktop() => userInterfaceService.OpenBrowserAsync(AppTexts.FileEncryptionUrl);
 
     [RelayCommand]
     private Task OpenThirdPartyLicenses() =>

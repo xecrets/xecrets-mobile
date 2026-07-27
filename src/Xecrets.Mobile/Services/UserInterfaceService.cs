@@ -32,6 +32,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
+using CommunityToolkit.Maui.Alerts;
+
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls;
 
@@ -54,6 +56,14 @@ public sealed class UserInterfaceService : IUserInterfaceService
 
     public Task DisplayMessageAsync(string message) =>
         Shell.Current!.DisplayAlertAsync(AppTexts.DisplayNameProgram, message, AppTexts.ButtonOk);
+
+    public Task DisplayTransientMessageAsync(string message) =>
+        MainThread.InvokeOnMainThreadAsync(() =>
+            Snackbar.Make(
+                message,
+                action: null,
+                actionButtonText: AppTexts.ButtonOkMobile,
+                duration: TimeSpan.FromSeconds(3)).Show());
 
     public Task NavigateToAsync(AppDestination destination)
     {

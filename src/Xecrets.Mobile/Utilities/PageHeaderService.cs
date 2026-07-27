@@ -48,8 +48,8 @@ public sealed class PageHeaderService(
     public void ApplyStandardHeader(ContentPage page)
     {
         page.ToolbarItems.Add(CreateOverflowItem(MobileTexts.MenuHelp, HeaderCommand.Help));
-        page.ToolbarItems.Add(CreateOverflowItem(MobileTexts.MenuInfo, HeaderCommand.Info));
-        page.ToolbarItems.Add(CreateOverflowItem(MobileTexts.MenuDesktopPricing, HeaderCommand.DesktopPricing));
+        page.ToolbarItems.Add(CreateOverflowItem(MobileTexts.MenuInfo, HeaderCommand.XecretsHome));
+        page.ToolbarItems.Add(CreateOverflowItem(MobileTexts.MenuXecretsDesktop, HeaderCommand.XecretsDesktop));
         page.ToolbarItems.Add(CreateOverflowItem(MobileTexts.MenuThirdPartyLicenses, HeaderCommand.ThirdPartyLicenses));
 
         ApplyStandardHeaderTitle(page, profileService.IsAuthenticated ? profileService.CurrentEmail : string.Empty);
@@ -111,11 +111,11 @@ public sealed class PageHeaderService(
             case HeaderCommand.Help:
                 item.SetBinding(MenuItem.CommandProperty, static (PageModelBase pageModel) => pageModel.OpenHelpCommand);
                 break;
-            case HeaderCommand.Info:
-                item.SetBinding(MenuItem.CommandProperty, static (PageModelBase pageModel) => pageModel.OpenInfoCommand);
+            case HeaderCommand.XecretsHome:
+                item.SetBinding(MenuItem.CommandProperty, static (PageModelBase pageModel) => pageModel.OpenXecretsHomeCommand);
                 break;
-            case HeaderCommand.DesktopPricing:
-                item.SetBinding(MenuItem.CommandProperty, static (PageModelBase pageModel) => pageModel.OpenDesktopPricingCommand);
+            case HeaderCommand.XecretsDesktop:
+                item.SetBinding(MenuItem.CommandProperty, static (PageModelBase pageModel) => pageModel.OpenXecretsDesktopCommand);
                 break;
             case HeaderCommand.ThirdPartyLicenses:
                 item.SetBinding(MenuItem.CommandProperty, static (PageModelBase pageModel) => pageModel.OpenThirdPartyLicensesCommand);
@@ -130,8 +130,8 @@ public sealed class PageHeaderService(
     private enum HeaderCommand
     {
         Help,
-        Info,
-        DesktopPricing,
+        XecretsHome,
+        XecretsDesktop,
         ThirdPartyLicenses,
     }
 }

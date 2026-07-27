@@ -35,6 +35,7 @@ using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
 using Xecrets.Mobile.Models.Utilities;
+using Xecrets.Texts;
 
 using AppTexts = Xecrets.Texts.Texts;
 
@@ -77,6 +78,12 @@ public partial class EncryptToSharePageModel(
                 FilePickerKind.Any);
             if (file is null)
             {
+                return;
+            }
+
+            if (file.FileName.IsEncrypted())
+            {
+                await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextAlreadyEncrypted);
                 return;
             }
 

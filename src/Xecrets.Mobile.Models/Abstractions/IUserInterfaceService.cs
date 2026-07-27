@@ -42,6 +42,8 @@ public interface IUserInterfaceService
 
     Task DisplayMessageAsync(string message);
 
+    Task DisplayTransientMessageAsync(string message);
+
     Task NavigateToAsync(AppDestination destination);
 
     Task NavigateToAsync(AppDestination destination, object parameter);

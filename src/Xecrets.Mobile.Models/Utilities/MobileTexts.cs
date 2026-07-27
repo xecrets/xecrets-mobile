@@ -36,6 +36,7 @@ public static class MobileTexts
 {
     public static string AboutPageThirdPartyNotice => "Built with .NET MAUI and CommunityToolkit.Maui. Other components are provided under their respective licenses, reproduced in full under Third-Party Licenses in the menu.";
 
+    // Also used as the overflow menu item text, see MenuThirdPartyLicenses.
     public static string ThirdPartyLicensesPageTitle => "Third-Party Licenses";
 
     public static string ThirdPartyLicensesPageExplanation => "The application incorporates the following third-party material, under the terms reproduced here.";
@@ -48,56 +49,77 @@ public static class MobileTexts
 
     public static string ButtonReport => "Report";
 
+    // "Help", also used as the overflow menu item text, see MenuHelp.
     public static string ButtonHelp => AppTexts.ButtonHelp;
 
     public static string ButtonContinue => "Continue";
 
     public static string ButtonView => "View";
 
+    // "Edit"
     public static string ButtonEdit => AppTexts.ButtonEdit;
 
+    // "Encrypt"
     public static string ButtonEncrypt => AppTexts.ButtonEncrypt;
 
-    public static string ButtonEncryptToShare => "Encrypt to share...";
+    // "Encrypt copy to share" + "...", the desktop wording of the same operation.
+    public static string ButtonEncryptToShare => AppTexts.DialogTextEncryptCopyFor + "...";
 
+    // "Decrypt"
     public static string ButtonDecrypt => AppTexts.ButtonDecrypt;
 
-    public static string ButtonOpenIn => "Open in...";
+    // "Open" + "...", the app to open in is picked in the sheet that follows.
+    public static string ButtonOpenIn => AppTexts.ButtonOpen + "...";
 
     public static string ButtonSendTo => "Send to...";
 
     public static string ButtonSave => "Save";
 
+    // "Save As..."
     public static string ButtonSaveAs => AppTexts.ButtonSaveAs;
 
+    // Not AppTexts.ButtonClose, that is "Close all" and this closes the current file only.
     public static string ButtonClose => "Close";
 
+    // "Create"
     public static string ButtonCreate => AppTexts.ButtonCreateMobile;
 
+    // "Ok"
     public static string ButtonOk => AppTexts.ButtonOkMobile;
 
-    public static string MenuHelp => AppTexts.ButtonHelp;
+    // "Help"
+    public static string MenuHelp => ButtonHelp;
 
-    public static string MenuInfo => "Info";
+    public static string MenuInfo => "Xecrets Home";
 
-    public static string MenuDesktopPricing => "Desktop pricing";
+    public static string MenuXecretsDesktop => "Xecrets Desktop";
 
+    // "About"
     public static string MenuAbout => AppTexts.ButtonAbout;
 
-    public static string MenuThirdPartyLicenses => "Third-Party Licenses";
+    // "Third-Party Licenses"
+    public static string MenuThirdPartyLicenses => ThirdPartyLicensesPageTitle;
 
+    // "Not used for sending emails. It's an identifier for your local profile in the software and for sharing with others."
     public static string ToolTipEmail => AppTexts.ToolTipEmail;
 
+    // "Your master password. Make it strong, write it down and keep it safe."
     public static string ToolTipMasterPassword => AppTexts.ToolTipMasterPassword;
 
+    // "Signing in ensures you are using the correct password for encryption, and that you don't need to retype the
+    // password each time. This is the master password for all encryption. The sign in is only local to the app."
     public static string ToolTipSignIn => AppTexts.ToolTipSignIn;
 
+    // "Email"
     public static string WatermarkEmail => AppTexts.WatermarkEmail;
 
+    // "Password"
     public static string WatermarkPassword => AppTexts.WatermarkPassword;
 
+    // "Confirm password"
     public static string WatermarkConfirmPassword => AppTexts.WatermarkConfirmPassword;
 
+    // "Password to share"
     public static string WatermarkPasswordShare => AppTexts.WatermarkPasswordShare;
 
     public static string DialogTextCannotSaveInPlace => "This file cannot be saved back on this device.";
@@ -106,11 +128,14 @@ public static class MobileTexts
 
     public static string DialogTextEncryptFailed => "Could not encrypt this file.";
 
+    public static string DialogTextAlreadyEncrypted => "This file is already encrypted. Use Decrypt to open it.";
+
     public static string DialogTextSaved => "Saved.";
 
     public static string DialogTextNoAppAvailable => "No app is available to open this file.";
 
-    public static string DialogTextOpenEncryptedFileFailed => "Could not open this encrypted file.";
+    // "Decrypt and open failed"
+    public static string DialogTextOpenEncryptedFileFailed => AppTexts.DialogTextOpenFailed;
 
     public static string DialogTextTemporaryFileUnavailable => "The temporary decrypted file is not available.";
 
