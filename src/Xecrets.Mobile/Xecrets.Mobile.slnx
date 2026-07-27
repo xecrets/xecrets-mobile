@@ -1,6 +1,8 @@
 <Solution>
   <Folder Name="/Solution Items/">
+    <File Path="..\..\.github\CODEOWNERS" />
     <File Path="..\..\.github\dependabot.yml" />
+    <File Path="..\..\.github\PULL_REQUEST_TEMPLATE.md" />
     <File Path="..\..\.github\workflows\ci.yml" />
     <File Path="..\..\.gitignore" />
     <File Path="..\..\.xcode-version" />
