@@ -12,6 +12,9 @@ are licensed under the GNU General Public License version 3 or later from
 AxCrypt AB. The copyright and license notices of that material are retained in
 the source files in which it appears.
 
+AxCrypt is a trademark of AxCrypt AB. Xecrets Ez is an independent product and
+is not affiliated with, sponsored by or endorsed by AxCrypt AB.
+
 ===============================================================================
 Components under the MIT License
 ===============================================================================

@@ -56,8 +56,11 @@ The mobile apps are part of the same family as the other Xecrets projects:
   Xecrets Cli.
 
 The shared encryption foundation keeps encrypted files compatible across the Xecrets applications
-and with AxCrypt 2.x. Encrypt a file on one supported device and decrypt it on another, without
-tying the file to a particular app, account or storage provider.
+and with AxCrypt file-formats 1.x/2.x/3.x. Encrypt a file on one supported device and decrypt it
+on another, without tying the file to a particular app, account or storage provider.
+
+AxCrypt is a trademark of AxCrypt AB. Xecrets Ez is an independent product and is not affiliated
+with, sponsored by or endorsed by AxCrypt AB.
 
 ## Free and Open Source
 

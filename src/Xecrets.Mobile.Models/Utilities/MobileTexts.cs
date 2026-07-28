@@ -34,7 +34,7 @@ namespace Xecrets.Mobile.Models.Utilities;
 
 public static class MobileTexts
 {
-    public static string AboutPageThirdPartyNotice => "Built with .NET MAUI and CommunityToolkit.Maui. Other components are provided under their respective licenses, reproduced in full under Third-Party Licenses in the menu.";
+    public static string AboutPageThirdPartyNotice => "Built with .NET MAUI and CommunityToolkit.Maui. Other components are provided under their respective licenses, reproduced in full under Third-Party Licenses in the menu. All third-party product names and trademarks are the property of their respective owners. Their use does not imply affiliation, sponsorship or endorsement.";
 
     // Also used as the overflow menu item text, see MenuThirdPartyLicenses.
     public static string ThirdPartyLicensesPageTitle => "Third-Party Licenses";
