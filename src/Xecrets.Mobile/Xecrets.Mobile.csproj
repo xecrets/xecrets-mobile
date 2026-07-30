@@ -194,7 +194,10 @@
               DestinationFolder="$(IntermediateOutputPath)stripped-aot">
             <Output TaskParameter="CopiedFiles" ItemName="_AndroidPackagedAotLibrary"/>
         </Copy>
-        <Exec Command="&quot;$(AndroidBinUtilsDirectory)llvm-strip$(ExecutableExtension)&quot; --strip-all &quot;%(_AndroidPackagedAotLibrary.Identity)&quot;"/>
+        <!-- Skipped when there is nothing to strip, as with -p:RunAOTCompilation=false: an empty
+             item list would otherwise still run llvm-strip once, with no input file, and fail. -->
+        <Exec Condition="'@(_AndroidPackagedAotLibrary)' != ''"
+              Command="&quot;$(AndroidBinUtilsDirectory)llvm-strip$(ExecutableExtension)&quot; --strip-all &quot;%(_AndroidPackagedAotLibrary.Identity)&quot;"/>
         <ItemGroup>
             <AndroidAppBundleMetaDataFile
                 Include="@(_AndroidAotLibrary->'com.android.tools.build.debugsymbols/arm64-v8a/%(ArchiveFileName).dbg:%(FullPath)')"/>
