@@ -41,7 +41,7 @@ namespace Xecrets.Mobile.Models.PageModels;
 public partial class EncryptResultPageModel(
     IFileService fileService,
     IUserInterfaceService userInterfaceService)
-    : PageModelBase(userInterfaceService)
+    : PageModelBase(userInterfaceService), IStatusTextPageModel
 {
     private const string _nonBreakingSpace = "\u00A0";
 

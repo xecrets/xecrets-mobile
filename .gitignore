@@ -25,6 +25,7 @@ obj
 **/.idea/**/dynamic.xml
 **/.idea/**/uiDesigner.xml
 **/.idea/**/dbnavigator.xml
+**/.idea/**/AndroidProjectSystem.xml
 **/.idea/libraries
 
 # Signing material. Never belongs in the repository.

@@ -28,27 +28,27 @@
 
 #endregion Copyright and GPL License
 
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Maui.Hosting;
-using Microsoft.Maui.Storage;
+using System.Threading.Tasks;
 
-using Security;
+using Microsoft.Maui.Controls;
 
-using Xecrets.Mobile.Abstractions;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Services;
 
-namespace Xecrets.Mobile.Platforms.iOS;
+namespace Xecrets.Mobile.Platforms.Windows;
 
-internal static class MauiAppBuilderExtensions
+public class WindowsUserInterfaceService : UserInterfaceService
 {
-    internal static MauiAppBuilder ConfigurePlatform(this MauiAppBuilder builder)
+    // A Toast on Windows is an operating system notification rather than something shown in the app,
+    // and it needs the app to be registered with the notification system, which an unpackaged app
+    // isn't. Put the message on the page's status text line instead, where errors are shown too.
+    public override Task DisplayTransientMessageAsync(string message)
     {
-        SecureStorage.DefaultAccessible = SecAccessible.AfterFirstUnlockThisDeviceOnly;
+        if (Shell.Current?.CurrentPage?.BindingContext is IStatusTextPageModel pageModel)
+        {
+            pageModel.StatusText = message;
+        }
 
-        builder.Services.AddSingleton<IFileService, IOSFileService>();
-        builder.Services.AddSingleton<IUserInterfaceService, DefaultUserInterfaceService>();
-        builder.Services.AddSingleton<IPlatformServices, IOSServices>();
-        return builder;
+        return Task.CompletedTask;
     }
 }

@@ -16,6 +16,20 @@ here, currently `Resources/Styles/Styles.xaml`, `Resources/Styles/Colors.xaml` a
 generated `Resources/Fonts/FluentUI.cs`. Those carry a comment naming their origin instead.
 Project, manifest and configuration files carry no header.
 
+## Thread marshalling
+
+Never add `MainThread.InvokeOnMainThreadAsync`, `IUserInterfaceService.InvokeOnMainThreadAsync`,
+`Dispatcher.Dispatch` or anything else that hops to the UI thread without first establishing
+that a call site actually arrives off it. Say what that evidence is. Marshalling belongs at
+the boundary where the off-thread call enters - `IncomingFileService.ReceiveAsync` is currently
+the only such place - and everything downstream of it assumes the UI thread. Command handlers
+on page models start on the UI thread and stay there, since no source file uses
+`ConfigureAwait(false)` or `Task.Run`.
+
+Finding such a call in the code being edited is not evidence that it is needed; neither is a
+previous iteration of your own work. The same goes for any other defensive construct: establish
+the need first, or leave it out.
+
 ## Scripting
 
 All scripting should whenever possible be done in PowerShell (`pwsh`), which is

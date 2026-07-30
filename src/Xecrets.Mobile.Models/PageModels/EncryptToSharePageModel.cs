@@ -46,7 +46,7 @@ public partial class EncryptToSharePageModel(
     IFileService fileService,
     IEncryptionPreparationService encryptionPreparationService,
     IUserInterfaceService userInterfaceService)
-    : PageModelBase(userInterfaceService)
+    : PageModelBase(userInterfaceService), IStatusTextPageModel
 {
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SubmitCommand))]

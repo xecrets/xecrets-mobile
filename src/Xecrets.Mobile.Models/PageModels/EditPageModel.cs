@@ -49,7 +49,7 @@ public partial class EditPageModel(
     ICoreServices coreServices,
     IFileService fileService,
     IUserInterfaceService userInterfaceService)
-    : PageModelBase(userInterfaceService)
+    : PageModelBase(userInterfaceService), IStatusTextPageModel
 {
     [ObservableProperty]
     public partial string FileNameText { get; set; } = string.Empty;

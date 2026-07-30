@@ -49,7 +49,7 @@ public partial class HomePageModel(
     ICrashTestService crashTestService,
     SessionExitService sessionExitService,
     IUserInterfaceService userInterfaceService)
-    : PageModelBase(userInterfaceService)
+    : PageModelBase(userInterfaceService), IStatusTextPageModel
 {
     [ObservableProperty]
     public partial string Email { get; set; } = profileService.CurrentEmail;

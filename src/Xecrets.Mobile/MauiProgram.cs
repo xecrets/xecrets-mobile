@@ -85,7 +85,6 @@ public static class MauiProgram
         builder.Services.AddSingleton<PreviewState>();
         builder.Services.AddSingleton<DecryptionPasswordRequestState>();
         builder.Services.AddSingleton<IProfileService, ProfileService>();
-        builder.Services.AddSingleton<IUserInterfaceService, UserInterfaceService>();
         builder.Services.AddSingleton<IDecryptedFileViewer, DecryptedFileViewer>();
         builder.Services.AddSingleton<IEncryptionPreparationService, EncryptionPreparationService>();
         builder.Services.AddSingleton<IPreviewService, PreviewService>();
