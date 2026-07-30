@@ -33,6 +33,7 @@ using Microsoft.Maui.Hosting;
 
 using Xecrets.Mobile.Abstractions;
 using Xecrets.Mobile.Models.Abstractions;
+using Xecrets.Mobile.Services;
 
 namespace Xecrets.Mobile.Platforms.Android;
 
@@ -41,6 +42,7 @@ internal static class MauiAppBuilderExtensions
     internal static MauiAppBuilder ConfigurePlatform(this MauiAppBuilder builder)
     {
         builder.Services.AddSingleton<IFileService, AndroidFileService>();
+        builder.Services.AddSingleton<IUserInterfaceService, DefaultUserInterfaceService>();
         builder.Services.AddSingleton<IPlatformServices, AndroidServices>();
         return builder;
     }

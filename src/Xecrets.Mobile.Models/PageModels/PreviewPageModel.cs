@@ -45,7 +45,7 @@ public partial class PreviewPageModel(
     IFileService fileService,
     ICrashTestService crashTestService,
     IUserInterfaceService userInterfaceService)
-    : PageModelBase(userInterfaceService)
+    : PageModelBase(userInterfaceService), IStatusTextPageModel
 {
     private const string _nonBreakingSpace = "\u00A0";
 

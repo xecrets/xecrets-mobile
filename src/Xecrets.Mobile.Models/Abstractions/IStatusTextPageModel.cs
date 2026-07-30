@@ -28,27 +28,12 @@
 
 #endregion Copyright and GPL License
 
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Maui.Hosting;
-using Microsoft.Maui.Storage;
+namespace Xecrets.Mobile.Models.Abstractions;
 
-using Security;
-
-using Xecrets.Mobile.Abstractions;
-using Xecrets.Mobile.Models.Abstractions;
-using Xecrets.Mobile.Services;
-
-namespace Xecrets.Mobile.Platforms.iOS;
-
-internal static class MauiAppBuilderExtensions
+// A page model with the status text line that pages show messages and errors on. Implemented by
+// every page model that has one, so that a platform without transient messages of its own can put
+// them there instead.
+public interface IStatusTextPageModel
 {
-    internal static MauiAppBuilder ConfigurePlatform(this MauiAppBuilder builder)
-    {
-        SecureStorage.DefaultAccessible = SecAccessible.AfterFirstUnlockThisDeviceOnly;
-
-        builder.Services.AddSingleton<IFileService, IOSFileService>();
-        builder.Services.AddSingleton<IUserInterfaceService, DefaultUserInterfaceService>();
-        builder.Services.AddSingleton<IPlatformServices, IOSServices>();
-        return builder;
-    }
+    string StatusText { get; set; }
 }

@@ -33,6 +33,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 
 using CommunityToolkit.Maui.Alerts;
+using CommunityToolkit.Maui.Core;
 
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls;
@@ -44,7 +45,7 @@ using AppTexts = Xecrets.Texts.Texts;
 
 namespace Xecrets.Mobile.Services;
 
-public sealed class UserInterfaceService : IUserInterfaceService
+public class DefaultUserInterfaceService : IUserInterfaceService
 {
     public bool IsShellAvailable => Shell.Current is not null;
 
@@ -57,13 +58,8 @@ public sealed class UserInterfaceService : IUserInterfaceService
     public Task DisplayMessageAsync(string message) =>
         Shell.Current!.DisplayAlertAsync(AppTexts.DisplayNameProgram, message, AppTexts.ButtonOk);
 
-    public Task DisplayTransientMessageAsync(string message) =>
-        MainThread.InvokeOnMainThreadAsync(() =>
-            Snackbar.Make(
-                message,
-                action: null,
-                actionButtonText: AppTexts.ButtonOkMobile,
-                duration: TimeSpan.FromSeconds(3)).Show());
+    public virtual Task DisplayTransientMessageAsync(string message) =>
+        Toast.Make(message, ToastDuration.Long).Show();
 
     public Task NavigateToAsync(AppDestination destination)
     {
