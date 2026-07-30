@@ -9,5 +9,11 @@
             <data android:mimeType="application/pdf" />
         </intent>
     </queries>
-    <application android:allowBackup="true" android:icon="@mipmap/appicon" android:roundIcon="@mipmap/appicon_round" android:supportsRtl="true" android:fullBackupContent="@xml/backup_rules" android:dataExtractionRules="@xml/data_extraction_rules"/>
+    <!-- extractNativeLibs="false" stores the native libraries uncompressed and page aligned in the
+         package, so the installer maps them straight out of it instead of unpacking a second copy
+         onto the device. It is what Google recommends, and .NET for Android only leaves the
+         attribute alone when it is set here; otherwise it forces it to "true". Setting it also makes
+         the build add .so to $(AndroidStoreUncompressedFileExtensions) automatically. Requires
+         API 23 or later, and AndroidMinSdkVersion is 29. -->
+    <application android:allowBackup="true" android:icon="@mipmap/appicon" android:roundIcon="@mipmap/appicon_round" android:supportsRtl="true" android:fullBackupContent="@xml/backup_rules" android:dataExtractionRules="@xml/data_extraction_rules" android:extractNativeLibs="false"/>
 </manifest>
