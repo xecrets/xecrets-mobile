@@ -30,11 +30,36 @@
 
 using System.Runtime.Versioning;
 
+using Microsoft.Maui;
+using Microsoft.Maui.Handlers;
+using Microsoft.UI.Text;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+
 using Xecrets.Mobile.Services;
+using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Platforms.Windows;
 
 [SupportedOSPlatform("windows")]
 public class WindowsServices : PlatformServicesBase
 {
+    public WindowsServices()
+    {
+        LabelHandler.Mapper.AppendToMapping(nameof(ITextStyle.Font), (handler, view) =>
+            ApplyFontWeight(view, handler.PlatformView, TextBlock.FontWeightProperty));
+        ButtonHandler.Mapper.AppendToMapping(nameof(ITextStyle.Font), (handler, view) =>
+            ApplyFontWeight(view, handler.PlatformView, Control.FontWeightProperty));
+    }
+
+    private static void ApplyFontWeight(
+        IView view,
+        DependencyObject platformView,
+        DependencyProperty fontWeightProperty)
+    {
+        if (Typography.IsSemibold(view))
+        {
+            platformView.SetValue(fontWeightProperty, FontWeights.SemiBold);
+        }
+    }
 }

@@ -17,6 +17,8 @@
 #   - A failing test fails the run and, because 'build-state' needs it, prevents the run
 #     from being recorded as built. It does not block the platform builds, which run in
 #     parallel with it, so one run reports test failures and build failures together.
+#   - After the tests and Android build succeed, builds of 'main', 'develop' and
+#     'feature/*' are published to Google Play's internal testing track.
 #
 # Versioning and branch semantics:
 #   - The build number is BUILD_NUMBER_OFFSET + GITHUB_RUN_NUMBER. The offset is a
@@ -45,8 +47,8 @@
 
 name: CI
 
-# Pushes to 'main' and 'develop' build automatically; any other branch is built
-# manually via workflow_dispatch (Actions -> CI -> Run workflow, pick the branch).
+# Pushes to 'main', 'develop' and 'feature/*' build automatically; any other branch
+# is built manually via workflow_dispatch (Actions -> CI -> Run workflow, pick the branch).
 # External pull requests intentionally do not trigger builds on this repository's
 # GitHub Actions resources.
 on:
@@ -54,6 +56,7 @@ on:
     branches:
       - main
       - develop
+      - 'feature/*'
   workflow_dispatch:
   # Nightly (03:17 UTC): runs only the 'nightly' gate job, which dispatches real
   # builds of 'main'/'develop' when their sources have drifted (see header comment).
@@ -302,6 +305,40 @@ jobs:
           name: XecretsEz-${{ needs.version.outputs.display-version }}${{ needs.version.outputs.suffix }}-apk
           path: xecrets-mobile/src/Xecrets.Mobile/bin/Release/net10.0-android/publish/XecretsEz-${{ needs.version.outputs.display-version }}${{ needs.version.outputs.suffix }}.apk
           if-no-files-found: error
+
+  deploy-android-internal:
+    name: Publish Android internal release
+    needs: [version, test, android]
+    if: >-
+      needs.version.outputs.signed == 'true' &&
+      (github.ref == 'refs/heads/main' ||
+      github.ref == 'refs/heads/develop' ||
+      startsWith(github.ref, 'refs/heads/feature/'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: google-play-internal
+    steps:
+      - name: Checkout publishing script
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/scripts
+
+      - name: Download Android app bundle
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: XecretsEz-${{ needs.version.outputs.display-version }}${{ needs.version.outputs.suffix }}-aab
+          path: android-release
+
+      - name: Publish to Google Play internal testing
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          RELEASE_NAME: ${{ needs.version.outputs.display-version }}${{ needs.version.outputs.suffix }}
+        run: |
+          ./.github/scripts/Publish-GooglePlayInternal.ps1 `
+              -ServiceAccountEnvironmentVariable 'GOOGLE_PLAY_SERVICE_ACCOUNT_JSON' `
+              -PackageName 'com.axantum.xecrets_ez.app' `
+              -AppBundle (Get-Item 'android-release/*.aab').FullName `
+              -ReleaseName $env:RELEASE_NAME
 
   ios:
     name: iOS

@@ -29,22 +29,32 @@
 #endregion Copyright and GPL License
 
 using Microsoft.Maui.Controls;
+using Microsoft.UI.Windowing;
 
 using System;
+
+using Windows.Graphics;
 
 namespace Xecrets.Mobile.Platforms.Windows;
 
 internal static class PlatformWindow
 {
-    private const double Pixel7WidthToHeightRatio = 1080d / 2400d;
+    private const double _pixel7aScreenWidthToHeightRatio = 1080d / 2400d;
 
     public static void Configure(Window window)
     {
-        if (double.IsNaN(window.Height) || window.Height <= 0)
-        {
-            return;
-        }
+        Microsoft.UI.Xaml.Window platformWindow = (Microsoft.UI.Xaml.Window)window.Handler!.PlatformView!;
+        AppWindow appWindow = platformWindow.AppWindow;
+        DisplayArea displayArea = DisplayArea.GetFromWindowId(appWindow.Id, DisplayAreaFallback.Nearest);
+        RectInt32 workArea = displayArea.WorkArea;
+        int nonClientWidth = appWindow.Size.Width - appWindow.ClientSize.Width;
+        int nonClientHeight = appWindow.Size.Height - appWindow.ClientSize.Height;
+        int height = workArea.Height;
+        int clientHeight = height - nonClientHeight;
+        int clientWidth = (int)Math.Round(clientHeight * _pixel7aScreenWidthToHeightRatio);
+        int width = clientWidth + nonClientWidth;
+        int x = workArea.X + ((workArea.Width - width) / 2);
 
-        window.Width = Math.Round(window.Height * Pixel7WidthToHeightRatio);
+        appWindow.MoveAndResize(new RectInt32(x, workArea.Y, width, height));
     }
 }

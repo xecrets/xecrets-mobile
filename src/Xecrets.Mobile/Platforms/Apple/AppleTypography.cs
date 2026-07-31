@@ -28,24 +28,30 @@
 
 #endregion Copyright and GPL License
 
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Maui.Hosting;
+using Microsoft.Maui;
+using Microsoft.Maui.Handlers;
 
-using System.Runtime.Versioning;
+using UIKit;
 
-using Xecrets.Mobile.Abstractions;
-using Xecrets.Mobile.Models.Abstractions;
+using Xecrets.Mobile.Utilities;
 
-namespace Xecrets.Mobile.Platforms.Windows;
+namespace Xecrets.Mobile.Platforms.Apple;
 
-[SupportedOSPlatform("windows10.0.19041")]
-internal static class MauiAppBuilderExtensions
+internal static class AppleTypography
 {
-    internal static MauiAppBuilder ConfigurePlatform(this MauiAppBuilder builder)
+    public static void RegisterSemiboldMappings()
     {
-        builder.Services.AddSingleton<IFileService, WindowsFileService>();
-        builder.Services.AddSingleton<IUserInterfaceService, WindowsUserInterfaceService>();
-        builder.Services.AddSingleton<IPlatformServices, WindowsServices>();
-        return builder;
+        LabelHandler.Mapper.AppendToMapping(nameof(ITextStyle.Font), (handler, view) =>
+            ApplyFontWeight(view, handler.PlatformView));
+        ButtonHandler.Mapper.AppendToMapping(nameof(ITextStyle.Font), (handler, view) =>
+            ApplyFontWeight(view, handler.PlatformView.TitleLabel!));
+    }
+
+    private static void ApplyFontWeight(IView view, UILabel platformView)
+    {
+        if (Typography.IsSemibold(view))
+        {
+            platformView.Font = UIFont.SystemFontOfSize(platformView.Font.PointSize, UIFontWeight.Semibold)!;
+        }
     }
 }

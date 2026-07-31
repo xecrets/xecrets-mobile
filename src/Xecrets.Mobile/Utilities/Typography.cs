@@ -28,24 +28,28 @@
 
 #endregion Copyright and GPL License
 
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Maui.Hosting;
+using Microsoft.Maui;
+using Microsoft.Maui.Controls;
 
-using System.Runtime.Versioning;
+namespace Xecrets.Mobile.Utilities;
 
-using Xecrets.Mobile.Abstractions;
-using Xecrets.Mobile.Models.Abstractions;
-
-namespace Xecrets.Mobile.Platforms.Windows;
-
-[SupportedOSPlatform("windows10.0.19041")]
-internal static class MauiAppBuilderExtensions
+public static class Typography
 {
-    internal static MauiAppBuilder ConfigurePlatform(this MauiAppBuilder builder)
-    {
-        builder.Services.AddSingleton<IFileService, WindowsFileService>();
-        builder.Services.AddSingleton<IUserInterfaceService, WindowsUserInterfaceService>();
-        builder.Services.AddSingleton<IPlatformServices, WindowsServices>();
-        return builder;
-    }
+    public static readonly BindableProperty FontWeightProperty = BindableProperty.CreateAttached(
+        "FontWeight", typeof(TypographyWeight), typeof(Typography), TypographyWeight.Regular);
+
+    public static TypographyWeight GetFontWeight(BindableObject view) =>
+        (TypographyWeight)view.GetValue(FontWeightProperty);
+
+    public static bool IsSemibold(IView view) =>
+        GetFontWeight((BindableObject)view) == TypographyWeight.Semibold;
+
+    public static void SetFontWeight(BindableObject view, TypographyWeight value) =>
+        view.SetValue(FontWeightProperty, value);
+}
+
+public enum TypographyWeight
+{
+    Regular,
+    Semibold,
 }
