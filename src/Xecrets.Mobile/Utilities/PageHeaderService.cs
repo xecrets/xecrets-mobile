@@ -57,6 +57,11 @@ public sealed class PageHeaderService(
 
     public void ApplyStandardHeaderTitle(ContentPage page, string email)
     {
+        Grid titleView = new()
+        {
+            HorizontalOptions = LayoutOptions.Fill,
+            VerticalOptions = LayoutOptions.Fill,
+        };
         VerticalStackLayout titleLayout = new()
         {
             HorizontalOptions = LayoutOptions.Center,
@@ -96,7 +101,8 @@ public sealed class PageHeaderService(
             titleLayout.Children.Add(emailLabel);
         }
 
-        Shell.SetTitleView(page, titleLayout);
+        titleView.Children.Add(titleLayout);
+        Shell.SetTitleView(page, titleView);
     }
 
     private static ToolbarItem CreateOverflowItem(string text, HeaderCommand command)

@@ -68,6 +68,7 @@
              component is reserved for the CI build number. -->
         <ApplicationDisplayVersion>2.4.0</ApplicationDisplayVersion>
         <ApplicationVersion>1</ApplicationVersion>
+        <Version>2.4.0</Version>
 
         <!-- This helps to trim satellite-resource bloat from Microsoft.Maui.Controls, which ships
              translations for dozens of locales this app doesn't use.
@@ -85,8 +86,8 @@
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">16.4</SupportedOSPlatformVersion>
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">29.0</SupportedOSPlatformVersion>
-        <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
-        <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+        <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.19041.0</SupportedOSPlatformVersion>
+        <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.19041.0</TargetPlatformMinVersion>
     </PropertyGroup>
 
     <!-- Android release builds use full managed trimming and R8 Java shrinking/optimization.
@@ -133,8 +134,6 @@
 
         <!-- Custom Fonts -->
         <MauiFont Remove="Resources\Fonts\FluentUI.cs"/>
-        <MauiFont Include="Resources\Fonts\OpenSans-Regular.ttf" Alias="OpenSansRegular"/>
-        <MauiFont Include="Resources\Fonts\OpenSans-Semibold.ttf" Alias="OpenSansSemibold"/>
         <MauiFont Include="Resources\Fonts\FluentSystemIcons-Regular.ttf" Alias="FluentUI"/>
 
         <!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
@@ -162,7 +161,7 @@
 
     <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios' Or $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">
         <PartialAppManifest Include="Platforms\Apple\PartialAppManifest.plist"/>
-        <BundleResource Include="Resources\DocumentIcon\com.axantum.xecrets-ez.app-1024.png" LogicalName="com.axantum.xecrets-ez.app-1024.png" />
+        <BundleResource Include="Resources\DocumentIcon\com.axantum.xecrets_ez.app_1024.png" LogicalName="com.axantum.xecrets_ez.app_1024.png" />
         <BundleResource Include="Resources\DocumentIcon\XecretsEz.icns" LogicalName="XecretsEz.icns"/>
     </ItemGroup>
 

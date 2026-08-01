@@ -28,6 +28,7 @@
     <Project Path="../../../xecrets-net/Xecrets.Net.Cryptography/Xecrets.Net.Cryptography.csproj" />
   </Folder>
   <Folder Name="/Solution Items/Scripts/">
+    <File Path="../../.github/scripts/Publish-GooglePlayInternal.ps1" />
     <File Path="..\..\.github\scripts\Get-BuildVersion.ps1" />
     <File Path="..\..\.github\scripts\Import-AppleSigningAssets.ps1" />
     <File Path="..\..\.github\scripts\Invoke-NightlyGate.ps1" />

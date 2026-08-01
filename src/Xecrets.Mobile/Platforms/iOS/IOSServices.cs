@@ -41,6 +41,7 @@ using Xecrets.Mobile.Abstractions;
 using Xecrets.Mobile.Models.Utilities;
 using Xecrets.Mobile.Platforms.Apple;
 using Xecrets.Mobile.Services;
+using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Platforms.iOS;
 
@@ -59,7 +60,9 @@ public partial class IOSServices : PlatformServicesBase
         _ = RaiseSignal(6);
     }
 
-    public IOSServices() =>
+    public IOSServices()
+    {
+        AppleTypography.RegisterSemiboldMappings();
         EntryHandler.Mapper.AppendToMapping(PasswordEntryProperties.ConfigureMapperKey, (handler, view) =>
         {
             Entry entry = (Entry)view;
@@ -72,6 +75,7 @@ public partial class IOSServices : PlatformServicesBase
                 ? UITextContentType.NewPassword
                 : UITextContentType.Password;
         });
+    }
 
     [LibraryImport("libSystem", EntryPoint = "raise")]
     private static partial int RaiseSignal(int signal);

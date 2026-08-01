@@ -40,6 +40,7 @@ using Xecrets.Mobile.Abstractions;
 using Xecrets.Mobile.Models.Utilities;
 using Xecrets.Mobile.Platforms.Apple;
 using Xecrets.Mobile.Services;
+using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Platforms.MacCatalyst;
 
@@ -53,7 +54,9 @@ public class MacCatalystServices : PlatformServicesBase
         AppleCrashHandler.Register();
     }
 
-    public MacCatalystServices() =>
+    public MacCatalystServices()
+    {
+        AppleTypography.RegisterSemiboldMappings();
         EntryHandler.Mapper.AppendToMapping(PasswordEntryProperties.ConfigureMapperKey, (handler, view) =>
         {
             Entry entry = (Entry)view;
@@ -66,4 +69,5 @@ public class MacCatalystServices : PlatformServicesBase
                 ? UITextContentType.NewPassword
                 : UITextContentType.Password;
         });
+    }
 }

@@ -33,6 +33,7 @@ using System.Runtime.Versioning;
 
 using Android.Runtime;
 using Android.Text;
+using Android.Graphics;
 using AndroidContentCaptureImportance = Android.Views.ViewImportantForContentCapture;
 
 using Microsoft.Maui;
@@ -41,10 +42,11 @@ using Microsoft.Maui.Handlers;
 
 using Xecrets.Mobile.Abstractions;
 using Xecrets.Mobile.Services;
+using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Platforms.Android;
 
-[SupportedOSPlatform("android")]
+[SupportedOSPlatform("android28.0")]
 public class AndroidServices : PlatformServicesBase
 {
     public override void RegisterCrashHandlers()
@@ -65,6 +67,11 @@ public class AndroidServices : PlatformServicesBase
     // need to speculate about event-firing order; entries opt in via PasswordEntryProperties.
     public AndroidServices()
     {
+        LabelHandler.Mapper.AppendToMapping(nameof(ITextStyle.Font), (handler, view) =>
+            ApplyFontWeight(view, handler.PlatformView));
+        ButtonHandler.Mapper.AppendToMapping(nameof(ITextStyle.Font), (handler, view) =>
+            ApplyFontWeight(view, handler.PlatformView));
+
         // One-time setup, applied whenever a password entry's handler (re)connects.
         EntryHandler.Mapper.AppendToMapping(PasswordEntryProperties.ConfigureMapperKey, (handler, view) =>
         {
@@ -101,5 +108,13 @@ public class AndroidServices : PlatformServicesBase
             handler.PlatformView.InputType = (handler.PlatformView.InputType & ~InputTypes.MaskVariation)
                 | InputTypes.TextVariationVisiblePassword;
         });
+    }
+
+    private static void ApplyFontWeight(IView view, global::Android.Widget.TextView platformView)
+    {
+        if (Typography.IsSemibold(view))
+        {
+            platformView.Typeface = Typeface.Create(platformView.Typeface, 600, false);
+        }
     }
 }

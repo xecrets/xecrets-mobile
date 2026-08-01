@@ -28,6 +28,7 @@
 <ResourceDictionary
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:f="clr-namespace:Fonts"
+    xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
 
     <x:Double x:Key="sizeNone">0</x:Double>
@@ -142,8 +143,7 @@
     </Style>
     <Style TargetType="Label"
            Class="FlyoutItemLabelStyle">
-        <Setter Property="FontFamily"
-                Value="{OnPlatform Android=sans-serif-medium, Default=''}" />
+        <Setter Property="utilities:Typography.FontWeight" Value="Semibold" />
         <Setter Property="FontSize"
                 Value="{OnPlatform Android=14, iOS=17, MacCatalyst=17, Default=16}" />
         <Setter Property="LineHeight"
@@ -172,10 +172,7 @@
         <Setter Property="LineHeight"
                 Value="1.38" />
         <!-- 18 -->
-        <Setter Property="FontFamily"
-                Value="{OnPlatform WinUI=Segoe UI Semibold, iOS=.SFUI-SemiBold, MacCatalyst=.SFUI-SemiBold, Default=''}" />
-        <Setter Property="FontAttributes"
-                Value="{OnPlatform Default=None, Android=Bold}" />
+        <Setter Property="utilities:Typography.FontWeight" Value="Semibold" />
     </Style>
     <Style x:Key="Body2"
            TargetType="Label">
@@ -192,10 +189,7 @@
         <Setter Property="LineHeight"
                 Value="1.33" />
         <!-- 20 -->
-        <Setter Property="FontFamily"
-                Value="{OnPlatform WinUI=Segoe UI Semibold, iOS=.SFUI-SemiBold, MacCatalyst=.SFUI-SemiBold, Default=''}" />
-        <Setter Property="FontAttributes"
-                Value="{OnPlatform Default=None, Android=Bold}" />
+        <Setter Property="utilities:Typography.FontWeight" Value="Semibold" />
     </Style>
     <Style x:Key="Body1"
            TargetType="Label">
@@ -212,10 +206,7 @@
         <Setter Property="LineHeight"
                 Value="1.29" />
         <!-- 22 -->
-        <Setter Property="FontFamily"
-                Value="{OnPlatform WinUI=Segoe UI Semibold, iOS=.SFUI-SemiBold, MacCatalyst=.SFUI-SemiBold, Default=''}" />
-        <Setter Property="FontAttributes"
-                Value="{OnPlatform Default=None, Android=Bold}" />
+        <Setter Property="utilities:Typography.FontWeight" Value="Semibold" />
     </Style>
     <Style x:Key="Title3"
            TargetType="Label">
@@ -224,10 +215,7 @@
         <Setter Property="LineHeight"
                 Value="1.25" />
         <!-- 25 -->
-        <Setter Property="FontFamily"
-                Value="{OnPlatform WinUI=Segoe UI Semibold, iOS=.SFUI-SemiBold, MacCatalyst=.SFUI-SemiBold, Default=''}" />
-        <Setter Property="FontAttributes"
-                Value="{OnPlatform Default=None, Android=Bold}" />
+        <Setter Property="utilities:Typography.FontWeight" Value="Semibold" />
     </Style>
     <Style x:Key="Title2"
            TargetType="Label">
@@ -236,10 +224,7 @@
         <Setter Property="LineHeight"
                 Value="1.27" />
         <!-- 28 -->
-        <Setter Property="FontFamily"
-                Value="{OnPlatform WinUI=Segoe UI Semibold, iOS=.SFUI-SemiBold, MacCatalyst=.SFUI-SemiBold, Default=''}" />
-        <Setter Property="FontAttributes"
-                Value="{OnPlatform Android=Bold, Default=None}" />
+        <Setter Property="utilities:Typography.FontWeight" Value="Semibold" />
     </Style>
     <Style x:Key="Title1"
            TargetType="Label">
@@ -290,7 +275,7 @@
     <Style TargetType="Button">
         <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
         <Setter Property="TextColor" Value="{StaticResource White}" />
-        <Setter Property="FontFamily" Value="OpenSansSemibold" />
+        <Setter Property="utilities:Typography.FontWeight" Value="Semibold" />
         <Setter Property="FontSize" Value="16" />
         <Setter Property="CornerRadius" Value="12" />
         <Setter Property="Padding" Value="18,13" />

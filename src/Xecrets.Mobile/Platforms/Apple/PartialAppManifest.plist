@@ -55,7 +55,7 @@
             <string>XecretsEz.icns</string>
             <key>CFBundleTypeIconFiles</key>
             <array>
-                <string>com.axantum.xecrets-ez.app-1024.png</string>
+                <string>com.axantum.xecrets_ez.app_1024.png</string>
             </array>
             <key>CFBundleTypeRole</key>
             <string>Editor</string>
