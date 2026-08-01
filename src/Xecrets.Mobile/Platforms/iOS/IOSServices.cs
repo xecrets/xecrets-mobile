@@ -31,6 +31,7 @@
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
+using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Handlers;
 
