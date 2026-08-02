@@ -311,12 +311,13 @@ Testers:
 - Testers install the **TestFlight** app on their device, accept the invitation,
   and install/update builds from there. Beta builds expire after 90 days.
 
-### 6.2 Android testing via Google Play closed testing (alpha)
+### 6.2 Android testing via Google Play internal testing
 
 The `.apk` in the artifact side-loads directly for quick checks. Every push build on
 `main`, `develop`, and `feature/*` is published automatically by the
 `publish-google-play` job (`.github/scripts/Publish-GooglePlay.ps1`) to the Play
-Console's closed testing (alpha) track — no manual upload needed.
+Console's internal testing track — no manual upload needed, no review, available
+within minutes.
 
 One-time setup:
 
@@ -326,9 +327,7 @@ One-time setup:
    Google generates and holds the app signing key, and the key that signed your
    first uploaded bundle — the CI upload keystore — is registered as the upload key
    automatically.
-3. **Testing → Closed testing**, create the alpha track, and add testers (email
-   list or Google Group) — the app content declarations (privacy policy, data
-   safety, content rating) must be filled in before the track accepts releases.
+3. **Testing → Internal testing**, add testers (email list or Google Group).
 4. **Setup → API access**: create/link a Google Cloud service account, grant it
    at least **Release manager** access to the app, and download its JSON key.
    Base64 is not needed — store the raw JSON as the `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`
@@ -336,12 +335,16 @@ One-time setup:
 
 Testers:
 
-- Add testers by email (or a Google Group) on the alpha track's testers tab, then
+- Add testers by email (or a Google Group) on the internal track's testers tab, then
   share the **opt-in link** shown there. Each tester opens the link, accepts, and
   installs the app from the Play Store like any other app; updates arrive through
   Play automatically after each CI publish.
-- When ready for a public beta or release, promote a release from the alpha track
-  to **Open testing** or **Production** in the Play Console — that step stays manual.
+- For external testers, promote a specific internal release to the closed testing
+  (alpha) track from the Play Console: **Testing → Internal testing → the release →
+  Promote release → Closed testing → Alpha**. This reuses the already-uploaded build
+  (no re-upload) and is a deliberate manual step, kept separate from CI because Play
+  reviews closed testing releases before they go live. From there, promoting further
+  to **Open testing** or **Production** is likewise manual.
 
 ## 7. Notes
 

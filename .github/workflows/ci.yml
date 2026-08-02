@@ -18,7 +18,9 @@
 #     from being recorded as built. It does not block the platform builds, which run in
 #     parallel with it, so one run reports test failures and build failures together.
 #   - After the tests and Android build succeed, builds of 'main', 'develop' and
-#     'feature/*' are published to Google Play's closed testing (alpha) track.
+#     'feature/*' are published to Google Play's internal testing track. Promoting a
+#     build to the closed testing (alpha) track for external testers is a manual step
+#     in the Play Console (see docs/ci-setup.md section 6.2).
 #
 # Versioning and branch semantics:
 #   - The build number is BUILD_NUMBER_OFFSET + GITHUB_RUN_NUMBER. The offset is a
@@ -329,7 +331,7 @@ jobs:
           name: XecretsEz-${{ needs.version.outputs.display-version }}${{ needs.version.outputs.suffix }}-aab
           path: android-release
 
-      - name: Publish to Google Play closed testing (alpha)
+      - name: Publish to Google Play internal testing
         env:
           GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
           RELEASE_NAME: ${{ needs.version.outputs.display-version }}${{ needs.version.outputs.suffix }}
@@ -339,7 +341,7 @@ jobs:
               -PackageName 'com.axantum.xecrets_ez.app' `
               -AppBundle (Get-Item 'android-release/*.aab').FullName `
               -ReleaseName $env:RELEASE_NAME `
-              -Track 'alpha'
+              -Track 'internal'
 
   ios:
     name: iOS
