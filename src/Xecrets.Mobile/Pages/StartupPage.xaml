@@ -27,16 +27,12 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
-             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="Xecrets.Mobile.Pages.StartupPage"
              x:DataType="pageModels:StartupPageModel"
              BackgroundColor="{StaticResource IconBackground}"
              Shell.NavBarIsVisible="False"
+             SafeAreaEdges="None"
              Title="Xecrets">
-    <ContentPage.Behaviors>
-        <toolkit:StatusBarBehavior StatusBarColor="{StaticResource IconBackground}"
-                                   StatusBarStyle="LightContent" />
-    </ContentPage.Behaviors>
     <Grid BackgroundColor="{StaticResource IconBackground}">
         <BoxView Color="{StaticResource IconBackground}" />
         <Path Fill="White"
