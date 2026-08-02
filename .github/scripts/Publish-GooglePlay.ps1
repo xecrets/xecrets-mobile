@@ -38,7 +38,13 @@ param(
     [string]$AppBundle,
 
     [Parameter(Mandatory)]
-    [string]$ReleaseName
+    [string]$ReleaseName,
+
+    # Google Play track id: 'internal', 'alpha' (Closed testing), 'beta' (Open testing),
+    # 'production', or a custom track id created in the Play Console.
+    [Parameter(Mandatory)]
+    [ValidatePattern('^[a-z][a-z0-9-]*$')]
+    [string]$Track
 )
 
 $ErrorActionPreference = 'Stop'
@@ -156,8 +162,8 @@ $bundle = Invoke-RestMethod -Method Post `
     -Uri "https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/$PackageName/edits/$editId/bundles?uploadType=media" `
     -Headers $headers -ContentType 'application/octet-stream' -InFile $AppBundle
 
-$track = @{
-    track = 'internal'
+$trackUpdate = @{
+    track = $Track
     releases = @(
         @{
             name = $ReleaseName
@@ -167,9 +173,9 @@ $track = @{
     )
 } | ConvertTo-Json -Depth 4 -Compress
 
-Invoke-RestMethod -Method Put -Uri "$apiRoot/edits/$editId/tracks/internal" -Headers $headers `
-    -ContentType 'application/json' -Body $track | Out-Null
+Invoke-RestMethod -Method Put -Uri "$apiRoot/edits/$editId/tracks/$Track" -Headers $headers `
+    -ContentType 'application/json' -Body $trackUpdate | Out-Null
 Invoke-RestMethod -Method Post -Uri "$apiRoot/edits/$editId`:commit" -Headers $headers `
     -ContentType 'application/json' -Body '{}' | Out-Null
 
-Write-Host "Published Android version code $($bundle.versionCode) to the internal testing track."
+Write-Host "Published Android version code $($bundle.versionCode) to the '$Track' track."

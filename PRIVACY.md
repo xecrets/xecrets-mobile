@@ -77,6 +77,14 @@ Xecrets Ez does not knowingly collect personal data from children or anyone else
 Material changes to this policy will be published in this repository with an updated
 effective date.
 
+## Trademarks
+
+All third-party product names and trademarks are the property of their respective
+owners. Their use does not imply affiliation, sponsorship or endorsement.
+
+AxCrypt is a trademark of AxCrypt AB. Xecrets Ez is an independent product and is not
+affiliated with, sponsored by or endorsed by AxCrypt AB.
+
 ## Contact
 
 Questions about this policy may be submitted through
