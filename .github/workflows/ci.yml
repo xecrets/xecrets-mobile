@@ -18,7 +18,9 @@
 #     from being recorded as built. It does not block the platform builds, which run in
 #     parallel with it, so one run reports test failures and build failures together.
 #   - After the tests and Android build succeed, builds of 'main', 'develop' and
-#     'feature/*' are published to Google Play's internal testing track.
+#     'feature/*' are published to Google Play's internal testing track. Promoting a
+#     build to the closed testing (alpha) track for external testers is a manual step
+#     in the Play Console (see docs/ci-setup.md section 6.2).
 #
 # Versioning and branch semantics:
 #   - The build number is BUILD_NUMBER_OFFSET + GITHUB_RUN_NUMBER. The offset is a
@@ -306,8 +308,8 @@ jobs:
           path: xecrets-mobile/src/Xecrets.Mobile/bin/Release/net10.0-android/publish/XecretsEz-${{ needs.version.outputs.display-version }}${{ needs.version.outputs.suffix }}.apk
           if-no-files-found: error
 
-  deploy-android-internal:
-    name: Publish Android internal release
+  publish-google-play:
+    name: Publish Android release
     needs: [version, test, android]
     if: >-
       needs.version.outputs.signed == 'true' &&
@@ -316,7 +318,7 @@ jobs:
       startsWith(github.ref, 'refs/heads/feature/'))
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    environment: google-play-internal
+    environment: publish-google-play
     steps:
       - name: Checkout publishing script
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -334,11 +336,12 @@ jobs:
           GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
           RELEASE_NAME: ${{ needs.version.outputs.display-version }}${{ needs.version.outputs.suffix }}
         run: |
-          ./.github/scripts/Publish-GooglePlayInternal.ps1 `
+          ./.github/scripts/Publish-GooglePlay.ps1 `
               -ServiceAccountEnvironmentVariable 'GOOGLE_PLAY_SERVICE_ACCOUNT_JSON' `
               -PackageName 'com.axantum.xecrets_ez.app' `
               -AppBundle (Get-Item 'android-release/*.aab').FullName `
-              -ReleaseName $env:RELEASE_NAME
+              -ReleaseName $env:RELEASE_NAME `
+              -Track 'internal'
 
   ios:
     name: iOS

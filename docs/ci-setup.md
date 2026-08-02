@@ -68,6 +68,10 @@ The provisioning profile does not contain the private signing key, but it is kep
 the restricted signing material as a secret. The key alias, signing identity, and profile
 name are non-sensitive configuration and are intentionally repository variables.
 
+`GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` (the Google Play publishing credential, section 6.2)
+is not a repository secret but an **environment secret** on the `publish-google-play`
+environment, so only the publish job can read it.
+
 ### 1.3 Repository settings hardening
 
 One-time settings on the repository itself (Settings in the GitHub web UI, or the
@@ -266,9 +270,9 @@ Artifacts appear on each workflow run page (Actions → the run → Artifacts):
   retain the matching dSYM for crash symbolication. There is no practical iOS
   side-loading; use **TestFlight** to distribute Beta builds to devices.
 
-A sensible future enhancement is automatic upload to TestFlight and the Play track
-using an App Store Connect API key and a Google Play service account; the current flow
-keeps store submission as a deliberate manual step.
+Android publishing to Google Play is automated (section 6.2). A sensible future
+enhancement is automatic upload to TestFlight too, using an App Store Connect API key;
+for now iOS submission stays a deliberate manual step.
 
 ### 6.1 iOS testing via TestFlight (App Store Connect)
 
@@ -309,8 +313,11 @@ Testers:
 
 ### 6.2 Android testing via Google Play internal testing
 
-The `.apk` in the artifact side-loads directly for quick checks; the Play internal
-testing track is the proper channel for testers.
+The `.apk` in the artifact side-loads directly for quick checks. Every push build on
+`main`, `develop`, and `feature/*` is published automatically by the
+`publish-google-play` job (`.github/scripts/Publish-GooglePlay.ps1`) to the Play
+Console's internal testing track — no manual upload needed, no review, available
+within minutes.
 
 One-time setup:
 
@@ -320,27 +327,24 @@ One-time setup:
    Google generates and holds the app signing key, and the key that signed your
    first uploaded bundle — the CI upload keystore — is registered as the upload key
    automatically.
-3. Note for personal developer accounts created after November 2023: Google
-   requires a closed test with a minimum number of testers over 14 days before
-   production access. Long-standing accounts are not affected, and internal
-   testing is available immediately in any case.
-
-Per build:
-
-1. **Testing → Internal testing → Create new release**, upload the `.aab` from the
-   `-aab` artifact, add release notes, **Save and publish**. Internal releases
-   need no review and are available within minutes.
+3. **Testing → Internal testing**, add testers (email list or Google Group).
+4. **Setup → API access**: create/link a Google Cloud service account, grant it
+   at least **Release manager** access to the app, and download its JSON key.
+   Base64 is not needed — store the raw JSON as the `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`
+   secret on the `publish-google-play` GitHub environment (section 1.2).
 
 Testers:
 
-- Internal testing allows up to 100 testers: add their Google account emails to the
-  testers list (or a Google Group), then share the **opt-in link** shown on the
-  testers tab. Each tester opens the link, accepts, and installs the app from the
-  Play Store like any other app; updates arrive through Play.
-- When the circle grows beyond 100 or you want a public beta, promote the release
-  to **Closed testing** (email lists/Groups, requires the app content declarations:
-  privacy policy, data safety, content rating) or **Open testing** (public opt-in
-  on the Play listing).
+- Add testers by email (or a Google Group) on the internal track's testers tab, then
+  share the **opt-in link** shown there. Each tester opens the link, accepts, and
+  installs the app from the Play Store like any other app; updates arrive through
+  Play automatically after each CI publish.
+- For external testers, promote a specific internal release to the closed testing
+  (alpha) track from the Play Console: **Testing → Internal testing → the release →
+  Promote release → Closed testing → Alpha**. This reuses the already-uploaded build
+  (no re-upload) and is a deliberate manual step, kept separate from CI because Play
+  reviews closed testing releases before they go live. From there, promoting further
+  to **Open testing** or **Production** is likewise manual.
 
 ## 7. Notes
 
