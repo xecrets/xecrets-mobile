@@ -67,6 +67,7 @@ public class MainActivity : MauiAppCompatActivity
 {
     protected override void OnCreate(Bundle? savedInstanceState)
     {
+        // https://wagenheimer.com/blog/dont-let-android-15-break-your-maui-app-the-3-step-edge-to-edge-fix
         base.OnCreate(savedInstanceState);
         _ = HandleIncomingIntentAsync(Intent);
     }
