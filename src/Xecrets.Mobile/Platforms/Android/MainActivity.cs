@@ -47,6 +47,7 @@ using Microsoft.Maui;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
+using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Platforms.Android;
 
@@ -69,30 +70,34 @@ public class MainActivity : MauiAppCompatActivity
     {
         // https://wagenheimer.com/blog/dont-let-android-15-break-your-maui-app-the-3-step-edge-to-edge-fix
         base.OnCreate(savedInstanceState);
-        _ = HandleIncomingIntentAsync(Intent);
+        _ = HandleIncomingIntentAsync(Intent!);
     }
 
     protected override void OnNewIntent(Intent? intent)
     {
         base.OnNewIntent(intent);
         Intent = intent;
-        _ = HandleIncomingIntentAsync(intent);
+        _ = HandleIncomingIntentAsync(intent!);
     }
 
-    private async Task HandleIncomingIntentAsync(Intent? intent)
+    private async Task HandleIncomingIntentAsync(Intent intent)
     {
         AndroidUri? uri = GetIncomingUri(intent);
-        ContentResolver? contentResolver = ContentResolver;
-        ITransientFileService? transientFileStore = MauiProgram.Services?.GetService<ITransientFileService>();
-        IIncomingFileService? incomingFileService = MauiProgram.Services?.GetService<IIncomingFileService>();
-        if (transientFileStore is null || incomingFileService is null || contentResolver is null)
-        {
-            return;
-        }
+        ContentResolver contentResolver = ContentResolver!;
+        ITransientFileService transientFileStore = MauiProgram.Services!.GetRequiredService<ITransientFileService>();
+        IIncomingFileService incomingFileService = MauiProgram.Services!.GetRequiredService<IIncomingFileService>();
 
         if (uri is null)
         {
             await HandleIncomingTextAsync(intent, transientFileStore, incomingFileService);
+            return;
+        }
+
+        IFileService fileService = MauiProgram.Services!.GetRequiredService<IFileService>();
+        if (fileService.IsSelfHandoffReference(uri.ToString()!))
+        {
+            IUserInterfaceService userInterfaceService = MauiProgram.Services!.GetRequiredService<IUserInterfaceService>();
+            await userInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextSelfHandoffRejected);
             return;
         }
 
@@ -116,11 +121,11 @@ public class MainActivity : MauiAppCompatActivity
     }
 
     private static async Task HandleIncomingTextAsync(
-        Intent? intent,
+        Intent intent,
         ITransientFileService transientFileStore,
         IIncomingFileService incomingFileService)
     {
-        if (intent?.Action != Intent.ActionSend)
+        if (intent.Action != Intent.ActionSend)
         {
             return;
         }
@@ -137,40 +142,23 @@ public class MainActivity : MauiAppCompatActivity
         await incomingFileService.ReceiveAsync(new IncomingFileInfo(incomingPath, displayName, "text/plain"));
     }
 
-    private static AndroidUri? GetIncomingUri(Intent? intent)
-    {
-        if (intent is null)
-        {
-            return null;
-        }
+    private static AndroidUri? GetIncomingUri(Intent intent) => intent.Action == Intent.ActionView
+            ? intent.Data
+            : intent.Action == Intent.ActionSend
+                ? GetStreamExtra(intent)
+                : null;
 
-        if (intent.Action == Intent.ActionView)
-        {
-            return intent.Data;
-        }
-
-        if (intent.Action == Intent.ActionSend)
-        {
-            Bundle? extras = intent.Extras;
-            return extras?.Get(Intent.ExtraStream) as AndroidUri;
-        }
-
-        return null;
-    }
+    // Bundle.Get(string) is obsolete since API 33 in favor of the type-safe overload, but the type-safe overload
+    // does not exist below API 33, and this app's minimum supported API level is 29.
+    private static AndroidUri? GetStreamExtra(Intent intent) => OperatingSystem.IsAndroidVersionAtLeast(33)
+            ? intent.GetParcelableExtra(Intent.ExtraStream, Java.Lang.Class.FromType(typeof(AndroidUri))) as AndroidUri
+            : intent.Extras?.Get(Intent.ExtraStream) as AndroidUri;
 
     private string GetDisplayName(AndroidUri uri)
     {
         if (string.Equals(uri.Scheme, ContentResolver.SchemeContent, StringComparison.OrdinalIgnoreCase))
         {
-            ContentResolver? contentResolver = ContentResolver;
-            if (contentResolver is null)
-            {
-                return Path.GetFileName(uri.Path) is { Length: > 0 } resolvedFileName
-                    ? resolvedFileName
-                    : "received.txt";
-            }
-
-            using ICursor? cursor = contentResolver.Query(uri, [IOpenableColumns.DisplayName], null, null, null);
+            using ICursor? cursor = ContentResolver!.Query(uri, [IOpenableColumns.DisplayName], null, null, null);
             if (cursor is not null && cursor.MoveToFirst())
             {
                 int columnIndex = cursor.GetColumnIndex(IOpenableColumns.DisplayName);

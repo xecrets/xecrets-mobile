@@ -53,4 +53,10 @@ public interface IFileService
     Task<bool> CanViewFileAsync(DecryptedFileInfo file);
 
     Task ViewFileAsync(DecryptedFileInfo file);
+
+    // Returns true when reference identifies a file that Xecrets Ez itself created and handed off to the platform
+    // (e.g. via OpenInAsync/SendToAsync), rather than a file that genuinely originated in another app. The meaning
+    // of reference is platform-specific (a content Uri on Android, a filesystem path on Apple platforms) and is
+    // decided by the caller and the implementation together.
+    bool IsSelfHandoffReference(string reference);
 }

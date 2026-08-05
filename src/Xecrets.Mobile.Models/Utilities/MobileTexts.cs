@@ -144,4 +144,6 @@ public static class MobileTexts
     public static string DialogTextSendToFailed => "Could not send this file.";
 
     public static string DialogTextPreviewFailed => "Could not preview this file.";
+
+    public static string DialogTextSelfHandoffRejected => "Xecrets Ez can't handle files from itself.";
 }

@@ -82,4 +82,11 @@ public class AndroidFileService : FileServiceBase
 
         return Task.FromResult(false);
     }
+
+    // Xecrets Ez hands off its own decrypted files via this same FileProvider authority (see
+    // TransientFileService.CreateHandoffPath), so an incoming content Uri served by our own authority is always a file
+    // we created ourselves, never a genuine share from another app - our FileProvider is not exported, so no other app
+    // can mint a working Uri against it.
+    public override bool IsSelfHandoffReference(string reference) =>
+        AndroidUri.Parse(reference)?.Authority == $"{Platform.AppContext.PackageName}.fileProvider";
 }

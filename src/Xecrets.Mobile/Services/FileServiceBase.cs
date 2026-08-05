@@ -159,6 +159,13 @@ public abstract class FileServiceBase : IFileService
         }
     }
 
+    // Default for platforms where an incoming file reference is a plain filesystem path (Windows, iOS,
+    // MacCatalyst): Xecrets Ez hands off its own decrypted files under CacheDirectory/XecretsHandoff (see
+    // TransientFileService.CreateHandoffPath), so a path there is always a file we created ourselves. Android
+    // overrides this, since its incoming reference is a content Uri rather than a path.
+    public virtual bool IsSelfHandoffReference(string reference) =>
+        reference.StartsWith(Path.Combine(CacheDirectory, "XecretsHandoff"), StringComparison.OrdinalIgnoreCase);
+
     private static void EnsureReadableFile(string filePath)
     {
         if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
