@@ -85,7 +85,7 @@ public abstract class FileServiceBase : IFileService
             _ => throw new ArgumentOutOfRangeException(nameof(pickerKind)),
         };
 
-    public async Task<bool> OpenInAsync(string filePath, string displayName, string contentType)
+    public virtual async Task<bool> OpenInAsync(string filePath, string displayName, string contentType)
     {
         EnsureReadableFile(filePath);
 
@@ -97,7 +97,7 @@ public abstract class FileServiceBase : IFileService
                     : new ReadOnlyFile(filePath, contentType)));
     }
 
-    public async Task SendToAsync(string filePath, string displayName, string contentType)
+    public virtual async Task SendToAsync(string filePath, string displayName, string contentType)
     {
         EnsureReadableFile(filePath);
 
@@ -166,7 +166,7 @@ public abstract class FileServiceBase : IFileService
     public virtual bool IsSelfHandoffReference(string reference) =>
         reference.StartsWith(Path.Combine(CacheDirectory, "XecretsHandoff"), StringComparison.OrdinalIgnoreCase);
 
-    private static void EnsureReadableFile(string filePath)
+    protected static void EnsureReadableFile(string filePath)
     {
         if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
         {
