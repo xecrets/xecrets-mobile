@@ -40,6 +40,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
+using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Platforms.Apple;
 
@@ -49,9 +50,10 @@ internal static class AppleIncomingFileHandler
     {
         try
         {
-            ITransientFileService? transientFileStore = MauiProgram.Services?.GetService<ITransientFileService>();
-            IIncomingFileService? incomingFileService = MauiProgram.Services?.GetService<IIncomingFileService>();
-            if (transientFileStore is null || incomingFileService is null || !url.IsFileUrl)
+            ITransientFileService transientFileStore = MauiProgram.Services!.GetRequiredService<ITransientFileService>();
+            IIncomingFileService incomingFileService = MauiProgram.Services!.GetRequiredService<IIncomingFileService>();
+            IFileService fileService = MauiProgram.Services!.GetRequiredService<IFileService>();
+            if (!url.IsFileUrl)
             {
                 return;
             }
@@ -62,6 +64,13 @@ internal static class AppleIncomingFileHandler
                 string sourcePath = url.Path ?? string.Empty;
                 if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath))
                 {
+                    return;
+                }
+
+                if (fileService.IsSelfHandoffReference(sourcePath))
+                {
+                    IUserInterfaceService userInterfaceService = MauiProgram.Services!.GetRequiredService<IUserInterfaceService>();
+                    await userInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextSelfHandoffRejected);
                     return;
                 }
 
