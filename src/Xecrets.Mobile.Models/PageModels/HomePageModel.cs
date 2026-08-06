@@ -59,13 +59,19 @@ public partial class HomePageModel(
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(EncryptCommand))]
+    [NotifyCanExecuteChangedFor(nameof(EncryptAsCommand))]
     [NotifyCanExecuteChangedFor(nameof(EncryptToShareCommand))]
     [NotifyCanExecuteChangedFor(nameof(DecryptCommand))]
+    [NotifyCanExecuteChangedFor(nameof(DecryptAsCommand))]
     [NotifyCanExecuteChangedFor(nameof(SignOutCommand))]
     public partial bool IsBusy { get; set; }
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private async Task Encrypt()
+    private Task Encrypt() =>
+        UserInterfaceService.NavigateToAsync(AppDestination.WorkFolders, WorkFolderOperation.Encrypt);
+
+    [RelayCommand(CanExecute = nameof(CanUseCommand))]
+    private async Task EncryptAs()
     {
         crashTestService.CrashIfArmed(CrashTestOperation.Encrypt);
 
@@ -112,7 +118,11 @@ public partial class HomePageModel(
     }
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private async Task Decrypt()
+    private Task Decrypt() =>
+        UserInterfaceService.NavigateToAsync(AppDestination.WorkFolders, WorkFolderOperation.Decrypt);
+
+    [RelayCommand(CanExecute = nameof(CanUseCommand))]
+    private async Task DecryptAs()
     {
         crashTestService.CrashIfArmed(CrashTestOperation.Decrypt);
 
@@ -172,14 +182,4 @@ public partial class HomePageModel(
         }
 
         return isPrepared;
-    }
-
-    private static string FormatStatusText(string message, Exception exception)
-    {
-        string exceptionMessage = string.IsNullOrWhiteSpace(exception.Message)
-            ? exception.GetType().Name
-            : exception.Message;
-
-        return $"{message} {exceptionMessage}";
-    }
-}
+    }}

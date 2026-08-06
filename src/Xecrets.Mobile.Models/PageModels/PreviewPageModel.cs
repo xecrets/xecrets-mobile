@@ -283,14 +283,4 @@ public partial class PreviewPageModel(
         string sizeValue = $"{state.FileSize:N0}".Replace(" ", _nonBreakingSpace, StringComparison.Ordinal);
 
         return $"{state.ContentType} {sizeValue} bytes";
-    }
-
-    private static string FormatStatusText(string message, Exception exception)
-    {
-        string exceptionMessage = string.IsNullOrWhiteSpace(exception.Message)
-            ? exception.GetType().Name
-            : exception.Message;
-
-        return $"{message} {exceptionMessage}";
-    }
-}
+    }}

@@ -33,12 +33,16 @@ using CommunityToolkit.Mvvm.Input;
 
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
+using Xecrets.Mobile.Models.Utilities;
 
 using AppTexts = Xecrets.Texts.Texts;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
-public partial class EnterPasswordPageModel(IPreviewService previewService, IUserInterfaceService userInterfaceService)
+public partial class EnterPasswordPageModel(
+    IPreviewService previewService,
+    IWorkFolderOperationService workFolderOperationService,
+    IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService)
 {
     [ObservableProperty]
@@ -53,7 +57,7 @@ public partial class EnterPasswordPageModel(IPreviewService previewService, IUse
 
     public void Initialize()
     {
-        ErrorText = previewService.HasPendingPasswordRequest
+        ErrorText = previewService.HasPendingPasswordRequest || workFolderOperationService.HasPendingPasswordRequest
             ? AppTexts.DialogTextWrongPasswordOpen
             : string.Empty;
     }
@@ -66,7 +70,10 @@ public partial class EnterPasswordPageModel(IPreviewService previewService, IUse
             IsBusy = true;
             ErrorText = string.Empty;
 
-            bool isPrepared = await previewService.PrepareWithPasswordAsync(Password);
+            bool isWorkFolderRequest = workFolderOperationService.HasPendingPasswordRequest;
+            bool isPrepared = isWorkFolderRequest
+                ? await workFolderOperationService.DecryptWithPasswordAsync(Password)
+                : await previewService.PrepareWithPasswordAsync(Password);
             if (!isPrepared)
             {
                 ErrorText = AppTexts.DialogTextWrongPasswordOpen;
@@ -74,7 +81,19 @@ public partial class EnterPasswordPageModel(IPreviewService previewService, IUse
             }
 
             Password = string.Empty;
-            await UserInterfaceService.NavigateToAsync(AppDestination.Preview);
+            if (isWorkFolderRequest)
+            {
+                await UserInterfaceService.GoBackAsync();
+                await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextDecrypted);
+            }
+            else
+            {
+                await UserInterfaceService.NavigateToAsync(AppDestination.Preview);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            ErrorText = MobileTexts.DialogTextOperationNotCompleted;
         }
         finally
         {
@@ -83,4 +102,6 @@ public partial class EnterPasswordPageModel(IPreviewService previewService, IUse
     }
 
     private bool CanSubmit() => !IsBusy && Password.Length > 0;
+
+    public void CancelWorkFolderRequest() => workFolderOperationService.CancelPasswordRequest();
 }

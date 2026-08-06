@@ -45,13 +45,12 @@
                     Style="{StaticResource CardStyle}">
                 <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
                 <Label Text="{Binding FileNameText}"
-                       Style="{StaticResource Body1Strong}" />
+                       Style="{StaticResource FileNameStyle}" />
                 <Label Text="{Binding MetadataText}"
                        Style="{StaticResource Body2}" />
-                <Label Text="{Binding StatusText}"
-                       TextColor="Red"
-                       IsVisible="{Binding StatusText, Converter={StaticResource StringNotEmptyConverter}}"
-                       Style="{StaticResource Caption1}" />
+                <Editor Text="{Binding StatusText}"
+                        IsVisible="{Binding StatusText, Converter={StaticResource StringNotEmptyConverter}}"
+                        Style="{StaticResource StatusTextStyle}" />
                 <VerticalStackLayout x:Name="ActionButtonStack"
                                      HorizontalOptions="Center"
                                      Spacing="{StaticResource LayoutSpacing}">

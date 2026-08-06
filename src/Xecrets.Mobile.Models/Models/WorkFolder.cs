@@ -28,35 +28,22 @@
 
 #endregion Copyright and GPL License
 
-using Xecrets.Mobile.Models.Models;
+using System.Text.Json.Serialization;
 
-namespace Xecrets.Mobile.Models.Abstractions;
+namespace Xecrets.Mobile.Models.Models;
 
-public interface IUserInterfaceService
+public sealed record WorkFolder(string Id, string DisplayName, string GrantId = "")
 {
-    bool IsShellAvailable { get; }
-
-    bool CanProcessIncomingFiles { get; }
-
-    Task InvokeOnMainThreadAsync(Func<Task> action);
-
-    Task DisplayMessageAsync(string message);
-
-    Task<bool> DisplayConfirmationAsync(string message);
-
     /// <summary>
-    /// Asks the user for a line of text, starting from <paramref name="initialValue"/>. Returns null if
-    /// the user cancels.
+    /// The name to show in a list of folders, disambiguated with as much of the path as it takes when
+    /// several folders share a display name. It is derived, so it is never persisted.
     /// </summary>
-    Task<string?> DisplayPromptAsync(string message, string initialValue);
+    [JsonIgnore]
+    public string ListDisplayName { get; init; } = DisplayName;
+}
 
-    Task DisplayTransientMessageAsync(string message);
-
-    Task NavigateToAsync(AppDestination destination);
-
-    Task NavigateToAsync(AppDestination destination, object parameter);
-
-    Task GoBackAsync();
-
-    Task OpenBrowserAsync(string url);
+public enum WorkFolderOperation
+{
+    Encrypt,
+    Decrypt,
 }

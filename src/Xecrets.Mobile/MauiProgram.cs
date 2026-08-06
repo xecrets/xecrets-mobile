@@ -89,6 +89,8 @@ public static class MauiProgram
         builder.Services.AddSingleton<IIncomingFileService, IncomingFileService>();
         builder.Services.AddSingleton<SessionExitService>();
         builder.Services.AddSingleton<ICrashTestService, CrashTestService>();
+        builder.Services.AddSingleton<IWorkFolderOperationService, WorkFolderOperationService>();
+        builder.Services.AddSingleton<WorkFolderStorage>();
         builder.Services.AddSingleton<ICrashLogService, CrashLogAdapter>();
         builder.Services.AddSingleton<IBuildInformation>(buildInformation);
         builder.Services.AddSingleton<IPageHeaderService, PageHeaderService>();
@@ -104,6 +106,7 @@ public static class MauiProgram
         builder.Services.AddTransientWithShellRoute<EditPage, EditPageModel>("edit");
         builder.Services.AddTransientWithShellRoute<EncryptResultPage, EncryptResultPageModel>("encrypt-result");
         builder.Services.AddTransientWithShellRoute<EncryptToSharePage, EncryptToSharePageModel>("encrypt-to-share");
+        builder.Services.AddTransientWithShellRoute<WorkFoldersPage, WorkFoldersPageModel>("work-folders");
         builder.Services.AddTransientWithShellRoute<EnterPasswordPage, EnterPasswordPageModel>("enter-password");
         builder.Services.AddTransientWithShellRoute<AboutPage, AboutPageModel>("about");
         builder.Services.AddTransientWithShellRoute<ThirdPartyLicensesPage, ThirdPartyLicensesPageModel>("third-party-licenses");

@@ -53,6 +53,7 @@
         <VerticalStackLayout Grid.Row="1"
                              Spacing="{StaticResource LayoutSpacing}">
             <Label Text="{x:Static modelUtilities:MobileTexts.CrashPageTitle}"
+                   HorizontalOptions="Center"
                    Style="{StaticResource Title1}" />
             <Label Text="{x:Static modelUtilities:MobileTexts.CrashPageExplanation}" />
             <Label Text="{Binding PlatformAdditionalInformation}"

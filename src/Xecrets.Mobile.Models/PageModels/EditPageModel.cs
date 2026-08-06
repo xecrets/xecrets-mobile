@@ -224,16 +224,6 @@ public partial class EditPageModel(
             return false;
         }
     }
-
-    private static string FormatStatusText(string message, Exception exception)
-    {
-        string exceptionMessage = string.IsNullOrWhiteSpace(exception.Message)
-            ? exception.GetType().Name
-            : exception.Message;
-
-        return $"{message} {exceptionMessage}";
-    }
-
     private async Task PrepareTemporaryTextFileAsync(IPreviewState state)
     {
         if (state.Kind != PreviewKind.Text || state.File is null)

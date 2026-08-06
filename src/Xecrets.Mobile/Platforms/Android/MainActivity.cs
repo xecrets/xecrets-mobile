@@ -54,18 +54,29 @@ namespace Xecrets.Mobile.Platforms.Android;
 [Activity(Theme = "@style/Maui.SplashTheme", MainLauncher = true, Exported = true, LaunchMode = LaunchMode.SingleTop, ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation | ConfigChanges.UiMode | ConfigChanges.ScreenLayout | ConfigChanges.SmallestScreenSize | ConfigChanges.Density)]
 [IntentFilter([Intent.ActionSend], Categories = [Intent.CategoryDefault], DataMimeType = "text/plain")]
 [IntentFilter([Intent.ActionSend], Categories = [Intent.CategoryDefault], DataMimeType = "application/octet-stream")]
-[IntentFilter([Intent.ActionSend], Categories = [Intent.CategoryDefault], DataMimeType = "application/vnd.xecrets-encrypted")]
+[IntentFilter([Intent.ActionSend], Categories = [Intent.CategoryDefault], DataMimeType = EncryptedFileType.ContentType)]
 [IntentFilter([Intent.ActionSend], Categories = [Intent.CategoryDefault], DataMimeType = "*/*")]
 [IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = "text/plain", DataScheme = "content")]
 [IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = "application/octet-stream", DataScheme = "content")]
-[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = "application/vnd.xecrets-encrypted", DataScheme = "content")]
+[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = EncryptedFileType.ContentType, DataScheme = "content")]
 [IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = "*/*", DataScheme = "content")]
 [IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = "text/plain", DataScheme = "file")]
 [IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = "application/octet-stream", DataScheme = "file")]
-[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = "application/vnd.xecrets-encrypted", DataScheme = "file")]
+[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = EncryptedFileType.ContentType, DataScheme = "file")]
 [IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = "*/*", DataScheme = "file")]
 public class MainActivity : MauiAppCompatActivity
 {
+    private const int _documentPickerRequestCode = 7021;
+    private TaskCompletionSource<Intent?>? _documentPickerCompletion;
+
+    public Task<Intent?> StartDocumentPickerAsync(Intent intent)
+    {
+        _documentPickerCompletion?.TrySetResult(null);
+        _documentPickerCompletion = new TaskCompletionSource<Intent?>();
+        StartActivityForResult(intent, _documentPickerRequestCode);
+        return _documentPickerCompletion.Task;
+    }
+
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         // https://wagenheimer.com/blog/dont-let-android-15-break-your-maui-app-the-3-step-edge-to-edge-fix
@@ -78,6 +89,20 @@ public class MainActivity : MauiAppCompatActivity
         base.OnNewIntent(intent);
         Intent = intent;
         _ = HandleIncomingIntentAsync(intent!);
+    }
+
+    protected override void OnActivityResult(int requestCode, Result resultCode, Intent? data)
+    {
+        base.OnActivityResult(requestCode, resultCode, data);
+        if (requestCode != _documentPickerRequestCode)
+        {
+            return;
+        }
+
+        // The activity can be recreated while the picker is up, and then there is nothing left to complete.
+        TaskCompletionSource<Intent?>? completion = _documentPickerCompletion;
+        _documentPickerCompletion = null;
+        completion?.TrySetResult(resultCode == Result.Ok ? data : null);
     }
 
     private async Task HandleIncomingIntentAsync(Intent intent)

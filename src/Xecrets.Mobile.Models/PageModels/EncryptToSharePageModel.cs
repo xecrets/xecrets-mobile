@@ -109,14 +109,4 @@ public partial class EncryptToSharePageModel(
     }
 
     private bool CanSubmit()
-        => !IsBusy && Password.Length > 0;
-
-    private static string FormatStatusText(string message, Exception exception)
-    {
-        string exceptionMessage = string.IsNullOrWhiteSpace(exception.Message)
-            ? exception.GetType().Name
-            : exception.Message;
-
-        return $"{message} {exceptionMessage}";
-    }
-}
+        => !IsBusy && Password.Length > 0;}

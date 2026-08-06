@@ -34,6 +34,7 @@
         <VerticalStackLayout Padding="{StaticResource LayoutPadding}"
                              Spacing="{StaticResource LayoutSpacing}">
             <Label Text="{Binding ProductName}"
+                   HorizontalOptions="Center"
                    Style="{StaticResource Title1}" />
             <Label Text="{Binding Version}"
                    Style="{StaticResource Body1}" />

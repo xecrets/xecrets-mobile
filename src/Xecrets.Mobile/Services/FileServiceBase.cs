@@ -77,9 +77,9 @@ public abstract class FileServiceBase : IFileService
             FilePickerKind.Encrypted => new FilePickerFileType(
                 new Dictionary<DevicePlatform, IEnumerable<string>>
                 {
-                    { DevicePlatform.Android, ["application/vnd.xecrets-encrypted", "application/octet-stream"] },
-                    { DevicePlatform.iOS, ["com.axantum.xecrets-file"] },
-                    { DevicePlatform.MacCatalyst, ["com.axantum.xecrets-file"] },
+                    { DevicePlatform.Android, [EncryptedFileType.ContentType, "application/octet-stream"] },
+                    { DevicePlatform.iOS, [EncryptedFileType.UniformTypeIdentifier] },
+                    { DevicePlatform.MacCatalyst, [EncryptedFileType.UniformTypeIdentifier] },
                     { DevicePlatform.WinUI, [Extensions.EncryptedExtension] },
                 }),
             _ => throw new ArgumentOutOfRangeException(nameof(pickerKind)),

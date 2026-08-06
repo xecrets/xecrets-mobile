@@ -37,6 +37,7 @@ namespace Xecrets.Mobile.Models.Data;
 [JsonSerializable(typeof(StoredProfile))]
 [JsonSerializable(typeof(AppSettings))]
 [JsonSerializable(typeof(ExtraPasswordSetting))]
+[JsonSerializable(typeof(List<WorkFolder>))]
 public partial class JsonContext : JsonSerializerContext
 {
 }

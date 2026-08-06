@@ -177,14 +177,4 @@ public partial class EncryptResultPageModel(
         string sizeValue = $"{result.FileSize:N0}".Replace(" ", _nonBreakingSpace, StringComparison.Ordinal);
 
         return $"{result.ContentType} {sizeValue} bytes";
-    }
-
-    private static string FormatStatusText(string message, Exception exception)
-    {
-        string exceptionMessage = string.IsNullOrWhiteSpace(exception.Message)
-            ? exception.GetType().Name
-            : exception.Message;
-
-        return $"{message} {exceptionMessage}";
-    }
-}
+    }}

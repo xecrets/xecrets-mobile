@@ -56,7 +56,22 @@ public class DefaultUserInterfaceService : IUserInterfaceService
     public Task InvokeOnMainThreadAsync(Func<Task> action) => MainThread.InvokeOnMainThreadAsync(action);
 
     public Task DisplayMessageAsync(string message) =>
-        Shell.Current!.DisplayAlertAsync(AppTexts.DisplayNameProgram, message, AppTexts.ButtonOk);
+        Shell.Current!.DisplayAlertAsync(AppTexts.DisplayNameProgram, message, AppTexts.LabelOk);
+
+    public Task<bool> DisplayConfirmationAsync(string message) =>
+        Shell.Current!.DisplayAlertAsync(
+            AppTexts.DisplayNameProgram,
+            message,
+            AppTexts.LabelYes,
+            AppTexts.LabelNo);
+
+    public Task<string?> DisplayPromptAsync(string message, string initialValue) =>
+        Shell.Current!.DisplayPromptAsync(
+            AppTexts.DisplayNameProgram,
+            message,
+            AppTexts.LabelOk,
+            AppTexts.LabelCancel,
+            initialValue: initialValue);
 
     public virtual Task DisplayTransientMessageAsync(string message) =>
         Toast.Make(message, ToastDuration.Long).Show();
@@ -94,6 +109,7 @@ public class DefaultUserInterfaceService : IUserInterfaceService
             AppDestination.Edit => "edit",
             AppDestination.EncryptResult => "encrypt-result",
             AppDestination.EncryptToShare => "encrypt-to-share",
+            AppDestination.WorkFolders => "work-folders",
             AppDestination.EnterPassword => "enter-password",
             AppDestination.About => "about",
             AppDestination.ThirdPartyLicenses => "third-party-licenses",

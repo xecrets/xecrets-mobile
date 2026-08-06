@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk" TreatAsLocalProperty="EnableCodeSigning">
 
     <!-- CI sets the MOBILE_TARGET_FRAMEWORK environment variable to build exactly one platform.
          It is read directly from the process environment so Android nested builds retain it without
@@ -122,7 +122,20 @@
         <MarshalManagedExceptionMode>abort</MarshalManagedExceptionMode>
     </PropertyGroup>
 
+    <!-- Ad-hoc Mac Catalyst builds use the sandbox and file-access entitlements. A gitignored
+         Xecrets.Mobile.csproj.user file can override this with Entitlements.Provisioned.plist and
+         local CodesignKey and CodesignProvision values to enable SecureStorage during development. -->
+    <PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">
+        <CodesignEntitlements>Platforms\MacCatalyst\Entitlements.plist</CodesignEntitlements>
+    </PropertyGroup>
+
     <ItemGroup>
+        <!-- SourceGen emits trim-unsafe string bindings for the typed RelativeSource commands on this page.
+             Remove this Release-only XamlC override when https://github.com/dotnet/maui/issues/35564 is available. -->
+        <MauiXaml Update="Pages\WorkFoldersPage.xaml"
+                  Inflator="XamlC"
+                  Condition="'$(Configuration)' == 'Release'" />
+
         <AssemblyMetadata Include="License" Value="GNU General Public License v3.0 or later" />
         <AssemblyMetadata Include="IsBeta" Value="$(IsBeta)" />
 

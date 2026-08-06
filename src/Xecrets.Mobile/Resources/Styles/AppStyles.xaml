@@ -257,6 +257,13 @@
                 Value="{OnPlatform WinUI=None, Default=Bold}" />
     </Style>
 
+    <!-- The name of the file a page is working on, at the top of its card. A strong body style rather than a
+         title, because a file name is unbounded user data: it stays readable where a long name wraps, and it
+         pairs with the Body2 metadata line below it. Change the base here to restyle all four pages. -->
+    <Style x:Key="FileNameStyle"
+           TargetType="Label"
+           BasedOn="{StaticResource Body1Strong}" />
+
     <Style TargetType="Border">
         <Setter Property="StrokeShape" Value="RoundRectangle 18"/>
         <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource LightOutline}, Dark={StaticResource DarkOutline}}"/>
@@ -307,6 +314,16 @@
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource LightSecondaryBackground}, Dark={StaticResource DarkSecondaryBackground}}" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}" />
         <Setter Property="FontSize" Value="16" />
+    </Style>
+
+    <!-- Error and status text. A read-only Editor rather than a Label, so that the text, which can carry
+         exception detail worth reporting, can be selected and copied. Sized to match Caption1. -->
+    <Style TargetType="Editor" x:Key="StatusTextStyle">
+        <Setter Property="TextColor" Value="Red" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="AutoSize" Value="TextChanges" />
+        <Setter Property="IsReadOnly" Value="True" />
     </Style>
 
     <Style TargetType="BoxView" x:Key="ShimmerCustomViewStyle">

@@ -34,6 +34,7 @@
         <VerticalStackLayout Padding="{StaticResource LayoutPadding}"
                              Spacing="{StaticResource LayoutSpacing}">
             <Label Text="{x:Static modelUtilities:MobileTexts.ThirdPartyLicensesPageTitle}"
+                   HorizontalOptions="Center"
                    Style="{StaticResource Title1}" />
             <Label Text="{x:Static modelUtilities:MobileTexts.ThirdPartyLicensesPageExplanation}"
                    Style="{StaticResource Body2}" />
