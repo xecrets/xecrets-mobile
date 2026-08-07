@@ -311,7 +311,9 @@ public sealed class AppleWorkFolderService(WorkFolderStorage storage) : IWorkFol
         return null;
     }
 
-    private static void SaveGrant(NSUrl url)
+    private static void SaveGrant(NSUrl url) => SaveGrant(url, url.AbsoluteString!);
+
+    private static void SaveGrant(NSUrl url, string id)
     {
         Directory.CreateDirectory(GrantDirectory);
 #if __MACCATALYST__
@@ -331,7 +333,7 @@ public sealed class AppleWorkFolderService(WorkFolderStorage storage) : IWorkFol
             throw new NSErrorException(error);
         }
 
-        File.WriteAllBytes(GetGrantPath(url.AbsoluteString!), bookmark.ToArray());
+        File.WriteAllBytes(GetGrantPath(id), bookmark.ToArray());
     }
 
     private static NSUrl ResolveGrant(string id)
@@ -348,11 +350,16 @@ public sealed class AppleWorkFolderService(WorkFolderStorage storage) : IWorkFol
             bookmark,
             options,
             null,
-            out bool _,
+            out bool isStale,
             out NSError? error);
         if (error is not null)
         {
             throw new NSErrorException(error);
+        }
+
+        if (isStale)
+        {
+            SaveGrant(url, id);
         }
 
         return url;
@@ -367,7 +374,19 @@ public sealed class AppleWorkFolderService(WorkFolderStorage storage) : IWorkFol
     private static Stream OpenRead(NSUrl accessUrl, string path)
     {
         bool isAccessing = accessUrl.StartAccessingSecurityScopedResource();
-        return new SecurityScopedStream(File.OpenRead(path), accessUrl, isAccessing);
+        try
+        {
+            return new SecurityScopedStream(File.OpenRead(path), accessUrl, isAccessing);
+        }
+        catch
+        {
+            if (isAccessing)
+            {
+                accessUrl.StopAccessingSecurityScopedResource();
+            }
+
+            throw;
+        }
     }
 
     private sealed class PickerDelegate : UIDocumentPickerDelegate
@@ -383,6 +402,8 @@ public sealed class AppleWorkFolderService(WorkFolderStorage storage) : IWorkFol
 
     private sealed class SecurityScopedStream(Stream stream, NSUrl accessUrl, bool isAccessing) : Stream
     {
+        private bool _isAccessing = isAccessing;
+
         public override bool CanRead => stream.CanRead;
 
         public override bool CanSeek => stream.CanSeek;
@@ -409,16 +430,28 @@ public sealed class AppleWorkFolderService(WorkFolderStorage storage) : IWorkFol
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing)
+            try
             {
-                stream.Dispose();
-                if (isAccessing)
+                if (disposing)
                 {
-                    accessUrl.StopAccessingSecurityScopedResource();
+                    try
+                    {
+                        stream.Dispose();
+                    }
+                    finally
+                    {
+                        if (_isAccessing)
+                        {
+                            accessUrl.StopAccessingSecurityScopedResource();
+                            _isAccessing = false;
+                        }
+                    }
                 }
             }
-
-            base.Dispose(disposing);
+            finally
+            {
+                base.Dispose(disposing);
+            }
         }
     }
 }

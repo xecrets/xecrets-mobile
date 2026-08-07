@@ -39,6 +39,9 @@ using Android.Database;
 using Android.OS;
 using Android.Provider;
 
+using AndroidX.Activity.Result;
+using AndroidX.Activity.Result.Contract;
+
 using AndroidUri = global::Android.Net.Uri;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -64,21 +67,25 @@ namespace Xecrets.Mobile.Platforms.Android;
 [IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = "application/octet-stream", DataScheme = "file")]
 [IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = EncryptedFileType.ContentType, DataScheme = "file")]
 [IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = "*/*", DataScheme = "file")]
-public class MainActivity : MauiAppCompatActivity
+public class MainActivity : MauiAppCompatActivity, IActivityResultCallback
 {
-    private const int _documentPickerRequestCode = 7021;
+    private ActivityResultLauncher? _documentPickerLauncher;
     private TaskCompletionSource<Intent?>? _documentPickerCompletion;
 
     public Task<Intent?> StartDocumentPickerAsync(Intent intent)
     {
         _documentPickerCompletion?.TrySetResult(null);
         _documentPickerCompletion = new TaskCompletionSource<Intent?>();
-        StartActivityForResult(intent, _documentPickerRequestCode);
+        _documentPickerLauncher!.Launch(intent);
         return _documentPickerCompletion.Task;
     }
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
+        _documentPickerLauncher = RegisterForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            this);
+
         // https://wagenheimer.com/blog/dont-let-android-15-break-your-maui-app-the-3-step-edge-to-edge-fix
         base.OnCreate(savedInstanceState);
         _ = HandleIncomingIntentAsync(Intent!);
@@ -91,18 +98,13 @@ public class MainActivity : MauiAppCompatActivity
         _ = HandleIncomingIntentAsync(intent!);
     }
 
-    protected override void OnActivityResult(int requestCode, Result resultCode, Intent? data)
+    public void OnActivityResult(Java.Lang.Object? result)
     {
-        base.OnActivityResult(requestCode, resultCode, data);
-        if (requestCode != _documentPickerRequestCode)
-        {
-            return;
-        }
-
         // The activity can be recreated while the picker is up, and then there is nothing left to complete.
         TaskCompletionSource<Intent?>? completion = _documentPickerCompletion;
         _documentPickerCompletion = null;
-        completion?.TrySetResult(resultCode == Result.Ok ? data : null);
+        ActivityResult activityResult = (ActivityResult)result!;
+        completion?.TrySetResult(activityResult.ResultCode == (int)Result.Ok ? activityResult.Data : null);
     }
 
     private async Task HandleIncomingIntentAsync(Intent intent)
