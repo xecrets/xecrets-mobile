@@ -65,7 +65,7 @@ public static class MobileTexts
 
     public static string CrashPageTitle => "Sorry, we crashed!";
 
-    public static string DecryptWorkFolderDescription => "Decrypt a file and delete the original. Add or select a folder, and then the file.";
+    public static string DecryptWorkFolderDescription => "Decrypt a file and replace the original. Add or select a folder, and then a file to decrypt.";
 
     public static string DialogTextAddUnknownWorkFolder => "This is not a known work folder, would you like to add it?";
 
@@ -107,7 +107,7 @@ public static class MobileTexts
 
     public static string EncryptToShareDescription => "Enter a separate password for the encrypted copy. Share the password through a different channel.";
 
-    public static string EncryptWorkFolderDescription => "Encrypt a file and delete the original. Add or select a folder, and then the file.";
+    public static string EncryptWorkFolderDescription => "Encrypt a file and replace the original. Add or select a folder, and then a file to encrypt.";
 
     public static string HomeContentTitle => "Encrypt or decrypt files";
 
