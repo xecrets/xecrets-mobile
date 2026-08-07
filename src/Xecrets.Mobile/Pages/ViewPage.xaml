@@ -36,7 +36,7 @@
             <Border Style="{StaticResource CardStyle}">
                 <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
                     <Label Text="{Binding FileNameText}"
-                           Style="{StaticResource Title2}" />
+                           Style="{StaticResource FileNameStyle}" />
                     <Image IsVisible="{Binding IsImageVisible}"
                            Aspect="AspectFit"
                            HeightRequest="420">

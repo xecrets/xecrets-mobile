@@ -32,31 +32,15 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Abstractions;
 
-public interface IUserInterfaceService
+public interface IWorkFolderOperationService
 {
-    bool IsShellAvailable { get; }
+    bool HasPendingPasswordRequest { get; }
 
-    bool CanProcessIncomingFiles { get; }
+    Task EncryptAsync(WorkFolderFile file);
 
-    Task InvokeOnMainThreadAsync(Func<Task> action);
+    Task<bool> DecryptWithKnownPasswordsAsync(WorkFolderFile file);
 
-    Task DisplayMessageAsync(string message);
+    Task<bool> DecryptWithPasswordAsync(string password);
 
-    Task<bool> DisplayConfirmationAsync(string message);
-
-    /// <summary>
-    /// Asks the user for a line of text, starting from <paramref name="initialValue"/>. Returns null if
-    /// the user cancels.
-    /// </summary>
-    Task<string?> DisplayPromptAsync(string message, string initialValue);
-
-    Task DisplayTransientMessageAsync(string message);
-
-    Task NavigateToAsync(AppDestination destination);
-
-    Task NavigateToAsync(AppDestination destination, object parameter);
-
-    Task GoBackAsync();
-
-    Task OpenBrowserAsync(string url);
+    void CancelPasswordRequest();
 }

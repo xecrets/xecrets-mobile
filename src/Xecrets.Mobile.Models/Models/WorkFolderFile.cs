@@ -28,35 +28,15 @@
 
 #endregion Copyright and GPL License
 
-using Xecrets.Mobile.Models.Models;
+namespace Xecrets.Mobile.Models.Models;
 
-namespace Xecrets.Mobile.Models.Abstractions;
-
-public interface IUserInterfaceService
-{
-    bool IsShellAvailable { get; }
-
-    bool CanProcessIncomingFiles { get; }
-
-    Task InvokeOnMainThreadAsync(Func<Task> action);
-
-    Task DisplayMessageAsync(string message);
-
-    Task<bool> DisplayConfirmationAsync(string message);
-
-    /// <summary>
-    /// Asks the user for a line of text, starting from <paramref name="initialValue"/>. Returns null if
-    /// the user cancels.
-    /// </summary>
-    Task<string?> DisplayPromptAsync(string message, string initialValue);
-
-    Task DisplayTransientMessageAsync(string message);
-
-    Task NavigateToAsync(AppDestination destination);
-
-    Task NavigateToAsync(AppDestination destination, object parameter);
-
-    Task GoBackAsync();
-
-    Task OpenBrowserAsync(string url);
-}
+public sealed record WorkFolderFile(
+    string FileName,
+    string LocationId,
+    string LocationDisplayName,
+    string LocationGrantId,
+    bool IsInKnownWorkFolder,
+    Func<Task<Stream>> OpenReadAsync,
+    Func<string, Task<bool>> DestinationExistsAsync,
+    Func<string, bool, Func<Stream, Task>, Task> WriteDestinationAsync,
+    Func<Task> DeleteAsync);

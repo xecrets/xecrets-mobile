@@ -41,6 +41,7 @@ public enum AppDestination
     Edit,
     EncryptResult,
     EncryptToShare,
+    WorkFolders,
     EnterPassword,
     About,
     ThirdPartyLicenses,

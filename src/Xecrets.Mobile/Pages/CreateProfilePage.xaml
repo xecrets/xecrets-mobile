@@ -45,9 +45,13 @@
                     HorizontalOptions="Center"
                     Style="{StaticResource CardStyle}">
                 <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
+                <Label Text="{x:Static modelUtilities:MobileTexts.HeadingCreateUserFirstTimeSetup}"
+                       HorizontalOptions="Center"
+                       Style="{StaticResource Title1}" />
+                <Label Text="{x:Static modelUtilities:MobileTexts.ToolTipEmail}"
+                       Style="{StaticResource Body2}" />
                 <Entry Text="{Binding Email}"
                        Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkEmail}"
-                       ToolTipProperties.Text="{x:Static modelUtilities:MobileTexts.ToolTipEmail}"
                        Keyboard="Email"
                        ReturnType="Next" />
                 <controls:PasswordEntry x:Name="PasswordEntryControl"

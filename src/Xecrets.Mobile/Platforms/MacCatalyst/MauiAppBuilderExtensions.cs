@@ -36,6 +36,7 @@ using Security;
 
 using Xecrets.Mobile.Abstractions;
 using Xecrets.Mobile.Models.Abstractions;
+using Xecrets.Mobile.Platforms.Apple;
 using Xecrets.Mobile.Services;
 
 namespace Xecrets.Mobile.Platforms.MacCatalyst;
@@ -47,6 +48,7 @@ internal static class MauiAppBuilderExtensions
         SecureStorage.DefaultAccessible = SecAccessible.AfterFirstUnlockThisDeviceOnly;
 
         builder.Services.AddSingleton<IFileService, MacCatalystFileService>();
+        builder.Services.AddSingleton<IWorkFolderService, AppleWorkFolderService>();
         builder.Services.AddSingleton<IUserInterfaceService, DefaultUserInterfaceService>();
         builder.Services.AddSingleton<IPlatformServices, MacCatalystServices>();
         return builder;

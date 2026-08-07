@@ -43,7 +43,7 @@ public static class LayoutMetrics
     public static void UpdateCenteredContentLayout(
         double pageWidth,
         Layout contentRoot,
-        VisualElement contentColumn,
+        Border contentColumn,
         VisualElement actionButtonStack)
     {
         double availableContentWidth = pageWidth - contentRoot.Padding.Left - contentRoot.Padding.Right;
@@ -54,6 +54,13 @@ public static class LayoutMetrics
 
         double contentColumnWidth = Math.Min(availableContentWidth, _contentColumnMaximumWidth);
         contentColumn.WidthRequest = contentColumnWidth;
-        actionButtonStack.WidthRequest = Math.Min(contentColumnWidth, _actionButtonStackMaximumWidth);
+
+        // The button stack sits inside the card, so it has to fit the card's content box, not the card's
+        // outer width. Sizing it to the outer width overflows the card by its padding and stroke, which
+        // iOS hides by clipping to the border and Android shows as buttons running off the screen edge.
+        double cardContentWidth = contentColumnWidth
+            - contentColumn.Padding.HorizontalThickness
+            - (2 * contentColumn.StrokeThickness);
+        actionButtonStack.WidthRequest = Math.Min(cardContentWidth, _actionButtonStackMaximumWidth);
     }
 }

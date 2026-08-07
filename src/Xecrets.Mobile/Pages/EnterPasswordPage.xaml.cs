@@ -56,7 +56,9 @@ public partial class EnterPasswordPage
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
-        ((EnterPasswordPageModel)BindingContext).ErrorText = string.Empty;
+        EnterPasswordPageModel model = (EnterPasswordPageModel)BindingContext;
+        model.ErrorText = string.Empty;
+        model.CancelWorkFolderRequest();
     }
 
     protected override void OnSizeAllocated(double width, double height)

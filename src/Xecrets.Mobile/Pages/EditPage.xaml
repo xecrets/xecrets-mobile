@@ -42,16 +42,15 @@
             <Border Style="{StaticResource CardStyle}">
                 <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
                     <Label Text="{Binding FileNameText}"
-                           Style="{StaticResource Title2}" />
+                           Style="{StaticResource FileNameStyle}" />
                     <Editor Text="{Binding Text, Mode=TwoWay}"
                             AutoSize="TextChanges"
                             MinimumHeightRequest="320" />
                 </VerticalStackLayout>
             </Border>
-            <Label Text="{Binding StatusText}"
-                   TextColor="Red"
-                   IsVisible="{Binding StatusText, Converter={StaticResource StringNotEmptyConverter}}"
-                   Style="{StaticResource Caption1}" />
+            <Editor Text="{Binding StatusText}"
+                    IsVisible="{Binding StatusText, Converter={StaticResource StringNotEmptyConverter}}"
+                    Style="{StaticResource StatusTextStyle}" />
             <HorizontalStackLayout Spacing="{StaticResource LayoutSpacing}"
                                    HorizontalOptions="Center">
                 <Button Text="{x:Static modelUtilities:MobileTexts.ButtonSave}"

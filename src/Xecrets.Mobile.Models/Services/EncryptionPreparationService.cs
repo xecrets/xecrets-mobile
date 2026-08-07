@@ -33,6 +33,7 @@ using Xecrets.Core.Models;
 
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
+using Xecrets.Mobile.Models.Utilities;
 using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Models.Services;
@@ -43,8 +44,6 @@ public sealed class EncryptionPreparationService(
     ICoreServices coreServices)
     : IEncryptionPreparationService
 {
-    private const string _encryptedContentType = "application/vnd.xecrets-encrypted";
-
     public async Task<EncryptionPreparationResult> EncryptForCurrentProfileAsync(PickedFile file)
     {
         await using Stream cleartext = await file.OpenReadAsync();
@@ -81,7 +80,7 @@ public sealed class EncryptionPreparationService(
             temporaryPath,
             fileName,
             originalSourcePath,
-            _encryptedContentType,
+            EncryptedFileType.ContentType,
             fileSize);
     }
 

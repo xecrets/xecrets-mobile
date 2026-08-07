@@ -63,6 +63,7 @@ and action SHAs in `.github/workflows/ci.yml`. Do not introduce dependencies on
 - Name base classes with `Base` as a suffix, not a prefix, e.g. `PageModelBase`, not `BasePageModel`.
 - Do not qualify member access with `this.` (e.g. call `Foo()`, not `this.Foo()`), except when calling an extension method, where `this.` is appropriate (e.g. `this.ApplyStandardHeader()`) — extension methods cannot be called unqualified.
 - Keep nullable annotations enabled and initialize nullable-friendly defaults where appropriate, such as `string.Empty` and empty collection literals.
+- Prefer collection expressions such as `[.. source]` over `source.ToArray()` when materializing a collection as an array.
 - Prefer small, focused classes and methods. Keep code-behind thin and move behavior into page models, services, utilities, or repositories.
 - Follow the existing `async` naming pattern: methods that return `Task` or `Task<T>` should use an `Async` suffix.
 - Use `await using` for disposable async resources, especially database connections and readers.
@@ -85,6 +86,8 @@ and action SHAs in `.github/workflows/ci.yml`. Do not introduce dependencies on
 
 ## Platform Priorities
 
+- Do not use conditional compilation (`#if`, `#elif`, `#else`, or related directives) to implement platform-specific behavior unless it is absolutely necessary and no shared or runtime approach can solve the problem. Before adding or changing any conditional-compilation code, explain why it is unavoidable and ask the user for explicit confirmation. Do not proceed without that confirmation.
+- Do not add platform-specific behavior unless it is actually necessary. Prefer calling shared MAUI, CommunityToolkit, or other cross-platform APIs unconditionally when the abstraction already handles platform differences. It is acceptable for a call to have no effect on a platform where the concept does not apply; for example, call `Focus()` on every platform and let MAUI handle platforms where focus has no meaningful effect.
 - Treat Android and iOS as the primary product targets.
 - Treat Mac Catalyst and Windows as development and debugging targets unless a change explicitly says otherwise.
 - Keep main-page commands and button behavior aligned across platforms as closely as practical.

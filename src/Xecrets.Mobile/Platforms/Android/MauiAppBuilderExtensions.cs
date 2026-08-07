@@ -42,6 +42,7 @@ internal static class MauiAppBuilderExtensions
     internal static MauiAppBuilder ConfigurePlatform(this MauiAppBuilder builder)
     {
         builder.Services.AddSingleton<IFileService, AndroidFileService>();
+        builder.Services.AddSingleton<IWorkFolderService, AndroidWorkFolderService>();
         builder.Services.AddSingleton<IUserInterfaceService, DefaultUserInterfaceService>();
         builder.Services.AddSingleton<IPlatformServices, AndroidServices>();
         return builder;

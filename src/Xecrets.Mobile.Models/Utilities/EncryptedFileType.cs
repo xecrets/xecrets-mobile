@@ -28,35 +28,25 @@
 
 #endregion Copyright and GPL License
 
-using Xecrets.Mobile.Models.Models;
+namespace Xecrets.Mobile.Models.Utilities;
 
-namespace Xecrets.Mobile.Models.Abstractions;
-
-public interface IUserInterfaceService
+/// <summary>
+/// How the encrypted file format identifies itself to each platform. The file name extension is
+/// <see cref="Xecrets.Texts.Extensions.EncryptedExtension"/>, which belongs to the shared library rather
+/// than here. These are constants rather than properties because the Android intent filters name them in
+/// attributes, which take compile time constants only.
+/// </summary>
+public static class EncryptedFileType
 {
-    bool IsShellAvailable { get; }
-
-    bool CanProcessIncomingFiles { get; }
-
-    Task InvokeOnMainThreadAsync(Func<Task> action);
-
-    Task DisplayMessageAsync(string message);
-
-    Task<bool> DisplayConfirmationAsync(string message);
+    /// <summary>
+    /// The MIME content type, as declared in the Android intent filters and in the Apple manifest, where it
+    /// is a tag of <see cref="UniformTypeIdentifier"/>.
+    /// </summary>
+    public const string ContentType = "application/vnd.xecrets-encrypted";
 
     /// <summary>
-    /// Asks the user for a line of text, starting from <paramref name="initialValue"/>. Returns null if
-    /// the user cancels.
+    /// The Apple uniform type identifier, declared as an exported type in the Apple manifest since the
+    /// format is ours. It owns both the file name extension and <see cref="ContentType"/>.
     /// </summary>
-    Task<string?> DisplayPromptAsync(string message, string initialValue);
-
-    Task DisplayTransientMessageAsync(string message);
-
-    Task NavigateToAsync(AppDestination destination);
-
-    Task NavigateToAsync(AppDestination destination, object parameter);
-
-    Task GoBackAsync();
-
-    Task OpenBrowserAsync(string url);
+    public const string UniformTypeIdentifier = "com.axantum.xecrets-file";
 }

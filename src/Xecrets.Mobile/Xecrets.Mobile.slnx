@@ -17,6 +17,7 @@
     <File Path="..\..\README.md" />
     <File Path="..\..\SECURITY.md" />
     <File Path="..\..\THIRD-PARTY-NOTICES.txt" />
+    <File Path="Xecrets.Mobile.csproj.user" />
   </Folder>
   <Folder Name="/Xecrets.Net/">
     <Project Path="../../../xecrets-net/AxCrypt.Abstractions/Xecrets.Net.Abstractions.csproj" />

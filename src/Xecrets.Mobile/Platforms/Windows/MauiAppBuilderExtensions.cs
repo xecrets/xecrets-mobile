@@ -44,6 +44,7 @@ internal static class MauiAppBuilderExtensions
     internal static MauiAppBuilder ConfigurePlatform(this MauiAppBuilder builder)
     {
         builder.Services.AddSingleton<IFileService, WindowsFileService>();
+        builder.Services.AddSingleton<IWorkFolderService, WindowsWorkFolderService>();
         builder.Services.AddSingleton<IUserInterfaceService, WindowsUserInterfaceService>();
         builder.Services.AddSingleton<IPlatformServices, WindowsServices>();
         return builder;

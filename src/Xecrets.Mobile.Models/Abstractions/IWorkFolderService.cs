@@ -32,31 +32,29 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Abstractions;
 
-public interface IUserInterfaceService
+public interface IWorkFolderService
 {
-    bool IsShellAvailable { get; }
-
-    bool CanProcessIncomingFiles { get; }
-
-    Task InvokeOnMainThreadAsync(Func<Task> action);
-
-    Task DisplayMessageAsync(string message);
-
-    Task<bool> DisplayConfirmationAsync(string message);
+    Task<IReadOnlyList<WorkFolder>> GetFoldersAsync();
 
     /// <summary>
-    /// Asks the user for a line of text, starting from <paramref name="initialValue"/>. Returns null if
-    /// the user cancels.
+    /// Gets the folder path segments. The result is non-empty and its final segment is the folder's
+    /// user-facing display name.
     /// </summary>
-    Task<string?> DisplayPromptAsync(string message, string initialValue);
+    IReadOnlyList<string> GetPathSegments(WorkFolder folder);
 
-    Task DisplayTransientMessageAsync(string message);
+    Task<WorkFolder?> AddFolderAsync(string? initialLocationId = null);
 
-    Task NavigateToAsync(AppDestination destination);
+    Task<WorkFolder> AddDiscoveredFolderAsync(WorkFolderFile file);
 
-    Task NavigateToAsync(AppDestination destination, object parameter);
+    Task RemoveFolderAsync(WorkFolder folder);
 
-    Task GoBackAsync();
+    /// <summary>
+    /// Stores a new user-chosen display name for the folder. Only the name is affected, the folder itself
+    /// and the access grant for it are untouched.
+    /// </summary>
+    Task RenameFolderAsync(WorkFolder folder, string displayName);
 
-    Task OpenBrowserAsync(string url);
+    Task SaveFolderOrderAsync(IReadOnlyList<WorkFolder> folders);
+
+    Task<WorkFolderFile?> PickFileAsync(WorkFolder folder, FilePickerKind pickerKind);
 }

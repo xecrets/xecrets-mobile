@@ -39,6 +39,9 @@ using Android.Database;
 using Android.OS;
 using Android.Provider;
 
+using AndroidX.Activity.Result;
+using AndroidX.Activity.Result.Contract;
+
 using AndroidUri = global::Android.Net.Uri;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -54,20 +57,35 @@ namespace Xecrets.Mobile.Platforms.Android;
 [Activity(Theme = "@style/Maui.SplashTheme", MainLauncher = true, Exported = true, LaunchMode = LaunchMode.SingleTop, ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation | ConfigChanges.UiMode | ConfigChanges.ScreenLayout | ConfigChanges.SmallestScreenSize | ConfigChanges.Density)]
 [IntentFilter([Intent.ActionSend], Categories = [Intent.CategoryDefault], DataMimeType = "text/plain")]
 [IntentFilter([Intent.ActionSend], Categories = [Intent.CategoryDefault], DataMimeType = "application/octet-stream")]
-[IntentFilter([Intent.ActionSend], Categories = [Intent.CategoryDefault], DataMimeType = "application/vnd.xecrets-encrypted")]
+[IntentFilter([Intent.ActionSend], Categories = [Intent.CategoryDefault], DataMimeType = EncryptedFileType.ContentType)]
 [IntentFilter([Intent.ActionSend], Categories = [Intent.CategoryDefault], DataMimeType = "*/*")]
 [IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = "text/plain", DataScheme = "content")]
 [IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = "application/octet-stream", DataScheme = "content")]
-[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = "application/vnd.xecrets-encrypted", DataScheme = "content")]
+[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = EncryptedFileType.ContentType, DataScheme = "content")]
 [IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = "*/*", DataScheme = "content")]
 [IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = "text/plain", DataScheme = "file")]
 [IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = "application/octet-stream", DataScheme = "file")]
-[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = "application/vnd.xecrets-encrypted", DataScheme = "file")]
+[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = EncryptedFileType.ContentType, DataScheme = "file")]
 [IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = "*/*", DataScheme = "file")]
-public class MainActivity : MauiAppCompatActivity
+public class MainActivity : MauiAppCompatActivity, IActivityResultCallback
 {
+    private ActivityResultLauncher? _documentPickerLauncher;
+    private TaskCompletionSource<Intent?>? _documentPickerCompletion;
+
+    public Task<Intent?> StartDocumentPickerAsync(Intent intent)
+    {
+        _documentPickerCompletion?.TrySetResult(null);
+        _documentPickerCompletion = new TaskCompletionSource<Intent?>();
+        _documentPickerLauncher!.Launch(intent);
+        return _documentPickerCompletion.Task;
+    }
+
     protected override void OnCreate(Bundle? savedInstanceState)
     {
+        _documentPickerLauncher = RegisterForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            this);
+
         // https://wagenheimer.com/blog/dont-let-android-15-break-your-maui-app-the-3-step-edge-to-edge-fix
         base.OnCreate(savedInstanceState);
         _ = HandleIncomingIntentAsync(Intent!);
@@ -78,6 +96,15 @@ public class MainActivity : MauiAppCompatActivity
         base.OnNewIntent(intent);
         Intent = intent;
         _ = HandleIncomingIntentAsync(intent!);
+    }
+
+    public void OnActivityResult(Java.Lang.Object? result)
+    {
+        // The activity can be recreated while the picker is up, and then there is nothing left to complete.
+        TaskCompletionSource<Intent?>? completion = _documentPickerCompletion;
+        _documentPickerCompletion = null;
+        ActivityResult activityResult = (ActivityResult)result!;
+        completion?.TrySetResult(activityResult.ResultCode == (int)Result.Ok ? activityResult.Data : null);
     }
 
     private async Task HandleIncomingIntentAsync(Intent intent)

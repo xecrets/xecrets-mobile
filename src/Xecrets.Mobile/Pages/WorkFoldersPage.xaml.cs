@@ -28,35 +28,41 @@
 
 #endregion Copyright and GPL License
 
+using System.Collections.Generic;
+
+using Microsoft.Maui.Controls;
+
+using Xecrets.Mobile.Abstractions;
 using Xecrets.Mobile.Models.Models;
+using Xecrets.Mobile.Models.PageModels;
+using Xecrets.Mobile.Utilities;
 
-namespace Xecrets.Mobile.Models.Abstractions;
+namespace Xecrets.Mobile.Pages;
 
-public interface IUserInterfaceService
+public partial class WorkFoldersPage : IQueryAttributable
 {
-    bool IsShellAvailable { get; }
+    public WorkFoldersPage(WorkFoldersPageModel model, IPageHeaderService pageHeaderService)
+    {
+        InitializeComponent();
+        BindingContext = model;
+        pageHeaderService.ApplyStandardHeader(this);
+    }
 
-    bool CanProcessIncomingFiles { get; }
+    public void ApplyQueryAttributes(IDictionary<string, object> query)
+    {
+        ((WorkFoldersPageModel)BindingContext).Initialize(
+            (WorkFolderOperation)query[nameof(NavigationParameter.Payload)]);
+    }
 
-    Task InvokeOnMainThreadAsync(Func<Task> action);
+    protected override void OnSizeAllocated(double width, double height)
+    {
+        base.OnSizeAllocated(width, height);
 
-    Task DisplayMessageAsync(string message);
+        UpdateCenteredContentLayout(width);
+    }
 
-    Task<bool> DisplayConfirmationAsync(string message);
-
-    /// <summary>
-    /// Asks the user for a line of text, starting from <paramref name="initialValue"/>. Returns null if
-    /// the user cancels.
-    /// </summary>
-    Task<string?> DisplayPromptAsync(string message, string initialValue);
-
-    Task DisplayTransientMessageAsync(string message);
-
-    Task NavigateToAsync(AppDestination destination);
-
-    Task NavigateToAsync(AppDestination destination, object parameter);
-
-    Task GoBackAsync();
-
-    Task OpenBrowserAsync(string url);
+    private void UpdateCenteredContentLayout(double pageWidth)
+    {
+        LayoutMetrics.UpdateCenteredContentLayout(pageWidth, ContentRoot, ContentColumn, ActionButtonStack);
+    }
 }
