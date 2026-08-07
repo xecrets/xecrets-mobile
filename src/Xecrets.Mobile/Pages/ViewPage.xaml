@@ -49,7 +49,7 @@
                            Style="{StaticResource Body2}" />
                 </VerticalStackLayout>
             </Border>
-            <Button Text="{x:Static modelUtilities:MobileTexts.ButtonClose}"
+            <Button Text="{x:Static modelUtilities:MobileTexts.LabelClose}"
                     Command="{Binding CloseCommand}"
                     HorizontalOptions="Center" />
         </VerticalStackLayout>

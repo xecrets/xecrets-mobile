@@ -47,7 +47,7 @@
                         HorizontalOptions="Center"
                         Style="{StaticResource CardStyle}">
                     <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
-                        <Label Text="{x:Static modelUtilities:MobileTexts.DialogTextEncryptCopyFor}"
+                        <Label Text="{x:Static modelUtilities:MobileTexts.DialogTitleEncryptCopyFor}"
                                HorizontalOptions="Center"
                                Style="{StaticResource Title1}" />
                         <Label Text="{x:Static modelUtilities:MobileTexts.EncryptToShareDescription}"

@@ -59,7 +59,7 @@
                 <Button Text="{x:Static modelUtilities:MobileTexts.ButtonSave}"
                         IsVisible="{Binding IsSaveToLocationVisible}"
                         Command="{Binding SaveToLocationCommand}" />
-                <Button Text="{x:Static modelUtilities:MobileTexts.ButtonClose}"
+                <Button Text="{x:Static modelUtilities:MobileTexts.LabelClose}"
                         Command="{Binding CloseCommand}" />
             </HorizontalStackLayout>
         </VerticalStackLayout>

@@ -39,15 +39,11 @@ public static class MobileTexts
     public static string AboutPageThirdPartyNotice => "Built with .NET MAUI and CommunityToolkit.Maui. Other components are provided under their respective licenses, reproduced in full under Third-Party Licenses in the menu. All third-party product names and trademarks are the property of their respective owners. Their use does not imply affiliation, sponsorship or endorsement.";
 
     // Not AppTexts.ButtonClose, that is "Close all" and this closes the current file only.
-    public static string ButtonClose => "Close";
+    public static string LabelClose => "Close";
 
-    public static string ButtonContinue => "Continue";
-
-    public static string ButtonDecrypt => "Decrypt…";
+    public static string LabelContinue => "Continue";
 
     public static string ButtonDecryptAs => "Decrypt As…";
-
-    public static string ButtonEncrypt => "Encrypt…";
 
     public static string ButtonEncryptAs => "Encrypt As…";
 
@@ -140,8 +136,14 @@ public static class MobileTexts
     // "Create"
     public static string ButtonCreate => AppTexts.LabelCreate;
 
+    // "Decrypt…", the ellipsis is kept since a file selection follows.
+    public static string ButtonDecrypt => AppTexts.ButtonDecryptMore;
+
     // "Edit"
     public static string ButtonEdit => AppTexts.ButtonEdit;
+
+    // "Encrypt…", the ellipsis is kept since a file selection follows.
+    public static string ButtonEncrypt => AppTexts.ButtonEncryptMore;
 
     // "Help", also used as the overflow menu item text, see MenuHelp.
     public static string ButtonHelp => AppTexts.ButtonHelp;
@@ -155,14 +157,14 @@ public static class MobileTexts
     // "Add a decryption password"
     public static string DialogTextAddPassword => AppTexts.DialogTextAddPassword;
 
-    // "Encrypt copy to share"
-    public static string DialogTextEncryptCopyFor => AppTexts.DialogTextEncryptCopyFor;
-
     // "Decrypt and open failed"
     public static string DialogTextOpenEncryptedFileFailed => AppTexts.DialogTextOpenFailed;
 
     // "Canceled"
     public static string DialogTextOperationNotCompleted => AppTexts.FilesCanceledMessage;
+
+    // "Encrypt copy to share"
+    public static string DialogTitleEncryptCopyFor => AppTexts.DialogTitleEncryptCopyFor;
 
     // "Setup a local profile"
     public static string HeadingCreateUserFirstTimeSetup => AppTexts.HeadingCreateUserFirstTimeSetup;
