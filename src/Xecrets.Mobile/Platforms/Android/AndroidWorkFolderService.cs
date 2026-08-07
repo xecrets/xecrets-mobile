@@ -161,9 +161,14 @@ public sealed class AndroidWorkFolderService(WorkFolderStorage storage) : IWorkF
             .Where(item => IsDescendant(item, fileUri))
             .OrderByDescending(GetDocumentDepth)
             .FirstOrDefault();
-        string parentDocumentId = ResolveParentDocumentId(fileUri);
+        AndroidUri accessFileUri = accessFolder is null
+            ? fileUri
+            : DocumentsContract.BuildDocumentUriUsingTree(
+                AndroidUri.Parse(accessFolder.GrantId)!,
+                DocumentsContract.GetDocumentId(fileUri)!)!;
+        string parentDocumentId = ResolveParentDocumentId(accessFileUri);
         AndroidUri locationUri = accessFolder is null
-            ? DocumentsContract.BuildDocumentUri(fileUri.Authority!, parentDocumentId)!
+            ? DocumentsContract.BuildDocumentUri(accessFileUri.Authority!, parentDocumentId)!
             : DocumentsContract.BuildDocumentUriUsingTree(
                 AndroidUri.Parse(accessFolder.GrantId)!,
                 parentDocumentId)!;
@@ -171,19 +176,19 @@ public sealed class AndroidWorkFolderService(WorkFolderStorage storage) : IWorkF
         bool isInKnownFolder = accessFolder is not null;
 
         return new WorkFolderFile(
-            GetDisplayName(fileUri),
+            GetDisplayName(accessFileUri),
             locationId,
             accessFolder is not null
                 ? GetDisplayName(locationUri)
-                : fileUri.Authority == _externalStorageAuthority
+                : accessFileUri.Authority == _externalStorageAuthority
                     ? GetExternalStorageDocumentDisplayName(parentDocumentId)
                     : string.Empty,
             accessFolder?.GrantId ?? string.Empty,
             isInKnownFolder,
-            () => Task.FromResult<Stream>(ContentResolver.OpenInputStream(fileUri)!),
+            () => Task.FromResult<Stream>(ContentResolver.OpenInputStream(accessFileUri)!),
             name => Task.FromResult(FindChild(locationUri, name) is not null),
             (name, overwrite, writer) => WriteDocumentAsync(locationUri, name, overwrite, writer),
-            () => DeleteDocumentAsync(fileUri));
+            () => DeleteDocumentAsync(accessFileUri));
     }
 
     private async Task ProbeAsync(AndroidUri folderUri)
@@ -324,7 +329,7 @@ public sealed class AndroidWorkFolderService(WorkFolderStorage storage) : IWorkF
 
     private bool IsDescendant(WorkFolder folder, AndroidUri fileUri)
     {
-        AndroidUri folderUri = AndroidUri.Parse(folder.Id)!;
+        AndroidUri folderUri = GetFolderDocumentUri(folder);
         if (folderUri.Authority != fileUri.Authority)
         {
             return false;
@@ -372,7 +377,7 @@ public sealed class AndroidWorkFolderService(WorkFolderStorage storage) : IWorkF
 
     private int GetDocumentDepth(WorkFolder folder)
     {
-        AndroidUri folderUri = AndroidUri.Parse(folder.Id)!;
+        AndroidUri folderUri = GetFolderDocumentUri(folder);
         IList<string>? documentIds = TryFindDocumentPath(folderUri);
         if (documentIds is not null)
         {
@@ -385,6 +390,11 @@ public sealed class AndroidWorkFolderService(WorkFolderStorage storage) : IWorkF
                 .Length
             : 0;
     }
+
+    private static AndroidUri GetFolderDocumentUri(WorkFolder folder) =>
+        DocumentsContract.BuildDocumentUriUsingTree(
+            AndroidUri.Parse(folder.GrantId)!,
+            DocumentsContract.GetDocumentId(AndroidUri.Parse(folder.Id)!)!)!;
 
     private IList<string>? TryFindDocumentPath(AndroidUri uri)
     {
