@@ -47,7 +47,7 @@
                     Command="{Binding ReportCommand}" />
             <Button Text="{x:Static modelUtilities:MobileTexts.ButtonHelp}"
                     Command="{Binding HelpCommand}" />
-            <Button Text="{x:Static modelUtilities:MobileTexts.ButtonContinue}"
+            <Button Text="{x:Static modelUtilities:MobileTexts.LabelContinue}"
                     Command="{Binding ContinueCommand}" />
         </HorizontalStackLayout>
         <VerticalStackLayout Grid.Row="1"
