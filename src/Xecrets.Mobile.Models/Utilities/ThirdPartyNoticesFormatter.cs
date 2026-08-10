@@ -28,8 +28,6 @@
 
 #endregion Copyright and GPL License
 
-using System.Text;
-
 namespace Xecrets.Mobile.Models.Utilities;
 
 /// <summary>

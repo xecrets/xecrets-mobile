@@ -35,12 +35,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using Android.App;
 using Android.Content;
 using Android.Database;
 using Android.Provider;
 
 using Microsoft.Maui.ApplicationModel;
+
+using Xecrets.Common.Models;
 
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
@@ -55,7 +56,7 @@ public sealed class AndroidWorkFolderService(WorkFolderStorage storage) : IWorkF
 {
     private const string _externalStorageAuthority = "com.android.externalstorage.documents";
 
-    private ContentResolver ContentResolver => Platform.CurrentActivity!.ContentResolver!;
+    private static ContentResolver ContentResolver => Platform.CurrentActivity!.ContentResolver!;
 
     public async Task<IReadOnlyList<WorkFolder>> GetFoldersAsync() => await storage.LoadFoldersAsync();
 
@@ -97,7 +98,12 @@ public sealed class AndroidWorkFolderService(WorkFolderStorage storage) : IWorkF
         try
         {
             AndroidUri documentUri = GetTreeDocumentUri(uri);
-            await ProbeAsync(documentUri);
+            string status = await ProbeAsync(documentUri);
+            if (!string.IsNullOrEmpty(status))
+            {
+                throw new IOException(status);
+            }
+
             WorkFolder folder = new(documentUri.ToString()!, GetDisplayName(documentUri), uri.ToString()!);
             await storage.SaveFolderAsync(folder);
             folderSaved = true;
@@ -124,17 +130,13 @@ public sealed class AndroidWorkFolderService(WorkFolderStorage storage) : IWorkF
         ContentResolver.ReleasePersistableUriPermission(
             AndroidUri.Parse(folder.GrantId)!,
             ActivityFlags.GrantReadUriPermission | ActivityFlags.GrantWriteUriPermission);
-        storage.SaveFolders((await storage.LoadFoldersAsync()).Where(item => item.Id != folder.Id));
+        await storage.SaveFoldersAsync((await storage.LoadFoldersAsync()).Where(item => item.Id != folder.Id));
     }
 
     public Task RenameFolderAsync(WorkFolder folder, string displayName) =>
         storage.RenameFolderAsync(folder, displayName);
 
-    public Task SaveFolderOrderAsync(IReadOnlyList<WorkFolder> folders)
-    {
-        storage.SaveFolders(folders);
-        return Task.CompletedTask;
-    }
+    public Task SaveFoldersAsync(IReadOnlyList<WorkFolder> folders) => storage.SaveFoldersAsync(folders);
 
     public async Task<WorkFolderFile?> PickFileAsync(WorkFolder folder, FilePickerKind pickerKind)
     {
@@ -191,9 +193,11 @@ public sealed class AndroidWorkFolderService(WorkFolderStorage storage) : IWorkF
             () => DeleteDocumentAsync(accessFileUri));
     }
 
-    private async Task ProbeAsync(AndroidUri folderUri)
+    private static async Task<string> ProbeAsync(AndroidUri folderUri)
     {
+        string status = string.Empty;
         string name = $".xecrets-probe-{Guid.NewGuid():N}";
+
         AndroidUri probeUri = DocumentsContract.CreateDocument(
             ContentResolver,
             folderUri,
@@ -212,26 +216,27 @@ public sealed class AndroidWorkFolderService(WorkFolderStorage storage) : IWorkF
             await input.ReadExactlyAsync(actual);
             if (!actual.AsSpan().SequenceEqual(expected))
             {
-                throw new IOException("The work folder read probe returned different data.");
+                return "The work folder read probe returned different data.";
             }
 
             string renamedName = $".xecrets-probe-{Guid.NewGuid():N}";
             probeUri = RenameDocument(probeUri, renamedName);
             if (GetDisplayName(probeUri) != renamedName)
             {
-                throw new IOException("The work folder rename probe returned a different name.");
+                return "The work folder rename probe returned a different name.";
             }
         }
         finally
         {
             if (!DocumentsContract.DeleteDocument(ContentResolver, probeUri))
             {
-                throw new IOException("The work folder deletion probe failed.");
+                status = "The work folder deletion probe failed.";
             }
         }
+        return status;
     }
 
-    private async Task WriteDocumentAsync(
+    private static async Task WriteDocumentAsync(
         AndroidUri folderUri,
         string name,
         bool overwrite,
@@ -251,12 +256,9 @@ public sealed class AndroidWorkFolderService(WorkFolderStorage storage) : IWorkF
                 await writer(output);
             }
 
-            AndroidUri? backupUri = null;
-            if (overwrite)
-            {
-                backupUri = RenameDocument(FindChild(folderUri, name)!, $".xecrets-{Guid.NewGuid():N}.bak");
-            }
-
+            AndroidUri? backupUri = overwrite 
+                ? RenameDocument(FindChild(folderUri, name)!, $".xecrets-{Guid.NewGuid():N}.bak")
+                : null;
             try
             {
                 AndroidUri renamedUri = RenameDocument(temporaryUri, name);
@@ -293,7 +295,7 @@ public sealed class AndroidWorkFolderService(WorkFolderStorage storage) : IWorkF
         }
     }
 
-    private Task DeleteDocumentAsync(AndroidUri uri)
+    private static Task DeleteDocumentAsync(AndroidUri uri)
     {
         if (!DocumentsContract.DeleteDocument(ContentResolver, uri))
         {
@@ -302,11 +304,11 @@ public sealed class AndroidWorkFolderService(WorkFolderStorage storage) : IWorkF
         return Task.CompletedTask;
     }
 
-    private AndroidUri RenameDocument(AndroidUri uri, string name) =>
+    private static AndroidUri RenameDocument(AndroidUri uri, string name) =>
         DocumentsContract.RenameDocument(ContentResolver, uri, name) ??
         throw new IOException("The document could not be renamed.");
 
-    private AndroidUri? FindChild(AndroidUri folderUri, string name)
+    private static AndroidUri? FindChild(AndroidUri folderUri, string name)
     {
         string documentId = DocumentsContract.GetDocumentId(folderUri)!;
         AndroidUri childrenUri = DocumentsContract.BuildChildDocumentsUriUsingTree(folderUri, documentId)!;
@@ -327,7 +329,7 @@ public sealed class AndroidWorkFolderService(WorkFolderStorage storage) : IWorkF
         return null;
     }
 
-    private bool IsDescendant(WorkFolder folder, AndroidUri fileUri)
+    private static bool IsDescendant(WorkFolder folder, AndroidUri fileUri)
     {
         AndroidUri folderUri = GetFolderDocumentUri(folder);
         if (folderUri.Authority != fileUri.Authority)
@@ -359,7 +361,7 @@ public sealed class AndroidWorkFolderService(WorkFolderStorage storage) : IWorkF
     private static AndroidUri GetTreeDocumentUri(AndroidUri treeUri) =>
         DocumentsContract.BuildDocumentUriUsingTree(treeUri, DocumentsContract.GetTreeDocumentId(treeUri)!)!;
 
-    private string ResolveParentDocumentId(AndroidUri fileUri)
+    private static string ResolveParentDocumentId(AndroidUri fileUri)
     {
         IList<string>? documentIds = TryFindDocumentPath(fileUri);
         if (documentIds is { Count: >= 2 })
@@ -379,12 +381,9 @@ public sealed class AndroidWorkFolderService(WorkFolderStorage storage) : IWorkF
     {
         AndroidUri folderUri = GetFolderDocumentUri(folder);
         IList<string>? documentIds = TryFindDocumentPath(folderUri);
-        if (documentIds is not null)
-        {
-            return documentIds.Count;
-        }
-
-        return folderUri.Authority == _externalStorageAuthority
+        return documentIds is not null
+        ? documentIds.Count
+        : folderUri.Authority == _externalStorageAuthority
             ? DocumentsContract.GetDocumentId(folderUri)!
                 .Split([':', '/'], StringSplitOptions.RemoveEmptyEntries)
                 .Length
@@ -396,7 +395,7 @@ public sealed class AndroidWorkFolderService(WorkFolderStorage storage) : IWorkF
             AndroidUri.Parse(folder.GrantId)!,
             DocumentsContract.GetDocumentId(AndroidUri.Parse(folder.Id)!)!)!;
 
-    private IList<string>? TryFindDocumentPath(AndroidUri uri)
+    private static IList<string>? TryFindDocumentPath(AndroidUri uri)
     {
         try
         {
@@ -427,7 +426,7 @@ public sealed class AndroidWorkFolderService(WorkFolderStorage storage) : IWorkF
         return separatorIndex >= 0 ? documentId[(separatorIndex + 1)..] : documentId;
     }
 
-    private string GetDisplayName(AndroidUri uri)
+    private static string GetDisplayName(AndroidUri uri)
     {
         using ICursor cursor = ContentResolver.Query(
             uri,

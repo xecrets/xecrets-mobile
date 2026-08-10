@@ -30,6 +30,7 @@
 
 using Xecrets.Core.Abstractions;
 using Xecrets.Core.Models;
+using Xecrets.Common.Models;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 
@@ -107,7 +108,7 @@ public sealed class PreviewService(
             return true;
         }
 
-        foreach (ExtraPasswordSetting extraPassword in profileService.GetExtraPasswords())
+        foreach (PasswordUsage extraPassword in profileService.GetExtraPasswords())
         {
             isPrepared = await TryPrepareAsync(
                 encryptedPath,

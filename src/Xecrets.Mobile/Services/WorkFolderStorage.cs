@@ -31,27 +31,21 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 
-using Microsoft.Maui.Storage;
+using Xecrets.Common.Abstractions;
+using Xecrets.Common.Models;
 
-using Xecrets.Mobile.Models.Abstractions;
-using Xecrets.Mobile.Models.Data;
-using Xecrets.Mobile.Models.Models;
-using Xecrets.Mobile.Models.Utilities;
+using Xecrets.Mobile.Models.Services;
 
 namespace Xecrets.Mobile.Services;
 
 /// <summary>
-/// Storage and naming shared by the platform work folder services. The folder list is kept as JSON in the
-/// preferences. Windows keeps its folder list in the future access list instead, and only uses the path
-/// segment splitting here, which is why that is static and needs no instance.
+/// Storage and naming shared by the platform work folder services. The folder list is kept as part of the
+/// signed-in profile's <see cref="LocalProfileData"/>, alongside its other settings.
 /// </summary>
-public sealed class WorkFolderStorage(IUserInterfaceService userInterfaceService)
+public sealed class WorkFolderStorage(ProfileSession profileSession)
 {
-    private const string _foldersPreferenceKey = "work-folders";
-
     /// <summary>
     /// Splits a folder path or document id into path segments, appending the display name unless the split
     /// already ends with it. The result is non-empty and its final segment is the display name.
@@ -69,53 +63,38 @@ public sealed class WorkFolderStorage(IUserInterfaceService userInterfaceService
             : [.. segments, folder.DisplayName];
     }
 
-    public async Task<List<WorkFolder>> LoadFoldersAsync()
-    {
-        string json = Preferences.Default.Get(_foldersPreferenceKey, string.Empty);
-        if (json.Length == 0)
-        {
-            return [];
-        }
-
-        try
-        {
-            return JsonSerializer.Deserialize(json, JsonContext.Default.ListWorkFolder) ?? [];
-        }
-        catch (JsonException)
-        {
-            // An unreadable folder list (a list written by an older version, or a write that was
-            // interrupted mid-way) must not leave the page permanently unusable. Clear it, say so, and
-            // carry on with no folders. Only the list is lost: the folders themselves are untouched and
-            // can be added again, which is also what re-establishes the access grants.
-            Preferences.Default.Remove(_foldersPreferenceKey);
-            await userInterfaceService.DisplayMessageAsync(MobileTexts.DialogTextWorkFolderListReset);
-            return [];
-        }
-    }
+    public async Task<List<WorkFolder>> LoadFoldersAsync() =>
+        (await RequireUserStore().LoadWorkFoldersAsync()).Value.Folders;
 
     public async Task SaveFolderAsync(WorkFolder folder)
     {
-        List<WorkFolder> folders = await LoadFoldersAsync();
-        if (folders.Any(item => item.Id == folder.Id))
+        await using IEditScope<WorkFolders> scope = (await RequireUserStore().LoadWorkFoldersAsync()).BeginEdit();
+        if (scope.Value.Folders.Any(item => item.Id == folder.Id))
         {
             return;
         }
 
-        folders.Add(folder);
-        SaveFolders(folders);
+        scope.Value.Folders.Add(folder);
     }
 
     /// <summary>
     /// Replaces the display name of the stored folder. A new record rather than a with-expression, so that
     /// the derived <see cref="WorkFolder.ListDisplayName"/> follows the new name instead of being copied.
     /// </summary>
-    public async Task RenameFolderAsync(WorkFolder folder, string displayName) =>
-        SaveFolders((await LoadFoldersAsync()).Select(item => item.Id == folder.Id
+    public async Task RenameFolderAsync(WorkFolder folder, string displayName)
+    {
+        await using IEditScope<WorkFolders> scope = (await RequireUserStore().LoadWorkFoldersAsync()).BeginEdit();
+        scope.Value.Folders = [.. scope.Value.Folders.Select(item => item.Id == folder.Id
             ? new WorkFolder(item.Id, displayName, item.GrantId)
-            : item));
+            : item)];
+    }
 
-    public void SaveFolders(IEnumerable<WorkFolder> folders) =>
-        Preferences.Default.Set(
-            _foldersPreferenceKey,
-            JsonSerializer.Serialize(folders.ToList(), JsonContext.Default.ListWorkFolder));
+    public async Task SaveFoldersAsync(IEnumerable<WorkFolder> folders)
+    {
+        await using IEditScope<WorkFolders> scope = (await RequireUserStore().LoadWorkFoldersAsync()).BeginEdit();
+        scope.Value.Folders = [.. folders];
+    }
+
+    private IUserDataStore RequireUserStore() =>
+        profileSession.UserStore ?? throw new InvalidOperationException("No authenticated profile is available.");
 }

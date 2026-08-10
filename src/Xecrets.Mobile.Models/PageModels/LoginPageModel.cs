@@ -31,6 +31,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
+using Xecrets.Common.Models;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Services;
@@ -65,7 +66,7 @@ public partial class LoginPageModel(
             return;
         }
 
-        StoredProfile? profile = await profileService.LoadProfileAsync();
+        SignInKey? profile = await profileService.LoadProfileAsync();
         if (profile is null)
         {
             await UserInterfaceService.NavigateToAsync(AppDestination.CreateProfile);

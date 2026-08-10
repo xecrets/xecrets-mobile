@@ -29,8 +29,8 @@
 #endregion Copyright and GPL License
 
 using Xecrets.Core.Models;
-
-using Xecrets.Mobile.Models.Models;
+using Xecrets.Common.Abstractions;
+using Xecrets.Common.Models;
 
 namespace Xecrets.Mobile.Models.Services;
 
@@ -42,22 +42,30 @@ public sealed class ProfileSession
 
     private string Password { get; set; } = string.Empty;
 
-    public AppSettings Settings { get; private set; } = new();
+    public IPersistentData<ExtraCredentials>? ExtraCredentials { get; private set; }
+
+    public IUserDataStore? UserStore { get; private set; }
 
     public string Email => ProfileKeyPair?.Email ?? string.Empty;
 
-    public void SignIn(KeyPair keyPair, string password, AppSettings settings)
+    public void SignIn(
+        KeyPair keyPair,
+        string password,
+        IPersistentData<ExtraCredentials> extraCredentials,
+        IUserDataStore userStore)
     {
         ProfileKeyPair = keyPair;
         Password = password;
-        Settings = settings;
+        ExtraCredentials = extraCredentials;
+        UserStore = userStore;
     }
 
     public void SignOut()
     {
         ProfileKeyPair = null;
         Password = string.Empty;
-        Settings = new AppSettings();
+        ExtraCredentials = null;
+        UserStore = null;
     }
 
     public Identity CreateIdentity()

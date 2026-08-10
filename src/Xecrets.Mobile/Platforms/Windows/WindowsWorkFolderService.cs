@@ -38,13 +38,13 @@ using System.Text;
 using System.Threading.Tasks;
 
 using Microsoft.Maui;
-using Microsoft.Maui.Storage;
 
 using Windows.Storage;
-using Windows.Storage.AccessCache;
 using Windows.Storage.Pickers;
 
 using WinRT.Interop;
+
+using Xecrets.Common.Models;
 
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
@@ -53,42 +53,21 @@ using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Platforms.Windows;
 
+// This app is built and shipped unpackaged on Windows (WindowsPackageType is None), so it has no package
+// identity. Windows.Storage.AccessCache.StorageApplicationPermissions (the "future access list" that the other
+// platform services persist their access grants through) requires that identity to resolve. An unpackaged Win32
+// process runs with the user's own token, though, so there is no grant to persist in the first place: a plain
+// path is all that is needed to regain access on a later run, which is what WorkFolderStorage keeps in preferences.
 [SupportedOSPlatform("windows10.0.19041")]
-public sealed class WindowsWorkFolderService : IWorkFolderService
+public sealed class WindowsWorkFolderService(WorkFolderStorage storage) : IWorkFolderService
 {
-    private const string _folderOrderPreferenceKey = "work-folder-order";
-    private const string _metadataPrefix = "XecretsWorkFolder|";
-    private readonly Dictionary<string, StorageFolder> _discoveredLocations = [];
-
     public IReadOnlyList<string> GetPathSegments(WorkFolder folder) => WorkFolderStorage.BuildPathSegments(
         folder.Id,
         folder,
         Path.DirectorySeparatorChar,
         Path.AltDirectorySeparatorChar);
 
-    public async Task<IReadOnlyList<WorkFolder>> GetFoldersAsync()
-    {
-        List<WorkFolder> folders = [];
-        foreach (AccessListEntry entry in StorageApplicationPermissions.FutureAccessList.Entries)
-        {
-            if (!entry.Metadata.StartsWith(_metadataPrefix, StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            StorageFolder folder = await StorageApplicationPermissions.FutureAccessList.GetFolderAsync(entry.Token);
-            folders.Add(new WorkFolder(folder.Path, entry.Metadata[_metadataPrefix.Length..], entry.Token));
-        }
-
-        Dictionary<string, int> order = Preferences.Default
-            .Get(_folderOrderPreferenceKey, string.Empty)
-            .Split('\n', StringSplitOptions.RemoveEmptyEntries)
-            .Select((token, index) => (Token: Uri.UnescapeDataString(token), Index: index))
-            .ToDictionary(item => item.Token, item => item.Index);
-        return folders
-            .OrderBy(folder => order.TryGetValue(folder.GrantId, out int index) ? index : int.MaxValue)
-            .ToList();
-    }
+    public async Task<IReadOnlyList<WorkFolder>> GetFoldersAsync() => await storage.LoadFoldersAsync();
 
     public async Task<WorkFolder?> AddFolderAsync(string? initialLocationId = null)
     {
@@ -109,51 +88,25 @@ public sealed class WindowsWorkFolderService : IWorkFolderService
         }
 
         await ProbeAsync(folder);
-        WorkFolder? existing = (await GetFoldersAsync()).FirstOrDefault(item => item.Id == folder.Path);
-        if (existing is not null)
-        {
-            return existing;
-        }
-
-        string token = StorageApplicationPermissions.FutureAccessList.Add(
-            folder,
-            _metadataPrefix + folder.DisplayName);
-        return new WorkFolder(folder.Path, folder.DisplayName, token);
+        WorkFolder newFolder = new(folder.Path, folder.DisplayName, folder.Path);
+        await storage.SaveFolderAsync(newFolder);
+        return (await GetFoldersAsync()).First(item => item.Id == folder.Path);
     }
 
-    public Task<WorkFolder> AddDiscoveredFolderAsync(WorkFolderFile file)
+    public async Task<WorkFolder> AddDiscoveredFolderAsync(WorkFolderFile file)
     {
-        StorageFolder folder = _discoveredLocations[file.LocationId];
-        string token = StorageApplicationPermissions.FutureAccessList.Add(
-            folder,
-            _metadataPrefix + folder.DisplayName);
-        return Task.FromResult(new WorkFolder(folder.Path, folder.DisplayName, token));
+        WorkFolder newFolder = new(file.LocationId, file.LocationDisplayName, file.LocationId);
+        await storage.SaveFolderAsync(newFolder);
+        return newFolder;
     }
 
-    public Task RemoveFolderAsync(WorkFolder folder)
-    {
-        StorageApplicationPermissions.FutureAccessList.Remove(folder.GrantId);
-        _discoveredLocations.Remove(folder.Id);
-        return Task.CompletedTask;
-    }
+    public async Task RemoveFolderAsync(WorkFolder folder) =>
+        await storage.SaveFoldersAsync((await storage.LoadFoldersAsync()).Where(item => item.Id != folder.Id));
 
-    public async Task RenameFolderAsync(WorkFolder folder, string displayName)
-    {
-        StorageFolder storageFolder = await StorageApplicationPermissions.FutureAccessList
-            .GetFolderAsync(folder.GrantId);
-        StorageApplicationPermissions.FutureAccessList.AddOrReplace(
-            folder.GrantId,
-            storageFolder,
-            _metadataPrefix + displayName);
-    }
+    public Task RenameFolderAsync(WorkFolder folder, string displayName) =>
+        storage.RenameFolderAsync(folder, displayName);
 
-    public Task SaveFolderOrderAsync(IReadOnlyList<WorkFolder> folders)
-    {
-        Preferences.Default.Set(
-            _folderOrderPreferenceKey,
-            string.Join('\n', folders.Select(folder => Uri.EscapeDataString(folder.GrantId))));
-        return Task.CompletedTask;
-    }
+    public Task SaveFoldersAsync(IReadOnlyList<WorkFolder> folders) => storage.SaveFoldersAsync(folders);
 
     public async Task<WorkFolderFile?> PickFileAsync(WorkFolder folder, FilePickerKind pickerKind)
     {
@@ -170,7 +123,6 @@ public sealed class WindowsWorkFolderService : IWorkFolderService
         }
 
         StorageFolder location = await file.GetParentAsync();
-        _discoveredLocations[location.Path] = location;
         WorkFolder? accessFolder = (await GetFoldersAsync())
             .Where(item => IsDescendant(item.Id, file.Path))
             .OrderByDescending(item => item.Id.Length)
@@ -233,7 +185,7 @@ public sealed class WindowsWorkFolderService : IWorkFolderService
 
             if (overwrite)
             {
-                StorageFile existing = (StorageFile)(await folder.GetItemAsync(name));
+                StorageFile existing = (StorageFile)await folder.GetItemAsync(name);
                 await temporary.MoveAndReplaceAsync(existing);
                 destinationCommitted = true;
             }

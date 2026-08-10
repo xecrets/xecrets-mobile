@@ -36,37 +36,43 @@
             <utilities:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
         </ResourceDictionary>
     </ContentPage.Resources>
-    <ScrollView>
-        <VerticalStackLayout x:Name="ContentRoot"
-                             Padding="{StaticResource ContentTitleLayoutPadding}"
-                             Spacing="{StaticResource LayoutSpacing}">
-            <Border x:Name="ContentColumn"
-                    HorizontalOptions="Center"
-                    Style="{StaticResource CardStyle}">
-                <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
-                <Label Text="{Binding FileNameText}"
-                       Style="{StaticResource FileNameStyle}" />
-                <Label Text="{Binding MetadataText}"
-                       Style="{StaticResource Body2}" />
-                <Editor Text="{Binding StatusText}"
-                        IsVisible="{Binding StatusText, Converter={StaticResource StringNotEmptyConverter}}"
-                        Style="{StaticResource StatusTextStyle}" />
-                <VerticalStackLayout x:Name="ActionButtonStack"
-                                     HorizontalOptions="Center"
-                                     Spacing="{StaticResource LayoutSpacing}">
-                    <Button Text="{x:Static modelUtilities:MobileTexts.ButtonView}"
-                            Command="{Binding ViewCommand}" />
-                    <Button Text="{x:Static modelUtilities:MobileTexts.ButtonEdit}"
-                            Command="{Binding EditCommand}" />
-                    <Button Text="{x:Static modelUtilities:MobileTexts.ButtonSaveAs}"
-                            Command="{Binding SaveAsCommand}" />
-                    <Button Text="{x:Static modelUtilities:MobileTexts.ButtonOpenIn}"
-                            Command="{Binding OpenInCommand}" />
-                    <Button Text="{x:Static modelUtilities:MobileTexts.ButtonSendTo}"
-                            Command="{Binding SendToCommand}" />
-                </VerticalStackLayout>
-                </VerticalStackLayout>
-            </Border>
-        </VerticalStackLayout>
-    </ScrollView>
+    <Grid>
+        <ScrollView>
+            <VerticalStackLayout x:Name="ContentRoot"
+                                 Padding="{StaticResource ContentTitleLayoutPadding}"
+                                 Spacing="{StaticResource LayoutSpacing}">
+                <Border x:Name="ContentColumn"
+                        HorizontalOptions="Center"
+                        Style="{StaticResource CardStyle}">
+                    <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
+                    <Label Text="{Binding FileNameText}"
+                           Style="{StaticResource FileNameStyle}" />
+                    <Label Text="{Binding MetadataText}"
+                           Style="{StaticResource Body2}" />
+                    <Editor Text="{Binding StatusText}"
+                            IsVisible="{Binding StatusText, Converter={StaticResource StringNotEmptyConverter}}"
+                            Style="{StaticResource StatusTextStyle}" />
+                    <VerticalStackLayout x:Name="ActionButtonStack"
+                                         HorizontalOptions="Center"
+                                         Spacing="{StaticResource LayoutSpacing}">
+                        <Button Text="{x:Static modelUtilities:MobileTexts.ButtonView}"
+                                Command="{Binding ViewCommand}" />
+                        <Button Text="{x:Static modelUtilities:MobileTexts.ButtonEdit}"
+                                Command="{Binding EditCommand}" />
+                        <Button Text="{x:Static modelUtilities:MobileTexts.ButtonSaveAs}"
+                                Command="{Binding SaveAsCommand}" />
+                        <Button Text="{x:Static modelUtilities:MobileTexts.ButtonOpenIn}"
+                                Command="{Binding OpenInCommand}" />
+                        <Button Text="{x:Static modelUtilities:MobileTexts.ButtonSendTo}"
+                                Command="{Binding SendToCommand}" />
+                    </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+            </VerticalStackLayout>
+        </ScrollView>
+        <ActivityIndicator IsRunning="{Binding IsBusy}"
+                           IsVisible="{Binding IsBusy}"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center" />
+    </Grid>
 </ContentPage>

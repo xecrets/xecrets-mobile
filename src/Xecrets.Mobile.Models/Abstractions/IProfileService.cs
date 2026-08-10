@@ -29,8 +29,8 @@
 #endregion Copyright and GPL License
 
 using Xecrets.Core.Models;
+using Xecrets.Common.Models;
 
-using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
 
 namespace Xecrets.Mobile.Models.Abstractions;
@@ -43,7 +43,7 @@ public interface IProfileService
 
     Task<bool> HasProfileAsync();
 
-    Task<StoredProfile?> LoadProfileAsync();
+    Task<SignInKey?> LoadProfileAsync();
 
     Task<ProfileActionResult> CreateProfileAsync(string email, string password);
 
@@ -53,7 +53,7 @@ public interface IProfileService
 
     Identity GetIdentity();
 
-    IReadOnlyList<ExtraPasswordSetting> GetExtraPasswords();
+    IReadOnlyList<PasswordUsage> GetExtraPasswords();
 
     Task RecordExtraPasswordUseAsync(string password);
 

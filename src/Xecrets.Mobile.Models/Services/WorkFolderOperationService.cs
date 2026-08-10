@@ -30,7 +30,7 @@
 
 using Xecrets.Core.Abstractions;
 using Xecrets.Core.Models;
-using Xecrets.Core.Public;
+using Xecrets.Common.Models;
 
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
@@ -71,7 +71,7 @@ public sealed class WorkFolderOperationService(
             return true;
         }
 
-        foreach (ExtraPasswordSetting extraPassword in profileService.GetExtraPasswords())
+        foreach (PasswordUsage extraPassword in profileService.GetExtraPasswords())
         {
             if (!await TryDecryptAsync(file, new Identity(extraPassword.Password, [])))
             {

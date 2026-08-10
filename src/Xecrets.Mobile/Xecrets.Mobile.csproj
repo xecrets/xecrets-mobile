@@ -124,7 +124,7 @@
 
     <!-- Ad-hoc Mac Catalyst builds use the sandbox and file-access entitlements. A gitignored
          Xecrets.Mobile.csproj.user file can override this with Entitlements.Provisioned.plist and
-         local CodesignKey and CodesignProvision values to enable SecureStorage during development. -->
+         local CodesignKey and CodesignProvision values for signed development builds. -->
     <PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">
         <CodesignEntitlements>Platforms\MacCatalyst\Entitlements.plist</CodesignEntitlements>
     </PropertyGroup>

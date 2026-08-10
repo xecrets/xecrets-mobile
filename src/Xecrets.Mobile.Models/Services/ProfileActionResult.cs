@@ -30,15 +30,6 @@
 
 namespace Xecrets.Mobile.Models.Services;
 
-public enum ProfileActionStatus
-{
-    Success,
-    InvalidEmail,
-    AlreadyExists,
-    NotFound,
-    WrongPassword,
-}
-
 public sealed record ProfileActionResult(ProfileActionStatus Status)
 {
     public bool Succeeded => Status == ProfileActionStatus.Success;

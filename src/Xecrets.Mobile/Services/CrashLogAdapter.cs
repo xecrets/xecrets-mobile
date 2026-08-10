@@ -35,4 +35,6 @@ namespace Xecrets.Mobile.Services;
 public sealed class CrashLogAdapter : ICrashLogService
 {
     public bool HasPendingCrashLog => CrashLogService.HasPendingCrashLog;
+
+    public void WriteCrashLog(string source, object? crash) => CrashLogService.WriteCrashLog(source, crash);
 }

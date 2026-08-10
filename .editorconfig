@@ -80,5 +80,17 @@ dotnet_naming_symbols.private_fields.required_modifiers =
 dotnet_naming_style.underscore_camel_case.capitalization = camel_case
 dotnet_naming_style.underscore_camel_case.required_prefix = _
 
+# IDE0046: Convert to conditional expression
+dotnet_diagnostic.IDE0046.severity = silent
+
+# IDE0350: Use implicitly typed lambda
+dotnet_diagnostic.IDE0350.severity = silent
+
+# IDE0005: Using directive is unnecessary.
+dotnet_diagnostic.IDE0005.severity = suggestion
+
+dotnet_code_quality.CA1826.exclude_ordefault_methods = true
+dotnet_code_quality.CA1822.api_surface = private, internal
+
 [*.xaml]
 indent_size = 4

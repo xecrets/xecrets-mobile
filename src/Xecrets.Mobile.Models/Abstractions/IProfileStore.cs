@@ -28,7 +28,7 @@
 
 #endregion Copyright and GPL License
 
-using Xecrets.Mobile.Models.Models;
+using Xecrets.Common.Models;
 
 namespace Xecrets.Mobile.Models.Abstractions;
 
@@ -36,7 +36,7 @@ public interface IProfileStore
 {
     Task<bool> HasProfileAsync();
 
-    Task<StoredProfile?> LoadAsync();
+    Task<SignInKey?> LoadAsync();
 
-    Task SaveAsync(StoredProfile profile);
+    Task SaveAsync(SignInKey signInKey);
 }

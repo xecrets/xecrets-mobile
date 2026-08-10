@@ -28,17 +28,41 @@
 
 #endregion Copyright and GPL License
 
-using System.Threading.Tasks;
+using Xecrets.Common.Abstractions;
+using Xecrets.Core.Abstractions;
+using Xecrets.Core.Models;
 
-using Microsoft.Maui.Storage;
+namespace Xecrets.Mobile.Models.Data;
 
-using Xecrets.Mobile.Models.Abstractions;
-
-namespace Xecrets.Mobile.Services;
-
-public sealed class AppSecureStorage : IAppSecureStorage
+public sealed class CoreXecretsProtection(ICoreServices coreServices, Identity identity) : IXecretsProtection
 {
-    public Task<string?> GetAsync(string key) => SecureStorage.GetAsync(key);
+    public async Task<byte[]> ProtectAsync(byte[] cleartext, string originalFilename)
+    {
+        DateTime utcNow = DateTime.UtcNow;
+        await using MemoryStream cleartextStream = new(cleartext, writable: false);
+        await using MemoryStream protectedStream = new();
+        EncryptRequest request = new(
+            identity.Passphrase,
+            [.. identity.KeyPairs.Select(keyPair => keyPair.PublicKey)],
+            [],
+            originalFilename,
+            utcNow,
+            utcNow,
+            utcNow,
+            true,
+            new Progress<Progress>(_ => { }));
+        await coreServices.EncryptAsync(cleartextStream, protectedStream, request);
+        return protectedStream.ToArray();
+    }
 
-    public Task SetAsync(string key, string value) => SecureStorage.SetAsync(key, value);
+    public async Task<byte[]> UnprotectAsync(byte[] protectedBytes)
+    {
+        await using MemoryStream protectedStream = new(protectedBytes, writable: false);
+        await using MemoryStream cleartextStream = new();
+        using IDecryptionSession decryption = await coreServices.OpenDecryptionAsync(
+            protectedStream,
+            new DecryptRequest([identity], new Progress<Progress>(_ => { })));
+        await decryption.DecryptAsync(cleartextStream);
+        return cleartextStream.ToArray();
+    }
 }

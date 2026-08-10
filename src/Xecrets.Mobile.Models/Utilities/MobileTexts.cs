@@ -103,8 +103,6 @@ public static class MobileTexts
 
     public static string DialogTextWorkFolderFailed => "The folder operation could not be completed.";
 
-    public static string DialogTextWorkFolderListReset => "The list of folders could not be read, and has been cleared. Please add the folders you use again.";
-
     public static string EncryptToShareDescription => "Enter a separate password for the encrypted copy. Share the password through a different channel.";
 
     public static string EncryptWorkFolderDescription => "Encrypt a file and replace the original. Add or select a folder, and then a file to encrypt.";

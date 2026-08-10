@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/Solution Items/">
+    <File Path="../../.editorconfig" />
     <File Path="..\..\.github\CODEOWNERS" />
     <File Path="..\..\.github\dependabot.yml" />
     <File Path="..\..\.github\PULL_REQUEST_TEMPLATE.md" />
@@ -43,8 +44,11 @@
     <Project Path="../../../xecrets-net/AxCrypt.Fake/Xecrets.Net.Fake.csproj" />
     <Project Path="../../../xecrets-net/AxCrypt.Mono.Test/Xecrets.Net.Implementation.Test.csproj" />
     <Project Path="../../../xecrets-net/BouncyCastle.AxCrypt/Xecrets.Net.BouncyCastle.csproj" />
+    <Project Path="../../../xecrets-texts/src/Xecrets.Common.Test/Xecrets.Common.Test.csproj" />
+    <Project Path="../Xecrets.Mobile.Models.Test/Xecrets.Mobile.Models.Test.csproj" />
   </Folder>
   <Project Path="../../../xecrets-localization/src/Xecrets.Localization/Xecrets.Localization.csproj" />
+  <Project Path="../../../xecrets-texts/src/Xecrets.Common/Xecrets.Common.csproj" />
   <Project Path="../../../xecrets-net/Xecrets.Core/Xecrets.Core.csproj" />
   <Project Path="../../../xecrets-texts/src/Xecrets.Texts/Xecrets.Texts.csproj" />
   <Project Path="../Xecrets.Mobile.Models/Xecrets.Mobile.Models.csproj" />

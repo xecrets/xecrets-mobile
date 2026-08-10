@@ -38,6 +38,11 @@ namespace Xecrets.Mobile.Models.Services;
 
 public static class ContentTypeDetector
 {
+    private const string _unknownContentType = "application/octet-stream";
+
+    // The largest text file, in bytes, that the app's internal viewer/editor will handle. 
+    public const long MaxInlineTextSizeBytes = 100 * 1024;
+
     private static readonly Dictionary<string, string> _contentTypes = new(StringComparer.OrdinalIgnoreCase)
     {
         { ".txt", "text/plain" },
@@ -328,13 +333,18 @@ public static class ContentTypeDetector
             : displayName;
         string contentType = DetectContentType(fileName);
         PreviewKind kind = GetPreviewKind(fileName, contentType);
-        if (kind == PreviewKind.External && LooksLikeTextFile(filePath))
+
+        if (kind == PreviewKind.External && contentType == _unknownContentType && LooksLikeTextFile(filePath))
         {
             kind = PreviewKind.Text;
             contentType = "text/plain";
         }
 
         long fileSize = new FileInfo(filePath).Length;
+        if (kind == PreviewKind.Text && fileSize > MaxInlineTextSizeBytes)
+        {
+            kind = PreviewKind.External;
+        }
 
         return new DecryptedFileInfo(filePath, fileName, contentType, fileSize, kind);
     }
@@ -342,7 +352,7 @@ public static class ContentTypeDetector
     public static string DetectContentType(string fileName)
     {
         string extension = Path.GetExtension(fileName);
-        return _contentTypes.GetValueOrDefault(extension, "application/octet-stream");
+        return _contentTypes.GetValueOrDefault(extension, _unknownContentType);
     }
 
     private static PreviewKind GetPreviewKind(string fileName, string contentType)
