@@ -33,4 +33,6 @@ namespace Xecrets.Mobile.Models.Abstractions;
 public interface ICrashLogService
 {
     bool HasPendingCrashLog { get; }
+
+    void WriteCrashLog(string source, object? crash);
 }

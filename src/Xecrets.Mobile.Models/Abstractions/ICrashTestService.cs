@@ -36,10 +36,3 @@ public interface ICrashTestService
 
     void CrashIfArmed(CrashTestOperation operation);
 }
-
-public enum CrashTestOperation
-{
-    Encrypt,
-    Decrypt,
-    View,
-}

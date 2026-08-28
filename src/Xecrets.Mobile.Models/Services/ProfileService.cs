@@ -30,16 +30,18 @@
 
 using Xecrets.Core.Abstractions;
 using Xecrets.Core.Models;
+using Xecrets.Common.Abstractions;
+using Xecrets.Common.Models;
+using Xecrets.Mobile.Models.Data;
 
 using Xecrets.Mobile.Models.Abstractions;
-using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Services;
 
 public sealed class ProfileService(
     ICoreServices coreServices,
+    IXecretsDataStore dataStore,
     IProfileStore profileStore,
-    IAppSettingsStore settingsStore,
     ProfileSession session)
     : IProfileService
 {
@@ -50,7 +52,7 @@ public sealed class ProfileService(
     public Task<bool> HasProfileAsync()
         => profileStore.HasProfileAsync();
 
-    public Task<StoredProfile?> LoadProfileAsync()
+    public Task<SignInKey?> LoadProfileAsync()
         => profileStore.LoadAsync();
 
     public async Task<ProfileActionResult> CreateProfileAsync(string email, string password)
@@ -66,31 +68,30 @@ public sealed class ProfileService(
         }
 
         KeyPair keyPair = await coreServices.CreateKeyPairAsync(parsedEmail, password, DateTimeOffset.UtcNow);
-        await profileStore.SaveAsync(new StoredProfile
-        {
-            Email = keyPair.Email,
-            CreatedUtc = keyPair.CreatedUtc,
-            EncryptedBytes = keyPair.EncryptedBytes,
-        });
+        await profileStore.SaveAsync(new SignInKey(keyPair.Email, keyPair.CreatedUtc, keyPair.EncryptedBytes));
 
         return new ProfileActionResult(ProfileActionStatus.Success);
     }
 
     public async Task<ProfileActionResult> LoginAsync(string password)
     {
-        StoredProfile? profile = await profileStore.LoadAsync();
+        SignInKey? profile = await profileStore.LoadAsync();
         if (profile is null)
         {
             return new ProfileActionResult(ProfileActionStatus.NotFound);
         }
 
-        if (!coreServices.TryLoadKeyPair(profile.EncryptedBytes, [password], out LoadedKeyPair? loadedKeyPair))
+        if (!coreServices.TryLoadKeyPair(profile.ProtectedBytes, [password], out LoadedKeyPair? loadedKeyPair))
         {
             return new ProfileActionResult(ProfileActionStatus.WrongPassword);
         }
 
-        AppSettings settings = await settingsStore.LoadAsync();
-        session.SignIn(loadedKeyPair.KeyPair, password, settings);
+        UserSummary user = (await dataStore.GetUsersAsync())[0];
+        IUserDataStore userStore = await dataStore.OpenUserAsync(user.Id);
+        Identity identity = new(password, [loadedKeyPair.KeyPair]);
+        IXecretsProtection protection = new CoreXecretsProtection(coreServices, identity);
+        IPersistentData<ExtraCredentials> extraCredentials = await userStore.LoadExtraCredentialsAsync(protection);
+        session.SignIn(loadedKeyPair.KeyPair, password, extraCredentials, userStore);
         return new ProfileActionResult(ProfileActionStatus.Success);
     }
 
@@ -100,11 +101,33 @@ public sealed class ProfileService(
     public Identity GetIdentity()
         => session.CreateIdentity();
 
-    public IReadOnlyList<ExtraPasswordSetting> GetExtraPasswords()
-        => session.Settings.ExtraPasswords;
+    public IReadOnlyList<PasswordUsage> GetExtraPasswords()
+        => session.ExtraCredentials!.Value.Passwords;
 
-    public Task RecordExtraPasswordUseAsync(string password)
-        => settingsStore.RecordSuccessfulPasswordUseAsync(session.Settings, password);
+    public async Task RecordExtraPasswordUseAsync(string password)
+    {
+        await using IEditScope<ExtraCredentials> credentials = session.ExtraCredentials!.BeginEdit();
+        PasswordUsage? entry = credentials.Value.Passwords
+            .FirstOrDefault(extraPassword => string.Equals(extraPassword.Password, password, StringComparison.Ordinal));
+
+        if (entry is null)
+        {
+            if (credentials.Value.Passwords.Count >= 25)
+            {
+                credentials.Value.Passwords.RemoveRange(24, credentials.Value.Passwords.Count - 24);
+            }
+
+            credentials.Value.Passwords.Add(new PasswordUsage { Password = password, UsageCount = 1, });
+            return;
+        }
+
+        entry.UsageCount++;
+        credentials.Value.Passwords =
+        [
+            .. credentials.Value.Passwords
+                .OrderByDescending(extraPassword => extraPassword.UsageCount)
+        ];
+    }
 
     public PublicKey GetPublicKey() =>
         session.ProfileKeyPair is not null

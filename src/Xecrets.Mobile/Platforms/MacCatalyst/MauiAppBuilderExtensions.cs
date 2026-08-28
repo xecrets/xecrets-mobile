@@ -30,9 +30,6 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Hosting;
-using Microsoft.Maui.Storage;
-
-using Security;
 
 using Xecrets.Mobile.Abstractions;
 using Xecrets.Mobile.Models.Abstractions;
@@ -45,8 +42,6 @@ internal static class MauiAppBuilderExtensions
 {
     internal static MauiAppBuilder ConfigurePlatform(this MauiAppBuilder builder)
     {
-        SecureStorage.DefaultAccessible = SecAccessible.AfterFirstUnlockThisDeviceOnly;
-
         builder.Services.AddSingleton<IFileService, MacCatalystFileService>();
         builder.Services.AddSingleton<IWorkFolderService, AppleWorkFolderService>();
         builder.Services.AddSingleton<IUserInterfaceService, DefaultUserInterfaceService>();

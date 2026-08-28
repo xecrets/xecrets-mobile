@@ -33,7 +33,6 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Input;
 
 using Microsoft.Maui.ApplicationModel.DataTransfer;
-using Microsoft.Maui.Controls;
 
 using Xecrets.Mobile.Abstractions;
 using Xecrets.Mobile.Models.Abstractions;

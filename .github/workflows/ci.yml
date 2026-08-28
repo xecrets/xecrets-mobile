@@ -12,8 +12,11 @@
 # Tests:
 #   - The 'test' job runs every '*.Test.csproj' listed in Xecrets.Mobile.slnx, which is
 #     the single source of truth for what is tested (.github/scripts/Invoke-Tests.ps1).
-#     These are the unit tests of the shared encryption library in xecrets-net, run at
-#     the same commit the platform builds compile against.
+#     These currently cover the shared encryption library (xecrets-net) and the shared
+#     text/data library (xecrets-texts), run at the same commits the platform builds
+#     compile against. Adding a '*.Test.csproj' from another sibling to the slnx means
+#     that sibling must also be checked out in the 'test' job below, or the run fails
+#     with "Project file does not exist."
 #   - A failing test fails the run and, because 'build-state' needs it, prevents the run
 #     from being recorded as built. It does not block the platform builds, which run in
 #     parallel with it, so one run reports test failures and build failures together.
@@ -159,8 +162,9 @@ jobs:
         with:
           path: xecrets-mobile
 
-      # The test projects in the solution live in xecrets-net and reference only projects
-      # within that repository, so the other siblings are not needed to run them.
+      # Every sibling that contributes a '*.Test.csproj' to the /Test/ folder in
+      # Xecrets.Mobile.slnx must be checked out here, or Invoke-Tests.ps1 fails with
+      # "Project file does not exist" when it resolves that project's path.
       - name: Checkout xecrets-net
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -168,10 +172,28 @@ jobs:
           ref: ${{ needs.version.outputs.xecrets-net-sha }}
           path: xecrets-net
 
+      - name: Checkout xecrets-texts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: xecrets/xecrets-texts
+          ref: ${{ needs.version.outputs.xecrets-texts-sha }}
+          path: xecrets-texts
+
+      - name: Checkout xecrets-localization
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: xecrets/xecrets-localization
+          ref: ${{ needs.version.outputs.xecrets-localization-sha }}
+          path: xecrets-localization
+
       - name: Set up .NET (pinned by global.json)
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: xecrets-mobile/global.json
+
+      - name: Restore pinned .NET workload set for Mobile model tests
+        working-directory: xecrets-mobile
+        run: dotnet workload restore src/Xecrets.Mobile.Models.Test/Xecrets.Mobile.Models.Test.csproj
 
       - name: Run tests
         working-directory: xecrets-mobile

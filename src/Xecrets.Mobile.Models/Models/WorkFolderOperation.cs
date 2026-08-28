@@ -12,8 +12,9 @@
  * later version.
  *
  * No additional permission is granted beyond that license. If you incorporate this code into a larger work and
- * distribute that work to others, you are responsible for complying with the GNU General Public License version 3 or
- * later. See https://www.gnu.org/licenses/ for more information.
+ * distribute that work to others, you are responsible for complying with the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or (at your option) any later version. See
+ * https://www.gnu.org/licenses/ for more information.
  *
  * Xecrets Ez Mobile is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
  * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
@@ -28,13 +29,10 @@
 
 #endregion Copyright and GPL License
 
-using Xecrets.Mobile.Models.Models;
+namespace Xecrets.Mobile.Models.Models;
 
-namespace Xecrets.Mobile.Models.Abstractions;
-
-public interface IAppSettingsStore
+public enum WorkFolderOperation
 {
-    Task<AppSettings> LoadAsync();
-
-    Task SaveAsync(AppSettings settings);
+    Encrypt,
+    Decrypt,
 }

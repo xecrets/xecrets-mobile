@@ -28,50 +28,31 @@
 
 #endregion Copyright and GPL License
 
-using System.Text.Json;
-
+using Xecrets.Common.Abstractions;
+using Xecrets.Common.Models;
 using Xecrets.Mobile.Models.Abstractions;
-using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Data;
 
-public sealed class ProfileStore(IFileService fileService) : IProfileStore
+public sealed class ProfileStore(IXecretsDataStore dataStore) : IProfileStore
 {
-    private const string _profileFileName = "profile.json";
+    public async Task<bool> HasProfileAsync() =>
+        (await dataStore.GetUsersAsync()).Count > 0;
 
-    private string ProfilePath =>
-        Path.Combine(fileService.AppDataDirectory, _profileFileName);
-
-    public Task<bool> HasProfileAsync()
-        => Task.FromResult(File.Exists(ProfilePath));
-
-    public async Task<StoredProfile?> LoadAsync()
+    public async Task<SignInKey?> LoadAsync()
     {
-        if (!File.Exists(ProfilePath))
+        UserSummary? user = (await dataStore.GetUsersAsync()).FirstOrDefault();
+        if (user is null)
         {
             return null;
         }
 
-        try
-        {
-            await using FileStream stream = File.Open(ProfilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            return await JsonSerializer.DeserializeAsync(stream, JsonContext.Default.StoredProfile);
-        }
-        catch (JsonException)
-        {
-            // An unreadable profile.json (an old schema, or a write that was interrupted mid-way)
-            // must not wedge the app in a crash loop: HasProfileAsync() would keep reporting a
-            // profile exists, routing back to Login, which would keep failing to load it. Treat
-            // it the same as no profile at all so the app falls through to profile creation.
-            File.Delete(ProfilePath);
-            return null;
-        }
+        IUserDataStore userStore = await dataStore.OpenUserAsync(user.Id);
+        return (await userStore.GetSignInKeysAsync())[0];
     }
 
-    public async Task SaveAsync(StoredProfile profile)
+    public async Task SaveAsync(SignInKey signInKey)
     {
-        Directory.CreateDirectory(fileService.AppDataDirectory);
-        await using FileStream stream = File.Open(ProfilePath, FileMode.Create, FileAccess.Write, FileShare.None);
-        await JsonSerializer.SerializeAsync(stream, profile, JsonContext.Default.StoredProfile);
+        await dataStore.CreateUserAsync(new NewUserData(signInKey.Email, signInKey.Email, signInKey));
     }
 }

@@ -45,6 +45,8 @@ using UniformTypeIdentifiers;
 
 using UIKit;
 
+using Xecrets.Common.Models;
+
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Utilities;
@@ -122,17 +124,13 @@ public sealed class AppleWorkFolderService(WorkFolderStorage storage) : IWorkFol
         }
 
         _discoveredLocations.Remove(folder.Id);
-        storage.SaveFolders((await storage.LoadFoldersAsync()).Where(item => item.Id != folder.Id));
+        await storage.SaveFoldersAsync((await storage.LoadFoldersAsync()).Where(item => item.Id != folder.Id));
     }
 
     public Task RenameFolderAsync(WorkFolder folder, string displayName) =>
         storage.RenameFolderAsync(folder, displayName);
 
-    public Task SaveFolderOrderAsync(IReadOnlyList<WorkFolder> folders)
-    {
-        storage.SaveFolders(folders);
-        return Task.CompletedTask;
-    }
+    public Task SaveFoldersAsync(IReadOnlyList<WorkFolder> folders) => storage.SaveFoldersAsync(folders);
 
     public async Task<WorkFolderFile?> PickFileAsync(WorkFolder folder, FilePickerKind pickerKind)
     {

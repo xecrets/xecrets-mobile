@@ -12,8 +12,9 @@
  * later version.
  *
  * No additional permission is granted beyond that license. If you incorporate this code into a larger work and
- * distribute that work to others, you are responsible for complying with the GNU General Public License version 3 or
- * later. See https://www.gnu.org/licenses/ for more information.
+ * distribute that work to others, you are responsible for complying with the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or (at your option) any later version. See
+ * https://www.gnu.org/licenses/ for more information.
  *
  * Xecrets Ez Mobile is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
  * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
@@ -28,22 +29,13 @@
 
 #endregion Copyright and GPL License
 
-using System.Text.Json.Serialization;
+namespace Xecrets.Mobile.Models.Services;
 
-namespace Xecrets.Mobile.Models.Models;
-
-// Deliberately holds only what LoginAsync/LoginPageModel actually read back: the passphrase -
-// protected key material and the email used to prefill the login screen. Xecrets.Core.Models.KeyPair
-// also carries PublicKey (unused here, nothing reads it back) and SerializedKeyPair (a plaintext -
-// equivalent private key never intended for on-disk persistence) - neither belongs in this file.
-public sealed record StoredProfile
+public enum ProfileActionStatus
 {
-    [JsonPropertyName("email")]
-    public required string Email { get; init; }
-
-    [JsonPropertyName("createdUtc")]
-    public required DateTimeOffset CreatedUtc { get; init; }
-
-    [JsonPropertyName("encryptedBytes")]
-    public required byte[] EncryptedBytes { get; init; }
+    Success,
+    InvalidEmail,
+    AlreadyExists,
+    NotFound,
+    WrongPassword,
 }

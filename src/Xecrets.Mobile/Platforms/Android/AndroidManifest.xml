@@ -12,6 +12,10 @@
             <action android:name="android.intent.action.SEND" />
             <data android:mimeType="*/*" />
         </intent>
+        <intent>
+            <action android:name="android.intent.action.QUICK_VIEW" />
+            <data android:mimeType="*/*" />
+        </intent>
     </queries>
     <!-- extractNativeLibs="false" stores the native libraries uncompressed and page aligned in the
          package, so the installer maps them straight out of it instead of unpacking a second copy

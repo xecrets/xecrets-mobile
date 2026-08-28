@@ -87,7 +87,7 @@ public sealed class EncryptionPreparationService(
     private EncryptRequest CreateCurrentProfileEncryptRequest(string originalFileName)
     {
         DateTime utcNow = DateTime.UtcNow;
-        var identity = profileService.GetIdentity();
+        Identity identity = profileService.GetIdentity();
         return new EncryptRequest(
             identity.Passphrase,
             [profileService.GetPublicKey()],

@@ -34,7 +34,7 @@ namespace Xecrets.Mobile.Platforms.Android;
 
 internal static class PlatformWindow
 {
-    public static void Configure(Window window)
+    public static void Configure(Window _)
     {
     }
 }

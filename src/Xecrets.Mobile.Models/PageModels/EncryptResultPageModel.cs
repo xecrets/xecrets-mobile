@@ -63,8 +63,7 @@ public partial class EncryptResultPageModel(
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SaveAsCommand))]
     [NotifyCanExecuteChangedFor(nameof(SendToCommand))]
-    // ReSharper disable once MemberCanBeMadeStatic.Local
-    private partial bool IsBusy { get; set; }
+    public partial bool IsBusy { get; set; }
 
     public void Initialize(EncryptionPreparationResult result)
     {

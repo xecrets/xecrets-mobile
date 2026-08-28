@@ -38,6 +38,8 @@ using Microsoft.Maui.Hosting;
 using System;
 
 using Xecrets.Core.Public;
+using Xecrets.Common.Abstractions;
+using Xecrets.Common.Implementation;
 using Xecrets.Mobile.Abstractions;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Data;
@@ -60,10 +62,7 @@ public static class MauiProgram
         builder
             .UseMauiApp<App>()
             .UseMauiCommunityToolkit()
-            .ConfigureFonts(fonts =>
-            {
-                fonts.AddFont("FluentSystemIcons-Regular.ttf", "FluentUI");
-            });
+            .ConfigureFonts(fonts => fonts.AddFont("FluentSystemIcons-Regular.ttf", "FluentUI"));
 
         if (buildInformation.IsDebug)
         {
@@ -75,9 +74,11 @@ public static class MauiProgram
 
         builder.Services.AddXecretsCore();
 
+        builder.Services.AddSingleton(TimeProvider.System);
+        builder.Services.AddSingleton<IProtectedPayload, ProtectedPayload>();
+        builder.Services.AddSingleton<MobileDataStore>();
+        builder.Services.AddSingleton<IXecretsDataStore>(services => services.GetRequiredService<MobileDataStore>());
         builder.Services.AddSingleton<IProfileStore, ProfileStore>();
-        builder.Services.AddSingleton<IAppSecureStorage, AppSecureStorage>();
-        builder.Services.AddSingleton<IAppSettingsStore, AppSettingsStore>();
         builder.Services.AddSingleton<ProfileSession>();
         builder.Services.AddSingleton<ITransientFileService, TransientFileService>();
         builder.Services.AddSingleton<PreviewState>();

@@ -33,6 +33,7 @@ using Microsoft.Maui.Controls;
 
 using System;
 
+using Xecrets.Common.Abstractions;
 using Xecrets.Mobile.Abstractions;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.PageModels;
@@ -47,7 +48,7 @@ public partial class App
     private readonly IUserInterfaceService _userInterfaceService;
     private readonly SessionExitService _sessionExitService;
     private readonly IBuildInformation _buildInformation;
-    private readonly IAppSettingsStore _appSettingsStore;
+    private readonly IXecretsDataStore _dataStore;
     private readonly StartupPageModel _startupPageModel;
 
     public App(
@@ -55,7 +56,7 @@ public partial class App
         IUserInterfaceService userInterfaceService,
         SessionExitService sessionExitService,
         IBuildInformation buildInformation,
-        IAppSettingsStore appSettingsStore,
+        IXecretsDataStore dataStore,
         StartupPageModel startupPageModel,
         IPlatformServices platformServices)
     {
@@ -64,7 +65,7 @@ public partial class App
         _userInterfaceService = userInterfaceService;
         _sessionExitService = sessionExitService;
         _buildInformation = buildInformation;
-        _appSettingsStore = appSettingsStore;
+        _dataStore = dataStore;
         _startupPageModel = startupPageModel;
         InitializeComponent();
     }
@@ -76,7 +77,7 @@ public partial class App
             _userInterfaceService,
             _sessionExitService,
             _buildInformation,
-            _appSettingsStore,
+            _dataStore,
             _startupPageModel));
         window.Created += OnWindowCreated;
         return window;

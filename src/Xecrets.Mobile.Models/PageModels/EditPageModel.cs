@@ -70,7 +70,7 @@ public partial class EditPageModel(
     [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
     [NotifyCanExecuteChangedFor(nameof(SaveToLocationCommand))]
     [NotifyCanExecuteChangedFor(nameof(CloseCommand))]
-    private partial bool IsBusy { get; set; }
+    public partial bool IsBusy { get; set; }
 
     [RelayCommand]
     private async Task Initialize()
@@ -194,7 +194,7 @@ public partial class EditPageModel(
     private EncryptRequest CreateEncryptRequest(string originalFileName)
     {
         DateTime utcNow = DateTime.UtcNow;
-        var identity = profileService.GetIdentity();
+        Identity identity = profileService.GetIdentity();
         return new EncryptRequest(
             identity.Passphrase,
             [profileService.GetPublicKey()],

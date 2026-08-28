@@ -34,6 +34,8 @@ using System.Collections.Specialized;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
+using Xecrets.Common.Models;
+
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Utilities;
@@ -113,7 +115,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
             if (Folders.All(item => item.Id != folder.Id))
             {
                 Folders.Insert(0, folder);
-                await _workFolderService.SaveFolderOrderAsync(Folders);
+                await _workFolderService.SaveFoldersAsync(Folders);
             }
 
             await PickAndTransformAsync(folder);
@@ -164,7 +166,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
             StatusText = string.Empty;
             await _workFolderService.RemoveFolderAsync(folder);
             Folders.Remove(folder);
-            await _workFolderService.SaveFolderOrderAsync(Folders);
+            await _workFolderService.SaveFoldersAsync(Folders);
         }
         catch (Exception ex)
         {
@@ -233,13 +235,12 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
             {
                 WorkFolder discoveredFolder = await _workFolderService.AddDiscoveredFolderAsync(file);
                 Folders.Insert(0, discoveredFolder);
-                await _workFolderService.SaveFolderOrderAsync(Folders);
+                await _workFolderService.SaveFoldersAsync(Folders);
                 await TransformAsync(file);
                 return;
             }
 
-            bool add = await UserInterfaceService.DisplayConfirmationAsync(
-                MobileTexts.DialogTextAddUnknownWorkFolder);
+            bool add = await UserInterfaceService.DisplayConfirmationAsync(MobileTexts.DialogTextAddUnknownWorkFolder);
             if (add)
             {
                 WorkFolder? addedFolder = await _workFolderService.AddFolderAsync(file.LocationId);
@@ -251,7 +252,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
                 if (Folders.All(item => item.Id != addedFolder.Id))
                 {
                     Folders.Insert(0, addedFolder);
-                    await _workFolderService.SaveFolderOrderAsync(Folders);
+                    await _workFolderService.SaveFoldersAsync(Folders);
                 }
 
                 folder = addedFolder;
@@ -293,7 +294,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
         if (index > 0)
         {
             Folders.Move(index, 0);
-            await _workFolderService.SaveFolderOrderAsync(Folders);
+            await _workFolderService.SaveFoldersAsync(Folders);
         }
     }
 

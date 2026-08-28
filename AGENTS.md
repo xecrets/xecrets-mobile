@@ -4,6 +4,10 @@ This repository is the Xecrets Ez mobile app. When making changes, preserve the 
 
 Do not add unsolicited features, prompts, dialogs, or behavior. Implement only what was requested. If the requested behavior is ambiguous, or you see a problem that would require adding behavior outside the request, ask before changing it.
 
+## Sibling Repositories
+
+All `xecrets-*` repositories (and related ones such as `com.axantum.xecrets.ez`) are checked out as sibling directories under the same parent folder, not nested inside each other. References to Xecrets Ez, Xecrets Cli, Xecrets Mobile, Xecrets Core/Net, Xecrets Licensing, Xecrets Localization, Xecrets Slip39, Xecrets Texts, Xecrets Tooling, Xecrets Words, etc. mean those sibling repos, regardless of the current working directory or the repo the task is actually targeting.
+
 ## Version control
 
 Never commit any changes resulting from agent coding sessions. Committing is always
@@ -57,6 +61,8 @@ and action SHAs in `.github/workflows/ci.yml`. Do not introduce dependencies on
 
 ## Code Style
 
+- Prefer the smallest idiomatic change; follow existing repository patterns; don't introduce abstractions without a concrete need; consider error paths, ownership/lifetime and testability; inspect related code before choosing the design; don't treat compiling/tests passing as sufficient evidence of good design.
+- All types must always reside in their own file. Do not declare more than one type per file, except for private nested types or similarly scoped implementation details.
 - Prefer file-scoped namespace declarations.
 - Keep `using` directives grouped at the top, with blank lines separating logical groups when helpful.
 - Prefer explicit, descriptive names over abbreviations. Use private fields with the `_camelCase` convention.
@@ -65,12 +71,14 @@ and action SHAs in `.github/workflows/ci.yml`. Do not introduce dependencies on
 - Keep nullable annotations enabled and initialize nullable-friendly defaults where appropriate, such as `string.Empty` and empty collection literals.
 - Prefer collection expressions such as `[.. source]` over `source.ToArray()` when materializing a collection as an array.
 - Prefer small, focused classes and methods. Keep code-behind thin and move behavior into page models, services, utilities, or repositories.
+- An interface implementation must not expose functionality beyond the members defined by the interface. Move supporting operations to separate collaborators.
 - Follow the existing `async` naming pattern: methods that return `Task` or `Task<T>` should use an `Async` suffix.
 - Use `await using` for disposable async resources, especially database connections and readers.
 - Prefer `try/finally` when cleanup must always occur, and use the existing error-handling pattern rather than inventing a new one.
 - Do not add defensive fallbacks that silently handle states that should not happen. Prefer making invalid assumptions visible by failing fast or propagating the error, unless the code is handling a real expected platform or user-cancel path.
 - Do not add explicit guards or custom exceptions for states that are guaranteed by the build, generated assembly metadata, dependency injection, or framework initialization. Use the value directly (with the null-forgiving operator where required by nullable analysis) and let an invalid state fail naturally. For example, do not write `GetCustomAttribute<T>()?.Value ?? throw ...` for a required generated attribute; write `GetCustomAttribute<T>()!.Value`.
 - Keep comments and XML documentation concise and factual. Add docs for public types and members when they improve readability.
+- Do not add verbose, AI-style explanatory comments. Comments should explain *why* non-obvious code is the way it is, not *what* the code does or restate what it already says. For example, do not add a comment on a method that throws `NotSupportedException` explaining that it throws because the operation is not supported — that's already obvious from the code.
 
 ## MAUI And XAML Practices
 

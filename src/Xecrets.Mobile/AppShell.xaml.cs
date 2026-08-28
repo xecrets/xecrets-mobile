@@ -29,13 +29,15 @@
 #endregion Copyright and GPL License
 
 using System.Threading.Tasks;
+using System;
 
 using CommunityToolkit.Mvvm.Input;
 
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls;
 
-using Xecrets.Mobile.Models;
+using Xecrets.Common.Abstractions;
+using Xecrets.Common.Models;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.PageModels;
@@ -47,19 +49,19 @@ public partial class AppShell
 {
     private readonly IUserInterfaceService _userInterfaceService;
     private readonly SessionExitService _sessionExitService;
-    private readonly IAppSettingsStore _appSettingsStore;
+    private readonly IXecretsDataStore _dataStore;
     private readonly StartupPageModel _startupPageModel;
 
     public AppShell(
         IUserInterfaceService userInterfaceService,
         SessionExitService sessionExitService,
         IBuildInformation buildInformation,
-        IAppSettingsStore appSettingsStore,
+        IXecretsDataStore dataStore,
         StartupPageModel startupPageModel)
     {
         _userInterfaceService = userInterfaceService;
         _sessionExitService = sessionExitService;
-        _appSettingsStore = appSettingsStore;
+        _dataStore = dataStore;
         _startupPageModel = startupPageModel;
         InitializeComponent();
         SetFlyoutItemIsVisible(DebugMenuItem, buildInformation.IsDebug || buildInformation.IsBeta);
@@ -74,7 +76,7 @@ public partial class AppShell
             return;
         }
 
-        ApplyTheme(await _appSettingsStore.GetThemeAsync());
+        ApplyTheme(await GetThemeAsync());
         await _startupPageModel.InitializeCommand.ExecuteAsync(null);
     }
 
@@ -82,7 +84,9 @@ public partial class AppShell
     private async Task SetThemeAsync(ThemePreference preference)
     {
         ApplyTheme(preference);
-        await _appSettingsStore.SetThemeAsync(preference);
+        await using IEditScope<ApplicationSettings> settings =
+            (await _dataStore.OpenApplicationSettingsAsync()).BeginEdit();
+        settings.Value.Theme = preference.ToString();
     }
 
     [RelayCommand]
@@ -115,6 +119,15 @@ public partial class AppShell
             _ => AppTheme.Unspecified,
         };
         UpdateThemeButtons(preference);
+    }
+
+    private async Task<ThemePreference> GetThemeAsync()
+    {
+        await using IEditScope<ApplicationSettings> settings =
+            (await _dataStore.OpenApplicationSettingsAsync()).BeginEdit();
+        return Enum.TryParse(settings.Value.Theme, out ThemePreference preference)
+            ? preference
+            : ThemePreference.System;
     }
 
     private void UpdateThemeButtons(ThemePreference preference)

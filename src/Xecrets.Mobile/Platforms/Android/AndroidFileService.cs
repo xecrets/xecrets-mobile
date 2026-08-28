@@ -28,20 +28,18 @@
 
 #endregion Copyright and GPL License
 
+using Android.Content;
+using Android.Content.PM;
+
+using AndroidX.Core.Content;
+
 using System;
 using System.Collections.Generic;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
-using Android.Content;
-using Android.Content.PM;
-using Android.OS;
-
-using AndroidX.Core.Content;
-
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
-
 using Xecrets.Mobile.Services;
 
 using AndroidFile = Java.IO.File;
@@ -50,71 +48,106 @@ using Platform = Microsoft.Maui.ApplicationModel.Platform;
 
 namespace Xecrets.Mobile.Platforms.Android;
 
-[SupportedOSPlatform("android24.0")]
+[SupportedOSPlatform("android26.0")]
 public class AndroidFileService : FileServiceBase
 {
     public override string PlatformId => "android";
 
     public override Task<bool> CanViewFileAsync(DecryptedFileInfo file)
     {
+        AndroidUri uri = GetUri(file.FilePath);
+        using Intent quickViewIntent = CreateQuickViewIntent(uri, file.ContentType);
+        if (HasExternalHandler(quickViewIntent))
+        {
+            return Task.FromResult(true);
+        }
+
+        // No on-device quick-view provider, or it doesn't cover this content type: PDFs fall back to
+        // whatever app is registered to open them directly.
         if (!file.ContentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase))
         {
             return Task.FromResult(false);
         }
 
-        Context context = Platform.AppContext;
-        AndroidUri uri = FileProvider.GetUriForFile(
-            context,
-            $"{context.PackageName}.fileProvider",
-            new AndroidFile(file.FilePath))!;
-        using Intent intent = new(Intent.ActionView);
-        intent.SetDataAndType(uri, file.ContentType);
-        intent.AddFlags(ActivityFlags.GrantReadUriPermission);
+        using Intent viewIntent = new(Intent.ActionView);
+        viewIntent.SetDataAndType(uri, file.ContentType);
+        viewIntent.AddFlags(ActivityFlags.GrantReadUriPermission);
 
-        return Task.FromResult(HasExternalHandler(context, intent));
+        return Task.FromResult(HasExternalHandler(viewIntent));
+    }
+
+    public override Task ViewFileAsync(DecryptedFileInfo file)
+    {
+        AndroidUri uri = GetUri(file.FilePath);
+        Intent quickViewIntent = CreateQuickViewIntent(uri, file.ContentType);
+        if (HasExternalHandler(quickViewIntent))
+        {
+            ComponentName? resolved = quickViewIntent.ResolveActivity(Platform.AppContext.PackageManager!);
+            if (resolved != null)
+            {
+                quickViewIntent.SetPackage(resolved.PackageName);
+            }
+            quickViewIntent.PutExtra(Intent.ExtraQuickViewFeatures, [QuickViewConstants.FeatureView]);
+
+            Platform.CurrentActivity!.StartActivity(quickViewIntent);
+            return Task.CompletedTask;
+        }
+
+        // Fall back: hand the file to whatever app the user picks.
+        return base.ViewFileAsync(file);
+    }
+
+    private static AndroidUri GetUri(string filePath) =>
+        FileProvider.GetUriForFile(Platform.AppContext, $"{Platform.AppContext.PackageName}.fileProvider", new AndroidFile(filePath))!;
+
+    private static Intent CreateQuickViewIntent(AndroidUri uri, string contentType)
+    {
+        Intent intent = new(Intent.ActionQuickView);
+        intent.SetDataAndTypeAndNormalize(uri, contentType);
+        intent.AddFlags(ActivityFlags.GrantReadUriPermission);
+        return intent;
     }
 
     public override Task<bool> OpenInAsync(string filePath, string displayName, string contentType)
     {
-        (Context context, AndroidUri uri, string resolvedContentType) = PrepareHandoff(filePath, displayName, contentType);
+        (AndroidUri uri, string resolvedContentType) = PrepareHandoff(filePath, displayName, contentType);
 
         using Intent viewIntent = new(Intent.ActionView);
         viewIntent.SetDataAndType(uri, resolvedContentType);
         viewIntent.AddFlags(ActivityFlags.GrantReadUriPermission);
 
-        return Task.FromResult(TryStartExternalChooser(context, viewIntent, displayName));
+        return Task.FromResult(TryStartExternalChooser(viewIntent, displayName));
     }
 
     public override Task SendToAsync(string filePath, string displayName, string contentType)
     {
-        (Context context, AndroidUri uri, string resolvedContentType) = PrepareHandoff(filePath, displayName, contentType);
+        (AndroidUri uri, string resolvedContentType) = PrepareHandoff(filePath, displayName, contentType);
 
         using Intent sendIntent = new(Intent.ActionSend);
         sendIntent.SetType(resolvedContentType);
         sendIntent.PutExtra(Intent.ExtraStream, uri);
         sendIntent.AddFlags(ActivityFlags.GrantReadUriPermission);
 
-        TryStartExternalChooser(context, sendIntent, displayName);
+        TryStartExternalChooser(sendIntent, displayName);
         return Task.CompletedTask;
     }
 
-    private static (Context Context, AndroidUri Uri, string ContentType) PrepareHandoff(
+    private static (AndroidUri Uri, string ContentType) PrepareHandoff(
         string filePath,
         string displayName,
         string contentType)
     {
         EnsureReadableFile(filePath);
 
-        Context context = Platform.AppContext;
         string resolvedContentType = string.IsNullOrWhiteSpace(contentType)
             ? ContentTypeDetector.DetectContentType(displayName)
             : contentType;
         AndroidUri uri = FileProvider.GetUriForFile(
-            context,
-            $"{context.PackageName}.fileProvider",
+            Platform.AppContext,
+            $"{Platform.AppContext.PackageName}.fileProvider",
             new AndroidFile(filePath))!;
 
-        return (context, uri, resolvedContentType);
+        return (uri, resolvedContentType);
     }
 
     // Xecrets Ez hands off its own decrypted files via this same FileProvider authority (see
@@ -127,14 +160,14 @@ public class AndroidFileService : FileServiceBase
     // Xecrets Ez's own manifest intent-filters (content scheme, any mime type) make it a valid resolver for its own
     // outgoing View/Send requests, on top of any genuine external app. Excluding our own package here, and from the
     // chooser below, is what stops Xecrets from ever opening a file it just handed to "another app" back on itself.
-    private static bool HasExternalHandler(Context context, Intent intent)
+    private static bool HasExternalHandler(Intent intent)
     {
-        IList<ResolveInfo> activities = context.PackageManager!.QueryIntentActivities(
+        IList<ResolveInfo> activities = Platform.AppContext.PackageManager!.QueryIntentActivities(
             intent,
             PackageInfoFlags.MatchDefaultOnly);
         foreach (ResolveInfo activity in activities)
         {
-            if (activity.ActivityInfo?.PackageName != context.PackageName)
+            if (activity.ActivityInfo?.PackageName != Platform.AppContext.PackageName)
             {
                 return true;
             }
@@ -143,9 +176,9 @@ public class AndroidFileService : FileServiceBase
         return false;
     }
 
-    private static bool TryStartExternalChooser(Context context, Intent intent, string title)
+    private static bool TryStartExternalChooser(Intent intent, string title)
     {
-        if (!HasExternalHandler(context, intent))
+        if (!HasExternalHandler(intent))
         {
             return false;
         }
@@ -153,7 +186,7 @@ public class AndroidFileService : FileServiceBase
         Intent chooser = Intent.CreateChooser(intent, title)!;
         chooser.PutParcelableArrayListExtra(
             Intent.ExtraExcludeComponents,
-            new List<IParcelable> { new ComponentName(context, Java.Lang.Class.FromType(typeof(MainActivity))) });
+            [new ComponentName(Platform.AppContext, Java.Lang.Class.FromType(typeof(MainActivity)))]);
         Platform.CurrentActivity!.StartActivity(chooser);
         return true;
     }

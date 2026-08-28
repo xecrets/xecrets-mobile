@@ -71,7 +71,7 @@ public partial class PreviewPageModel(
     [NotifyCanExecuteChangedFor(nameof(SaveAsCommand))]
     [NotifyCanExecuteChangedFor(nameof(SendToCommand))]
     [NotifyCanExecuteChangedFor(nameof(CloseCommand))]
-    private partial bool IsBusy { get; set; }
+    public partial bool IsBusy { get; set; }
 
     [RelayCommand]
     private async Task Initialize()

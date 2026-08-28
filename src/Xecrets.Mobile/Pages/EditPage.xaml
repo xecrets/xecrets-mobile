@@ -36,32 +36,38 @@
             <utilities:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
         </ResourceDictionary>
     </ContentPage.Resources>
-    <ScrollView>
-        <VerticalStackLayout Padding="{StaticResource ContentTitleLayoutPadding}"
-                             Spacing="{StaticResource LayoutSpacing}">
-            <Border Style="{StaticResource CardStyle}">
-                <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
-                    <Label Text="{Binding FileNameText}"
-                           Style="{StaticResource FileNameStyle}" />
-                    <Editor Text="{Binding Text, Mode=TwoWay}"
-                            AutoSize="TextChanges"
-                            MinimumHeightRequest="320" />
-                </VerticalStackLayout>
-            </Border>
-            <Editor Text="{Binding StatusText}"
-                    IsVisible="{Binding StatusText, Converter={StaticResource StringNotEmptyConverter}}"
-                    Style="{StaticResource StatusTextStyle}" />
-            <HorizontalStackLayout Spacing="{StaticResource LayoutSpacing}"
-                                   HorizontalOptions="Center">
-                <Button Text="{x:Static modelUtilities:MobileTexts.ButtonSave}"
-                        IsVisible="{Binding IsSaveVisible}"
-                        Command="{Binding SaveCommand}" />
-                <Button Text="{x:Static modelUtilities:MobileTexts.ButtonSave}"
-                        IsVisible="{Binding IsSaveToLocationVisible}"
-                        Command="{Binding SaveToLocationCommand}" />
-                <Button Text="{x:Static modelUtilities:MobileTexts.LabelClose}"
-                        Command="{Binding CloseCommand}" />
-            </HorizontalStackLayout>
-        </VerticalStackLayout>
-    </ScrollView>
+    <Grid>
+        <ScrollView>
+            <VerticalStackLayout Padding="{StaticResource ContentTitleLayoutPadding}"
+                                 Spacing="{StaticResource LayoutSpacing}">
+                <Border Style="{StaticResource CardStyle}">
+                    <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
+                        <Label Text="{Binding FileNameText}"
+                               Style="{StaticResource FileNameStyle}" />
+                        <Editor Text="{Binding Text, Mode=TwoWay}"
+                                AutoSize="TextChanges"
+                                MinimumHeightRequest="320" />
+                    </VerticalStackLayout>
+                </Border>
+                <Editor Text="{Binding StatusText}"
+                        IsVisible="{Binding StatusText, Converter={StaticResource StringNotEmptyConverter}}"
+                        Style="{StaticResource StatusTextStyle}" />
+                <HorizontalStackLayout Spacing="{StaticResource LayoutSpacing}"
+                                       HorizontalOptions="Center">
+                    <Button Text="{x:Static modelUtilities:MobileTexts.ButtonSave}"
+                            IsVisible="{Binding IsSaveVisible}"
+                            Command="{Binding SaveCommand}" />
+                    <Button Text="{x:Static modelUtilities:MobileTexts.ButtonSave}"
+                            IsVisible="{Binding IsSaveToLocationVisible}"
+                            Command="{Binding SaveToLocationCommand}" />
+                    <Button Text="{x:Static modelUtilities:MobileTexts.LabelClose}"
+                            Command="{Binding CloseCommand}" />
+                </HorizontalStackLayout>
+            </VerticalStackLayout>
+        </ScrollView>
+        <ActivityIndicator IsRunning="{Binding IsBusy}"
+                           IsVisible="{Binding IsBusy}"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center" />
+    </Grid>
 </ContentPage>

@@ -28,6 +28,8 @@
 
 #endregion Copyright and GPL License
 
+using Xecrets.Common.Models;
+
 using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Abstractions;
@@ -54,7 +56,7 @@ public interface IWorkFolderService
     /// </summary>
     Task RenameFolderAsync(WorkFolder folder, string displayName);
 
-    Task SaveFolderOrderAsync(IReadOnlyList<WorkFolder> folders);
+    Task SaveFoldersAsync(IReadOnlyList<WorkFolder> folders);
 
     Task<WorkFolderFile?> PickFileAsync(WorkFolder folder, FilePickerKind pickerKind);
 }
