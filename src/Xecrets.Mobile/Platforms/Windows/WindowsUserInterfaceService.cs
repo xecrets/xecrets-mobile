@@ -37,7 +37,7 @@ using Xecrets.Mobile.Services;
 
 namespace Xecrets.Mobile.Platforms.Windows;
 
-public class WindowsUserInterfaceService : DefaultUserInterfaceService
+public class WindowsUserInterfaceService(IBuildInformation buildInformation) : DefaultUserInterfaceService(buildInformation)
 {
     // A Toast on Windows is an operating system notification rather than something shown in the app,
     // and it needs the app to be registered with the notification system, which an unpackaged app

@@ -40,12 +40,13 @@ using Microsoft.Maui.Controls;
 
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
+using Xecrets.Texts;
 
 using AppTexts = Xecrets.Texts.Texts;
 
 namespace Xecrets.Mobile.Services;
 
-public class DefaultUserInterfaceService : IUserInterfaceService
+public class DefaultUserInterfaceService(IBuildInformation buildInformation) : IUserInterfaceService
 {
     public bool IsShellAvailable => Shell.Current is not null;
 
@@ -120,7 +121,8 @@ public class DefaultUserInterfaceService : IUserInterfaceService
 
     public Task GoBackAsync() => NavigateToRouteAsync("..");
 
-    public Task OpenBrowserAsync(string url) => Launcher.Default.OpenAsync(url);
+    public Task OpenBrowserAsync(string url) => Launcher.Default.OpenAsync(
+        url.ToSite(buildInformation.IsDebug || buildInformation.IsBeta));
 
     private static Task NavigateToRouteAsync(string route) => Shell.Current!.GoToAsync(route);
 
