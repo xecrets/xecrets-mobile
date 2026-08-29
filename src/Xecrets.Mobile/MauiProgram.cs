@@ -36,6 +36,7 @@ using Microsoft.Maui.Controls.Hosting;
 using Microsoft.Maui.Hosting;
 
 using System;
+using System.Globalization;
 
 using Xecrets.Core.Public;
 using Xecrets.Common.Abstractions;
@@ -48,6 +49,7 @@ using Xecrets.Mobile.Models.Services;
 using Xecrets.Mobile.Pages;
 using Xecrets.Mobile.Services;
 using Xecrets.Mobile.Utilities;
+using Xecrets.Texts;
 
 namespace Xecrets.Mobile;
 
@@ -57,6 +59,7 @@ public static class MauiProgram
 
     public static MauiApp CreateMauiApp()
     {
+        string deviceFormattingCultureName = CultureInfo.CurrentCulture.Name;
         BuildInformation buildInformation = new();
         MauiAppBuilder builder = MauiApp.CreateBuilder();
         builder
@@ -96,11 +99,13 @@ public static class MauiProgram
         builder.Services.AddSingleton<IBuildInformation>(buildInformation);
         builder.Services.AddSingleton<IPageHeaderService, PageHeaderService>();
         builder.Services.AddSingleton<IThirdPartyNoticesService, ThirdPartyNoticesService>();
+        builder.Services.AddSingleton(new Cultures(() => deviceFormattingCultureName));
+        builder.Services.AddSingleton<MobileCultureCoordinator>();
 
-        builder.Services.AddSingleton<StartupPageModel>();
-        builder.Services.AddSingleton<LoginPageModel>();
-        builder.Services.AddSingleton<CreateProfilePageModel>();
-        builder.Services.AddSingleton<HomePageModel>();
+        builder.Services.AddTransient<StartupPageModel>();
+        builder.Services.AddTransient<LoginPageModel>();
+        builder.Services.AddTransient<CreateProfilePageModel>();
+        builder.Services.AddTransient<HomePageModel>();
 
         builder.Services.AddTransientWithShellRoute<PreviewPage, PreviewPageModel>("preview");
         builder.Services.AddTransientWithShellRoute<ViewPage, ViewPageModel>("view");

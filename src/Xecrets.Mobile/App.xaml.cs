@@ -29,9 +29,13 @@
 #endregion Copyright and GPL License
 
 using Microsoft.Maui;
+using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls;
 
+using Microsoft.Extensions.DependencyInjection;
+
 using System;
+using System.Threading.Tasks;
 
 using Xecrets.Common.Abstractions;
 using Xecrets.Mobile.Abstractions;
@@ -49,7 +53,9 @@ public partial class App
     private readonly SessionExitService _sessionExitService;
     private readonly IBuildInformation _buildInformation;
     private readonly IXecretsDataStore _dataStore;
-    private readonly StartupPageModel _startupPageModel;
+    private readonly IServiceProvider _services;
+    private readonly MobileCultureCoordinator _cultureCoordinator;
+    private Window? _window;
 
     public App(
         ITransientFileService transientFileService,
@@ -57,7 +63,8 @@ public partial class App
         SessionExitService sessionExitService,
         IBuildInformation buildInformation,
         IXecretsDataStore dataStore,
-        StartupPageModel startupPageModel,
+        IServiceProvider services,
+        MobileCultureCoordinator cultureCoordinator,
         IPlatformServices platformServices)
     {
         CrashLogService.RegisterPlatformHandlers(platformServices);
@@ -66,20 +73,18 @@ public partial class App
         _sessionExitService = sessionExitService;
         _buildInformation = buildInformation;
         _dataStore = dataStore;
-        _startupPageModel = startupPageModel;
+        _services = services;
+        _cultureCoordinator = cultureCoordinator;
         InitializeComponent();
     }
 
     protected override Window CreateWindow(IActivationState? activationState)
     {
         _transientFileService.WipeTrackedFiles();
-        Window window = new(new AppShell(
-            _userInterfaceService,
-            _sessionExitService,
-            _buildInformation,
-            _dataStore,
-            _startupPageModel));
+        Window window = new(new ContentPage());
         window.Created += OnWindowCreated;
+        window.Created += InitializeWindowAsync;
+        _window = window;
         return window;
     }
 
@@ -92,4 +97,33 @@ public partial class App
 
         PlatformWindow.Configure(window);
     }
+
+    private async void InitializeWindowAsync(object? sender, EventArgs e)
+    {
+        if (sender is not Window window)
+        {
+            return;
+        }
+
+        await _cultureCoordinator.ApplySavedAsync();
+        window.Page = CreateAppShell();
+    }
+
+    internal Task ApplyCultureAndReloadAsync(string cultureName)
+    {
+        Window window = _window ?? throw new InvalidOperationException("The application window has not been created.");
+        return _cultureCoordinator.ApplyAndReloadAsync(cultureName, () =>
+            MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                window.Page = CreateAppShell();
+                return Task.CompletedTask;
+            }));
+    }
+
+    private AppShell CreateAppShell() => new(
+        _userInterfaceService,
+        _sessionExitService,
+        _buildInformation,
+        _dataStore,
+        _services.GetRequiredService<StartupPageModel>());
 }
