@@ -36,7 +36,7 @@ using Android.Runtime;
 using Microsoft.Maui;
 using Microsoft.Maui.Hosting;
 
-using Xecrets.Mobile.Services;
+using Xecrets.Mobile;
 
 namespace Xecrets.Mobile.Platforms.Android;
 
@@ -45,7 +45,7 @@ public class MainApplication(IntPtr handle, JniHandleOwnership ownership) : Maui
 {
     public override void OnCreate()
     {
-        CrashLogService.RegisterHandlers();
+        MauiProgram.CrashLog.RegisterHandlers();
         base.OnCreate();
     }
 
@@ -57,7 +57,7 @@ public class MainApplication(IntPtr handle, JniHandleOwnership ownership) : Maui
         }
         catch (Exception ex)
         {
-            CrashLogService.WriteCrashLog("Unhandled Android application startup exception", ex);
+            MauiProgram.CrashLog.WriteCrashLog("Unhandled Android application startup exception", ex);
             throw;
         }
     }

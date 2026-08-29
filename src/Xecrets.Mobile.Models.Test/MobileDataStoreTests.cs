@@ -237,6 +237,12 @@ public sealed class MobileDataStoreTests
     {
         public bool HasPendingCrashLog => false;
 
+        public void RegisterHandlers()
+        {
+        }
+
+        public string ReadCurrent() => string.Empty;
+
         public void WriteCrashLog(string source, object? crash)
         {
         }

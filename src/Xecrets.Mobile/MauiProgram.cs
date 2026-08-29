@@ -55,6 +55,8 @@ namespace Xecrets.Mobile;
 
 public static class MauiProgram
 {
+    internal static ICrashLogService CrashLog { get; } = new CrashLogService();
+
     internal static IServiceProvider? Services { get; private set; }
 
     public static MauiApp CreateMauiApp()
@@ -95,7 +97,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<ICrashTestService, CrashTestService>();
         builder.Services.AddSingleton<IWorkFolderOperationService, WorkFolderOperationService>();
         builder.Services.AddSingleton<WorkFolderStorage>();
-        builder.Services.AddSingleton<ICrashLogService, CrashLogAdapter>();
+        builder.Services.AddSingleton(CrashLog);
         builder.Services.AddSingleton<IBuildInformation>(buildInformation);
         builder.Services.AddSingleton<IPageHeaderService, PageHeaderService>();
         builder.Services.AddSingleton<IThirdPartyNoticesService, ThirdPartyNoticesService>();

@@ -30,17 +30,17 @@
 
 using ObjCRuntime;
 
-using Xecrets.Mobile.Services;
+using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Platforms.Apple;
 
 internal static class AppleCrashHandler
 {
-    public static void Register()
+    public static void Register(ICrashLogService crashLogService)
     {
         Runtime.MarshalManagedException += (_, args) =>
         {
-            CrashLogService.WriteCrashLog("Unhandled Apple managed exception", args.Exception);
+            crashLogService.WriteCrashLog("Unhandled Apple managed exception", args.Exception);
             args.ExceptionMode = MarshalManagedExceptionMode.Abort;
         };
     }

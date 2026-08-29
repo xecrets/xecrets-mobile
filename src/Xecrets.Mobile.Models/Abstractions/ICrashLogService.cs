@@ -34,5 +34,9 @@ public interface ICrashLogService
 {
     bool HasPendingCrashLog { get; }
 
+    void RegisterHandlers();
+
+    string ReadCurrent();
+
     void WriteCrashLog(string source, object? crash);
 }

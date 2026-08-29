@@ -33,6 +33,7 @@ using System;
 using Microsoft.Maui.Controls;
 
 using Xecrets.Mobile.Abstractions;
+using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Services;
 
@@ -40,7 +41,7 @@ public abstract class PlatformServicesBase : IPlatformServices
 {
     public virtual string CrashPageAdditionalInformation => string.Empty;
 
-    public virtual void RegisterCrashHandlers()
+    public virtual void RegisterCrashHandlers(ICrashLogService crashLogService)
     {
     }
 

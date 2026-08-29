@@ -37,8 +37,6 @@ using System.Runtime.Versioning;
 using System.Text;
 using System.Threading.Tasks;
 
-using Microsoft.Maui;
-
 using Windows.Storage;
 using Windows.Storage.Pickers;
 

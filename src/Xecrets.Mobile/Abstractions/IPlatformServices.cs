@@ -30,6 +30,8 @@
 
 using Microsoft.Maui.Controls;
 
+using Xecrets.Mobile.Models.Abstractions;
+
 namespace Xecrets.Mobile.Abstractions;
 
 public interface IPlatformServices
@@ -38,7 +40,7 @@ public interface IPlatformServices
 
     void ConfigurePasswordEntry(Entry entry, PasswordEntryPurpose purpose);
 
-    void RegisterCrashHandlers();
+    void RegisterCrashHandlers(ICrashLogService crashLogService);
 
     void CrashNative();
 }

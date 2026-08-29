@@ -32,7 +32,7 @@ using System;
 
 using UIKit;
 
-using Xecrets.Mobile.Services;
+using Xecrets.Mobile;
 
 namespace Xecrets.Mobile.Platforms.iOS;
 
@@ -40,14 +40,14 @@ public class Program
 {
     private static void Main(string[] args)
     {
-        CrashLogService.RegisterHandlers();
+        MauiProgram.CrashLog.RegisterHandlers();
         try
         {
             UIApplication.Main(args, null, typeof(AppDelegate));
         }
         catch (Exception ex)
         {
-            CrashLogService.WriteCrashLog("Unhandled iOS application exception", ex);
+            MauiProgram.CrashLog.WriteCrashLog("Unhandled iOS application exception", ex);
             throw;
         }
     }

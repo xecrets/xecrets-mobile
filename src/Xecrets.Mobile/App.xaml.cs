@@ -65,9 +65,10 @@ public partial class App
         IXecretsDataStore dataStore,
         IServiceProvider services,
         MobileCultureCoordinator cultureCoordinator,
-        IPlatformServices platformServices)
+        IPlatformServices platformServices,
+        ICrashLogService crashLogService)
     {
-        CrashLogService.RegisterPlatformHandlers(platformServices);
+        platformServices.RegisterCrashHandlers(crashLogService);
         _transientFileService = transientFileService;
         _userInterfaceService = userInterfaceService;
         _sessionExitService = sessionExitService;

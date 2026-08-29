@@ -38,6 +38,7 @@ using Microsoft.Maui.Handlers;
 using UIKit;
 
 using Xecrets.Mobile.Abstractions;
+using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Utilities;
 using Xecrets.Mobile.Platforms.Apple;
 using Xecrets.Mobile.Services;
@@ -50,9 +51,9 @@ public partial class IOSServices : PlatformServicesBase
 {
     public override string CrashPageAdditionalInformation => MobileTexts.CrashPageAppleAdditionalInformation;
 
-    public override void RegisterCrashHandlers()
+    public override void RegisterCrashHandlers(ICrashLogService crashLogService)
     {
-        AppleCrashHandler.Register();
+        AppleCrashHandler.Register(crashLogService);
     }
 
     public override void CrashNative()

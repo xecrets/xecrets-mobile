@@ -41,6 +41,7 @@ using Microsoft.Maui.Controls;
 using Microsoft.Maui.Handlers;
 
 using Xecrets.Mobile.Abstractions;
+using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Services;
 using Xecrets.Mobile.Utilities;
 
@@ -49,10 +50,10 @@ namespace Xecrets.Mobile.Platforms.Android;
 [SupportedOSPlatform("android28.0")]
 public class AndroidServices : PlatformServicesBase
 {
-    public override void RegisterCrashHandlers()
+    public override void RegisterCrashHandlers(ICrashLogService crashLogService)
     {
         AndroidEnvironment.UnhandledExceptionRaiser += (_, args) =>
-            CrashLogService.WriteCrashLog("Unhandled Android runtime exception", args.Exception);
+            crashLogService.WriteCrashLog("Unhandled Android runtime exception", args.Exception);
     }
 
     public override void CrashNative()

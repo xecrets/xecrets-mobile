@@ -35,7 +35,7 @@ using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Services;
 
-public sealed class CrashTestService(IPlatformServices platformServices) : ICrashTestService
+public sealed class CrashTestService(IPlatformServices platformServices, ICrashLogService crashLogService) : ICrashTestService
 {
     private CrashTestOperation? _operation;
     private bool _native;
@@ -56,7 +56,7 @@ public sealed class CrashTestService(IPlatformServices platformServices) : ICras
         _operation = null;
         if (_native)
         {
-            CrashLogService.WriteCrashLog($"Artificial native crash during {operation}", null);
+            crashLogService.WriteCrashLog($"Artificial native crash during {operation}", null);
             platformServices.CrashNative();
             return;
         }

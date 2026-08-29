@@ -44,6 +44,7 @@ public sealed class SessionExitService(
         previewService.Current.Clear();
         transientFileService.WipeTrackedFiles();
         profileService.SignOut();
+
         AppDestination destination = await profileService.HasProfileAsync()
             ? AppDestination.Login
             : AppDestination.CreateProfile;

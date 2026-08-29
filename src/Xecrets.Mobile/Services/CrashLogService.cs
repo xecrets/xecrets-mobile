@@ -38,37 +38,40 @@ using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Devices;
 using Microsoft.Maui.Storage;
 
-using Xecrets.Mobile.Abstractions;
+using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Services;
 
-public static class CrashLogService
+public sealed class CrashLogService : ICrashLogService
 {
     private const string _crashLogDirectoryName = "XecretsCrashLogs";
 
     private const string _crashLogFileName = "crashlog.txt";
 
-    public static bool HasPendingCrashLog => File.Exists(CurrentPath);
+    public bool HasPendingCrashLog => File.Exists(CurrentPath);
 
     private static string CurrentDirectory =>
         Path.Combine(FileSystem.Current.CacheDirectory, _crashLogDirectoryName);
 
     private static string CurrentPath => Path.Combine(CurrentDirectory, _crashLogFileName);
 
-    public static void RegisterHandlers()
+    public void RegisterHandlers()
     {
         AppDomain.CurrentDomain.UnhandledException += (_, args) =>
             WriteCrashLog("Unhandled managed exception", args.ExceptionObject);
+
         TaskScheduler.UnobservedTaskException += (_, args) =>
             WriteCrashLog("Unobserved task exception", args.Exception);
     }
 
-    public static void RegisterPlatformHandlers(IPlatformServices platformServices) =>
-        platformServices.RegisterCrashHandlers();
+    public string ReadCurrent()
+    {
+        string report = File.ReadAllText(CurrentPath);
+        Rotate();
+        return report;
+    }
 
-    public static string ReadCurrent() => File.ReadAllText(CurrentPath);
-
-    public static void Rotate()
+    private static void Rotate()
     {
         string directory = CurrentDirectory;
         string oldestPath = Path.Combine(directory, "crashlog.9.txt");
@@ -86,7 +89,7 @@ public static class CrashLogService
         File.Move(CurrentPath, Path.Combine(directory, "crashlog.1.txt"));
     }
 
-    public static void WriteCrashLog(string source, object? crash)
+    public void WriteCrashLog(string source, object? crash)
     {
         Directory.CreateDirectory(CurrentDirectory);
 
@@ -100,6 +103,7 @@ public static class CrashLogService
         report.AppendLine($"Architecture: {RuntimeInformation.ProcessArchitecture}");
         report.AppendLine();
         report.AppendLine(crash?.ToString() ?? "No managed exception information was available.");
+
         File.WriteAllText(CurrentPath, report.ToString());
     }
 }

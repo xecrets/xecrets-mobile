@@ -37,7 +37,6 @@ using Microsoft.Maui.ApplicationModel.DataTransfer;
 using Xecrets.Mobile.Abstractions;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.PageModels;
-using Xecrets.Mobile.Services;
 
 using AppTexts = Xecrets.Texts.Texts;
 
@@ -48,15 +47,18 @@ public partial class CrashPage
     private const string _supportUrl = "https://www.axantum.com/support";
     private readonly StartupPageModel _startupPageModel;
     private readonly IUserInterfaceService _userInterfaceService;
+    private readonly ICrashLogService _crashLogService;
     private bool _initialized;
 
     public CrashPage(
         StartupPageModel startupPageModel,
         IPlatformServices platformServices,
-        IUserInterfaceService userInterfaceService)
+        IUserInterfaceService userInterfaceService,
+        ICrashLogService crashLogService)
     {
         _startupPageModel = startupPageModel;
         _userInterfaceService = userInterfaceService;
+        _crashLogService = crashLogService;
         PlatformAdditionalInformation = platformServices.CrashPageAdditionalInformation;
         InitializeComponent();
         BindingContext = this;
@@ -74,10 +76,9 @@ public partial class CrashPage
         }
 
         _initialized = true;
-        string report = CrashLogService.ReadCurrent();
+        string report = _crashLogService.ReadCurrent();
         CrashReportEditor.Text = report;
         await Clipboard.Default.SetTextAsync(report);
-        CrashLogService.Rotate();
     }
 
     [RelayCommand]

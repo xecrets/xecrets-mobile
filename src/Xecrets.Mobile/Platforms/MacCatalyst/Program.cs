@@ -32,7 +32,7 @@ using UIKit;
 
 using System;
 
-using Xecrets.Mobile.Services;
+using Xecrets.Mobile;
 
 namespace Xecrets.Mobile.Platforms.MacCatalyst;
 
@@ -40,14 +40,14 @@ public class Program
 {
     private static void Main(string[] args)
     {
-        CrashLogService.RegisterHandlers();
+        MauiProgram.CrashLog.RegisterHandlers();
         try
         {
             UIApplication.Main(args, null, typeof(AppDelegate));
         }
         catch (Exception ex)
         {
-            CrashLogService.WriteCrashLog("Unhandled Mac Catalyst application exception", ex);
+            MauiProgram.CrashLog.WriteCrashLog("Unhandled Mac Catalyst application exception", ex);
             throw;
         }
     }

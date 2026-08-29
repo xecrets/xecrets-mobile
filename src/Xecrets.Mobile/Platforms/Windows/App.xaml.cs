@@ -31,8 +31,6 @@
 using Microsoft.Maui;
 using Microsoft.Maui.Hosting;
 
-using Xecrets.Mobile.Services;
-
 namespace Xecrets.Mobile.Platforms.Windows;
 
 /// <summary>
@@ -46,7 +44,7 @@ public partial class App : MauiWinUIApplication
     /// </summary>
     public App()
     {
-        CrashLogService.RegisterHandlers();
+        MauiProgram.CrashLog.RegisterHandlers();
         InitializeComponent();
     }
 
