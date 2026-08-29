@@ -113,12 +113,14 @@
                         <ImageButton Grid.Row="0"
                                      HorizontalOptions="End"
                                      VerticalOptions="Start"
+                                     Background="Transparent"
+                                     Padding="8"
                                      Command="{Binding AddCommand}">
                             <ImageButton.Source>
-                                <FontImageSource Glyph="{x:Static f:FluentUI.add_24_regular}"
+                                <FontImageSource Glyph="{x:Static f:FluentUI.add_28_regular}"
                                                  FontFamily="{x:Static f:FluentUI.FontFamily}"
                                                  Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
-                                                 Size="{StaticResource size240}" />
+                                                 Size="28" />
                             </ImageButton.Source>
                         </ImageButton>
                         <pageControls:PageInformationButton Grid.Row="0"

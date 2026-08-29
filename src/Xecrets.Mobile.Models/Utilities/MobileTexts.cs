@@ -47,7 +47,7 @@ public static class MobileTexts
 
     public static string ButtonEncryptAs => "Encrypt And…";
 
-    public static string ButtonEncryptToShare => "Encrypt To…";
+    public static string ButtonEncryptToShare => "Encrypt To And…";
 
     public static string ButtonOpenIn => "Open In…";
 
