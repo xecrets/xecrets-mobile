@@ -25,7 +25,7 @@ and run  the following from `xecrets-mobile/src/Xecrets.Mobile`:
 
 There are no external dependencies that are not resolved with NuGet.
 
-The solution file is `Xecrets.Mobile.slnx`.
+The solution file is `src/Xecrets.Mobile.slnx`.
 
 ## Running the Tests
 
@@ -36,7 +36,7 @@ from the repository root with:
 
 `./.github/scripts/Invoke-Tests.ps1`
 
-That runs every `*.Test.csproj` in `Xecrets.Mobile.slnx` and fails if any test fails —
+That runs every `*.Test.csproj` in `src/Xecrets.Mobile.slnx` and fails if any test fails —
 exactly what the `test` job in CI runs, so a green run locally means a green run there.
 Individual projects can of course also be run with `dotnet test` or from the IDE.
 

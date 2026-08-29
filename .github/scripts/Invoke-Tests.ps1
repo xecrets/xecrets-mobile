@@ -47,7 +47,7 @@ $ErrorActionPreference = 'Stop'
 # already exists, as on Windows and macOS.
 [void][Environment]::GetFolderPath([Environment+SpecialFolder]::MyDocuments, [Environment+SpecialFolderOption]::Create)
 
-$solution = 'src/Xecrets.Mobile/Xecrets.Mobile.slnx'
+$solution = 'src/Xecrets.Mobile.slnx'
 $solutionDirectory = Split-Path -Parent $solution
 
 $projects = ([xml](Get-Content -Raw $solution)).SelectNodes('//Project') |

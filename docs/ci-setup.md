@@ -364,12 +364,12 @@ Testers:
   which run in parallel with it.
 - The `test` job runs the unit tests on Ubuntu via
   `.github/scripts/Invoke-Tests.ps1`, which runs every `*.Test.csproj` listed in
-  `Xecrets.Mobile.slnx` — currently the tests of the shared encryption library in
-  `xecrets-net`, at the same resolved commit the platform builds compile against. The
-  job needs only the `xecrets-net` sibling, since those projects reference nothing
-  outside it. Like `lint`, it runs in parallel with the platform builds: a failing test
-  fails the run without cancelling them, so one run reports everything that is wrong at
-  once. `build-state` requires it, so a run with failing tests is never recorded as
-  built and the nightly gate will try the branch again.
+  `src/Xecrets.Mobile.slnx` — currently the shared-library tests in `xecrets-net` and
+  `xecrets-common`, plus the mobile-model tests. The job checks out the sibling
+  repositories those tests reference before running them. Like `lint`, it runs in
+  parallel with the platform builds: a failing test fails the run without cancelling
+  them, so one run reports everything that is wrong at once. `build-state` requires it,
+  so a run with failing tests is never recorded as built and the nightly gate will try
+  the branch again.
 - Contributors run the same script locally before submitting; see
   [CONTRIBUTING.md](../CONTRIBUTING.md#running-the-tests).

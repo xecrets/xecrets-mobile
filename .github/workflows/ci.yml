@@ -10,7 +10,7 @@
 #   - Actions: pinned to full commit SHAs; Dependabot proposes updates.
 #
 # Tests:
-#   - The 'test' job runs every '*.Test.csproj' listed in Xecrets.Mobile.slnx, which is
+#   - The 'test' job runs every '*.Test.csproj' listed in src/Xecrets.Mobile.slnx, which is
 #     the single source of truth for what is tested (.github/scripts/Invoke-Tests.ps1).
 #     These currently cover the shared encryption library (xecrets-net) and the shared
 #     text/data library (xecrets-common), run at the same commits the platform builds
@@ -163,7 +163,7 @@ jobs:
           path: xecrets-mobile
 
       # Every sibling that contributes a '*.Test.csproj' to the /Test/ folder in
-      # Xecrets.Mobile.slnx must be checked out here, or Invoke-Tests.ps1 fails with
+      # src/Xecrets.Mobile.slnx must be checked out here, or Invoke-Tests.ps1 fails with
       # "Project file does not exist" when it resolves that project's path.
       - name: Checkout xecrets-net
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
