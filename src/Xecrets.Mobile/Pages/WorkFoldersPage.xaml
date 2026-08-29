@@ -59,12 +59,12 @@
                                  Spacing="{StaticResource LayoutSpacing}">
                 <Border x:Name="ContentColumn"
                         HorizontalOptions="Center"
-                        Style="{StaticResource CardStyle}">
-                    <Grid>
-                        <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
+                        Style="{StaticResource PageInformationCardStyle}">
+                    <Grid RowDefinitions="Auto,Auto">
+                        <Grid x:Name="ContentBody" Grid.Row="1" Padding="{StaticResource PageInformationBodyPadding}">
+                            <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
                             <Label Text="{x:Static modelUtilities:MobileTexts.WorkFoldersContentTitle}"
                                    HorizontalOptions="Center"
-                                   Margin="0,12,0,0"
                                    Style="{StaticResource Title1}" />
                             <Editor Text="{Binding StatusText}"
                                     IsVisible="{Binding StatusText, Converter={StaticResource StringNotEmptyConverter}}"
@@ -108,10 +108,11 @@
                                 </DataTemplate>
                             </BindableLayout.ItemTemplate>
                             </VerticalStackLayout>
-                        </VerticalStackLayout>
-                        <ImageButton HorizontalOptions="End"
+                            </VerticalStackLayout>
+                        </Grid>
+                        <ImageButton Grid.Row="0"
+                                     HorizontalOptions="End"
                                      VerticalOptions="Start"
-                                     Margin="8"
                                      Command="{Binding AddCommand}">
                             <ImageButton.Source>
                                 <FontImageSource Glyph="{x:Static f:FluentUI.add_24_regular}"
@@ -120,7 +121,8 @@
                                                  Size="{StaticResource size240}" />
                             </ImageButton.Source>
                         </ImageButton>
-                        <pageControls:PageInformationButton Style="{StaticResource PageInformationButtonCorner}"
+                        <pageControls:PageInformationButton Grid.Row="0"
+                                                             Style="{StaticResource PageInformationButtonCorner}"
                                                              Title="{x:Static modelUtilities:MobileTexts.WorkFoldersContentTitle}"
                                                              Message="{Binding Description}" />
                     </Grid>

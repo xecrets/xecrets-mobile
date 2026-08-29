@@ -45,12 +45,12 @@
                                  Spacing="{StaticResource LayoutSpacing}">
                 <Border x:Name="ContentColumn"
                         HorizontalOptions="Center"
-                        Style="{StaticResource CardStyle}">
-                    <Grid>
-                        <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
+                        Style="{StaticResource PageInformationCardStyle}">
+                    <Grid RowDefinitions="Auto,Auto">
+                        <Grid x:Name="ContentBody" Grid.Row="1" Padding="{StaticResource PageInformationBodyPadding}">
+                            <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
                             <Label Text="{x:Static modelUtilities:MobileTexts.HomeContentTitle}"
                                    HorizontalOptions="Center"
-                                   Margin="0,12,0,0"
                                    Style="{StaticResource Title1}" />
                             <Editor Text="{Binding StatusText}"
                                     IsVisible="{Binding StatusText, Converter={StaticResource StringNotEmptyConverter}}"
@@ -73,8 +73,10 @@
                                 <Button Text="{x:Static modelUtilities:MobileTexts.ButtonEncryptToShare}"
                                         Command="{Binding EncryptToShareCommand}" />
                             </VerticalStackLayout>
-                        </VerticalStackLayout>
-                        <controls:PageInformationButton Style="{StaticResource PageInformationButtonCorner}"
+                            </VerticalStackLayout>
+                        </Grid>
+                        <controls:PageInformationButton Grid.Row="0"
+                                                        Style="{StaticResource PageInformationButtonCorner}"
                                                         Title="{x:Static modelUtilities:MobileTexts.HomeContentTitle}"
                                                         Message="{x:Static modelUtilities:MobileTexts.HomeDescription}" />
                     </Grid>

@@ -63,6 +63,6 @@ public partial class WorkFoldersPage : IQueryAttributable
 
     private void UpdateCenteredContentLayout(double pageWidth)
     {
-        LayoutMetrics.UpdateCenteredContentLayout(pageWidth, ContentRoot, ContentColumn, ActionButtonStack);
+        LayoutMetrics.UpdateCenteredContentLayout(pageWidth, ContentRoot, ContentColumn, ActionButtonStack, ContentBody.Padding);
     }
 }

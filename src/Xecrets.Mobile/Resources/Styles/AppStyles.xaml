@@ -36,7 +36,7 @@
            TargetType="controls:PageInformationButton">
         <Setter Property="HorizontalOptions" Value="Start" />
         <Setter Property="VerticalOptions" Value="Start" />
-        <Setter Property="Margin" Value="-20,-20,-20,0" />
+        <Setter Property="Margin" Value="0" />
     </Style>
 
     <x:Double x:Key="sizeNone">0</x:Double>
@@ -92,6 +92,12 @@
              x:TypeArguments="Thickness"
              Default="20">
         <OnIdiom.Desktop>24</OnIdiom.Desktop>
+    </OnIdiom>
+
+    <OnIdiom x:Key="PageInformationBodyPadding"
+             x:TypeArguments="Thickness"
+             Default="20,0,20,20">
+        <OnIdiom.Desktop>24,0,24,24</OnIdiom.Desktop>
     </OnIdiom>
 
     <FontImageSource x:Key="IconLight"
@@ -286,6 +292,13 @@
         <Setter Property="StrokeThickness" Value="1"/>
         <Setter Property="Padding" Value="{StaticResource CardPadding}"/>
     </Style>
+
+    <Style x:Key="PageInformationCardStyle"
+           TargetType="Border"
+           BasedOn="{StaticResource CardStyle}">
+        <Setter Property="Padding" Value="0" />
+    </Style>
+
 
     <Style TargetType="Button">
         <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
