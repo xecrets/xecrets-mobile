@@ -80,6 +80,7 @@
                                     <Grid ColumnDefinitions="Auto,*,Auto"
                                           ColumnSpacing="{StaticResource LayoutSpacing}">
                                         <ImageButton Grid.Column="0"
+                                                     Background="Transparent"
                                                      Command="{Binding RenameCommand, Source={RelativeSource AncestorType={x:Type pageModels:WorkFoldersPageModel}, Mode=FindAncestorBindingContext}, x:DataType=pageModels:WorkFoldersPageModel}"
                                                      CommandParameter="{Binding .}">
                                             <ImageButton.Source>
@@ -95,6 +96,7 @@
                                                 Command="{Binding OpenCommand, Source={RelativeSource AncestorType={x:Type pageModels:WorkFoldersPageModel}, Mode=FindAncestorBindingContext}, x:DataType=pageModels:WorkFoldersPageModel}"
                                                 CommandParameter="{Binding .}" />
                                         <ImageButton Grid.Column="2"
+                                                     Background="Transparent"
                                                      Command="{Binding RemoveCommand, Source={RelativeSource AncestorType={x:Type pageModels:WorkFoldersPageModel}, Mode=FindAncestorBindingContext}, x:DataType=pageModels:WorkFoldersPageModel}"
                                                      CommandParameter="{Binding .}">
                                             <ImageButton.Source>
