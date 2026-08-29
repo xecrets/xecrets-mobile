@@ -33,7 +33,7 @@
 # ci.yml. The sibling resolution rules live in SiblingResolution.ps1.
 #
 # Inputs (environment): GH_TOKEN (for gh), GITHUB_REPOSITORY, RUNNER_TEMP,
-# XECRETS_NET_REF, XECRETS_TEXTS_REF, XECRETS_LOCALIZATION_REF.
+# XECRETS_NET_REF, XECRETS_COMMON_REF, XECRETS_LOCALIZATION_REF.
 
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true

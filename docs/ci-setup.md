@@ -210,7 +210,7 @@ Nothing floats on "latest"; each pin has one authoritative location:
 | JDK                                        | `ci.yml` (`setup-java`, Temurin 21)                 | `java -version`                           |
 
 When you update the .NET SDK or workloads locally, update `global.json` in the same
-commit (note the sibling repos `xecrets-net`, `xecrets-texts` and
+commit (note the sibling repos `xecrets-net`, `xecrets-common` and
 `xecrets-localization` pin the same SDK version in their own `global.json` files and
 should be moved together). When you update Xcode, update `.xcode-version` — but first
 verify the version is installed on the `macos-26` image, listed at

@@ -10,7 +10,7 @@ Building the app requires side-by-side checkouts of these sibling repositories:
 - [xecrets-mobile](https://github.com/xecrets/xecrets-mobile)
 - [xecrets-net](https://github.com/axantum/xecrets-net)
 - [xecrets-localization](https://github.com/xecrets/xecrets-localization)
-- [xecrets-texts](https://github.com/xecrets/xecrets-texts)
+- [xecrets-common](https://github.com/xecrets/xecrets-common)
 
 The project uses relative project references and expects all four repository directories to have
 the same parent directory. The directory names must be exactly the repository names listed above.

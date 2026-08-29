@@ -32,7 +32,7 @@
 # resolved commits are checked out by every platform and recorded in build-state.
 #
 # Inputs (environment): GITHUB_EVENT_NAME, GITHUB_HEAD_REF, GITHUB_REF_NAME,
-# XECRETS_NET_REF, XECRETS_TEXTS_REF, XECRETS_LOCALIZATION_REF, GITHUB_OUTPUT.
+# XECRETS_NET_REF, XECRETS_COMMON_REF, XECRETS_LOCALIZATION_REF, GITHUB_OUTPUT.
 
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
@@ -43,12 +43,12 @@ $branch = if ($env:GITHUB_EVENT_NAME -eq 'pull_request') { $env:GITHUB_HEAD_REF 
 $siblings = Get-Siblings $branch
 
 $net = $siblings['xecrets-net']
-$texts = $siblings['xecrets-texts']
+$common = $siblings['xecrets-common']
 $localization = $siblings['xecrets-localization']
 
 @(
     "net-sha=$($net.Sha)"
-    "texts-sha=$($texts.Sha)"
+    "common-sha=$($common.Sha)"
     "localization-sha=$($localization.Sha)"
 ) | Add-Content -Path $env:GITHUB_OUTPUT
-Write-Output "Building '$branch': xecrets-net@$($net.Ref) ($($net.Sha)), xecrets-texts@$($texts.Ref) ($($texts.Sha)), xecrets-localization@$($localization.Ref) ($($localization.Sha))"
+Write-Output "Building '$branch': xecrets-net@$($net.Ref) ($($net.Sha)), xecrets-common@$($common.Ref) ($($common.Sha)), xecrets-localization@$($localization.Ref) ($($localization.Sha))"

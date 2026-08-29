@@ -69,7 +69,7 @@ function Get-Siblings {
 
     [ordered]@{
         'xecrets-net'          = Resolve-Sibling 'axantum/xecrets-net' $env:XECRETS_NET_REF $Branch
-        'xecrets-texts'        = Resolve-Sibling 'xecrets/xecrets-texts' $env:XECRETS_TEXTS_REF $Branch
+        'xecrets-common'       = Resolve-Sibling 'xecrets/xecrets-common' $env:XECRETS_COMMON_REF $Branch
         'xecrets-localization' = Resolve-Sibling 'xecrets/xecrets-localization' $env:XECRETS_LOCALIZATION_REF $Branch
     }
 }

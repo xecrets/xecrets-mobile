@@ -4,6 +4,6 @@
     <mapping directory="$PROJECT_DIR$/../../../xecrets-localization" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../.." vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../../../xecrets-net" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/../../../xecrets-texts" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../../../xecrets-common" vcs="Git" />
   </component>
 </project>
