@@ -36,8 +36,6 @@ using Android.Runtime;
 using Microsoft.Maui;
 using Microsoft.Maui.Hosting;
 
-using Xecrets.Mobile;
-
 namespace Xecrets.Mobile.Platforms.Android;
 
 [Application]

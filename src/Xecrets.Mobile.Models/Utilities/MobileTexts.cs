@@ -43,9 +43,9 @@ public static class MobileTexts
 
     public static string LabelContinue => "Continue";
 
-    public static string ButtonDecryptAs => "Decrypt As…";
+    public static string ButtonDecryptAs => "Decrypt And…";
 
-    public static string ButtonEncryptAs => "Encrypt As…";
+    public static string ButtonEncryptAs => "Encrypt And…";
 
     public static string ButtonEncryptToShare => "Encrypt To…";
 
@@ -73,7 +73,7 @@ public static class MobileTexts
 
     public static string DialogTextCannotSaveInPlace => "This file cannot be saved back on this device.";
 
-    public static string DialogTextConfirmOverwrite => "The file '{0}' already exists. Overwrite it?";
+    public static string DialogTextConfirmOverwrite => "The file \"{0}\" already exists. Overwrite it?";
 
     public static string DialogTextDecrypted => "The file was decrypted.";
 

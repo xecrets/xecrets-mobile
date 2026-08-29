@@ -44,37 +44,41 @@
             <Border x:Name="ContentColumn"
                     HorizontalOptions="Center"
                     Style="{StaticResource CardStyle}">
-                <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
-                <Label Text="{x:Static modelUtilities:MobileTexts.HeadingCreateUserFirstTimeSetup}"
-                       HorizontalOptions="Center"
-                       Style="{StaticResource Title1}" />
-                <Label Text="{x:Static modelUtilities:MobileTexts.ToolTipEmail}"
-                       Style="{StaticResource Body2}" />
-                <Entry Text="{Binding Email}"
-                       Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkEmail}"
-                       Keyboard="Email"
-                       ReturnType="Next" />
-                <controls:PasswordEntry x:Name="PasswordEntryControl"
-                                        Text="{Binding Password, Mode=TwoWay}"
-                                        Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkPassword}"
-                                        ToolTipProperties.Text="{x:Static modelUtilities:MobileTexts.ToolTipMasterPassword}"
-                                        ReturnType="Next" />
-                <controls:PasswordEntry x:Name="ConfirmPasswordEntryControl"
-                                        Text="{Binding ConfirmPassword, Mode=TwoWay}"
-                                        Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkConfirmPassword}"
-                                        ToolTipProperties.Text="{x:Static modelUtilities:MobileTexts.ToolTipMasterPassword}"
-                                        ReturnType="Go" />
-                <Label Text="{Binding ErrorText}"
-                       TextColor="Red"
-                       IsVisible="{Binding ErrorText, Converter={StaticResource StringNotEmptyConverter}}"
-                       Style="{StaticResource Caption1}" />
-                <VerticalStackLayout x:Name="ActionButtonStack"
-                                     HorizontalOptions="Center"
-                                     Spacing="{StaticResource LayoutSpacing}">
-                    <Button Text="{x:Static modelUtilities:MobileTexts.ButtonCreate}"
-                            Command="{Binding CreateCommand}" />
-                </VerticalStackLayout>
-                </VerticalStackLayout>
+                <Grid>
+                    <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
+                        <Label Text="{x:Static modelUtilities:MobileTexts.HeadingCreateUserFirstTimeSetup}"
+                               HorizontalOptions="Center"
+                               Margin="0,12,0,0"
+                               Style="{StaticResource Title1}" />
+                        <Entry Text="{Binding Email}"
+                               Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkEmail}"
+                               Keyboard="Email"
+                               ReturnType="Next" />
+                        <controls:PasswordEntry x:Name="PasswordEntryControl"
+                                                Text="{Binding Password, Mode=TwoWay}"
+                                                Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkPassword}"
+                                                ToolTipProperties.Text="{x:Static modelUtilities:MobileTexts.ToolTipMasterPassword}"
+                                                ReturnType="Next" />
+                        <controls:PasswordEntry x:Name="ConfirmPasswordEntryControl"
+                                                Text="{Binding ConfirmPassword, Mode=TwoWay}"
+                                                Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkConfirmPassword}"
+                                                ToolTipProperties.Text="{x:Static modelUtilities:MobileTexts.ToolTipMasterPassword}"
+                                                ReturnType="Go" />
+                        <Label Text="{Binding ErrorText}"
+                               TextColor="Red"
+                               IsVisible="{Binding ErrorText, Converter={StaticResource StringNotEmptyConverter}}"
+                               Style="{StaticResource Caption1}" />
+                        <VerticalStackLayout x:Name="ActionButtonStack"
+                                             HorizontalOptions="Center"
+                                             Spacing="{StaticResource LayoutSpacing}">
+                            <Button Text="{x:Static modelUtilities:MobileTexts.ButtonCreate}"
+                                    Command="{Binding CreateCommand}" />
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+                    <controls:PageInformationButton Style="{StaticResource PageInformationButtonCorner}"
+                                                    Title="{x:Static modelUtilities:MobileTexts.HeadingCreateUserFirstTimeSetup}"
+                                                    Message="{x:Static modelUtilities:MobileTexts.ToolTipEmail}" />
+                </Grid>
             </Border>
         </VerticalStackLayout>
     </ScrollView>

@@ -29,6 +29,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controls="clr-namespace:Microsoft.Maui.Controls;assembly=Microsoft.Maui.Controls"
              xmlns:f="clr-namespace:Fonts"
+             xmlns:pageControls="clr-namespace:Xecrets.Mobile.Controls"
              xmlns:models="clr-namespace:Xecrets.Common.Models;assembly=Xecrets.Common"
              xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
              xmlns:system="clr-namespace:System;assembly=System.Runtime"
@@ -59,35 +60,19 @@
                 <Border x:Name="ContentColumn"
                         HorizontalOptions="Center"
                         Style="{StaticResource CardStyle}">
-                    <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
-                        <Grid ColumnDefinitions="*,Auto">
-                            <!-- The title spans both columns so that it centers on the card the same way as
-                                 on every other page, with the add button overlaid at the trailing edge. -->
-                            <Label Grid.Column="0"
-                                   Grid.ColumnSpan="2"
-                                   Text="{x:Static modelUtilities:MobileTexts.WorkFoldersContentTitle}"
+                    <Grid>
+                        <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
+                            <Label Text="{x:Static modelUtilities:MobileTexts.WorkFoldersContentTitle}"
                                    HorizontalOptions="Center"
-                                   VerticalOptions="Center"
+                                   Margin="0,12,0,0"
                                    Style="{StaticResource Title1}" />
-                            <ImageButton Grid.Column="1"
-                                         Command="{Binding AddCommand}">
-                                <ImageButton.Source>
-                                    <FontImageSource Glyph="{x:Static f:FluentUI.add_24_regular}"
-                                                     FontFamily="{x:Static f:FluentUI.FontFamily}"
-                                                     Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
-                                                     Size="{StaticResource size240}" />
-                                </ImageButton.Source>
-                            </ImageButton>
-                        </Grid>
-                        <Label Text="{Binding Description}"
-                               Style="{StaticResource Body2}" />
-                        <Editor Text="{Binding StatusText}"
-                                IsVisible="{Binding StatusText, Converter={StaticResource StringNotEmptyConverter}}"
-                                Style="{StaticResource StatusTextStyle}" />
-                        <VerticalStackLayout x:Name="ActionButtonStack"
-                                             HorizontalOptions="Center"
-                                             Spacing="{StaticResource LayoutSpacing}"
-                                             BindableLayout.ItemsSource="{Binding Folders}">
+                            <Editor Text="{Binding StatusText}"
+                                    IsVisible="{Binding StatusText, Converter={StaticResource StringNotEmptyConverter}}"
+                                    Style="{StaticResource StatusTextStyle}" />
+                            <VerticalStackLayout x:Name="ActionButtonStack"
+                                                 HorizontalOptions="Center"
+                                                 Spacing="{StaticResource LayoutSpacing}"
+                                                 BindableLayout.ItemsSource="{Binding Folders}">
                             <BindableLayout.ItemTemplate>
                                 <DataTemplate x:DataType="models:WorkFolder">
                                     <!-- Rename leads and remove trails, so that the two are as far apart as
@@ -122,8 +107,23 @@
                                     </Grid>
                                 </DataTemplate>
                             </BindableLayout.ItemTemplate>
+                            </VerticalStackLayout>
                         </VerticalStackLayout>
-                    </VerticalStackLayout>
+                        <ImageButton HorizontalOptions="End"
+                                     VerticalOptions="Start"
+                                     Margin="8"
+                                     Command="{Binding AddCommand}">
+                            <ImageButton.Source>
+                                <FontImageSource Glyph="{x:Static f:FluentUI.add_24_regular}"
+                                                 FontFamily="{x:Static f:FluentUI.FontFamily}"
+                                                 Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                                                 Size="{StaticResource size240}" />
+                            </ImageButton.Source>
+                        </ImageButton>
+                        <pageControls:PageInformationButton Style="{StaticResource PageInformationButtonCorner}"
+                                                             Title="{x:Static modelUtilities:MobileTexts.WorkFoldersContentTitle}"
+                                                             Message="{Binding Description}" />
+                    </Grid>
                 </Border>
             </VerticalStackLayout>
         </ScrollView>
