@@ -524,17 +524,12 @@ jobs:
           APP_STORE_CONNECT_API_KEY_P8_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8_BASE64 }}
           APP_STORE_CONNECT_KEY_ID: ${{ vars.APP_STORE_CONNECT_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ vars.APP_STORE_CONNECT_ISSUER_ID }}
-        # TODO: remove '-Action validate' once a validate run has gone green from a
-        # feature branch and the altool invocation is confirmed against this pinned
-        # Xcode version — an unverified '--upload-app' can burn a build number for
-        # good if it partially succeeds (Apple refuses re-upload of the same one).
         run: |
           ./.github/scripts/Publish-AppStore.ps1 `
               -ApiKeyEnvironmentVariable 'APP_STORE_CONNECT_API_KEY_P8_BASE64' `
               -KeyId "$env:APP_STORE_CONNECT_KEY_ID" `
               -IssuerId "$env:APP_STORE_CONNECT_ISSUER_ID" `
-              -IpaPath (Get-Item 'ios-release/*.ipa').FullName `
-              -Action 'validate'
+              -IpaPath (Get-Item 'ios-release/*.ipa').FullName
 
   build-state:
     name: Record built state
