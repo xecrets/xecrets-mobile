@@ -65,11 +65,11 @@ public static class MobileTexts
 
     public static string CrashPageTitle => "Sorry, we crashed!";
 
-    public static string DecryptWorkFolderDescription => "Decrypt a file and replace the original. Add or select a folder, and then a file to decrypt.";
+    public static string DecryptWorkFolderDescription => "First add or select a folder, then a file to work with.";
 
     public static string DialogTextAddUnknownWorkFolder => "This is not a known work folder, would you like to add it?";
 
-    public static string DialogTextAlreadyEncrypted => "This file is already encrypted. Use Decrypt to open it.";
+    public static string DialogTextAlreadyEncrypted => "This file is already encrypted. Decrypt to open it.";
 
     public static string DialogTextCannotSaveInPlace => "This file cannot be saved back on this device.";
 
@@ -81,7 +81,7 @@ public static class MobileTexts
 
     public static string DialogTextEncryptFailed => "Could not encrypt this file.";
 
-    public static string DialogTextFolderName => "Name for this folder";
+    public static string DialogTextFolderName => "Enter a label for this folder";
 
     public static string DialogTextNoAppAvailable => "No app is available to open this file.";
 
@@ -107,9 +107,9 @@ public static class MobileTexts
 
     public static string EncryptWorkFolderDescription => "Encrypt a file and replace the original. Add or select a folder, and then a file to encrypt.";
 
-    public static string HomeContentTitle => "Encrypt or decrypt files";
+    public static string HomeContentTitle => "Actions";
 
-    public static string HomeDescription => "Choose an action below. Encrypt protects a file. Decrypt restores the original file.";
+    public static string HomeDescription => "Choose an action. Work with files where they are stored. Work in the app and select what to do next. Encrypt a copy with a separate password.";
 
     public static string MenuInfo => "Xecrets Home";
 
