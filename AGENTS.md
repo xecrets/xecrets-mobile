@@ -10,8 +10,12 @@ All `xecrets-*` repositories (and related ones such as `com.axantum.xecrets.ez`)
 
 ## Version control
 
-Never commit any changes resulting from agent coding sessions. Committing is always
-done manually. Leave all changes uncommitted in the working tree.
+Never run `git branch`, `git checkout -b`, `git add`, `git commit`, or `git push` on your
+own initiative — not even as a reversible or "preparatory" step, and not even right after
+being told the user will do it themselves. Branch creation, staging, committing, and
+pushing are always done manually by the user. Leave all changes uncommitted in the
+working tree; if a git action seems like a natural next step, say so and let the user
+decide, rather than doing it and offering to undo it.
 
 ## Building
 

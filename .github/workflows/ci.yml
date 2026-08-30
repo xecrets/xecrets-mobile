@@ -24,6 +24,9 @@
 #     'feature/*' are published to Google Play's internal testing track. Promoting a
 #     build to the closed testing (alpha) track for external testers is a manual step
 #     in the Play Console (see docs/ci-setup.md section 6.2).
+#   - The same builds are published to App Store Connect's TestFlight Internal Testing
+#     group once the iOS build succeeds (see docs/ci-setup.md section 6.1). Promoting
+#     testers to an external TestFlight group is a manual step in App Store Connect.
 #
 # Versioning and branch semantics:
 #   - The build number is BUILD_NUMBER_OFFSET + GITHUB_RUN_NUMBER. The offset is a
@@ -481,6 +484,57 @@ jobs:
             xecrets-mobile/src/Xecrets.Mobile/bin/Release/net10.0-ios/ios-arm64/publish/XecretsEz-${{ needs.version.outputs.display-version }}${{ needs.version.outputs.suffix }}.ipa
             xecrets-mobile/src/Xecrets.Mobile/bin/Release/net10.0-ios/ios-arm64/publish/XecretsEz-${{ needs.version.outputs.display-version }}${{ needs.version.outputs.suffix }}.app.dSYM
           if-no-files-found: error
+
+  publish-appstore:
+    name: Publish iOS release
+    needs: [version, test, ios]
+    if: >-
+      needs.version.outputs.signed == 'true' &&
+      (github.ref == 'refs/heads/main' ||
+      github.ref == 'refs/heads/develop' ||
+      startsWith(github.ref, 'refs/heads/feature/'))
+    runs-on: macos-26
+    timeout-minutes: 15
+    environment: publish-apple-appstore
+    steps:
+      - name: Checkout scripts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: |
+            .github/scripts
+            .xcode-version
+
+      - name: Select Xcode (pinned by .xcode-version)
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+
+          $xcodeVersion = (Get-Content .xcode-version -TotalCount 1).Trim()
+          sudo xcode-select -s "/Applications/Xcode_$xcodeVersion.app"
+          xcodebuild -version
+
+      - name: Download iOS package
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: XecretsEz-${{ needs.version.outputs.display-version }}${{ needs.version.outputs.suffix }}-ios
+          path: ios-release
+
+      - name: Publish to App Store Connect (TestFlight)
+        env:
+          APP_STORE_CONNECT_API_KEY_P8_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8_BASE64 }}
+          APP_STORE_CONNECT_KEY_ID: ${{ vars.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ vars.APP_STORE_CONNECT_ISSUER_ID }}
+        # TODO: remove '-Action validate' once a validate run has gone green from a
+        # feature branch and the altool invocation is confirmed against this pinned
+        # Xcode version — an unverified '--upload-app' can burn a build number for
+        # good if it partially succeeds (Apple refuses re-upload of the same one).
+        run: |
+          ./.github/scripts/Publish-AppStore.ps1 `
+              -ApiKeyEnvironmentVariable 'APP_STORE_CONNECT_API_KEY_P8_BASE64' `
+              -KeyId "$env:APP_STORE_CONNECT_KEY_ID" `
+              -IssuerId "$env:APP_STORE_CONNECT_ISSUER_ID" `
+              -IpaPath (Get-Item 'ios-release/*.ipa').FullName `
+              -Action 'validate'
 
   build-state:
     name: Record built state

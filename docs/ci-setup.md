@@ -30,6 +30,8 @@ Create these repository **variables** (not secrets):
 | `ANDROID_KEY_ALIAS` | Alias of the signing key inside the upload keystore (e.g. `upload`)                 |
 | `APPLE_CODESIGN_KEY` | Exact signing identity name, e.g. `Apple Distribution: Firstname Lastname (TEAMID)` |
 | `APPLE_CODESIGN_PROFILE` | Name of the installed provisioning profile, e.g. `Xecrets Ez App Store`             |
+| `APP_STORE_CONNECT_KEY_ID` | App Store Connect API Key ID (section 3.3)                                          |
+| `APP_STORE_CONNECT_ISSUER_ID` | App Store Connect API Issuer ID, a UUID shared by all keys on the team (section 3.3) |
 
 `BUILD_NUMBER_OFFSET` is used as follows:
 
@@ -70,7 +72,9 @@ name are non-sensitive configuration and are intentionally repository variables.
 
 `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` (the Google Play publishing credential, section 6.2)
 is not a repository secret but an **environment secret** on the `publish-google-play`
-environment, so only the publish job can read it.
+environment, so only the publish job can read it. `APP_STORE_CONNECT_API_KEY_P8_BASE64`
+(the App Store Connect publishing credential, section 3.3) is likewise an **environment
+secret**, on the `publish-apple-appstore` environment.
 
 ### 1.3 Repository settings hardening
 
@@ -195,6 +199,37 @@ key only exists in your keychain and in the exported file.
 The profile expires with the certificate. Regenerate and update the secret when
 renewing the certificate.
 
+### 3.3 App Store Connect API key (for automated TestFlight upload)
+
+This key authenticates the `publish-appstore` CI job to App Store Connect; it is
+independent of, and does not expire with, the distribution certificate above.
+
+1. At <https://appstoreconnect.apple.com> → **Users and Access → Integrations → App
+   Store Connect API**, generate a **Team Key** (requires signing in as the Account
+   Holder or an Admin — a Team Key keeps working if the person who created it later
+   loses App Store Connect access, unlike an individual key).
+2. Access level: **App Manager** — the minimum role that can upload builds and manage
+   TestFlight, the App Store Connect analogue of the Play service account's "Release
+   manager" role.
+3. App Store Connect shows the **Key ID** and **Issuer ID** on screen and offers a
+   **Download API Key** link that works only once — capture the `.p8` file, the Key ID,
+   and the Issuer ID (shared by every key on the team) immediately, and back up the
+   `.p8` privately; it cannot be re-downloaded.
+4. Store in GitHub:
+
+   ```pwsh
+   [Convert]::ToBase64String([IO.File]::ReadAllBytes('AuthKey_XXXX.p8')) | Set-Clipboard
+   # → paste as APP_STORE_CONNECT_API_KEY_P8_BASE64, an environment secret on
+   #   the 'publish-apple-appstore' environment
+   ```
+
+   and the Key ID / Issuer ID from step 3 as the `APP_STORE_CONNECT_KEY_ID` /
+   `APP_STORE_CONNECT_ISSUER_ID` repository variables.
+
+Unlike a Google Play service account, an App Store Connect API key cannot be scoped to
+a single app — it is account/team-wide within the granted role. This is an Apple
+platform limitation, not a configuration choice made here.
+
 ## 4. Pinned tooling, and keeping it in sync
 
 Nothing floats on "latest"; each pin has one authoritative location:
@@ -264,20 +299,30 @@ Artifacts appear on each workflow run page (Actions → the run → Artifacts):
   the Google Play Console.
 - `XecretsEz-2.4.N[-beta]-apk` — contains `XecretsEz-2.4.N[-beta].apk`, which is
   side-loadable on any Android device that allows installing from unknown sources.
-- `XecretsEz-2.4.N[-beta]-ios` — contains `XecretsEz-2.4.N[-beta].ipa` and its
-  `XecretsEz-2.4.N[-beta].app.dSYM`. Upload the IPA to App Store Connect with the
-  **Transporter** app (Mac App Store) or `xcrun altool`/App Store Connect API, and
-  retain the matching dSYM for crash symbolication. There is no practical iOS
+- `XecretsEz-2.4.N[-beta]-ios` — contains `XecretsEz-2.4.N[-beta].ipa`, uploaded to
+  App Store Connect automatically (section 6.1), and its matching
+  `XecretsEz-2.4.N[-beta].app.dSYM` for crash symbolication. There is no practical iOS
   side-loading; use **TestFlight** to distribute Beta builds to devices.
 
-Android publishing to Google Play is automated (section 6.2). A sensible future
-enhancement is automatic upload to TestFlight too, using an App Store Connect API key;
-for now iOS submission stays a deliberate manual step.
+Publishing to both stores is automated: Android to Google Play's internal testing
+track (section 6.2) and iOS to App Store Connect's TestFlight Internal Testing group
+(section 6.1), both via the `publish-google-play` and `publish-appstore` jobs on every
+push to `main`, `develop`, and `feature/*`.
 
 ### 6.1 iOS testing via TestFlight (App Store Connect)
 
 The `.ipa` is signed for App Store distribution and cannot be installed on a device
-directly; TestFlight is the distribution channel for testing.
+directly; TestFlight is the distribution channel for testing. Every push build on
+`main`, `develop`, and `feature/*` is uploaded automatically by the `publish-appstore`
+job (`.github/scripts/Publish-AppStore.ps1`), using the App Store Connect API key from
+section 3.3 — no manual Transporter upload needed.
+
+The app's `Info.plist` already declares `ITSAppUsesNonExemptEncryption = false`, so
+uploaded builds process straight to "Ready to Test" instead of waiting on a manual
+export-compliance click in App Store Connect. That flag is a legal classification of
+the app's use of encryption, made once in the app's source, not a CI concern — it does
+not remove your obligation to consider the annual US self-classification report
+requirement and, if distributing in France, the French declaration.
 
 One-time setup:
 
@@ -285,18 +330,12 @@ One-time setup:
    the app name, primary language, the bundle ID registered at developer.apple.com
    (matching `ApplicationId` in the csproj), and an SKU (any internal identifier,
    e.g. `xecrets-ez`).
-2. Install **Transporter** from the Mac App Store and sign in with the same
-   Apple ID.
+2. Generate the App Store Connect API key (section 3.3) — this is what lets CI upload
+   without a human present.
 
-Per build:
-
-1. Download the `-ios` artifact from the workflow run, unzip, and drop the `.ipa`
-   into Transporter → **Deliver**.
-2. The build appears under the app's **TestFlight** tab after a few minutes of
-   processing. The first time (and after changing the answer), complete the export
-   compliance questionnaire — the app uses standard encryption (AES), so answer the
-   encryption questions accordingly; consider the annual US self-classification
-   report requirement and, if distributing in France, the French declaration.
+If you ever need to upload a build by hand (e.g. troubleshooting outside CI), install
+**Transporter** from the Mac App Store, sign in with an Apple ID that has access to the
+app, and drop the `.ipa` from a downloaded `-ios` artifact into Transporter → **Deliver**.
 
 Testers:
 
