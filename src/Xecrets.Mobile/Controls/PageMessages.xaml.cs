@@ -28,41 +28,32 @@
 
 #endregion Copyright and GPL License
 
-using System;
-using System.Threading.Tasks;
-
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Dispatching;
 
-using Xecrets.Mobile.Models.Abstractions;
-using Xecrets.Mobile.Services;
+namespace Xecrets.Mobile.Controls;
 
-namespace Xecrets.Mobile.Platforms.Windows;
-
-public class WindowsUserInterfaceService(IBuildInformation buildInformation) : DefaultUserInterfaceService(buildInformation)
+public sealed partial class PageMessages
 {
-    // A Toast on Windows is an operating system notification rather than something shown in the app,
-    // and it needs the app to be registered with the notification system, which an unpackaged app
-    // isn't. Put the message on the page's message line instead.
-    public override Task DisplayTransientMessageAsync(string message)
+    public static readonly BindableProperty MessageTextProperty = BindableProperty.Create(
+        nameof(MessageText), typeof(string), typeof(PageMessages));
+
+    public static readonly BindableProperty StatusTextProperty = BindableProperty.Create(
+        nameof(StatusText), typeof(string), typeof(PageMessages));
+
+    public PageMessages()
     {
-        Page currentPage = Shell.Current.CurrentPage;
-        if (currentPage.BindingContext is IStatusTextPageModel pageModel)
-        {
-            pageModel.MessageText = message;
+        InitializeComponent();
+    }
 
-            IDispatcherTimer timer = currentPage.Dispatcher.CreateTimer();
-            timer.Interval = TimeSpan.FromSeconds(3);
-            timer.IsRepeating = false;
-            timer.Tick += (_, _) =>
-            {
-                timer.Stop();
-                pageModel.MessageText = string.Empty;
-            };
+    public string MessageText
+    {
+        get => (string)GetValue(MessageTextProperty);
+        set => SetValue(MessageTextProperty, value);
+    }
 
-            timer.Start();
-        }
-
-        return Task.CompletedTask;
+    public string StatusText
+    {
+        get => (string)GetValue(StatusTextProperty);
+        set => SetValue(StatusTextProperty, value);
     }
 }

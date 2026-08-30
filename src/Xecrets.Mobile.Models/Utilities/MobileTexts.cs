@@ -47,7 +47,7 @@ public static class MobileTexts
 
     public static string ButtonEncryptAs => "Encrypt And…";
 
-    public static string ButtonEncryptToShare => "Encrypt To And…";
+    public static string ButtonEncryptToShare => "Encrypt To… And…";
 
     public static string ButtonOpenIn => "Open In…";
 
@@ -65,7 +65,7 @@ public static class MobileTexts
 
     public static string CrashPageTitle => "Sorry, we crashed!";
 
-    public static string DecryptWorkFolderDescription => "First add or select a folder, then a file to work with.";
+    public static string WorkFolderDescription => "First add or select a folder, then a file to work with.";
 
     public static string DialogTextAddUnknownWorkFolder => "This is not a known work folder, would you like to add it?";
 
@@ -104,8 +104,6 @@ public static class MobileTexts
     public static string DialogTextWorkFolderFailed => "The folder operation could not be completed.";
 
     public static string EncryptToShareDescription => "Enter a separate password for the encrypted copy. Share the password through a different channel.";
-
-    public static string EncryptWorkFolderDescription => "Encrypt a file and replace the original. Add or select a folder, and then a file to encrypt.";
 
     public static string HomeContentTitle => "Actions";
 

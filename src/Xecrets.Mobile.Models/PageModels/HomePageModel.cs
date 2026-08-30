@@ -55,6 +55,9 @@ public partial class HomePageModel(
     public partial string Email { get; set; } = profileService.CurrentEmail;
 
     [ObservableProperty]
+    public partial string MessageText { get; set; } = string.Empty;
+
+    [ObservableProperty]
     public partial string StatusText { get; set; } = string.Empty;
 
     [ObservableProperty]

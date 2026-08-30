@@ -53,6 +53,9 @@ public partial class PreviewPageModel(
     public partial string FileNameText { get; set; } = string.Empty;
 
     [ObservableProperty]
+    public partial string MessageText { get; set; } = string.Empty;
+
+    [ObservableProperty]
     public partial string StatusText { get; set; } = string.Empty;
 
     [ObservableProperty]

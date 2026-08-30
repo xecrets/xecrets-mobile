@@ -57,17 +57,17 @@ public class DefaultUserInterfaceService(IBuildInformation buildInformation) : I
     public Task InvokeOnMainThreadAsync(Func<Task> action) => MainThread.InvokeOnMainThreadAsync(action);
 
     public Task DisplayMessageAsync(string message) =>
-        Shell.Current!.DisplayAlertAsync(AppTexts.DisplayNameProgram, message, AppTexts.LabelOk);
+        Shell.Current.DisplayAlertAsync(AppTexts.DisplayNameProgram, message, AppTexts.LabelOk);
 
     public Task<bool> DisplayConfirmationAsync(string message) =>
-        Shell.Current!.DisplayAlertAsync(
+        Shell.Current.DisplayAlertAsync(
             AppTexts.DisplayNameProgram,
             message,
             AppTexts.LabelYes,
             AppTexts.LabelNo);
 
     public Task<string?> DisplayPromptAsync(string message, string initialValue) =>
-        Shell.Current!.DisplayPromptAsync(
+        Shell.Current.DisplayPromptAsync(
             AppTexts.DisplayNameProgram,
             message,
             AppTexts.LabelOk,
@@ -80,7 +80,7 @@ public class DefaultUserInterfaceService(IBuildInformation buildInformation) : I
     public Task NavigateToAsync(AppDestination destination)
     {
         string route = GetRoute(destination);
-        Page? currentPage = Shell.Current!.CurrentPage;
+        Page? currentPage = Shell.Current.CurrentPage;
         if (currentPage is not null && Routing.GetRoute(currentPage) == route)
         {
             return Task.CompletedTask;
@@ -124,10 +124,10 @@ public class DefaultUserInterfaceService(IBuildInformation buildInformation) : I
     public Task OpenBrowserAsync(string url) => Launcher.Default.OpenAsync(
         url.ToSite(buildInformation.IsDebug || buildInformation.IsBeta));
 
-    private static Task NavigateToRouteAsync(string route) => Shell.Current!.GoToAsync(route);
+    private static Task NavigateToRouteAsync(string route) => Shell.Current.GoToAsync(route);
 
     private static Task NavigateToRouteAsync(
         string route,
         IDictionary<string, object> parameters) =>
-        Shell.Current!.GoToAsync(route, parameters);
+        Shell.Current.GoToAsync(route, parameters);
 }

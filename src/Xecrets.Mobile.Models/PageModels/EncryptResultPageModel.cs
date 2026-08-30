@@ -58,6 +58,9 @@ public partial class EncryptResultPageModel(
     public partial string MetadataText { get; set; } = string.Empty;
 
     [ObservableProperty]
+    public partial string MessageText { get; set; } = string.Empty;
+
+    [ObservableProperty]
     public partial string StatusText { get; set; } = string.Empty;
 
     [ObservableProperty]

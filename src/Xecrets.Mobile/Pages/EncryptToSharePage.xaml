@@ -56,9 +56,8 @@
                                                 Text="{Binding Password, Mode=TwoWay}"
                                                 Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkPasswordShare}"
                                                 ReturnType="Go" />
-                        <Editor Text="{Binding StatusText}"
-                                IsVisible="{Binding StatusText, Converter={StaticResource StringNotEmptyConverter}}"
-                                Style="{StaticResource StatusTextStyle}" />
+                        <controls:PageMessages MessageText="{Binding MessageText}"
+                                               StatusText="{Binding StatusText}" />
                         <VerticalStackLayout x:Name="ActionButtonStack"
                                              HorizontalOptions="Center"
                                              Spacing="{StaticResource LayoutSpacing}">

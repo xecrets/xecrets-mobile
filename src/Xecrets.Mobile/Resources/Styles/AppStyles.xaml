@@ -347,6 +347,15 @@
         <Setter Property="IsReadOnly" Value="True" />
     </Style>
 
+    <!-- Informational text uses the same selectable presentation as status text, but is visually distinct from errors. -->
+    <Style TargetType="Editor" x:Key="MessageTextStyle">
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource LightOutline}, Dark={StaticResource DarkOutline}}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="AutoSize" Value="TextChanges" />
+        <Setter Property="IsReadOnly" Value="True" />
+    </Style>
+
     <Style TargetType="BoxView" x:Key="ShimmerCustomViewStyle">
         <Setter Property="BackgroundColor" Value="Gray" />
         <Setter Property="HorizontalOptions" Value="Fill" />

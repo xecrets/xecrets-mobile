@@ -63,6 +63,8 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
 
     public ObservableCollection<WorkFolder> Folders { get; }
 
+    [ObservableProperty] public partial string MessageText { get; set; } = string.Empty;
+
     [ObservableProperty] public partial string StatusText { get; set; } = string.Empty;
 
     [ObservableProperty] public partial string Description { get; private set; } = string.Empty;
@@ -77,9 +79,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
     public void Initialize(WorkFolderOperation operation)
     {
         _operation = operation;
-        Description = operation == WorkFolderOperation.Encrypt
-            ? MobileTexts.EncryptWorkFolderDescription
-            : MobileTexts.DecryptWorkFolderDescription;
+        Description = MobileTexts.WorkFolderDescription;
     }
 
     [RelayCommand]

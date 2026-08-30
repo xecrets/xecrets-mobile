@@ -35,5 +35,7 @@ namespace Xecrets.Mobile.Models.Abstractions;
 // them there instead.
 public interface IStatusTextPageModel
 {
+    string MessageText { get; set; }
+
     string StatusText { get; set; }
 }

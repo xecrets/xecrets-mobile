@@ -66,9 +66,8 @@
                             <Label Text="{x:Static modelUtilities:MobileTexts.WorkFoldersContentTitle}"
                                    HorizontalOptions="Center"
                                    Style="{StaticResource Title1}" />
-                            <Editor Text="{Binding StatusText}"
-                                    IsVisible="{Binding StatusText, Converter={StaticResource StringNotEmptyConverter}}"
-                                    Style="{StaticResource StatusTextStyle}" />
+                            <pageControls:PageMessages MessageText="{Binding MessageText}"
+                                                       StatusText="{Binding StatusText}" />
                             <VerticalStackLayout x:Name="ActionButtonStack"
                                                  HorizontalOptions="Center"
                                                  Spacing="{StaticResource LayoutSpacing}"
