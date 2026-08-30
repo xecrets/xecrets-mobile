@@ -274,13 +274,13 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
             }
 
             await _operationService.EncryptAsync(file);
-            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextEncrypted);
+            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextResultSaved);
             return;
         }
 
         if (await _operationService.DecryptWithKnownPasswordsAsync(file))
         {
-            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextDecrypted);
+            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextResultSaved);
             return;
         }
 

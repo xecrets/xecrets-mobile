@@ -90,7 +90,7 @@ public partial class EncryptResultPageModel(
                 encryptionResult.OriginalSourcePath);
             if (!saveResult.IsCancelled)
             {
-                StatusText = MobileTexts.DialogTextSaved;
+                StatusText = MobileTexts.DialogTextResultSaved;
             }
         }
         catch (OperationCanceledException)

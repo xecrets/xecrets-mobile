@@ -197,7 +197,7 @@ public partial class PreviewPageModel(
                 state.SourcePath);
             if (!result.IsCancelled)
             {
-                StatusText = MobileTexts.DialogTextSaved;
+                StatusText = MobileTexts.DialogTextResultSaved;
             }
         }
         catch (OperationCanceledException)

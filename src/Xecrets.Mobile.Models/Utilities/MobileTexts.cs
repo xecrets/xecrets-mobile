@@ -71,21 +71,15 @@ public static class MobileTexts
 
     public static string DialogTextAlreadyEncrypted => "This file is already encrypted.";
 
-    public static string DialogTextCannotSaveInPlace => "This file cannot be saved back on this device.";
-
     public static string DialogTextConfirmOverwrite => "The file \"{0}\" already exists. Overwrite it?";
 
-    public static string DialogTextDecrypted => "The file was decrypted.";
-
-    public static string DialogTextEncrypted => "The file was encrypted.";
+    public static string DialogTextResultSaved => "The file is saved.";
 
     public static string DialogTextExceptionFormat => "An unexpected error \"{0}\" occurred.";
 
     public static string DialogTextFolderName => "Enter a label for this folder";
 
     public static string DialogTextResult => "The file is only saved locally in the app. Choose an action for what to do with it next.";
-
-    public static string DialogTextSaved => "Saved.";
 
     public static string DialogTextSelfHandoffRejected => "Xecrets Ez can't handle files from itself.";
 
@@ -136,9 +130,6 @@ public static class MobileTexts
 
     // "Add a decryption password"
     public static string DialogTextAddPassword => AppTexts.DialogTextAddPassword;
-
-    // "Decrypt and open failed"
-    public static string DialogTextOpenEncryptedFileFailed => AppTexts.DialogTextOpenFailed;
 
     // "Canceled"
     public static string DialogTextOperationNotCompleted => AppTexts.FilesCanceledMessage;
