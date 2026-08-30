@@ -38,8 +38,7 @@
              xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
              x:Class="Xecrets.Mobile.Pages.WorkFoldersPage"
              x:Name="PageRoot"
-             x:DataType="pageModels:WorkFoldersPageModel"
-             Title="{x:Static modelUtilities:MobileTexts.WorkFoldersPageTitle}">
+             x:DataType="pageModels:WorkFoldersPageModel">
     <ContentPage.Behaviors>
         <toolkit:EventToCommandBehavior x:TypeArguments="system:EventArgs"
                                         x:DataType="pageModels:WorkFoldersPageModel"

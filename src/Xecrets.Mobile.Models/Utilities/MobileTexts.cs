@@ -61,15 +61,15 @@ public static class MobileTexts
 
     public static string CrashPageAppleAdditionalInformation => "Apple may have additional crash information. You can report it manually or enable Share with App Developers under Analytics & Improvements.";
 
-    public static string CrashPageExplanation => "There was a problem. We have copied the following report to the clipboard. Please report this and paste the report into the message. Use the Report button to go to our support site.";
+    public static string CrashPageExplanation => "There was a problem. We have copied the following log to the clipboard. Use the button to report it. Paste the log in the message.";
 
     public static string CrashPageTitle => "Sorry, we crashed!";
 
     public static string WorkFolderDescription => "First add or select a folder, then a file to work with.";
 
-    public static string DialogTextAddUnknownWorkFolder => "This is not a known work folder, would you like to add it?";
+    public static string DialogTextAddUnknownWorkFolder => "Do you want to add this folder?";
 
-    public static string DialogTextAlreadyEncrypted => "This file is already encrypted. Decrypt to open it.";
+    public static string DialogTextAlreadyEncrypted => "This file is already encrypted.";
 
     public static string DialogTextCannotSaveInPlace => "This file cannot be saved back on this device.";
 
@@ -79,29 +79,15 @@ public static class MobileTexts
 
     public static string DialogTextEncrypted => "The file was encrypted.";
 
-    public static string DialogTextEncryptFailed => "Could not encrypt this file.";
+    public static string DialogTextExceptionFormat => "An unexpected error \"{0}\" occurred.";
 
     public static string DialogTextFolderName => "Enter a label for this folder";
 
-    public static string DialogTextNoAppAvailable => "No app is available to open this file.";
-
-    public static string DialogTextOpenInFailed => "Could not open this file in another app.";
-
-    public static string DialogTextPreviewFailed => "Could not preview this file.";
-
-    public static string DialogTextSaveAsFailed => "Could not save the file.";
+    public static string DialogTextResult => "The file is only saved locally in the app. Choose an action for what to do with it next.";
 
     public static string DialogTextSaved => "Saved.";
 
     public static string DialogTextSelfHandoffRejected => "Xecrets Ez can't handle files from itself.";
-
-    public static string DialogTextSendToFailed => "Could not send this file.";
-
-    public static string DialogTextSourceAndDestinationMatch => "The source and destination file names are the same.";
-
-    public static string DialogTextTemporaryFileUnavailable => "The temporary decrypted file is not available.";
-
-    public static string DialogTextWorkFolderFailed => "The folder operation could not be completed.";
 
     public static string EncryptToShareDescription => "Enter a separate password for the encrypted copy. Share the password through a different channel.";
 
@@ -116,14 +102,12 @@ public static class MobileTexts
 
     public static string MenuXecretsDesktop => "Xecrets Desktop";
 
-    public static string ThirdPartyLicensesPageExplanation => "The application incorporates the following third-party material, under the terms reproduced here.";
+    public static string ThirdPartyLicensesPageExplanation => "The application includes the following third-party material, under the terms reproduced here.";
 
     // Also used as the overflow menu item text, see MenuThirdPartyLicenses.
     public static string ThirdPartyLicensesPageTitle => "Third-Party Licenses";
 
     public static string WorkFoldersContentTitle => "My Folders";
-
-    public static string WorkFoldersPageTitle => "Work folders";
 
     #endregion Untranslated texts
 

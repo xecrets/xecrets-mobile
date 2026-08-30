@@ -31,8 +31,7 @@
              x:DataType="pageModels:StartupPageModel"
              BackgroundColor="{StaticResource IconBackground}"
              Shell.NavBarIsVisible="False"
-             SafeAreaEdges="None"
-             Title="Xecrets">
+             SafeAreaEdges="None">
     <Grid BackgroundColor="{StaticResource IconBackground}">
         <BoxView Color="{StaticResource IconBackground}" />
         <Path Fill="White"

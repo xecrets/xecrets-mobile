@@ -106,7 +106,7 @@ public partial class HomePageModel(
         }
         catch (Exception ex)
         {
-            StatusText = FormatStatusText(MobileTexts.DialogTextEncryptFailed, ex);
+            StatusText = ex.FormatException();
         }
         finally
         {
@@ -153,7 +153,7 @@ public partial class HomePageModel(
         }
         catch (Exception ex)
         {
-            StatusText = FormatStatusText(MobileTexts.DialogTextOpenEncryptedFileFailed, ex);
+            StatusText = ex.FormatException();
         }
         finally
         {

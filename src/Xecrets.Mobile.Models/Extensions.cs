@@ -34,7 +34,7 @@ using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models;
 
-public static class FileServiceExtensions
+public static class Extensions
 {
     public static async Task<SaveFileResult> SaveAsAsync(
         this IFileService fileService,
@@ -42,12 +42,20 @@ public static class FileServiceExtensions
         string displayName,
         string originalSourcePath)
     {
-        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
-        {
-            throw new FileNotFoundException(MobileTexts.DialogTextTemporaryFileUnavailable, filePath);
-        }
-
         await using FileStream stream = File.OpenRead(filePath);
         return await fileService.SaveAsAsync(stream, displayName, originalSourcePath);
     }
+
+    /// <summary>
+    /// Combines a user-facing message with the exception detail, for display as status text.
+    /// </summary>
+    public static string FormatException(this Exception exception)
+    {
+        string exceptionMessage = string.IsNullOrWhiteSpace(exception.Message)
+            ? exception.GetType().Name
+            : exception.Message;
+
+        return string.Format(MobileTexts.DialogTextExceptionFormat, exceptionMessage);
+    }
+
 }

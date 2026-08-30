@@ -95,7 +95,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
         }
         catch (Exception ex)
         {
-            StatusText = FormatStatusText(MobileTexts.DialogTextWorkFolderFailed, ex);
+            StatusText = ex.FormatException();
         }
     }
 
@@ -126,7 +126,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
         }
         catch (Exception ex)
         {
-            StatusText = FormatStatusText(MobileTexts.DialogTextWorkFolderFailed, ex);
+            StatusText = ex.FormatException();
         }
         finally
         {
@@ -149,7 +149,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
         }
         catch (Exception ex)
         {
-            StatusText = FormatStatusText(MobileTexts.DialogTextWorkFolderFailed, ex);
+            StatusText = ex.FormatException();
         }
         finally
         {
@@ -170,7 +170,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
         }
         catch (Exception ex)
         {
-            StatusText = FormatStatusText(MobileTexts.DialogTextWorkFolderFailed, ex);
+            StatusText = ex.FormatException();
         }
         finally
         {
@@ -201,7 +201,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
         }
         catch (Exception ex)
         {
-            StatusText = FormatStatusText(MobileTexts.DialogTextWorkFolderFailed, ex);
+            StatusText = ex.FormatException();
         }
         finally
         {

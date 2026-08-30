@@ -123,11 +123,6 @@ public sealed class WorkFolderOperationService(
 
     private async Task<bool> ConfirmOverwriteAsync(WorkFolderFile file, string destinationName)
     {
-        if (string.Equals(file.FileName, destinationName, StringComparison.OrdinalIgnoreCase))
-        {
-            throw new InvalidOperationException(MobileTexts.DialogTextSourceAndDestinationMatch);
-        }
-
         if (!await file.DestinationExistsAsync(destinationName))
         {
             return false;

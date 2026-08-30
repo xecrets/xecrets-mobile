@@ -120,7 +120,7 @@ public partial class EditPageModel(
         }
         catch (Exception ex)
         {
-            StatusText = FormatStatusText(MobileTexts.DialogTextCannotSaveInPlace, ex);
+            StatusText = ex.FormatException();
         }
         finally
         {
@@ -177,7 +177,7 @@ public partial class EditPageModel(
         }
         catch (Exception ex)
         {
-            StatusText = FormatStatusText(MobileTexts.DialogTextSaveAsFailed, ex);
+            StatusText = ex.FormatException();
         }
         finally
         {

@@ -103,7 +103,7 @@ public partial class EncryptToSharePageModel(
         }
         catch (Exception ex)
         {
-            StatusText = FormatStatusText(MobileTexts.DialogTextEncryptFailed, ex);
+            StatusText = ex.FormatException();
         }
         finally
         {

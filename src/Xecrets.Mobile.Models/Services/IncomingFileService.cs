@@ -30,7 +30,6 @@
 
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
-using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models.Services;
 
@@ -110,7 +109,7 @@ public sealed class IncomingFileService(
         }
         catch (Exception ex)
         {
-            await userInterfaceService.DisplayMessageAsync(FormatMessage(MobileTexts.DialogTextEncryptFailed, ex));
+            await userInterfaceService.DisplayMessageAsync(ex.FormatException());
         }
     }
 
@@ -120,14 +119,5 @@ public sealed class IncomingFileService(
             ? AppDestination.Login
             : AppDestination.CreateProfile;
         await userInterfaceService.NavigateToAsync(destination);
-    }
-
-    private static string FormatMessage(string message, Exception exception)
-    {
-        string exceptionMessage = string.IsNullOrWhiteSpace(exception.Message)
-            ? exception.GetType().Name
-            : exception.Message;
-
-        return $"{message} {exceptionMessage}";
     }
 }

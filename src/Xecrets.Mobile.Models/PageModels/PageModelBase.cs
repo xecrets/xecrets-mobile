@@ -54,16 +54,4 @@ public abstract partial class PageModelBase(IUserInterfaceService userInterfaceS
     [RelayCommand]
     private Task OpenThirdPartyLicenses() =>
         userInterfaceService.NavigateToAsync(AppDestination.ThirdPartyLicenses);
-
-    /// <summary>
-    /// Combines a user-facing message with the exception detail, for display as status text.
-    /// </summary>
-    protected static string FormatStatusText(string message, Exception exception)
-    {
-        string exceptionMessage = string.IsNullOrWhiteSpace(exception.Message)
-            ? exception.GetType().Name
-            : exception.Message;
-
-        return $"{message} {exceptionMessage}";
-    }
 }

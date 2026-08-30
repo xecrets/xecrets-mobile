@@ -44,29 +44,39 @@
                                  Spacing="{StaticResource LayoutSpacing}">
                 <Border x:Name="ContentColumn"
                         HorizontalOptions="Center"
-                        Style="{StaticResource CardStyle}">
-                    <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
-                    <Label Text="{Binding FileNameText}"
-                           Style="{StaticResource FileNameStyle}" />
-                    <Label Text="{Binding MetadataText}"
-                           Style="{StaticResource Body2}" />
-                    <controls:PageMessages MessageText="{Binding MessageText}"
-                                           StatusText="{Binding StatusText}" />
-                    <VerticalStackLayout x:Name="ActionButtonStack"
-                                         HorizontalOptions="Center"
-                                         Spacing="{StaticResource LayoutSpacing}">
-                        <Button Text="{x:Static modelUtilities:MobileTexts.ButtonView}"
-                                Command="{Binding ViewCommand}" />
-                        <Button Text="{x:Static modelUtilities:MobileTexts.ButtonEdit}"
-                                Command="{Binding EditCommand}" />
-                        <Button Text="{x:Static modelUtilities:MobileTexts.ButtonSaveAs}"
-                                Command="{Binding SaveAsCommand}" />
-                        <Button Text="{x:Static modelUtilities:MobileTexts.ButtonOpenIn}"
-                                Command="{Binding OpenInCommand}" />
-                        <Button Text="{x:Static modelUtilities:MobileTexts.ButtonSendTo}"
-                                Command="{Binding SendToCommand}" />
-                    </VerticalStackLayout>
-                    </VerticalStackLayout>
+                        Style="{StaticResource PageInformationCardStyle}">
+                    <Grid RowDefinitions="Auto,Auto">
+                        <Grid x:Name="ContentBody"
+                              Grid.Row="1"
+                              Padding="{StaticResource PageInformationBodyPadding}">
+                            <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
+                            <Label Text="{Binding FileNameText}"
+                                   Style="{StaticResource FileNameStyle}" />
+                            <Label Text="{Binding MetadataText}"
+                                   Style="{StaticResource Body2}" />
+                            <controls:PageMessages MessageText="{Binding MessageText}"
+                                                   StatusText="{Binding StatusText}" />
+                            <VerticalStackLayout x:Name="ActionButtonStack"
+                                                 HorizontalOptions="Center"
+                                                 Spacing="{StaticResource LayoutSpacing}">
+                                <Button Text="{x:Static modelUtilities:MobileTexts.ButtonView}"
+                                        Command="{Binding ViewCommand}" />
+                                <Button Text="{x:Static modelUtilities:MobileTexts.ButtonEdit}"
+                                        Command="{Binding EditCommand}" />
+                                <Button Text="{x:Static modelUtilities:MobileTexts.ButtonSaveAs}"
+                                        Command="{Binding SaveAsCommand}" />
+                                <Button Text="{x:Static modelUtilities:MobileTexts.ButtonOpenIn}"
+                                        Command="{Binding OpenInCommand}" />
+                                <Button Text="{x:Static modelUtilities:MobileTexts.ButtonSendTo}"
+                                        Command="{Binding SendToCommand}" />
+                            </VerticalStackLayout>
+                            </VerticalStackLayout>
+                        </Grid>
+                        <controls:PageInformationButton Grid.Row="0"
+                                                        Style="{StaticResource PageInformationButtonCorner}"
+                                                        Title="{Binding FileNameText}"
+                                                        Message="{x:Static modelUtilities:MobileTexts.DialogTextResult}" />
+                    </Grid>
                 </Border>
             </VerticalStackLayout>
         </ScrollView>

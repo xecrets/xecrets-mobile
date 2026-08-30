@@ -128,7 +128,7 @@ public partial class PreviewPageModel(
         }
         catch (Exception ex)
         {
-            StatusText = FormatStatusText(MobileTexts.DialogTextPreviewFailed, ex);
+            StatusText = ex.FormatException();
         }
         finally
         {
@@ -160,27 +160,15 @@ public partial class PreviewPageModel(
         {
             IsBusy = true;
             StatusText = string.Empty;
-            bool opened = await fileService.OpenInAsync(
-                file.FilePath,
-                file.DisplayName,
-                string.Empty);
-
-            if (!opened)
-            {
-                StatusText = MobileTexts.DialogTextNoAppAvailable;
-            }
+            await fileService.OpenInAsync(file.FilePath, file.DisplayName);
         }
         catch (OperationCanceledException)
         {
             StatusText = string.Empty;
         }
-        catch (FileNotFoundException)
-        {
-            StatusText = MobileTexts.DialogTextTemporaryFileUnavailable;
-        }
         catch (Exception ex)
         {
-            StatusText = FormatStatusText(MobileTexts.DialogTextOpenInFailed, ex);
+            StatusText = ex.FormatException();
         }
         finally
         {
@@ -216,13 +204,9 @@ public partial class PreviewPageModel(
         {
             StatusText = string.Empty;
         }
-        catch (FileNotFoundException)
-        {
-            StatusText = MobileTexts.DialogTextTemporaryFileUnavailable;
-        }
         catch (Exception ex)
         {
-            StatusText = FormatStatusText(MobileTexts.DialogTextSaveAsFailed, ex);
+            StatusText = ex.FormatException();
         }
         finally
         {
@@ -254,13 +238,9 @@ public partial class PreviewPageModel(
         {
             StatusText = string.Empty;
         }
-        catch (FileNotFoundException)
-        {
-            StatusText = MobileTexts.DialogTextTemporaryFileUnavailable;
-        }
         catch (Exception ex)
         {
-            StatusText = FormatStatusText(MobileTexts.DialogTextSendToFailed, ex);
+            StatusText = ex.FormatException();
         }
         finally
         {
@@ -286,4 +266,5 @@ public partial class PreviewPageModel(
         string sizeValue = $"{state.FileSize:N0}".Replace(" ", _nonBreakingSpace, StringComparison.Ordinal);
 
         return $"{state.ContentType} {sizeValue} bytes";
-    }}
+    }
+}

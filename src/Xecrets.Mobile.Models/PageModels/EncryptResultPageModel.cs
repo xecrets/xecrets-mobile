@@ -97,13 +97,9 @@ public partial class EncryptResultPageModel(
         {
             StatusText = string.Empty;
         }
-        catch (FileNotFoundException)
-        {
-            StatusText = MobileTexts.DialogTextTemporaryFileUnavailable;
-        }
         catch (Exception ex)
         {
-            StatusText = FormatStatusText(MobileTexts.DialogTextSaveAsFailed, ex);
+            StatusText = ex.FormatException();
         }
         finally
         {
@@ -128,13 +124,9 @@ public partial class EncryptResultPageModel(
         {
             StatusText = string.Empty;
         }
-        catch (FileNotFoundException)
-        {
-            StatusText = MobileTexts.DialogTextTemporaryFileUnavailable;
-        }
         catch (Exception ex)
         {
-            StatusText = FormatStatusText(MobileTexts.DialogTextSendToFailed, ex);
+            StatusText = ex.FormatException();
         }
         finally
         {

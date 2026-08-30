@@ -85,16 +85,11 @@ public abstract class FileServiceBase : IFileService
             _ => throw new ArgumentOutOfRangeException(nameof(pickerKind)),
         };
 
-    public virtual async Task<bool> OpenInAsync(string filePath, string displayName, string contentType)
+    public virtual async Task<bool> OpenInAsync(string filePath, string displayName)
     {
         EnsureReadableFile(filePath);
 
-        return await Launcher.Default.OpenAsync(
-            new OpenFileRequest(
-                displayName,
-                string.IsNullOrWhiteSpace(contentType)
-                    ? new ReadOnlyFile(filePath)
-                    : new ReadOnlyFile(filePath, contentType)));
+        return await Launcher.Default.OpenAsync(new OpenFileRequest(displayName, new ReadOnlyFile(filePath)));
     }
 
     public virtual async Task SendToAsync(string filePath, string displayName, string contentType)
@@ -116,20 +111,14 @@ public abstract class FileServiceBase : IFileService
     public async Task<SaveFileResult> SaveAsAsync(Stream stream, string displayName, string originalSourcePath)
     {
         string initialDirectory = ResolveDefaultSaveLocation(originalSourcePath);
-        FileSaverResult result = await FileSaver.Default.SaveAsync(
-            initialDirectory,
-            displayName,
-            stream,
-            CancellationToken.None);
+        FileSaverResult result = await FileSaver.Default.SaveAsync(initialDirectory, displayName, stream);
+
         if (result.IsCancelled)
         {
             return new SaveFileResult(true, result.FilePath);
         }
 
-        if (!result.IsSuccessful)
-        {
-            throw result.Exception ?? new InvalidOperationException(MobileTexts.DialogTextSaveAsFailed);
-        }
+        result.EnsureSuccess();
 
         return new SaveFileResult(false, result.FilePath);
     }
@@ -150,14 +139,7 @@ public abstract class FileServiceBase : IFileService
 
     public virtual Task<bool> CanViewFileAsync(DecryptedFileInfo file) => Task.FromResult(false);
 
-    public virtual async Task ViewFileAsync(DecryptedFileInfo file)
-    {
-        bool opened = await OpenInAsync(file.FilePath, file.DisplayName, string.Empty);
-        if (!opened)
-        {
-            throw new InvalidOperationException(MobileTexts.DialogTextNoAppAvailable);
-        }
-    }
+    public virtual async Task ViewFileAsync(DecryptedFileInfo file) => await OpenInAsync(file.FilePath, file.DisplayName);
 
     // Default for platforms where an incoming file reference is a plain filesystem path (Windows, iOS,
     // MacCatalyst): Xecrets Ez hands off its own decrypted files under CacheDirectory/XecretsHandoff (see
@@ -168,9 +150,9 @@ public abstract class FileServiceBase : IFileService
 
     protected static void EnsureReadableFile(string filePath)
     {
-        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+        if (!File.Exists(filePath))
         {
-            throw new FileNotFoundException(MobileTexts.DialogTextTemporaryFileUnavailable, filePath);
+            throw new FileNotFoundException(@"The file was not found.", filePath);
         }
     }
 
