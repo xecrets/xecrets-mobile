@@ -34,12 +34,13 @@
     <ContentView.Resources>
         <utilities:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
     </ContentView.Resources>
-    <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
-        <Editor Text="{Binding MessageText, Source={x:Reference Root}, Mode=OneWay}"
-                IsVisible="{Binding MessageText, Source={x:Reference Root}, Converter={StaticResource StringNotEmptyConverter}}"
+    <VerticalStackLayout BindingContext="{x:Reference Root}"
+                         Spacing="{StaticResource LayoutSpacing}">
+        <Editor Text="{Binding MessageText, Mode=OneWay}"
+                IsVisible="{Binding MessageText, Converter={StaticResource StringNotEmptyConverter}}"
                 Style="{StaticResource MessageTextStyle}" />
-        <Editor Text="{Binding StatusText, Source={x:Reference Root}, Mode=OneWay}"
-                IsVisible="{Binding StatusText, Source={x:Reference Root}, Converter={StaticResource StringNotEmptyConverter}}"
+        <Editor Text="{Binding StatusText, Mode=OneWay}"
+                IsVisible="{Binding StatusText, Converter={StaticResource StringNotEmptyConverter}}"
                 Style="{StaticResource StatusTextStyle}" />
     </VerticalStackLayout>
 </ContentView>
