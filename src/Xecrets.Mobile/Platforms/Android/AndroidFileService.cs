@@ -33,7 +33,6 @@ using Android.Content.PM;
 
 using AndroidX.Core.Content;
 
-using System;
 using System.Collections.Generic;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
@@ -62,13 +61,8 @@ public class AndroidFileService : FileServiceBase
             return Task.FromResult(true);
         }
 
-        // No on-device quick-view provider, or it doesn't cover this content type: PDFs fall back to
-        // whatever app is registered to open them directly.
-        if (!file.ContentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase))
-        {
-            return Task.FromResult(false);
-        }
-
+        // No on-device quick-view provider, or it doesn't cover this content type: fall back to whatever
+        // app is registered to open this content type directly via ACTION_VIEW.
         using Intent viewIntent = new(Intent.ActionView);
         viewIntent.SetDataAndType(uri, file.ContentType);
         viewIntent.AddFlags(ActivityFlags.GrantReadUriPermission);

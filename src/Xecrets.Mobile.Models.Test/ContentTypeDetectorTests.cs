@@ -126,4 +126,31 @@ public sealed class ContentTypeDetectorTests
         Assert.That(file.ContentType, Is.EqualTo("text/plain"));
         Assert.That(file.Kind, Is.EqualTo(PreviewKind.Text));
     }
+
+    [TestCase("report.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")]
+    [TestCase("report.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")]
+    [TestCase("report.pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation")]
+    [TestCase("report.doc", "application/msword")]
+    [TestCase("report.xls", "application/vnd.ms-excel")]
+    [TestCase("report.ppt", "application/vnd.ms-powerpoint")]
+    [TestCase("report.odt", "application/vnd.oasis.opendocument.text")]
+    public void OfficeAndOpenDocumentExtensionsMapToTheirOwnContentType(string fileName, string expectedContentType)
+    {
+        Assert.That(ContentTypeDetector.DetectContentType(fileName), Is.EqualTo(expectedContentType));
+    }
+
+    [Test]
+    public void RecognizedBinaryOfficeExtensionIsNotReclassifiedAsText()
+    {
+        // A .docx is a zip container, not text, but its bytes could in principle happen to pass the "looks like
+        // text" sniff for a short enough sample. As with .pdf above, a recognized extension must keep its
+        // positively-identified content type and External kind rather than being routed to the inline text viewer.
+        string filePath = Path.Combine(_directory, "report.docx");
+        File.WriteAllBytes(filePath, [0x50, 0x4B, 0x03, 0x04, 0x00, 0x00, 0x00, 0x00]);
+
+        DecryptedFileInfo file = ContentTypeDetector.CreateInfo(filePath, "report.docx");
+
+        Assert.That(file.ContentType, Is.EqualTo("application/vnd.openxmlformats-officedocument.wordprocessingml.document"));
+        Assert.That(file.Kind, Is.EqualTo(PreviewKind.External));
+    }
 }
