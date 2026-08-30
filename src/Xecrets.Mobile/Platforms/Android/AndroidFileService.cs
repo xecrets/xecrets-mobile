@@ -33,7 +33,9 @@ using Android.Content.PM;
 
 using AndroidX.Core.Content;
 
+using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
@@ -52,43 +54,31 @@ public class AndroidFileService : FileServiceBase
 {
     public override string PlatformId => "android";
 
+    // View is only ever the on-device Quick Viewer - handing a file to a real installed app is what
+    // OpenInAsync/the "Open In..." button already does, so View must not overlap with it.
     public override Task<bool> CanViewFileAsync(DecryptedFileInfo file)
     {
-        AndroidUri uri = GetUri(file.FilePath);
-        using Intent quickViewIntent = CreateQuickViewIntent(uri, file.ContentType);
-        if (HasExternalHandler(quickViewIntent))
+        if (TryGetQuickViewIntent(file, out Intent? quickViewIntent))
         {
+            quickViewIntent.Dispose();
             return Task.FromResult(true);
         }
 
-        // No on-device quick-view provider, or it doesn't cover this content type: fall back to whatever
-        // app is registered to open this content type directly via ACTION_VIEW.
-        using Intent viewIntent = new(Intent.ActionView);
-        viewIntent.SetDataAndType(uri, file.ContentType);
-        viewIntent.AddFlags(ActivityFlags.GrantReadUriPermission);
-
-        return Task.FromResult(HasExternalHandler(viewIntent));
+        return Task.FromResult(false);
     }
 
     public override Task ViewFileAsync(DecryptedFileInfo file)
     {
-        AndroidUri uri = GetUri(file.FilePath);
-        Intent quickViewIntent = CreateQuickViewIntent(uri, file.ContentType);
-        if (HasExternalHandler(quickViewIntent))
+        Intent quickViewIntent = CreateQuickViewIntent(GetUri(file.FilePath), file.ContentType);
+        ComponentName? resolved = quickViewIntent.ResolveActivity(Platform.AppContext.PackageManager!);
+        if (resolved != null)
         {
-            ComponentName? resolved = quickViewIntent.ResolveActivity(Platform.AppContext.PackageManager!);
-            if (resolved != null)
-            {
-                quickViewIntent.SetPackage(resolved.PackageName);
-            }
-            quickViewIntent.PutExtra(Intent.ExtraQuickViewFeatures, [QuickViewConstants.FeatureView]);
-
-            Platform.CurrentActivity!.StartActivity(quickViewIntent);
-            return Task.CompletedTask;
+            quickViewIntent.SetPackage(resolved.PackageName);
         }
+        quickViewIntent.PutExtra(Intent.ExtraQuickViewFeatures, [QuickViewConstants.FeatureView]);
 
-        // Fall back: hand the file to whatever app the user picks.
-        return base.ViewFileAsync(file);
+        Platform.CurrentActivity!.StartActivity(quickViewIntent);
+        return Task.CompletedTask;
     }
 
     private static AndroidUri GetUri(string filePath) =>
@@ -100,6 +90,38 @@ public class AndroidFileService : FileServiceBase
         intent.SetDataAndTypeAndNormalize(uri, contentType);
         intent.AddFlags(ActivityFlags.GrantReadUriPermission);
         return intent;
+    }
+
+    // The system Quick Viewer (e.g. com.android.documentsui) commonly registers ACTION_QUICK_VIEW with
+    // mimeType="*/*", so HasExternalHandler(quickViewIntent) matches every content type even though the
+    // viewer only actually renders this narrower set - anything outside it launches fine but shows its
+    // own "Unable to preview file" screen. This is the single source of truth for whether View is
+    // available at all: View means genuine Quick View, nothing else - "Open In..." is the separate,
+    // already-working path to a real app via ACTION_VIEW for every other content type.
+    private static bool TryGetQuickViewIntent(DecryptedFileInfo file, [NotNullWhen(true)] out Intent? quickViewIntent)
+    {
+        quickViewIntent = null;
+
+        bool supportsQuickView =
+            file.ContentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase) ||
+            file.ContentType.Equals("text/plain", StringComparison.OrdinalIgnoreCase) ||
+            file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) ||
+            file.ContentType.StartsWith("video/", StringComparison.OrdinalIgnoreCase) ||
+            file.ContentType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase);
+        if (!supportsQuickView)
+        {
+            return false;
+        }
+
+        Intent intent = CreateQuickViewIntent(GetUri(file.FilePath), file.ContentType);
+        if (HasExternalHandler(intent))
+        {
+            quickViewIntent = intent;
+            return true;
+        }
+
+        intent.Dispose();
+        return false;
     }
 
     public override Task<bool> OpenInAsync(string filePath, string displayName)
