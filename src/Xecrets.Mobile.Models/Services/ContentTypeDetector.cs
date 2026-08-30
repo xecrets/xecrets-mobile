@@ -181,6 +181,18 @@ public static class ContentTypeDetector
         { ".tiff", "image/tiff" },
         { ".svg", "image/svg+xml" },
         { ".pdf", "application/pdf" },
+        { ".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document" },
+        { ".xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" },
+        { ".pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation" },
+        { ".doc", "application/msword" },
+        { ".xls", "application/vnd.ms-excel" },
+        { ".ppt", "application/vnd.ms-powerpoint" },
+        { ".odt", "application/vnd.oasis.opendocument.text" },
+        { ".ods", "application/vnd.oasis.opendocument.spreadsheet" },
+        { ".odp", "application/vnd.oasis.opendocument.presentation" },
+        { ".rtf", "application/rtf" },
+        { ".epub", "application/epub+zip" },
+        { ".zip", "application/zip" },
     };
 
     private static readonly HashSet<string> _textExtensions = new(StringComparer.OrdinalIgnoreCase)
