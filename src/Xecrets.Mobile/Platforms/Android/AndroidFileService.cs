@@ -108,9 +108,9 @@ public class AndroidFileService : FileServiceBase
         return intent;
     }
 
-    public override Task<bool> OpenInAsync(string filePath, string displayName, string contentType)
+    public override Task<bool> OpenInAsync(string filePath, string displayName)
     {
-        (AndroidUri uri, string resolvedContentType) = PrepareHandoff(filePath, displayName, contentType);
+        (AndroidUri uri, string resolvedContentType) = PrepareHandoff(filePath, displayName, string.Empty);
 
         using Intent viewIntent = new(Intent.ActionView);
         viewIntent.SetDataAndType(uri, resolvedContentType);

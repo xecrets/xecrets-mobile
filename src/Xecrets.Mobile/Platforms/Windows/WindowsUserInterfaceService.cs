@@ -28,25 +28,39 @@
 
 #endregion Copyright and GPL License
 
+using System;
 using System.Threading.Tasks;
 
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Dispatching;
 
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Services;
 
 namespace Xecrets.Mobile.Platforms.Windows;
 
-public class WindowsUserInterfaceService : DefaultUserInterfaceService
+public class WindowsUserInterfaceService(IBuildInformation buildInformation) : DefaultUserInterfaceService(buildInformation)
 {
     // A Toast on Windows is an operating system notification rather than something shown in the app,
     // and it needs the app to be registered with the notification system, which an unpackaged app
-    // isn't. Put the message on the page's status text line instead, where errors are shown too.
+    // isn't. Put the message on the page's message line instead.
     public override Task DisplayTransientMessageAsync(string message)
     {
-        if (Shell.Current?.CurrentPage?.BindingContext is IStatusTextPageModel pageModel)
+        Page currentPage = Shell.Current.CurrentPage;
+        if (currentPage.BindingContext is IStatusTextPageModel pageModel)
         {
-            pageModel.StatusText = message;
+            pageModel.MessageText = message;
+
+            IDispatcherTimer timer = currentPage.Dispatcher.CreateTimer();
+            timer.Interval = TimeSpan.FromSeconds(3);
+            timer.IsRepeating = false;
+            timer.Tick += (_, _) =>
+            {
+                timer.Stop();
+                pageModel.MessageText = string.Empty;
+            };
+
+            timer.Start();
         }
 
         return Task.CompletedTask;

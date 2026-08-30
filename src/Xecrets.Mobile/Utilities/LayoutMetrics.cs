@@ -30,6 +30,7 @@
 
 using System;
 
+using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 
 namespace Xecrets.Mobile.Utilities;
@@ -44,7 +45,8 @@ public static class LayoutMetrics
         double pageWidth,
         Layout contentRoot,
         Border contentColumn,
-        VisualElement actionButtonStack)
+        VisualElement actionButtonStack,
+        Thickness? contentPadding = null)
     {
         double availableContentWidth = pageWidth - contentRoot.Padding.Left - contentRoot.Padding.Right;
         if (availableContentWidth <= 0)
@@ -55,11 +57,12 @@ public static class LayoutMetrics
         double contentColumnWidth = Math.Min(availableContentWidth, _contentColumnMaximumWidth);
         contentColumn.WidthRequest = contentColumnWidth;
 
-        // The button stack sits inside the card, so it has to fit the card's content box, not the card's
-        // outer width. Sizing it to the outer width overflows the card by its padding and stroke, which
+        // The button stack sits inside the card body, so it has to fit that content box, not the card's
+        // outer width. The card body can supply its own padding when the card also has an unpadded header.
+        // Sizing it to the outer width overflows the card by its padding and stroke, which
         // iOS hides by clipping to the border and Android shows as buttons running off the screen edge.
         double cardContentWidth = contentColumnWidth
-            - contentColumn.Padding.HorizontalThickness
+            - (contentPadding ?? contentColumn.Padding).HorizontalThickness
             - (2 * contentColumn.StrokeThickness);
         actionButtonStack.WidthRequest = Math.Min(cardContentWidth, _actionButtonStackMaximumWidth);
     }

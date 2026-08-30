@@ -27,9 +27,17 @@
 <?xaml-comp compile="true" ?>
 <ResourceDictionary
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
     xmlns:f="clr-namespace:Fonts"
     xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <Style x:Key="PageInformationButtonCorner"
+           TargetType="controls:PageInformationButton">
+        <Setter Property="HorizontalOptions" Value="Start" />
+        <Setter Property="VerticalOptions" Value="Start" />
+        <Setter Property="Margin" Value="0" />
+    </Style>
 
     <x:Double x:Key="sizeNone">0</x:Double>
     <x:Double x:Key="size20">2</x:Double>
@@ -84,6 +92,12 @@
              x:TypeArguments="Thickness"
              Default="20">
         <OnIdiom.Desktop>24</OnIdiom.Desktop>
+    </OnIdiom>
+
+    <OnIdiom x:Key="PageInformationBodyPadding"
+             x:TypeArguments="Thickness"
+             Default="20,0,20,20">
+        <OnIdiom.Desktop>24,0,24,24</OnIdiom.Desktop>
     </OnIdiom>
 
     <FontImageSource x:Key="IconLight"
@@ -229,10 +243,10 @@
     <Style x:Key="Title1"
            TargetType="Label">
         <Setter Property="FontSize"
-                Value="28" />
+                Value="26" />
         <Setter Property="LineHeight"
-                Value="1.21" />
-        <!-- 34 -->
+                Value="1.23" />
+        <!-- 32 -->
         <Setter Property="FontAttributes"
                 Value="{OnPlatform WinUI=None, Default=Bold}" />
     </Style>
@@ -279,6 +293,13 @@
         <Setter Property="Padding" Value="{StaticResource CardPadding}"/>
     </Style>
 
+    <Style x:Key="PageInformationCardStyle"
+           TargetType="Border"
+           BasedOn="{StaticResource CardStyle}">
+        <Setter Property="Padding" Value="0" />
+    </Style>
+
+
     <Style TargetType="Button">
         <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
         <Setter Property="TextColor" Value="{StaticResource White}" />
@@ -321,6 +342,15 @@
     <Style TargetType="Editor" x:Key="StatusTextStyle">
         <Setter Property="TextColor" Value="Red" />
         <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="AutoSize" Value="TextChanges" />
+        <Setter Property="IsReadOnly" Value="True" />
+    </Style>
+
+    <!-- Informational text uses the same selectable presentation as status text, but is visually distinct from errors. -->
+    <Style TargetType="Editor" x:Key="MessageTextStyle">
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource LightOutline}, Dark={StaticResource DarkOutline}}" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="AutoSize" Value="TextChanges" />
         <Setter Property="IsReadOnly" Value="True" />

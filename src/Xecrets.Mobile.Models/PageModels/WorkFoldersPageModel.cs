@@ -63,6 +63,8 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
 
     public ObservableCollection<WorkFolder> Folders { get; }
 
+    [ObservableProperty] public partial string MessageText { get; set; } = string.Empty;
+
     [ObservableProperty] public partial string StatusText { get; set; } = string.Empty;
 
     [ObservableProperty] public partial string Description { get; private set; } = string.Empty;
@@ -77,9 +79,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
     public void Initialize(WorkFolderOperation operation)
     {
         _operation = operation;
-        Description = operation == WorkFolderOperation.Encrypt
-            ? MobileTexts.EncryptWorkFolderDescription
-            : MobileTexts.DecryptWorkFolderDescription;
+        Description = MobileTexts.WorkFolderDescription;
     }
 
     [RelayCommand]
@@ -95,7 +95,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
         }
         catch (Exception ex)
         {
-            StatusText = FormatStatusText(MobileTexts.DialogTextWorkFolderFailed, ex);
+            StatusText = ex.FormatException();
         }
     }
 
@@ -126,7 +126,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
         }
         catch (Exception ex)
         {
-            StatusText = FormatStatusText(MobileTexts.DialogTextWorkFolderFailed, ex);
+            StatusText = ex.FormatException();
         }
         finally
         {
@@ -149,7 +149,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
         }
         catch (Exception ex)
         {
-            StatusText = FormatStatusText(MobileTexts.DialogTextWorkFolderFailed, ex);
+            StatusText = ex.FormatException();
         }
         finally
         {
@@ -170,7 +170,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
         }
         catch (Exception ex)
         {
-            StatusText = FormatStatusText(MobileTexts.DialogTextWorkFolderFailed, ex);
+            StatusText = ex.FormatException();
         }
         finally
         {
@@ -201,7 +201,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
         }
         catch (Exception ex)
         {
-            StatusText = FormatStatusText(MobileTexts.DialogTextWorkFolderFailed, ex);
+            StatusText = ex.FormatException();
         }
         finally
         {
@@ -274,13 +274,13 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
             }
 
             await _operationService.EncryptAsync(file);
-            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextEncrypted);
+            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextResultSaved);
             return;
         }
 
         if (await _operationService.DecryptWithKnownPasswordsAsync(file))
         {
-            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextDecrypted);
+            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextResultSaved);
             return;
         }
 

@@ -26,6 +26,7 @@
 -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
              xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
              xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
              xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
@@ -49,9 +50,8 @@
                                 MinimumHeightRequest="320" />
                     </VerticalStackLayout>
                 </Border>
-                <Editor Text="{Binding StatusText}"
-                        IsVisible="{Binding StatusText, Converter={StaticResource StringNotEmptyConverter}}"
-                        Style="{StaticResource StatusTextStyle}" />
+                <controls:PageMessages MessageText="{Binding MessageText}"
+                                       StatusText="{Binding StatusText}" />
                 <HorizontalStackLayout Spacing="{StaticResource LayoutSpacing}"
                                        HorizontalOptions="Center">
                     <Button Text="{x:Static modelUtilities:MobileTexts.ButtonSave}"

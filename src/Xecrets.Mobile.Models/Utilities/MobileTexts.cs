@@ -43,11 +43,11 @@ public static class MobileTexts
 
     public static string LabelContinue => "Continue";
 
-    public static string ButtonDecryptAs => "Decrypt As…";
+    public static string ButtonDecryptAs => "Decrypt And…";
 
-    public static string ButtonEncryptAs => "Encrypt As…";
+    public static string ButtonEncryptAs => "Encrypt And…";
 
-    public static string ButtonEncryptToShare => "Encrypt To…";
+    public static string ButtonEncryptToShare => "Encrypt To… And…";
 
     public static string ButtonOpenIn => "Open In…";
 
@@ -61,55 +61,33 @@ public static class MobileTexts
 
     public static string CrashPageAppleAdditionalInformation => "Apple may have additional crash information. You can report it manually or enable Share with App Developers under Analytics & Improvements.";
 
-    public static string CrashPageExplanation => "There was a problem. We have copied the following report to the clipboard. Please report this and paste the report into the message. Use the Report button to go to our support site.";
+    public static string CrashPageExplanation => "There was a problem. We have copied the following log to the clipboard. Use the button to report it. Paste the log in the message.";
 
     public static string CrashPageTitle => "Sorry, we crashed!";
 
-    public static string DecryptWorkFolderDescription => "Decrypt a file and replace the original. Add or select a folder, and then a file to decrypt.";
+    public static string WorkFolderDescription => "First add or select a folder, then a file to work with.";
 
-    public static string DialogTextAddUnknownWorkFolder => "This is not a known work folder, would you like to add it?";
+    public static string DialogTextAddUnknownWorkFolder => "Do you want to add this folder?";
 
-    public static string DialogTextAlreadyEncrypted => "This file is already encrypted. Use Decrypt to open it.";
+    public static string DialogTextAlreadyEncrypted => "This file is already encrypted.";
 
-    public static string DialogTextCannotSaveInPlace => "This file cannot be saved back on this device.";
+    public static string DialogTextConfirmOverwrite => "The file \"{0}\" already exists. Overwrite it?";
 
-    public static string DialogTextConfirmOverwrite => "The file '{0}' already exists. Overwrite it?";
+    public static string DialogTextResultSaved => "The file is saved.";
 
-    public static string DialogTextDecrypted => "The file was decrypted.";
+    public static string DialogTextExceptionFormat => "An unexpected error \"{0}\" occurred.";
 
-    public static string DialogTextEncrypted => "The file was encrypted.";
+    public static string DialogTextFolderName => "Enter a label for this folder";
 
-    public static string DialogTextEncryptFailed => "Could not encrypt this file.";
-
-    public static string DialogTextFolderName => "Name for this folder";
-
-    public static string DialogTextNoAppAvailable => "No app is available to open this file.";
-
-    public static string DialogTextOpenInFailed => "Could not open this file in another app.";
-
-    public static string DialogTextPreviewFailed => "Could not preview this file.";
-
-    public static string DialogTextSaveAsFailed => "Could not save the file.";
-
-    public static string DialogTextSaved => "Saved.";
+    public static string DialogTextResult => "The file is only saved locally in the app. Choose an action for what to do with it next.";
 
     public static string DialogTextSelfHandoffRejected => "Xecrets Ez can't handle files from itself.";
 
-    public static string DialogTextSendToFailed => "Could not send this file.";
-
-    public static string DialogTextSourceAndDestinationMatch => "The source and destination file names are the same.";
-
-    public static string DialogTextTemporaryFileUnavailable => "The temporary decrypted file is not available.";
-
-    public static string DialogTextWorkFolderFailed => "The folder operation could not be completed.";
-
     public static string EncryptToShareDescription => "Enter a separate password for the encrypted copy. Share the password through a different channel.";
 
-    public static string EncryptWorkFolderDescription => "Encrypt a file and replace the original. Add or select a folder, and then a file to encrypt.";
+    public static string HomeContentTitle => "Actions";
 
-    public static string HomeContentTitle => "Encrypt or decrypt files";
-
-    public static string HomeDescription => "Choose an action below. Encrypt protects a file. Decrypt restores the original file.";
+    public static string HomeDescription => "Choose an action. Work with files where they are stored. Work in the app and select what to do next. Encrypt a copy with a separate password.";
 
     public static string MenuInfo => "Xecrets Home";
 
@@ -118,14 +96,12 @@ public static class MobileTexts
 
     public static string MenuXecretsDesktop => "Xecrets Desktop";
 
-    public static string ThirdPartyLicensesPageExplanation => "The application incorporates the following third-party material, under the terms reproduced here.";
+    public static string ThirdPartyLicensesPageExplanation => "The application includes the following third-party material, under the terms reproduced here.";
 
     // Also used as the overflow menu item text, see MenuThirdPartyLicenses.
     public static string ThirdPartyLicensesPageTitle => "Third-Party Licenses";
 
     public static string WorkFoldersContentTitle => "My Folders";
-
-    public static string WorkFoldersPageTitle => "Work folders";
 
     #endregion Untranslated texts
 
@@ -154,9 +130,6 @@ public static class MobileTexts
 
     // "Add a decryption password"
     public static string DialogTextAddPassword => AppTexts.DialogTextAddPassword;
-
-    // "Decrypt and open failed"
-    public static string DialogTextOpenEncryptedFileFailed => AppTexts.DialogTextOpenFailed;
 
     // "Canceled"
     public static string DialogTextOperationNotCompleted => AppTexts.FilesCanceledMessage;

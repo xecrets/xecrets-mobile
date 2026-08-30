@@ -43,28 +43,34 @@
                              Spacing="{StaticResource LayoutSpacing}">
             <Border x:Name="ContentColumn"
                     HorizontalOptions="Center"
-                    Style="{StaticResource CardStyle}">
-                <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
-                <Label Text="{x:Static modelUtilities:MobileTexts.SignInHeading}"
-                       HorizontalOptions="Center"
-                       Style="{StaticResource Title1}" />
-                <Label Text="{x:Static modelUtilities:MobileTexts.ToolTipSignIn}"
-                       Style="{StaticResource Body2}" />
-                <controls:PasswordEntry x:Name="PasswordEntryControl"
-                                        Text="{Binding Password, Mode=TwoWay}"
-                                        Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkPassword}"
-                                        ReturnType="Go" />
-                <Label Text="{Binding ErrorText}"
-                       TextColor="Red"
-                       IsVisible="{Binding ErrorText, Converter={StaticResource StringNotEmptyConverter}}"
-                       Style="{StaticResource Caption1}" />
-                <VerticalStackLayout x:Name="ActionButtonStack"
-                                     HorizontalOptions="Center"
-                                     Spacing="{StaticResource LayoutSpacing}">
-                    <Button Text="{x:Static modelUtilities:MobileTexts.ButtonOk}"
-                            Command="{Binding LoginCommand}" />
-                </VerticalStackLayout>
-                </VerticalStackLayout>
+                    Style="{StaticResource PageInformationCardStyle}">
+                <Grid RowDefinitions="Auto,Auto">
+                    <Grid x:Name="ContentBody" Grid.Row="1" Padding="{StaticResource PageInformationBodyPadding}">
+                        <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
+                        <Label Text="{x:Static modelUtilities:MobileTexts.SignInHeading}"
+                               HorizontalOptions="Center"
+                               Style="{StaticResource Title1}" />
+                        <controls:PasswordEntry x:Name="PasswordEntryControl"
+                                                Text="{Binding Password, Mode=TwoWay}"
+                                                Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkPassword}"
+                                                ReturnType="Go" />
+                        <Label Text="{Binding ErrorText}"
+                               TextColor="Red"
+                               IsVisible="{Binding ErrorText, Converter={StaticResource StringNotEmptyConverter}}"
+                               Style="{StaticResource Caption1}" />
+                        <VerticalStackLayout x:Name="ActionButtonStack"
+                                             HorizontalOptions="Center"
+                                             Spacing="{StaticResource LayoutSpacing}">
+                            <Button Text="{x:Static modelUtilities:MobileTexts.ButtonOk}"
+                                    Command="{Binding LoginCommand}" />
+                        </VerticalStackLayout>
+                        </VerticalStackLayout>
+                    </Grid>
+                    <controls:PageInformationButton Grid.Row="0"
+                                                    Style="{StaticResource PageInformationButtonCorner}"
+                                                    Title="{x:Static modelUtilities:MobileTexts.SignInHeading}"
+                                                    Message="{x:Static modelUtilities:MobileTexts.ToolTipSignIn}" />
+                </Grid>
             </Border>
         </VerticalStackLayout>
     </ScrollView>

@@ -58,6 +58,9 @@ public partial class EncryptResultPageModel(
     public partial string MetadataText { get; set; } = string.Empty;
 
     [ObservableProperty]
+    public partial string MessageText { get; set; } = string.Empty;
+
+    [ObservableProperty]
     public partial string StatusText { get; set; } = string.Empty;
 
     [ObservableProperty]
@@ -87,20 +90,16 @@ public partial class EncryptResultPageModel(
                 encryptionResult.OriginalSourcePath);
             if (!saveResult.IsCancelled)
             {
-                StatusText = MobileTexts.DialogTextSaved;
+                StatusText = MobileTexts.DialogTextResultSaved;
             }
         }
         catch (OperationCanceledException)
         {
             StatusText = string.Empty;
         }
-        catch (FileNotFoundException)
-        {
-            StatusText = MobileTexts.DialogTextTemporaryFileUnavailable;
-        }
         catch (Exception ex)
         {
-            StatusText = FormatStatusText(MobileTexts.DialogTextSaveAsFailed, ex);
+            StatusText = ex.FormatException();
         }
         finally
         {
@@ -125,13 +124,9 @@ public partial class EncryptResultPageModel(
         {
             StatusText = string.Empty;
         }
-        catch (FileNotFoundException)
-        {
-            StatusText = MobileTexts.DialogTextTemporaryFileUnavailable;
-        }
         catch (Exception ex)
         {
-            StatusText = FormatStatusText(MobileTexts.DialogTextSendToFailed, ex);
+            StatusText = ex.FormatException();
         }
         finally
         {

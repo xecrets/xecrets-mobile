@@ -28,30 +28,32 @@
 
 #endregion Copyright and GPL License
 
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
+using Microsoft.Maui.Controls;
 
-using Xecrets.Mobile.Models.Abstractions;
-using Xecrets.Mobile.Models.Models;
+namespace Xecrets.Mobile.Controls;
 
-using AppTexts = Xecrets.Texts.Texts;
-
-namespace Xecrets.Mobile.Models.PageModels;
-
-public abstract partial class PageModelBase(IUserInterfaceService userInterfaceService) : ObservableObject
+public sealed partial class PageMessages
 {
-    protected IUserInterfaceService UserInterfaceService => userInterfaceService;
+    public static readonly BindableProperty MessageTextProperty = BindableProperty.Create(
+        nameof(MessageText), typeof(string), typeof(PageMessages));
 
-    [RelayCommand]
-    private Task OpenHelp() => userInterfaceService.OpenBrowserAsync(AppTexts.XecretsHelpUrl());
+    public static readonly BindableProperty StatusTextProperty = BindableProperty.Create(
+        nameof(StatusText), typeof(string), typeof(PageMessages));
 
-    [RelayCommand]
-    private Task OpenXecretsHome() => userInterfaceService.OpenBrowserAsync(AppTexts.SiteUrl);
+    public PageMessages()
+    {
+        InitializeComponent();
+    }
 
-    [RelayCommand]
-    private Task OpenXecretsDesktop() => userInterfaceService.OpenBrowserAsync(AppTexts.FileEncryptionUrl);
+    public string MessageText
+    {
+        get => (string)GetValue(MessageTextProperty);
+        set => SetValue(MessageTextProperty, value);
+    }
 
-    [RelayCommand]
-    private Task OpenThirdPartyLicenses() =>
-        userInterfaceService.NavigateToAsync(AppDestination.ThirdPartyLicenses);
+    public string StatusText
+    {
+        get => (string)GetValue(StatusTextProperty);
+        set => SetValue(StatusTextProperty, value);
+    }
 }

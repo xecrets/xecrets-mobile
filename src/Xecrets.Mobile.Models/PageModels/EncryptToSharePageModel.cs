@@ -53,6 +53,9 @@ public partial class EncryptToSharePageModel(
     public partial string Password { get; set; } = string.Empty;
 
     [ObservableProperty]
+    public partial string MessageText { get; set; } = string.Empty;
+
+    [ObservableProperty]
     public partial string StatusText { get; set; } = string.Empty;
 
     [ObservableProperty]
@@ -100,7 +103,7 @@ public partial class EncryptToSharePageModel(
         }
         catch (Exception ex)
         {
-            StatusText = FormatStatusText(MobileTexts.DialogTextEncryptFailed, ex);
+            StatusText = ex.FormatException();
         }
         finally
         {

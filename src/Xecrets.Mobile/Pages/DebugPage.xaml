@@ -28,8 +28,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
              x:Class="Xecrets.Mobile.Pages.DebugPage"
-             x:DataType="pageModels:DebugPageModel"
-             Title="Debug">
+             x:DataType="pageModels:DebugPageModel">
     <ScrollView>
         <VerticalStackLayout Padding="{StaticResource LayoutPadding}"
                              Spacing="{StaticResource LayoutSpacing}">

@@ -55,6 +55,9 @@ public partial class HomePageModel(
     public partial string Email { get; set; } = profileService.CurrentEmail;
 
     [ObservableProperty]
+    public partial string MessageText { get; set; } = string.Empty;
+
+    [ObservableProperty]
     public partial string StatusText { get; set; } = string.Empty;
 
     [ObservableProperty]
@@ -103,7 +106,7 @@ public partial class HomePageModel(
         }
         catch (Exception ex)
         {
-            StatusText = FormatStatusText(MobileTexts.DialogTextEncryptFailed, ex);
+            StatusText = ex.FormatException();
         }
         finally
         {
@@ -150,7 +153,7 @@ public partial class HomePageModel(
         }
         catch (Exception ex)
         {
-            StatusText = FormatStatusText(MobileTexts.DialogTextOpenEncryptedFileFailed, ex);
+            StatusText = ex.FormatException();
         }
         finally
         {
