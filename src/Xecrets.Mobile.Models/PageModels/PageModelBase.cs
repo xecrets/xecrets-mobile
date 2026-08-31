@@ -33,6 +33,7 @@ using CommunityToolkit.Mvvm.Input;
 
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
+using Xecrets.Mobile.Models.Utilities;
 
 using AppTexts = Xecrets.Texts.Texts;
 
@@ -43,7 +44,7 @@ public abstract partial class PageModelBase(IUserInterfaceService userInterfaceS
     protected IUserInterfaceService UserInterfaceService => userInterfaceService;
 
     [RelayCommand]
-    private Task OpenHelp() => userInterfaceService.OpenBrowserAsync(AppTexts.XecretsHelpUrl());
+    private Task OpenHelp() => userInterfaceService.OpenBrowserAsync(MobileTexts.MobileHelpUrl);
 
     [RelayCommand]
     private Task OpenXecretsHome() => userInterfaceService.OpenBrowserAsync(AppTexts.SiteUrl);

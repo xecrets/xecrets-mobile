@@ -103,6 +103,8 @@ public static class MobileTexts
 
     public static string WorkFoldersContentTitle => "My folders";
 
+    public static string MobileHelpUrl => "https://www.axantum.com/help/mobile";
+
     #endregion Untranslated texts
 
     #region Translated texts
@@ -137,7 +139,7 @@ public static class MobileTexts
     // "Encrypt copy to share"
     public static string DialogTitleEncryptCopyFor => AppTexts.DialogTitleEncryptCopyFor;
 
-    // "Setup a local profile"
+    // "Set up a local profile"
     public static string HeadingCreateUserFirstTimeSetup => AppTexts.HeadingCreateUserFirstTimeSetup;
 
     // "About"
@@ -149,7 +151,7 @@ public static class MobileTexts
     // "Sign in to Xecrets Ez"
     public static string SignInHeading => AppTexts.SignInHeading;
 
-    // "Adding a password is only for decryption, when you receive files from someone else or you have used another
+    // "Adding a password is only for decryption, when you receive files from someone else, or you have used another
     // password previously. It does not affect encryption."
     public static string ToolTipAddPassword => AppTexts.ToolTipAddPassword;
 
