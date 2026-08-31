@@ -36,6 +36,9 @@ namespace Xecrets.Mobile.Models;
 
 public static class Extensions
 {
+    public static string ToSentenceCase(this string value) =>
+        char.ToUpper(value[0]) + value[1..].ToLower();
+
     public static async Task<SaveFileResult> SaveAsAsync(
         this IFileService fileService,
         string filePath,
@@ -57,5 +60,4 @@ public static class Extensions
 
         return string.Format(MobileTexts.DialogTextExceptionFormat, exceptionMessage);
     }
-
 }

@@ -79,13 +79,14 @@
                                           ColumnSpacing="{StaticResource LayoutSpacing}">
                                         <ImageButton Grid.Column="0"
                                                      Background="Transparent"
+                                                     Padding="8"
                                                      Command="{Binding RenameCommand, Source={RelativeSource AncestorType={x:Type pageModels:WorkFoldersPageModel}, Mode=FindAncestorBindingContext}, x:DataType=pageModels:WorkFoldersPageModel}"
                                                      CommandParameter="{Binding .}">
                                             <ImageButton.Source>
-                                                <FontImageSource Glyph="{x:Static f:FluentUI.edit_24_regular}"
+                                                <FontImageSource Glyph="{x:Static f:FluentUI.edit_28_regular}"
                                                                  FontFamily="{x:Static f:FluentUI.FontFamily}"
                                                                  Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
-                                                                 Size="{StaticResource size240}" />
+                                                                 Size="28" />
                                             </ImageButton.Source>
                                         </ImageButton>
                                         <Button Grid.Column="1"
@@ -95,13 +96,14 @@
                                                 CommandParameter="{Binding .}" />
                                         <ImageButton Grid.Column="2"
                                                      Background="Transparent"
+                                                     Padding="8"
                                                      Command="{Binding RemoveCommand, Source={RelativeSource AncestorType={x:Type pageModels:WorkFoldersPageModel}, Mode=FindAncestorBindingContext}, x:DataType=pageModels:WorkFoldersPageModel}"
                                                      CommandParameter="{Binding .}">
                                             <ImageButton.Source>
-                                                <FontImageSource Glyph="{x:Static f:FluentUI.delete_24_regular}"
+                                                <FontImageSource Glyph="{x:Static f:FluentUI.delete_28_regular}"
                                                                  FontFamily="{x:Static f:FluentUI.FontFamily}"
                                                                  Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
-                                                                 Size="{StaticResource size240}" />
+                                                                 Size="28" />
                                             </ImageButton.Source>
                                         </ImageButton>
                                     </Grid>

@@ -47,7 +47,7 @@ public sealed class BuildInformation : IBuildInformation
 
     public bool IsBeta => bool.Parse(GetMetadata("IsBeta"));
 
-    public string ProductName => AppInfo.Current.Name;
+    public string ProductName => IsBeta ? $"{AppInfo.Current.Name} Beta" : AppInfo.Current.Name;
 
     public string Version => AppInfo.Current.VersionString;
 

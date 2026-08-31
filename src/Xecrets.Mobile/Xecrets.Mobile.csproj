@@ -47,8 +47,7 @@
 
         <!-- Display name -->
 <!--        <ApplicationTitle Condition="'$(RiderBuild)' == 'True'">Xecrets.Mobile</ApplicationTitle>-->
-        <ApplicationTitle Condition="'$(ApplicationTitle)' == '' And '$(IsBeta)' == 'true'">Xecrets Ez Beta</ApplicationTitle>
-        <ApplicationTitle Condition="'$(ApplicationTitle)' == ''">Xecrets Ez</ApplicationTitle>
+        <ApplicationTitle>Xecrets Ez</ApplicationTitle>
 
         <!-- Rider's Mac Catalyst runner resolves the app bundle from the assembly name.
              Keep that bundle name stable while ApplicationTitle remains the user-facing name. -->

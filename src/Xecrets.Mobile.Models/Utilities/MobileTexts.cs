@@ -43,19 +43,19 @@ public static class MobileTexts
 
     public static string LabelContinue => "Continue";
 
-    public static string ButtonDecryptAs => "Decrypt And…";
+    public static string ButtonDecryptAs => "Decrypt and…";
 
-    public static string ButtonEncryptAs => "Encrypt And…";
+    public static string ButtonEncryptAs => "Encrypt and…";
 
-    public static string ButtonEncryptToShare => "Encrypt To… And…";
+    public static string ButtonEncryptToShare => "Encrypt to… and…";
 
-    public static string ButtonOpenIn => "Open In…";
+    public static string ButtonOpenIn => "Open in…";
 
     public static string ButtonReport => "Report";
 
     public static string ButtonSave => "Save";
 
-    public static string ButtonSendTo => "Send To…";
+    public static string ButtonSendTo => "Send to…";
 
     public static string ButtonView => "View";
 
@@ -89,19 +89,19 @@ public static class MobileTexts
 
     public static string HomeDescription => "Choose an action. Work with files where they are stored. Work in the app and select what to do next. Encrypt a copy with a separate password.";
 
-    public static string MenuInfo => "Xecrets Home";
+    public static string MenuInfo => "Xecrets home";
 
     // "Third-Party Licenses"
     public static string MenuThirdPartyLicenses => ThirdPartyLicensesPageTitle;
 
-    public static string MenuXecretsDesktop => "Xecrets Desktop";
+    public static string MenuXecretsDesktop => "Xecrets desktop";
 
     public static string ThirdPartyLicensesPageExplanation => "The application includes the following third-party material, under the terms reproduced here.";
 
     // Also used as the overflow menu item text, see MenuThirdPartyLicenses.
-    public static string ThirdPartyLicensesPageTitle => "Third-Party Licenses";
+    public static string ThirdPartyLicensesPageTitle => "Third-party Licenses";
 
-    public static string WorkFoldersContentTitle => "My Folders";
+    public static string WorkFoldersContentTitle => "My folders";
 
     #endregion Untranslated texts
 
@@ -126,7 +126,7 @@ public static class MobileTexts
     public static string ButtonOk => AppTexts.LabelOk;
 
     // "Save As…"
-    public static string ButtonSaveAs => AppTexts.ButtonSaveAs;
+    public static string ButtonSaveAs => AppTexts.ButtonSaveAs.ToSentenceCase();
 
     // "Add a decryption password"
     public static string DialogTextAddPassword => AppTexts.DialogTextAddPassword;
