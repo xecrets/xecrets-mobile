@@ -42,9 +42,13 @@ namespace Xecrets.Mobile.Models.PageModels;
 public partial class EnterPasswordPageModel(
     IPreviewService previewService,
     IWorkFolderOperationService workFolderOperationService,
+    IFlowContext flowContext,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService)
 {
+    public string Breadcrumb =>
+        BreadcrumbFormatter.Format(flowContext.Origin, flowContext.Operation, MobileTexts.BreadcrumbPassword);
+
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SubmitCommand))]
     public partial string Password { get; set; } = string.Empty;

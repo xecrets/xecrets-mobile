@@ -44,10 +44,14 @@ public partial class PreviewPageModel(
     IDecryptedFileViewer decryptedFileViewer,
     IFileService fileService,
     ICrashTestService crashTestService,
+    IFlowContext flowContext,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel
 {
     private const string _nonBreakingSpace = "\u00A0";
+
+    public string Breadcrumb =>
+        BreadcrumbFormatter.Format(flowContext.Origin, flowContext.Operation, MobileTexts.BreadcrumbPreview);
 
     [ObservableProperty]
     public partial string FileNameText { get; set; } = string.Empty;

@@ -40,10 +40,14 @@ namespace Xecrets.Mobile.Models.PageModels;
 
 public partial class EncryptResultPageModel(
     IFileService fileService,
+    IFlowContext flowContext,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel
 {
     private const string _nonBreakingSpace = "\u00A0";
+
+    public string Breadcrumb =>
+        BreadcrumbFormatter.Format(flowContext.Origin, flowContext.Operation, MobileTexts.BreadcrumbResult);
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SaveAsCommand))]

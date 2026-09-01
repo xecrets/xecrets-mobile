@@ -28,6 +28,8 @@
 
 #endregion Copyright and GPL License
 
+using Xecrets.Texts;
+
 using AppTexts = Xecrets.Texts.Texts;
 
 namespace Xecrets.Mobile.Models.Utilities;
@@ -42,6 +44,24 @@ public static class MobileTexts
     public static string LabelClose => "Close";
 
     public static string LabelContinue => "Continue";
+
+    // The breadcrumb segments, here and in the translated region below, are joined by
+    // BreadcrumbSeparator to form the trail shown at the top of the pages that are shared between
+    // the encrypt and decrypt flows.
+    public static string BreadcrumbCopyToShare => "Copy to share";
+
+    public static string BreadcrumbHome => "Home";
+
+    // "My folders"
+    public static string BreadcrumbMyFolders => WorkFoldersContentTitle;
+
+    public static string BreadcrumbPreview => "Preview";
+
+    public static string BreadcrumbReceivedFile => "Received file";
+
+    public static string BreadcrumbResult => "Result";
+
+    public static string BreadcrumbSeparator => " › ";
 
     public static string ButtonDecryptAs => "Decrypt and…";
 
@@ -108,6 +128,16 @@ public static class MobileTexts
     #endregion Untranslated texts
 
     #region Translated texts
+
+    // "Decrypt", without the ellipsis of ButtonDecrypt, since a breadcrumb names a place and not an
+    // action that leads on to a selection.
+    public static string BreadcrumbDecrypt => ButtonDecrypt.StripEllipsis();
+
+    // "Encrypt", see BreadcrumbDecrypt.
+    public static string BreadcrumbEncrypt => ButtonEncrypt.StripEllipsis();
+
+    // "Password"
+    public static string BreadcrumbPassword => WatermarkPassword;
 
     // "Create"
     public static string ButtonCreate => AppTexts.LabelCreate;

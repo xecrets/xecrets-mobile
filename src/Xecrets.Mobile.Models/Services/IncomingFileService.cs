@@ -37,6 +37,7 @@ public sealed class IncomingFileService(
     IProfileService profileService,
     IPreviewService previewService,
     IEncryptionPreparationService encryptionPreparationService,
+    IFlowContext flowContext,
     IUserInterfaceService userInterfaceService)
     : IIncomingFileService
 {
@@ -72,7 +73,12 @@ public sealed class IncomingFileService(
 
     private async Task HandleAuthenticatedAsync(IncomingFileInfo file)
     {
-        if (ContentTypeDetector.IsEncryptedFile(file.DisplayName, file.ContentType))
+        bool isEncrypted = ContentTypeDetector.IsEncryptedFile(file.DisplayName, file.ContentType);
+        flowContext.Begin(
+            FlowOrigin.ReceivedFile,
+            isEncrypted ? WorkFolderOperation.Decrypt : WorkFolderOperation.Encrypt);
+
+        if (isEncrypted)
         {
             bool isPrepared = await previewService.PrepareImportedAsync(file.FilePath);
             if (!isPrepared)

@@ -56,6 +56,7 @@
             <VerticalStackLayout x:Name="ContentRoot"
                                  Padding="{StaticResource LayoutPadding}"
                                  Spacing="{StaticResource LayoutSpacing}">
+                <pageControls:PageBreadcrumb Text="{Binding Breadcrumb}" />
                 <Border x:Name="ContentColumn"
                         HorizontalOptions="Center"
                         Style="{StaticResource PageInformationCardStyle}">

@@ -48,6 +48,7 @@ public partial class HomePageModel(
     IEncryptionPreparationService encryptionPreparationService,
     ICrashTestService crashTestService,
     SessionExitService sessionExitService,
+    IFlowContext flowContext,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel
 {
@@ -70,12 +71,16 @@ public partial class HomePageModel(
     public partial bool IsBusy { get; set; }
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private Task Encrypt() =>
-        UserInterfaceService.NavigateToAsync(AppDestination.WorkFolders, WorkFolderOperation.Encrypt);
+    private Task Encrypt()
+    {
+        flowContext.Begin(FlowOrigin.Navigated, WorkFolderOperation.Encrypt);
+        return UserInterfaceService.NavigateToAsync(AppDestination.WorkFolders, WorkFolderOperation.Encrypt);
+    }
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private async Task EncryptAs()
     {
+        flowContext.Begin(FlowOrigin.Navigated, WorkFolderOperation.Encrypt);
         crashTestService.CrashIfArmed(CrashTestOperation.Encrypt);
 
         try
@@ -117,16 +122,21 @@ public partial class HomePageModel(
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private async Task EncryptToShare()
     {
+        flowContext.Begin(FlowOrigin.Navigated, WorkFolderOperation.Encrypt);
         await UserInterfaceService.NavigateToAsync(AppDestination.EncryptToShare);
     }
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private Task Decrypt() =>
-        UserInterfaceService.NavigateToAsync(AppDestination.WorkFolders, WorkFolderOperation.Decrypt);
+    private Task Decrypt()
+    {
+        flowContext.Begin(FlowOrigin.Navigated, WorkFolderOperation.Decrypt);
+        return UserInterfaceService.NavigateToAsync(AppDestination.WorkFolders, WorkFolderOperation.Decrypt);
+    }
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private async Task DecryptAs()
     {
+        flowContext.Begin(FlowOrigin.Navigated, WorkFolderOperation.Decrypt);
         crashTestService.CrashIfArmed(CrashTestOperation.Decrypt);
 
         try

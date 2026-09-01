@@ -47,21 +47,27 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
 {
     private readonly IWorkFolderService _workFolderService;
     private readonly IWorkFolderOperationService _operationService;
+    private readonly IFlowContext _flowContext;
     private WorkFolderOperation _operation;
     private bool _refreshingListDisplayNames;
 
     public WorkFoldersPageModel(
         IWorkFolderService workFolderService,
         IWorkFolderOperationService operationService,
+        IFlowContext flowContext,
         IUserInterfaceService userInterfaceService)
         : base(userInterfaceService)
     {
         _workFolderService = workFolderService;
         _operationService = operationService;
+        _flowContext = flowContext;
         Folders = new WorkFolderCollection(RefreshListDisplayNames);
     }
 
     public ObservableCollection<WorkFolder> Folders { get; }
+
+    public string Breadcrumb =>
+        BreadcrumbFormatter.Format(_flowContext.Origin, _flowContext.Operation, MobileTexts.BreadcrumbMyFolders);
 
     [ObservableProperty] public partial string MessageText { get; set; } = string.Empty;
 

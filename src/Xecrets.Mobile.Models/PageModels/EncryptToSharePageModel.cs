@@ -45,9 +45,13 @@ public partial class EncryptToSharePageModel(
     IProfileService profileService,
     IFileService fileService,
     IEncryptionPreparationService encryptionPreparationService,
+    IFlowContext flowContext,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel
 {
+    public string Breadcrumb =>
+        BreadcrumbFormatter.Format(flowContext.Origin, flowContext.Operation, MobileTexts.BreadcrumbCopyToShare);
+
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SubmitCommand))]
     public partial string Password { get; set; } = string.Empty;
