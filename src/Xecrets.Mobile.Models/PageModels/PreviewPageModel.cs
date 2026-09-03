@@ -201,7 +201,7 @@ public partial class PreviewPageModel(
                 state.SourcePath);
             if (!result.IsCancelled)
             {
-                StatusText = MobileTexts.DialogTextResultSaved;
+                await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextResultSaved);
             }
         }
         catch (OperationCanceledException)

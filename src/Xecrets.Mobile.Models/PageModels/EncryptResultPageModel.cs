@@ -94,7 +94,7 @@ public partial class EncryptResultPageModel(
                 encryptionResult.OriginalSourcePath);
             if (!saveResult.IsCancelled)
             {
-                StatusText = MobileTexts.DialogTextResultSaved;
+                await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextResultSaved);
             }
         }
         catch (OperationCanceledException)
