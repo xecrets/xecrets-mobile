@@ -65,6 +65,7 @@ and action SHAs in `.github/workflows/ci.yml`. Do not introduce dependencies on
 
 ## Code Style
 
+- Do not reference texts in `Xecrets.Texts` directly from mobile code. Expose them through `MobileTexts` instead.
 - Prefer the smallest idiomatic change; follow existing repository patterns; don't introduce abstractions without a concrete need; consider error paths, ownership/lifetime and testability; inspect related code before choosing the design; don't treat compiling/tests passing as sufficient evidence of good design.
 - All types must always reside in their own file. Do not declare more than one type per file, except for private nested types or similarly scoped implementation details.
 - Prefer file-scoped namespace declarations.
@@ -79,6 +80,7 @@ and action SHAs in `.github/workflows/ci.yml`. Do not introduce dependencies on
 - Follow the existing `async` naming pattern: methods that return `Task` or `Task<T>` should use an `Async` suffix.
 - Use `await using` for disposable async resources, especially database connections and readers.
 - Prefer `try/finally` when cleanup must always occur, and use the existing error-handling pattern rather than inventing a new one.
+- Handle predictable failures through pre-checks and explicit status codes where practical. Do not communicate predictable failures to callers with exceptions; reserve exceptions for unexpected failures. Callers should present predictable warnings, errors and important information, including normal user-facing errors such as unavailable file permissions, in a modal dialog. Use transient messages for successes. Reserve status text for essentially unpredictable failures or indications of programming errors.
 - Do not add defensive fallbacks that silently handle states that should not happen. Prefer making invalid assumptions visible by failing fast or propagating the error, unless the code is handling a real expected platform or user-cancel path.
 - Do not add explicit guards or custom exceptions for states that are guaranteed by the build, generated assembly metadata, dependency injection, or framework initialization. Use the value directly (with the null-forgiving operator where required by nullable analysis) and let an invalid state fail naturally. For example, do not write `GetCustomAttribute<T>()?.Value ?? throw ...` for a required generated attribute; write `GetCustomAttribute<T>()!.Value`.
 - Keep comments and XML documentation concise and factual. Add docs for public types and members when they improve readability.

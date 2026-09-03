@@ -38,12 +38,9 @@ using System.Threading.Tasks;
 
 using Foundation;
 
-using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Storage;
 
 using UniformTypeIdentifiers;
-
-using UIKit;
 
 using Xecrets.Common.Models;
 
@@ -68,7 +65,7 @@ public sealed class AppleWorkFolderService(WorkFolderStorage storage) : IWorkFol
     public async Task<WorkFolderResult> AddFolderAsync(string? initialLocationId = null)
     {
         NSUrl? initialUrl = initialLocationId is null ? null : NSUrl.FromString(initialLocationId);
-        NSUrl? url = await PickUrlAsync(UTTypes.Folder, initialUrl);
+        NSUrl? url = await UTTypes.Folder.PickUrlAsync(initialUrl);
         if (url is null)
         {
             return WorkFolderResult.Canceled;
@@ -156,7 +153,7 @@ public sealed class AppleWorkFolderService(WorkFolderStorage storage) : IWorkFol
             UTType contentType = pickerKind == FilePickerKind.Encrypted
                 ? UTType.CreateExportedType(EncryptedFileType.UniformTypeIdentifier)
                 : UTTypes.Data;
-            fileUrl = await PickUrlAsync(contentType, folderUrl);
+            fileUrl = await contentType.PickUrlAsync(folderUrl);
         }
         finally
         {
@@ -307,18 +304,6 @@ public sealed class AppleWorkFolderService(WorkFolderStorage storage) : IWorkFol
         }
     }
 
-    private static async Task<NSUrl?> PickUrlAsync(UTType contentType, NSUrl? initialUrl)
-    {
-        UIDocumentPickerViewController picker = new([contentType], false)
-        {
-            DirectoryUrl = initialUrl,
-        };
-        PickerDelegate pickerDelegate = new();
-        picker.Delegate = pickerDelegate;
-        await Platform.GetCurrentUIViewController()!.PresentViewControllerAsync(picker, true);
-        return await pickerDelegate.Completion.Task;
-    }
-
     private static bool IsDescendant(NSUrl folder, NSUrl file) =>
         file.Path!.StartsWith(folder.Path!.TrimEnd('/') + "/", StringComparison.Ordinal);
 
@@ -412,17 +397,6 @@ public sealed class AppleWorkFolderService(WorkFolderStorage storage) : IWorkFol
 
             throw;
         }
-    }
-
-    private sealed class PickerDelegate : UIDocumentPickerDelegate
-    {
-        public TaskCompletionSource<NSUrl?> Completion { get; } = new();
-
-        public override void DidPickDocument(UIDocumentPickerViewController controller, NSUrl[] urls) =>
-            Completion.SetResult(urls[0]);
-
-        public override void WasCancelled(UIDocumentPickerViewController controller) =>
-            Completion.SetResult(null);
     }
 
     private sealed class SecurityScopedStream(Stream stream, NSUrl accessUrl, bool isAccessing) : Stream

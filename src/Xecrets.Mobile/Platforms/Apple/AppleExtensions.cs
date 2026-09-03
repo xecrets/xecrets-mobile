@@ -28,26 +28,40 @@
 
 #endregion Copyright and GPL License
 
-using System;
-using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
-using Xecrets.Mobile.Models.Models;
-using Xecrets.Mobile.Platforms.Apple;
+using Foundation;
 
-namespace Xecrets.Mobile.Platforms.MacCatalyst;
+using Microsoft.Maui.ApplicationModel;
 
-[SupportedOSPlatform("maccatalyst")]
-public class MacCatalystFileService : AppleFileServiceBase
+using UniformTypeIdentifiers;
+
+using UIKit;
+
+namespace Xecrets.Mobile.Platforms.Apple;
+
+public static class AppleExtensions
 {
-    public override string PlatformId => "maccatalyst";
+    public static async Task<NSUrl?> PickUrlAsync(this UTType contentType, NSUrl? initialUrl)
+    {
+        UIDocumentPickerViewController picker = new([contentType], false)
+        {
+            DirectoryUrl = initialUrl,
+        };
+        PickerDelegate pickerDelegate = new();
+        picker.Delegate = pickerDelegate;
+        await Platform.GetCurrentUIViewController()!.PresentViewControllerAsync(picker, true);
+        return await pickerDelegate.Completion.Task;
+    }
 
-    protected override string ResolveDefaultSaveLocation(string? originalFilePath) =>
-        new Uri(base.ResolveDefaultSaveLocation(originalFilePath)).AbsoluteUri;
+    private sealed class PickerDelegate : UIDocumentPickerDelegate
+    {
+        public TaskCompletionSource<NSUrl?> Completion { get; } = new();
 
-    public override Task<bool> CanViewFileAsync(DecryptedFileInfo file) =>
-        QuickLookFileViewer.CanViewAsync(file);
+        public override void DidPickDocument(UIDocumentPickerViewController controller, NSUrl[] urls) =>
+            Completion.SetResult(urls[0]);
 
-    public override Task ViewFileAsync(DecryptedFileInfo file) =>
-        QuickLookFileViewer.ViewAsync(file);
+        public override void WasCancelled(UIDocumentPickerViewController controller) =>
+            Completion.SetResult(null);
+    }
 }

@@ -33,6 +33,7 @@ using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
 using Windows.Storage;
+using Windows.Storage.Pickers;
 using Windows.System;
 
 using Xecrets.Mobile.Models.Models;
@@ -45,6 +46,40 @@ namespace Xecrets.Mobile.Platforms.Windows;
 public class WindowsFileService : FileServiceBase
 {
     public override string PlatformId => "windows";
+
+    public override async Task<PickedWritableFile?> PickWritableFileAsync(string pickerTitle, FilePickerKind pickerKind)
+    {
+        FileOpenPicker picker = new();
+        picker.FileTypeFilter.Add(pickerKind == FilePickerKind.Encrypted ? Extensions.EncryptedExtension : "*");
+        InitializeWithWindow.Initialize(picker, GetWindowHandle());
+        StorageFile? selectedFile = await picker.PickSingleFileAsync();
+        if (selectedFile is null)
+        {
+            return null;
+        }
+
+        StorageFile file = selectedFile;
+        return new PickedWritableFile(
+            file.Name,
+            action => action(),
+            () => Task.FromResult((file.Attributes & FileAttributes.ReadOnly) == 0),
+            () => Task.FromResult((file.Attributes & FileAttributes.ReadOnly) == 0),
+            async () => (await file.GetBasicPropertiesAsync()).Size,
+            async () => await file.OpenStreamForWriteAsync(),
+            async name =>
+            {
+                try
+                {
+                    await file.RenameAsync(name, NameCollisionOption.FailIfExists);
+                    return true;
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    return false;
+                }
+            },
+            async () => await file.DeleteAsync(StorageDeleteOption.PermanentDelete));
+    }
 
     public override async Task<bool> CanViewFileAsync(DecryptedFileInfo file)
     {

@@ -44,6 +44,8 @@ public interface IFileService
 
     Task<PickedFile?> PickFileAsync(string pickerTitle, FilePickerKind pickerKind);
 
+    Task<PickedWritableFile?> PickWritableFileAsync(string pickerTitle, FilePickerKind pickerKind);
+
     Task<bool> OpenInAsync(string filePath, string displayName);
 
     Task SendToAsync(string filePath, string displayName, string contentType);

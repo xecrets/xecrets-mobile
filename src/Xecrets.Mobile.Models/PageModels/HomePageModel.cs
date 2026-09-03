@@ -44,6 +44,7 @@ namespace Xecrets.Mobile.Models.PageModels;
 public partial class HomePageModel(
     IProfileService profileService,
     IFileService fileService,
+    IFileWiper fileWiper,
     IPreviewService previewService,
     IEncryptionPreparationService encryptionPreparationService,
     ICrashTestService crashTestService,
@@ -67,6 +68,7 @@ public partial class HomePageModel(
     [NotifyCanExecuteChangedFor(nameof(EncryptToShareCommand))]
     [NotifyCanExecuteChangedFor(nameof(DecryptCommand))]
     [NotifyCanExecuteChangedFor(nameof(DecryptAsCommand))]
+    [NotifyCanExecuteChangedFor(nameof(WipeCommand))]
     [NotifyCanExecuteChangedFor(nameof(SignOutCommand))]
     public partial bool IsBusy { get; set; }
 
@@ -173,6 +175,45 @@ public partial class HomePageModel(
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private Task SignOut() => sessionExitService.ExitAsync();
+
+    [RelayCommand(CanExecute = nameof(CanUseCommand))]
+    private async Task Wipe()
+    {
+        try
+        {
+            IsBusy = true;
+            StatusText = string.Empty;
+
+            PickedWritableFile? file = await fileService.PickWritableFileAsync(
+                AppTexts.DialogTitleSelectFilesToWipe,
+                FilePickerKind.Any);
+            if (file is null || !await UserInterfaceService.DisplayConfirmationAsync(AppTexts.MessageTextConfirmWipe))
+            {
+                return;
+            }
+
+            FileWipeStatus status = await fileWiper.WipeAsync(file);
+            if (status == FileWipeStatus.InsufficientRights)
+            {
+                await UserInterfaceService.DisplayMessageAsync(AppTexts.DialogTextInsufficientRights);
+                return;
+            }
+
+            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextResultSaved);
+        }
+        catch (OperationCanceledException)
+        {
+            StatusText = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            StatusText = ex.FormatException();
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
 
     private bool CanUseCommand()
         => !IsBusy;

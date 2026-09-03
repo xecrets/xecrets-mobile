@@ -52,6 +52,8 @@ public abstract class FileServiceBase : IFileService
 {
     public abstract string PlatformId { get; }
 
+    public abstract Task<PickedWritableFile?> PickWritableFileAsync(string pickerTitle, FilePickerKind pickerKind);
+
     public string AppDataDirectory => FileSystem.AppDataDirectory;
 
     public string CacheDirectory => FileSystem.CacheDirectory;

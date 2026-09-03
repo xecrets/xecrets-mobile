@@ -28,26 +28,59 @@
 
 #endregion Copyright and GPL License
 
-using System;
-using System.Runtime.Versioning;
-using System.Threading.Tasks;
+using System.Buffers;
+using System.Security.Cryptography;
 
+using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
-using Xecrets.Mobile.Platforms.Apple;
 
-namespace Xecrets.Mobile.Platforms.MacCatalyst;
+namespace Xecrets.Mobile.Models.Services;
 
-[SupportedOSPlatform("maccatalyst")]
-public class MacCatalystFileService : AppleFileServiceBase
+public sealed class FileWiper : IFileWiper
 {
-    public override string PlatformId => "maccatalyst";
+    public async Task<FileWipeStatus> WipeAsync(PickedWritableFile file)
+    {
+        FileWipeStatus status = FileWipeStatus.Succeeded;
+        await file.WithAccessAsync(async () =>
+        {
+            if (!await file.CanWriteAsync() || !await file.CanDeleteAsync())
+            {
+                status = FileWipeStatus.InsufficientRights;
+                return;
+            }
 
-    protected override string ResolveDefaultSaveLocation(string? originalFilePath) =>
-        new Uri(base.ResolveDefaultSaveLocation(originalFilePath)).AbsoluteUri;
+            long length = await file.GetLengthAsync();
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(81920);
+            try
+            {
+                await using Stream stream = await file.OpenWriteAsync();
+                long remaining = length;
+                while (remaining > 0)
+                {
+                    int toWrite = (int)Math.Min(buffer.Length, remaining);
+                    RandomNumberGenerator.Fill(buffer.AsSpan(0, toWrite));
+                    await stream.WriteAsync(buffer.AsMemory(0, toWrite));
+                    remaining -= toWrite;
+                }
 
-    public override Task<bool> CanViewFileAsync(DecryptedFileInfo file) =>
-        QuickLookFileViewer.CanViewAsync(file);
+                if (stream is FileStream fileStream)
+                {
+                    fileStream.Flush(true);
+                }
+                else
+                {
+                    await stream.FlushAsync();
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
 
-    public override Task ViewFileAsync(DecryptedFileInfo file) =>
-        QuickLookFileViewer.ViewAsync(file);
+            _ = await file.RenameIfPossibleAsync(Path.GetRandomFileName());
+            await file.DeleteAsync();
+        });
+
+        return status;
+    }
 }

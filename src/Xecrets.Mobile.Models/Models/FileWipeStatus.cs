@@ -28,26 +28,10 @@
 
 #endregion Copyright and GPL License
 
-using System;
-using System.Runtime.Versioning;
-using System.Threading.Tasks;
+namespace Xecrets.Mobile.Models.Models;
 
-using Xecrets.Mobile.Models.Models;
-using Xecrets.Mobile.Platforms.Apple;
-
-namespace Xecrets.Mobile.Platforms.MacCatalyst;
-
-[SupportedOSPlatform("maccatalyst")]
-public class MacCatalystFileService : AppleFileServiceBase
+public enum FileWipeStatus
 {
-    public override string PlatformId => "maccatalyst";
-
-    protected override string ResolveDefaultSaveLocation(string? originalFilePath) =>
-        new Uri(base.ResolveDefaultSaveLocation(originalFilePath)).AbsoluteUri;
-
-    public override Task<bool> CanViewFileAsync(DecryptedFileInfo file) =>
-        QuickLookFileViewer.CanViewAsync(file);
-
-    public override Task ViewFileAsync(DecryptedFileInfo file) =>
-        QuickLookFileViewer.ViewAsync(file);
+    Succeeded,
+    InsufficientRights,
 }

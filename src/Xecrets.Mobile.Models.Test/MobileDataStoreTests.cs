@@ -254,6 +254,8 @@ public sealed class MobileDataStoreTests
         public string AppDataDirectory => directory;
         public string CacheDirectory => directory;
         public Task<PickedFile?> PickFileAsync(string pickerTitle, FilePickerKind pickerKind) => throw new NotSupportedException();
+
+        public Task<PickedWritableFile?> PickWritableFileAsync(string pickerTitle, FilePickerKind pickerKind) => throw new NotSupportedException();
         public Task<bool> OpenInAsync(string filePath, string displayName) => throw new NotSupportedException();
         public Task SendToAsync(string filePath, string displayName, string contentType) => throw new NotSupportedException();
         public Task<SaveFileResult> SaveAsAsync(Stream stream, string displayName, string originalSourcePath) => throw new NotSupportedException();

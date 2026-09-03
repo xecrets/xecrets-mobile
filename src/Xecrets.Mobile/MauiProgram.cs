@@ -85,6 +85,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<IXecretsDataStore>(services => services.GetRequiredService<MobileDataStore>());
         builder.Services.AddSingleton<IProfileStore, ProfileStore>();
         builder.Services.AddSingleton<ProfileSession>();
+        builder.Services.AddSingleton<IFileWiper, FileWiper>();
         builder.Services.AddSingleton<ITransientFileService, TransientFileService>();
         builder.Services.AddSingleton<PreviewState>();
         builder.Services.AddSingleton<DecryptionPasswordRequestState>();

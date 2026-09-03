@@ -28,14 +28,12 @@
 
 #endregion Copyright and GPL License
 
-using System.Buffers;
-using System.Security.Cryptography;
-
 using Xecrets.Mobile.Models.Abstractions;
+using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Services;
 
-public sealed class TransientFileService(IFileService fileService) : ITransientFileService
+public sealed class TransientFileService(IFileService fileService, IFileWiper fileWiper) : ITransientFileService
 {
     private readonly string _rootDirectory = CreateRootDirectory(fileService);
 
@@ -121,37 +119,27 @@ public sealed class TransientFileService(IFileService fileService) : ITransientF
 
         try
         {
-            long length = new FileInfo(path).Length;
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(81920);
-            try
-            {
-                using FileStream stream = new(path, FileMode.Open, FileAccess.Write, FileShare.None);
-                long remaining = length;
-                while (remaining > 0)
+            string directory = Path.GetDirectoryName(path)!;
+            PickedWritableFile file = new(
+                Path.GetFileName(path),
+                action => action(),
+                () => Task.FromResult(true),
+                () => Task.FromResult(true),
+                () => Task.FromResult(new FileInfo(path).Length),
+                () => Task.FromResult<Stream>(new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.None)),
+                name =>
                 {
-                    int toWrite = (int)Math.Min(buffer.Length, remaining);
-                    RandomNumberGenerator.Fill(buffer.AsSpan(0, toWrite));
-                    stream.Write(buffer, 0, toWrite);
-                    remaining -= toWrite;
-                }
-
-                stream.Flush(true);
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(buffer);
-            }
-
-            string? directory = Path.GetDirectoryName(path);
-            if (string.IsNullOrWhiteSpace(directory))
-            {
-                File.Delete(path);
-                return;
-            }
-
-            string wipedPath = Path.Combine(directory, Path.GetRandomFileName());
-            File.Move(path, wipedPath, true);
-            File.Delete(wipedPath);
+                    string renamedPath = Path.Combine(directory, name);
+                    File.Move(path, renamedPath, true);
+                    path = renamedPath;
+                    return Task.FromResult(true);
+                },
+                () =>
+                {
+                    File.Delete(path);
+                    return Task.CompletedTask;
+                });
+            fileWiper.WipeAsync(file).GetAwaiter().GetResult();
             PruneEmptyDirectories(directory);
         }
         catch

@@ -34,12 +34,11 @@ using System.Threading.Tasks;
 
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Platforms.Apple;
-using Xecrets.Mobile.Services;
 
 namespace Xecrets.Mobile.Platforms.iOS;
 
 [SupportedOSPlatform("ios")]
-public class IOSFileService : FileServiceBase
+public class IOSFileService : AppleFileServiceBase
 {
     public override string PlatformId => "ios";
 

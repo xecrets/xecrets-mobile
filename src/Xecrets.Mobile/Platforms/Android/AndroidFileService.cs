@@ -28,23 +28,27 @@
 
 #endregion Copyright and GPL License
 
-using Android.Content;
-using Android.Content.PM;
-
-using AndroidX.Core.Content;
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
+using Android.Content;
+using Android.Content.PM;
+using Android.Database;
+using Android.Provider;
+using AndroidX.Core.Content;
+
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
+using Xecrets.Mobile.Models.Utilities;
 using Xecrets.Mobile.Services;
 
 using AndroidFile = Java.IO.File;
 using AndroidUri = Android.Net.Uri;
+
 using Platform = Microsoft.Maui.ApplicationModel.Platform;
 
 namespace Xecrets.Mobile.Platforms.Android;
@@ -53,6 +57,63 @@ namespace Xecrets.Mobile.Platforms.Android;
 public class AndroidFileService : FileServiceBase
 {
     public override string PlatformId => "android";
+
+    public override async Task<PickedWritableFile?> PickWritableFileAsync(string pickerTitle, FilePickerKind pickerKind)
+    {
+        Intent intent = new(Intent.ActionOpenDocument);
+        intent.AddCategory(Intent.CategoryOpenable);
+        intent.SetType("*/*");
+        if (pickerKind == FilePickerKind.Encrypted)
+        {
+            intent.PutExtra(Intent.ExtraMimeTypes, [EncryptedFileType.ContentType, "application/octet-stream"]);
+        }
+        intent.AddFlags(ActivityFlags.GrantReadUriPermission | ActivityFlags.GrantWriteUriPermission);
+
+        Intent? result = await ((MainActivity)Platform.CurrentActivity!).StartDocumentPickerAsync(intent);
+        AndroidUri? selectedUri = result?.Data;
+        if (selectedUri is null)
+        {
+            return null;
+        }
+
+        AndroidUri fileUri = selectedUri;
+        return new PickedWritableFile(
+            GetDisplayName(fileUri),
+            action => action(),
+            () => Task.FromResult(Supports(fileUri, DocumentContractFlags.SupportsWrite)),
+            () => Task.FromResult(Supports(fileUri, DocumentContractFlags.SupportsDelete)),
+            () => Task.FromResult(GetLength(fileUri)),
+            () => Task.FromResult(Platform.AppContext.ContentResolver!.OpenOutputStream(fileUri, "rw")!),
+            TryRenameAsync,
+            DeleteAsync);
+
+        Task<bool> TryRenameAsync(string name)
+        {
+            if (!Supports(fileUri, DocumentContractFlags.SupportsRename))
+            {
+                return Task.FromResult(false);
+            }
+
+            AndroidUri? renamedUri = DocumentsContract.RenameDocument(Platform.AppContext.ContentResolver!, fileUri, name);
+            if (renamedUri is null)
+            {
+                return Task.FromResult(false);
+            }
+
+            fileUri = renamedUri;
+            return Task.FromResult(true);
+        }
+
+        Task DeleteAsync()
+        {
+            if (!DocumentsContract.DeleteDocument(Platform.AppContext.ContentResolver!, fileUri))
+            {
+                throw new IOException("The selected file could not be deleted.");
+            }
+
+            return Task.CompletedTask;
+        }
+    }
 
     // View is only ever the on-device Quick Viewer - handing a file to a real installed app is what
     // OpenInAsync/the "Open In..." button already does, so View must not overlap with it.
@@ -164,6 +225,56 @@ public class AndroidFileService : FileServiceBase
             new AndroidFile(filePath))!;
 
         return (uri, resolvedContentType);
+    }
+
+    private static long GetLength(AndroidUri uri)
+    {
+        using ICursor? cursor = Platform.AppContext.ContentResolver!.Query(uri, [IOpenableColumns.Size], null, null, null);
+        if (cursor is null || !cursor.MoveToFirst())
+        {
+            throw new IOException("The selected file size could not be determined.");
+        }
+
+        int columnIndex = cursor.GetColumnIndex(IOpenableColumns.Size);
+        if (columnIndex < 0 || cursor.IsNull(columnIndex))
+        {
+            throw new IOException("The selected file size could not be determined.");
+        }
+
+        return cursor.GetLong(columnIndex);
+    }
+
+    private static bool Supports(AndroidUri uri, DocumentContractFlags capability)
+    {
+        using ICursor? cursor = Platform.AppContext.ContentResolver!.Query(
+            uri,
+            [DocumentsContract.Document.ColumnFlags],
+            null,
+            null,
+            null);
+        if (cursor is null || !cursor.MoveToFirst())
+        {
+            return false;
+        }
+
+        int columnIndex = cursor.GetColumnIndex(DocumentsContract.Document.ColumnFlags);
+        // ReSharper disable once BitwiseOperatorOnEnumWithoutFlags
+        return columnIndex >= 0 && (((DocumentContractFlags)cursor.GetLong(columnIndex) & capability) == capability);
+    }
+
+    private static string GetDisplayName(AndroidUri uri)
+    {
+        using ICursor? cursor = Platform.AppContext.ContentResolver!.Query(uri, [IOpenableColumns.DisplayName], null, null, null);
+        if (cursor is not null && cursor.MoveToFirst())
+        {
+            int columnIndex = cursor.GetColumnIndex(IOpenableColumns.DisplayName);
+            if (columnIndex >= 0 && !cursor.IsNull(columnIndex))
+            {
+                return cursor.GetString(columnIndex)!;
+            }
+        }
+
+        return "selected-file";
     }
 
     // Xecrets Ez hands off its own decrypted files via this same FileProvider authority (see
