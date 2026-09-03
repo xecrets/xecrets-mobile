@@ -112,7 +112,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
         {
             IsBusy = true;
             StatusText = string.Empty;
-            WorkFolder? folder = await _workFolderService.AddFolderAsync();
+            WorkFolder? folder = await AddFolderWithRetryAsync();
             if (folder is null)
             {
                 return;
@@ -249,7 +249,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
             bool add = await UserInterfaceService.DisplayConfirmationAsync(MobileTexts.DialogTextAddUnknownWorkFolder);
             if (add)
             {
-                WorkFolder? addedFolder = await _workFolderService.AddFolderAsync(file.LocationId);
+                WorkFolder? addedFolder = await AddFolderWithRetryAsync(file.LocationId);
                 if (addedFolder is null)
                 {
                     return;
@@ -266,6 +266,33 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
             }
 
             return;
+        }
+    }
+
+    private async Task<WorkFolder?> AddFolderWithRetryAsync(string? initialLocationId = null)
+    {
+        while (true)
+        {
+            WorkFolderResult result = await _workFolderService.AddFolderAsync(initialLocationId);
+            if (result.Status == WorkFolderResultStatus.IsValid)
+            {
+                return result.Folder;
+            }
+
+            if (result.Status == WorkFolderResultStatus.Canceled)
+            {
+                return null;
+            }
+
+            string message = result.Status switch
+            {
+                WorkFolderResultStatus.NoAccess => MobileTexts.DialogTextFolderNoAccess,
+                WorkFolderResultStatus.NotFolder => MobileTexts.DialogTextSelectFolderFirst,
+                WorkFolderResultStatus.IsValid => throw new InvalidOperationException("Should never be here."),
+                WorkFolderResultStatus.Canceled => throw new InvalidOperationException("Should never be here."),
+                _ => throw new InvalidOperationException($"Unknown result status {result.Status}."),
+            };
+            await UserInterfaceService.DisplayMessageAsync(message);
         }
     }
 

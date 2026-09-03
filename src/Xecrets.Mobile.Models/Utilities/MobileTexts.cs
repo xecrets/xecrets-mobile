@@ -89,11 +89,15 @@ public static class MobileTexts
 
     public static string DialogTextAddUnknownWorkFolder => "Do you want to add this folder?";
 
+    public static string DialogTextFolderNoAccess => "The selected folder could not be accessed. Please select another folder.";
+
+    public static string DialogTextSelectFolderFirst => "You selected a file in the folder. Select and add the folder first.";
+
     public static string DialogTextAlreadyEncrypted => "This file is already encrypted.";
 
     public static string DialogTextConfirmOverwrite => "The file \"{0}\" already exists. Overwrite it?";
 
-    public static string DialogTextResultSaved => "The file is saved.";
+    public static string DialogTextResultSaved => "The file was saved.";
 
     public static string DialogTextExceptionFormat => "An unexpected error \"{0}\" occurred.";
 

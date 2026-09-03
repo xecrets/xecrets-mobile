@@ -65,20 +65,34 @@ public sealed class AppleWorkFolderService(WorkFolderStorage storage) : IWorkFol
     public IReadOnlyList<string> GetPathSegments(WorkFolder folder) =>
         WorkFolderStorage.BuildPathSegments(NSUrl.FromString(folder.Id)?.Path ?? folder.Id, folder, '/');
 
-    public async Task<WorkFolder?> AddFolderAsync(string? initialLocationId = null)
+    public async Task<WorkFolderResult> AddFolderAsync(string? initialLocationId = null)
     {
         NSUrl? initialUrl = initialLocationId is null ? null : NSUrl.FromString(initialLocationId);
         NSUrl? url = await PickUrlAsync(UTTypes.Folder, initialUrl);
         if (url is null)
         {
-            return null;
+            return WorkFolderResult.Canceled;
         }
 
         bool isAccessing = url.StartAccessingSecurityScopedResource();
         string displayName;
         try
         {
-            await ProbeAsync(url.Path!);
+            if (!url.TryGetResource(NSUrl.IsDirectoryKey, out NSObject value, out NSError _))
+            {
+                return WorkFolderResult.NoAccess;
+            }
+
+            if (!((NSNumber)value).BoolValue)
+            {
+                return WorkFolderResult.NotFolder;
+            }
+
+            if (!await CanAccessFolderAsync(url.Path!))
+            {
+                return WorkFolderResult.NoAccess;
+            }
+
             displayName = GetDisplayName(url);
             SaveGrant(url);
         }
@@ -92,7 +106,7 @@ public sealed class AppleWorkFolderService(WorkFolderStorage storage) : IWorkFol
 
         WorkFolder folder = new(url.AbsoluteString!, displayName, url.AbsoluteString!);
         await storage.SaveFolderAsync(folder);
-        return folder;
+        return WorkFolderResult.Valid(folder);
     }
 
     public async Task<WorkFolder> AddDiscoveredFolderAsync(WorkFolderFile file)
@@ -219,6 +233,19 @@ public sealed class AppleWorkFolderService(WorkFolderStorage storage) : IWorkFol
             {
                 throw new IOException("The work folder deletion probe failed.");
             }
+        }
+    }
+
+    private static async Task<bool> CanAccessFolderAsync(string folderPath)
+    {
+        try
+        {
+            await ProbeAsync(folderPath);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            return false;
         }
     }
 

@@ -32,6 +32,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Runtime.Versioning;
 using System.Text;
@@ -67,7 +68,7 @@ public sealed class WindowsWorkFolderService(WorkFolderStorage storage) : IWorkF
 
     public async Task<IReadOnlyList<WorkFolder>> GetFoldersAsync() => await storage.LoadFoldersAsync();
 
-    public async Task<WorkFolder?> AddFolderAsync(string? initialLocationId = null)
+    public async Task<WorkFolderResult> AddFolderAsync(string? initialLocationId = null)
     {
         // The picker cannot be pointed at an arbitrary path, it only remembers where it was last used for a
         // given settings identifier, so the initial location can be honored no further than that.
@@ -82,13 +83,17 @@ public sealed class WindowsWorkFolderService(WorkFolderStorage storage) : IWorkF
         StorageFolder? folder = await picker.PickSingleFolderAsync();
         if (folder is null)
         {
-            return null;
+            return WorkFolderResult.Canceled;
         }
 
-        await ProbeAsync(folder);
+        if (!await CanAccessFolderAsync(folder))
+        {
+            return WorkFolderResult.NoAccess;
+        }
+
         WorkFolder newFolder = new(folder.Path, folder.DisplayName, folder.Path);
         await storage.SaveFolderAsync(newFolder);
-        return (await GetFoldersAsync()).First(item => item.Id == folder.Path);
+        return WorkFolderResult.Valid((await GetFoldersAsync()).First(item => item.Id == folder.Path));
     }
 
     public async Task<WorkFolder> AddDiscoveredFolderAsync(WorkFolderFile file)
@@ -160,6 +165,19 @@ public sealed class WindowsWorkFolderService(WorkFolderStorage storage) : IWorkF
         if (await folder.TryGetItemAsync(name) is not null)
         {
             throw new IOException("The work folder deletion probe failed.");
+        }
+    }
+
+    private static async Task<bool> CanAccessFolderAsync(StorageFolder folder)
+    {
+        try
+        {
+            await ProbeAsync(folder);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or COMException)
+        {
+            return false;
         }
     }
 

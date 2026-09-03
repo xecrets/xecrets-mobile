@@ -30,33 +30,26 @@
 
 using Xecrets.Common.Models;
 
-using Xecrets.Mobile.Models.Models;
+namespace Xecrets.Mobile.Models.Models;
 
-namespace Xecrets.Mobile.Models.Abstractions;
-
-public interface IWorkFolderService
+public sealed record WorkFolderResult
 {
-    Task<IReadOnlyList<WorkFolder>> GetFoldersAsync();
+    private WorkFolderResult(WorkFolderResultStatus status, WorkFolder? folder = null)
+    {
+        Status = status;
+        Folder = folder;
+    }
 
-    /// <summary>
-    /// Gets the folder path segments. The result is non-empty and its final segment is the folder's
-    /// user-facing display name.
-    /// </summary>
-    IReadOnlyList<string> GetPathSegments(WorkFolder folder);
+    public WorkFolderResultStatus Status { get; }
 
-    Task<WorkFolderResult> AddFolderAsync(string? initialLocationId = null);
+    public WorkFolder? Folder { get; }
 
-    Task<WorkFolder> AddDiscoveredFolderAsync(WorkFolderFile file);
+    public static WorkFolderResult Valid(WorkFolder folder) =>
+        new(WorkFolderResultStatus.IsValid, folder);
 
-    Task RemoveFolderAsync(WorkFolder folder);
+    public static WorkFolderResult NoAccess { get; } = new(WorkFolderResultStatus.NoAccess);
 
-    /// <summary>
-    /// Stores a new user-chosen display name for the folder. Only the name is affected, the folder itself
-    /// and the access grant for it are untouched.
-    /// </summary>
-    Task RenameFolderAsync(WorkFolder folder, string displayName);
+    public static WorkFolderResult NotFolder { get; } = new(WorkFolderResultStatus.NotFolder);
 
-    Task SaveFoldersAsync(IReadOnlyList<WorkFolder> folders);
-
-    Task<WorkFolderFile?> PickFileAsync(WorkFolder folder, FilePickerKind pickerKind);
+    public static WorkFolderResult Canceled { get; } = new(WorkFolderResultStatus.Canceled);
 }

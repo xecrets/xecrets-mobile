@@ -28,35 +28,12 @@
 
 #endregion Copyright and GPL License
 
-using Xecrets.Common.Models;
+namespace Xecrets.Mobile.Models.Models;
 
-using Xecrets.Mobile.Models.Models;
-
-namespace Xecrets.Mobile.Models.Abstractions;
-
-public interface IWorkFolderService
+public enum WorkFolderResultStatus
 {
-    Task<IReadOnlyList<WorkFolder>> GetFoldersAsync();
-
-    /// <summary>
-    /// Gets the folder path segments. The result is non-empty and its final segment is the folder's
-    /// user-facing display name.
-    /// </summary>
-    IReadOnlyList<string> GetPathSegments(WorkFolder folder);
-
-    Task<WorkFolderResult> AddFolderAsync(string? initialLocationId = null);
-
-    Task<WorkFolder> AddDiscoveredFolderAsync(WorkFolderFile file);
-
-    Task RemoveFolderAsync(WorkFolder folder);
-
-    /// <summary>
-    /// Stores a new user-chosen display name for the folder. Only the name is affected, the folder itself
-    /// and the access grant for it are untouched.
-    /// </summary>
-    Task RenameFolderAsync(WorkFolder folder, string displayName);
-
-    Task SaveFoldersAsync(IReadOnlyList<WorkFolder> folders);
-
-    Task<WorkFolderFile?> PickFileAsync(WorkFolder folder, FilePickerKind pickerKind);
+    IsValid,
+    NoAccess,
+    NotFolder,
+    Canceled,
 }

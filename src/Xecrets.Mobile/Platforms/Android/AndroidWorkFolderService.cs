@@ -72,7 +72,7 @@ public sealed class AndroidWorkFolderService(WorkFolderStorage storage) : IWorkF
         return WorkFolderStorage.BuildPathSegments(documentId, folder, ':', '/');
     }
 
-    public async Task<WorkFolder?> AddFolderAsync(string? initialLocationId = null)
+    public async Task<WorkFolderResult> AddFolderAsync(string? initialLocationId = null)
     {
         Intent intent = new(Intent.ActionOpenDocumentTree);
         intent.AddFlags(ActivityFlags.GrantReadUriPermission |
@@ -88,26 +88,33 @@ public sealed class AndroidWorkFolderService(WorkFolderStorage storage) : IWorkF
         AndroidUri? uri = result?.Data;
         if (uri is null)
         {
-            return null;
+            return WorkFolderResult.Canceled;
         }
 
         ActivityFlags grantFlags = result!.Flags &
             (ActivityFlags.GrantReadUriPermission | ActivityFlags.GrantWriteUriPermission);
-        ContentResolver.TakePersistableUriPermission(uri, grantFlags);
+        try
+        {
+            ContentResolver.TakePersistableUriPermission(uri, grantFlags);
+        }
+        catch (Java.Lang.SecurityException)
+        {
+            return WorkFolderResult.NoAccess;
+        }
+
         bool folderSaved = false;
         try
         {
             AndroidUri documentUri = GetTreeDocumentUri(uri);
-            string status = await ProbeAsync(documentUri);
-            if (!string.IsNullOrEmpty(status))
+            if (!await CanAccessFolderAsync(documentUri))
             {
-                throw new IOException(status);
+                return WorkFolderResult.NoAccess;
             }
 
             WorkFolder folder = new(documentUri.ToString()!, GetDisplayName(documentUri), uri.ToString()!);
             await storage.SaveFolderAsync(folder);
             folderSaved = true;
-            return folder;
+            return WorkFolderResult.Valid(folder);
         }
         finally
         {
@@ -198,25 +205,45 @@ public sealed class AndroidWorkFolderService(WorkFolderStorage storage) : IWorkF
         string status = string.Empty;
         string name = $".xecrets-probe-{Guid.NewGuid():N}";
 
-        AndroidUri probeUri = DocumentsContract.CreateDocument(
+        AndroidUri? createdUri = DocumentsContract.CreateDocument(
             ContentResolver,
             folderUri,
             "application/octet-stream",
-            name)!;
+            name);
+        if (createdUri is null)
+        {
+            return "The work folder probe could not be created.";
+        }
+
+        AndroidUri probeUri = createdUri;
         try
         {
             byte[] expected = Encoding.UTF8.GetBytes(name);
-            await using (Stream output = ContentResolver.OpenOutputStream(probeUri, "w")!)
+            Stream? output = ContentResolver.OpenOutputStream(probeUri, "w");
+            if (output is null)
+            {
+                return "The work folder probe could not be opened for writing.";
+            }
+
+            await using (output)
             {
                 await output.WriteAsync(expected);
             }
 
-            await using Stream input = ContentResolver.OpenInputStream(probeUri)!;
-            byte[] actual = new byte[expected.Length];
-            await input.ReadExactlyAsync(actual);
-            if (!actual.AsSpan().SequenceEqual(expected))
+            Stream? input = ContentResolver.OpenInputStream(probeUri);
+            if (input is null)
             {
-                return "The work folder read probe returned different data.";
+                return "The work folder probe could not be opened for reading.";
+            }
+
+            await using (input)
+            {
+                byte[] actual = new byte[expected.Length];
+                await input.ReadExactlyAsync(actual);
+                if (!actual.AsSpan().SequenceEqual(expected))
+                {
+                    return "The work folder read probe returned different data.";
+                }
             }
 
             string renamedName = $".xecrets-probe-{Guid.NewGuid():N}";
@@ -234,6 +261,22 @@ public sealed class AndroidWorkFolderService(WorkFolderStorage storage) : IWorkF
             }
         }
         return status;
+    }
+
+    private static async Task<bool> CanAccessFolderAsync(AndroidUri folderUri)
+    {
+        try
+        {
+            return string.IsNullOrEmpty(await ProbeAsync(folderUri));
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (Java.IO.FileNotFoundException)
+        {
+            return false;
+        }
     }
 
     private static async Task WriteDocumentAsync(
