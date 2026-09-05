@@ -83,7 +83,7 @@ public class AndroidFileService : FileServiceBase
             () => Task.FromResult(Supports(fileUri, DocumentContractFlags.SupportsWrite)),
             () => Task.FromResult(Supports(fileUri, DocumentContractFlags.SupportsDelete)),
             () => Task.FromResult(GetLength(fileUri)),
-            () => Task.FromResult(Platform.AppContext.ContentResolver!.OpenOutputStream(fileUri, "rw")!),
+            () => Task.FromResult(Platform.AppContext.ContentResolver!.OpenOutputStream(fileUri, "w")!),
             TryRenameAsync,
             DeleteAsync);
 

@@ -12,6 +12,7 @@
     <PropertyGroup Condition="$([System.Environment]::GetEnvironmentVariable('MOBILE_TARGET_FRAMEWORK')) == ''">
         <TargetFrameworks Condition="$([System.OperatingSystem]::IsMacOS())">net10.0-ios;net10.0-maccatalyst;net10.0-android</TargetFrameworks>
         <TargetFrameworks Condition="$([System.OperatingSystem]::IsWindows())">net10.0-android;net10.0-windows10.0.19041.0</TargetFrameworks>
+        <TargetFrameworks Condition="$([System.OperatingSystem]::IsLinux())">net10.0-android</TargetFrameworks>
     </PropertyGroup>
 
     <PropertyGroup>
