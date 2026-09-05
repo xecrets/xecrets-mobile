@@ -29,14 +29,11 @@
 #endregion Copyright and GPL License
 
 using Microsoft.Maui;
-using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls;
 
 using Microsoft.Extensions.DependencyInjection;
 
 using System;
-using System.Threading.Tasks;
-
 using Xecrets.Common.Abstractions;
 using Xecrets.Mobile.Abstractions;
 using Xecrets.Mobile.Models.Abstractions;
@@ -55,7 +52,6 @@ public partial class App
     private readonly IXecretsDataStore _dataStore;
     private readonly IServiceProvider _services;
     private readonly MobileCultureCoordinator _cultureCoordinator;
-    private Window? _window;
 
     public App(
         ITransientFileService transientFileService,
@@ -81,44 +77,26 @@ public partial class App
 
     protected override Window CreateWindow(IActivationState? activationState)
     {
-        _transientFileService.WipeTrackedFiles();
         Window window = new(new ContentPage());
         window.Created += OnWindowCreated;
         window.Created += InitializeWindowAsync;
-        _window = window;
         return window;
     }
 
-    private void OnWindowCreated(object? sender, EventArgs e)
+    private static void OnWindowCreated(object? sender, EventArgs e)
     {
-        if (sender is not Window window)
-        {
-            return;
-        }
-
+        Window window = (Window)sender!;
         PlatformWindow.Configure(window);
     }
 
+    // ReSharper disable once AsyncVoidEventHandlerMethod - the exception is caught and logged as unhandled.
     private async void InitializeWindowAsync(object? sender, EventArgs e)
     {
-        if (sender is not Window window)
-        {
-            return;
-        }
-
+        await _transientFileService.MaybeWipeTrackedFilesAsync();
         await _cultureCoordinator.ApplySavedAsync();
-        window.Page = CreateAppShell();
-    }
 
-    internal Task ApplyCultureAndReloadAsync(string cultureName)
-    {
-        Window window = _window ?? throw new InvalidOperationException("The application window has not been created.");
-        return _cultureCoordinator.ApplyAndReloadAsync(cultureName, () =>
-            MainThread.InvokeOnMainThreadAsync(() =>
-            {
-                window.Page = CreateAppShell();
-                return Task.CompletedTask;
-            }));
+        Window window = (Window)sender!;
+        window.Page = CreateAppShell();
     }
 
     private AppShell CreateAppShell() => new(

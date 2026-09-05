@@ -35,6 +35,8 @@ namespace Xecrets.Mobile.Models.Services;
 
 public sealed class TransientFileService(IFileService fileService, IFileWiper fileWiper) : ITransientFileService
 {
+    private readonly SemaphoreSlim _gate = new(1, 1);
+
     private readonly string _rootDirectory = CreateRootDirectory(fileService);
 
     public string CreateHandoffPath(string originalFileName)
@@ -58,56 +60,93 @@ public sealed class TransientFileService(IFileService fileService, IFileWiper fi
         return Path.Combine(sessionDirectory, fileName);
     }
 
-    public void WipeTrackedFiles()
+    public async Task RunExclusiveAsync(Func<Task> operation)
     {
-        if (!Directory.Exists(_rootDirectory))
+        await _gate.WaitAsync();
+        try
+        {
+            await operation();
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    public async Task MaybeWipeTrackedFilesAsync()
+    {
+        // Wiping is opportunistic
+        if (!await _gate.WaitAsync(TimeSpan.Zero))
         {
             return;
-        }
-
-        string[] files = [.. Directory.EnumerateFiles(_rootDirectory, "*", SearchOption.AllDirectories)];
-        string[] directories = [.. Directory.EnumerateDirectories(_rootDirectory, "*", SearchOption.AllDirectories).OrderByDescending(path => path.Length)];
-
-        foreach (string path in files)
-        {
-            TryWipe(path);
-        }
-
-        foreach (string directory in directories)
-        {
-            try
-            {
-                if (Directory.Exists(directory) && !Directory.EnumerateFileSystemEntries(directory).Any())
-                {
-                    Directory.Delete(directory);
-                }
-            }
-            catch
-            {
-                // Best effort.
-            }
         }
 
         try
         {
-            if (Directory.Exists(_rootDirectory) && !Directory.EnumerateFileSystemEntries(_rootDirectory).Any())
-            {
-                Directory.Delete(_rootDirectory);
-            }
+            await WipeTrackedFilesCoreAsync();
         }
-        catch
+        finally
         {
-            // Best effort.
+            _gate.Release();
         }
     }
 
-    private void TryWipe(string path)
+    private async Task WipeTrackedFilesCoreAsync()
     {
-        if (!File.Exists(path))
+        if (Directory.Exists(_rootDirectory))
         {
+            await WipeDirectoryAsync(_rootDirectory);
+        }
+    }
+
+    // Recursive post-order descent: fully wipe each subdirectory (and try to remove it) before touching
+    // this directory's own files, then try to remove this directory once everything under it is gone.
+    private async Task WipeDirectoryAsync(string directory)
+    {
+        string[] subdirectories;
+        string[] files;
+        try
+        {
+            subdirectories = Directory.GetDirectories(directory);
+            files = Directory.GetFiles(directory);
+        }
+        catch
+        {
+            // The directory lives in the cache, which the OS (or the user, via "Clear cache") can reclaim
+            // at any time - if it's already gone, there's nothing left to do here.
             return;
         }
 
+        foreach (string subdirectory in subdirectories)
+        {
+            await WipeDirectoryAsync(subdirectory);
+        }
+
+        foreach (string file in files)
+        {
+            await TryWipeAsync(file);
+        }
+
+        TryDeleteIfEmpty(directory);
+    }
+
+    private async Task TryWipeAsync(string path)
+    {
+        try
+        {
+            await using FileStream stream = new(path, FileMode.Open, FileAccess.Write, FileShare.None);
+            await fileWiper.OverwriteAsync(stream, stream.Length);
+        }
+        catch
+        {
+            // Best effort - still try to remove the file below even if the overwriting itself failed.
+        }
+
+        SafeDelete(path);
+    }
+
+    private static void SafeDelete(string path)
+    {
         try
         {
             File.SetAttributes(path, FileAttributes.Normal);
@@ -119,28 +158,18 @@ public sealed class TransientFileService(IFileService fileService, IFileWiper fi
 
         try
         {
-            string directory = Path.GetDirectoryName(path)!;
-            PickedWritableFile file = new(
-                Path.GetFileName(path),
-                action => action(),
-                () => Task.FromResult(true),
-                () => Task.FromResult(true),
-                () => Task.FromResult(new FileInfo(path).Length),
-                () => Task.FromResult<Stream>(new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.None)),
-                name =>
-                {
-                    string renamedPath = Path.Combine(directory, name);
-                    File.Move(path, renamedPath, true);
-                    path = renamedPath;
-                    return Task.FromResult(true);
-                },
-                () =>
-                {
-                    File.Delete(path);
-                    return Task.CompletedTask;
-                });
-            fileWiper.WipeAsync(file).GetAwaiter().GetResult();
-            PruneEmptyDirectories(directory);
+            string renamedPath = Path.Combine(Path.GetDirectoryName(path)!, Path.GetRandomFileName());
+            File.Move(path, renamedPath, true);
+            path = renamedPath;
+        }
+        catch
+        {
+            // Best effort - fall back to deleting under the original name.
+        }
+
+        try
+        {
+            File.Delete(path);
         }
         catch
         {
@@ -148,26 +177,18 @@ public sealed class TransientFileService(IFileService fileService, IFileWiper fi
         }
     }
 
-    private void PruneEmptyDirectories(string directory)
+    private static void TryDeleteIfEmpty(string directory)
     {
-        string current = directory;
-        while (!string.IsNullOrWhiteSpace(current) && current.StartsWith(_rootDirectory, StringComparison.OrdinalIgnoreCase))
+        try
         {
-            try
+            if (Directory.Exists(directory) && !Directory.EnumerateFileSystemEntries(directory).Any())
             {
-                if (!Directory.Exists(current) || Directory.EnumerateFileSystemEntries(current).Any())
-                {
-                    return;
-                }
-
-                Directory.Delete(current);
+                Directory.Delete(directory);
             }
-            catch
-            {
-                return;
-            }
-
-            current = Path.GetDirectoryName(current) ?? string.Empty;
+        }
+        catch
+        {
+            // Best effort.
         }
     }
 

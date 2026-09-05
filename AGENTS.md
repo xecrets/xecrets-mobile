@@ -34,6 +34,12 @@ here, currently `Resources/Styles/Styles.xaml`, `Resources/Styles/Colors.xaml` a
 generated `Resources/Fonts/FluentUI.cs`. Those carry a comment naming their origin instead.
 Project, manifest and configuration files carry no header.
 
+## Async execution
+
+Never bridge asynchronous operations with synchronous waits such as `.Result`, `.Wait()`,
+or `.GetAwaiter().GetResult()`. Use `await` and keep the operation async all the way
+through callers and interfaces.
+
 ## Thread marshalling
 
 Never add `MainThread.InvokeOnMainThreadAsync`, `IUserInterfaceService.InvokeOnMainThreadAsync`,

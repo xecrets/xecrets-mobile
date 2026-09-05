@@ -50,31 +50,14 @@ public sealed class FileWiper : IFileWiper
             }
 
             long length = await file.GetLengthAsync();
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(81920);
-            try
-            {
-                await using Stream stream = await file.OpenWriteAsync();
-                long remaining = length;
-                while (remaining > 0)
-                {
-                    int toWrite = (int)Math.Min(buffer.Length, remaining);
-                    RandomNumberGenerator.Fill(buffer.AsSpan(0, toWrite));
-                    await stream.WriteAsync(buffer.AsMemory(0, toWrite));
-                    remaining -= toWrite;
-                }
+            await using Stream stream = await file.OpenWriteAsync();
+            await OverwriteAsync(stream, length);
 
-                if (stream is FileStream fileStream)
-                {
-                    fileStream.Flush(true);
-                }
-                else
-                {
-                    await stream.FlushAsync();
-                }
-            }
-            finally
+            // A plain FlushAsync only clears managed/OS buffers - for a genuine wipe of a file we don't
+            // control, force the random overwriting to physical storage before it's renamed and deleted.
+            if (stream is FileStream fileStream)
             {
-                ArrayPool<byte>.Shared.Return(buffer);
+                fileStream.Flush(true);
             }
 
             _ = await file.RenameIfPossibleAsync(Path.GetRandomFileName());
@@ -82,5 +65,27 @@ public sealed class FileWiper : IFileWiper
         });
 
         return status;
+    }
+
+    public async Task OverwriteAsync(Stream stream, long length)
+    {
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(81920);
+        try
+        {
+            long remaining = length;
+            while (remaining > 0)
+            {
+                int toWrite = (int)Math.Min(buffer.Length, remaining);
+                RandomNumberGenerator.Fill(buffer.AsSpan(0, toWrite));
+                await stream.WriteAsync(buffer.AsMemory(0, toWrite));
+                remaining -= toWrite;
+            }
+
+            await stream.FlushAsync();
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
     }
 }

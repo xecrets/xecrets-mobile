@@ -48,34 +48,34 @@ internal static class AppleIncomingFileHandler
 {
     public static async Task HandleIncomingUrlAsync(NSUrl url)
     {
+        ITransientFileService transientFileStore = MauiProgram.Services!.GetRequiredService<ITransientFileService>();
+        IIncomingFileService incomingFileService = MauiProgram.Services!.GetRequiredService<IIncomingFileService>();
+        IFileService fileService = MauiProgram.Services!.GetRequiredService<IFileService>();
+        if (!url.IsFileUrl)
+        {
+            return;
+        }
+
+        bool securityScoped = url.StartAccessingSecurityScopedResource();
         try
         {
-            ITransientFileService transientFileStore = MauiProgram.Services!.GetRequiredService<ITransientFileService>();
-            IIncomingFileService incomingFileService = MauiProgram.Services!.GetRequiredService<IIncomingFileService>();
-            IFileService fileService = MauiProgram.Services!.GetRequiredService<IFileService>();
-            if (!url.IsFileUrl)
+            string sourcePath = url.Path ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath))
             {
                 return;
             }
 
-            bool securityScoped = url.StartAccessingSecurityScopedResource();
-            try
+            if (fileService.IsSelfHandoffReference(sourcePath))
             {
-                string sourcePath = url.Path ?? string.Empty;
-                if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath))
-                {
-                    return;
-                }
+                IUserInterfaceService userInterfaceService = MauiProgram.Services!.GetRequiredService<IUserInterfaceService>();
+                await userInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextSelfHandoffRejected);
+                return;
+            }
 
-                if (fileService.IsSelfHandoffReference(sourcePath))
-                {
-                    IUserInterfaceService userInterfaceService = MauiProgram.Services!.GetRequiredService<IUserInterfaceService>();
-                    await userInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextSelfHandoffRejected);
-                    return;
-                }
-
-                string displayName = Path.GetFileName(sourcePath);
-                string contentType = ContentTypeDetector.DetectContentType(displayName);
+            string displayName = Path.GetFileName(sourcePath);
+            string contentType = ContentTypeDetector.DetectContentType(displayName);
+            await incomingFileService.ReceiveAsync(async () =>
+            {
                 string incomingPath = transientFileStore.CreateIncomingPath(displayName);
 
                 await using (FileStream inputStream = File.OpenRead(sourcePath))
@@ -85,20 +85,15 @@ internal static class AppleIncomingFileHandler
                     await inputStream.CopyToAsync(outputStream);
                 }
 
-                await incomingFileService.ReceiveAsync(new IncomingFileInfo(incomingPath, displayName, contentType));
-            }
-            finally
-            {
-                if (securityScoped)
-                {
-                    url.StopAccessingSecurityScopedResource();
-                }
-            }
+                return new IncomingFileInfo(incomingPath, displayName, contentType);
+            });
         }
-        catch (Exception ex)
+        finally
         {
-            Debug.WriteLine($"Could not open incoming Apple file URL '{url}'. {ex}");
-            throw;
+            if (securityScoped)
+            {
+                url.StopAccessingSecurityScopedResource();
+            }
         }
     }
 }

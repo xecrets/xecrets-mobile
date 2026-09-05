@@ -35,6 +35,7 @@ namespace Xecrets.Mobile.Models.Services;
 
 public sealed class IncomingFileService(
     IProfileService profileService,
+    ITransientFileService transientFileService,
     IPreviewService previewService,
     IEncryptionPreparationService encryptionPreparationService,
     IFlowContext flowContext,
@@ -43,17 +44,19 @@ public sealed class IncomingFileService(
 {
     private IncomingFileInfo? _pendingFile;
 
-    public Task ReceiveAsync(IncomingFileInfo file)
-        => userInterfaceService.InvokeOnMainThreadAsync(async () =>
+    public Task ReceiveAsync(Func<Task<IncomingFileInfo>> receiveFileAsync)
+        => transientFileService.RunExclusiveAsync(() => userInterfaceService.InvokeOnMainThreadAsync(async () =>
         {
-            _pendingFile = file;
+            _pendingFile = await receiveFileAsync();
             if (userInterfaceService.CanProcessIncomingFiles)
             {
-                await ProcessPendingAsync();
+                await ProcessPendingCoreAsync();
             }
-        });
+        }));
 
-    public async Task ProcessPendingAsync()
+    public Task ProcessPendingAsync() => transientFileService.RunExclusiveAsync(ProcessPendingCoreAsync);
+
+    private async Task ProcessPendingCoreAsync()
     {
         if (_pendingFile is null || !userInterfaceService.IsShellAvailable)
         {

@@ -31,22 +31,18 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
-
 using Android.App;
 using Android.Content;
 using Android.Content.PM;
 using Android.Database;
 using Android.OS;
 using Android.Provider;
-
 using AndroidX.Activity.Result;
 using AndroidX.Activity.Result.Contract;
-
-using AndroidUri = global::Android.Net.Uri;
-
+using AndroidUri = Android.Net.Uri;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui;
-
+using Xecrets.Mobile.Models;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
@@ -54,19 +50,29 @@ using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Platforms.Android;
 
-[Activity(Theme = "@style/Maui.SplashTheme", MainLauncher = true, Exported = true, LaunchMode = LaunchMode.SingleTop, ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation | ConfigChanges.UiMode | ConfigChanges.ScreenLayout | ConfigChanges.SmallestScreenSize | ConfigChanges.Density)]
+[Activity(Theme = "@style/Maui.SplashTheme", MainLauncher = true, Exported = true, LaunchMode = LaunchMode.SingleTop,
+    ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation | ConfigChanges.UiMode |
+                           ConfigChanges.ScreenLayout | ConfigChanges.SmallestScreenSize | ConfigChanges.Density)]
 [IntentFilter([Intent.ActionSend], Categories = [Intent.CategoryDefault], DataMimeType = "text/plain")]
 [IntentFilter([Intent.ActionSend], Categories = [Intent.CategoryDefault], DataMimeType = "application/octet-stream")]
 [IntentFilter([Intent.ActionSend], Categories = [Intent.CategoryDefault], DataMimeType = EncryptedFileType.ContentType)]
 [IntentFilter([Intent.ActionSend], Categories = [Intent.CategoryDefault], DataMimeType = "*/*")]
-[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = "text/plain", DataScheme = "content")]
-[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = "application/octet-stream", DataScheme = "content")]
-[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = EncryptedFileType.ContentType, DataScheme = "content")]
-[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = "*/*", DataScheme = "content")]
-[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = "text/plain", DataScheme = "file")]
-[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = "application/octet-stream", DataScheme = "file")]
-[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = EncryptedFileType.ContentType, DataScheme = "file")]
-[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataMimeType = "*/*", DataScheme = "file")]
+[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable],
+    DataMimeType = "text/plain", DataScheme = "content")]
+[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable],
+    DataMimeType = "application/octet-stream", DataScheme = "content")]
+[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable],
+    DataMimeType = EncryptedFileType.ContentType, DataScheme = "content")]
+[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable],
+    DataMimeType = "*/*", DataScheme = "content")]
+[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable],
+    DataMimeType = "text/plain", DataScheme = "file")]
+[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable],
+    DataMimeType = "application/octet-stream", DataScheme = "file")]
+[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable],
+    DataMimeType = EncryptedFileType.ContentType, DataScheme = "file")]
+[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable],
+    DataMimeType = "*/*", DataScheme = "file")]
 public class MainActivity : MauiAppCompatActivity, IActivityResultCallback
 {
     private ActivityResultLauncher? _documentPickerLauncher;
@@ -123,15 +129,26 @@ public class MainActivity : MauiAppCompatActivity, IActivityResultCallback
         IFileService fileService = MauiProgram.Services!.GetRequiredService<IFileService>();
         if (fileService.IsSelfHandoffReference(uri.ToString()!))
         {
-            IUserInterfaceService userInterfaceService = MauiProgram.Services!.GetRequiredService<IUserInterfaceService>();
+            IUserInterfaceService userInterfaceService =
+                MauiProgram.Services!.GetRequiredService<IUserInterfaceService>();
             await userInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextSelfHandoffRejected);
             return;
         }
 
-        string displayName = GetDisplayName(uri);
-        string contentType = contentResolver.GetType(uri) ?? ContentTypeDetector.DetectContentType(displayName);
-        string incomingPath = transientFileStore.CreateIncomingPath(displayName);
+        string displayName;
+        try
+        {
+            displayName = GetDisplayName(uri);
+        }
+        catch (Exception ex)
+        {
+            IUserInterfaceService userInterfaceService =
+                MauiProgram.Services!.GetRequiredService<IUserInterfaceService>();
+            await userInterfaceService.DisplayMessageAsync(ex.FormatException());
+            return;
+        }
 
+        string contentType = contentResolver.GetType(uri) ?? ContentTypeDetector.DetectContentType(displayName);
         Stream? inputStream = contentResolver.OpenInputStream(uri);
         if (inputStream is null)
         {
@@ -139,12 +156,19 @@ public class MainActivity : MauiAppCompatActivity, IActivityResultCallback
         }
 
         await using (inputStream)
-        await using (FileStream outputStream = File.Open(incomingPath, FileMode.Create, FileAccess.Write, FileShare.Read))
         {
-            await inputStream.CopyToAsync(outputStream);
-        }
+            await incomingFileService.ReceiveAsync(async () =>
+            {
+                string incomingPath = transientFileStore.CreateIncomingPath(displayName);
+                await using (FileStream outputStream =
+                             File.Open(incomingPath, FileMode.Create, FileAccess.Write, FileShare.Read))
+                {
+                    await inputStream.CopyToAsync(outputStream);
+                }
 
-        await incomingFileService.ReceiveAsync(new IncomingFileInfo(incomingPath, displayName, contentType));
+                return new IncomingFileInfo(incomingPath, displayName, contentType);
+            });
+        }
     }
 
     private static async Task HandleIncomingTextAsync(
@@ -164,44 +188,52 @@ public class MainActivity : MauiAppCompatActivity, IActivityResultCallback
         }
 
         const string displayName = "received.txt";
-        string incomingPath = transientFileStore.CreateIncomingPath(displayName);
-        await File.WriteAllTextAsync(incomingPath, text);
-        await incomingFileService.ReceiveAsync(new IncomingFileInfo(incomingPath, displayName, "text/plain"));
+        await incomingFileService.ReceiveAsync(async () =>
+        {
+            string incomingPath = transientFileStore.CreateIncomingPath(displayName);
+            await File.WriteAllTextAsync(incomingPath, text);
+            return new IncomingFileInfo(incomingPath, displayName, "text/plain");
+        });
     }
 
-    private static AndroidUri? GetIncomingUri(Intent intent) => intent.Action == Intent.ActionView
-            ? intent.Data
-            : intent.Action == Intent.ActionSend
-                ? GetStreamExtra(intent)
-                : null;
+    private static AndroidUri? GetIncomingUri(Intent intent) =>
+        intent.Action switch
+        {
+            Intent.ActionView => intent.Data,
+            Intent.ActionSend => GetStreamExtra(intent),
+            _ => null
+        };
 
     // Bundle.Get(string) is obsolete since API 33 in favor of the type-safe overload, but the type-safe overload
     // does not exist below API 33, and this app's minimum supported API level is 29.
     private static AndroidUri? GetStreamExtra(Intent intent) => OperatingSystem.IsAndroidVersionAtLeast(33)
-            ? intent.GetParcelableExtra(Intent.ExtraStream, Java.Lang.Class.FromType(typeof(AndroidUri))) as AndroidUri
-            : intent.Extras?.Get(Intent.ExtraStream) as AndroidUri;
+        ? intent.GetParcelableExtra(Intent.ExtraStream, Java.Lang.Class.FromType(typeof(AndroidUri))) as AndroidUri
+        : intent.Extras?.Get(Intent.ExtraStream) as AndroidUri;
 
     private string GetDisplayName(AndroidUri uri)
     {
-        if (string.Equals(uri.Scheme, ContentResolver.SchemeContent, StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(uri.Scheme, ContentResolver.SchemeContent, StringComparison.OrdinalIgnoreCase))
         {
-            using ICursor? cursor = ContentResolver!.Query(uri, [IOpenableColumns.DisplayName], null, null, null);
-            if (cursor is not null && cursor.MoveToFirst())
-            {
-                int columnIndex = cursor.GetColumnIndex(IOpenableColumns.DisplayName);
-                if (columnIndex >= 0)
-                {
-                    string? displayName = cursor.GetString(columnIndex);
-                    if (!string.IsNullOrWhiteSpace(displayName))
-                    {
-                        return displayName;
-                    }
-                }
-            }
+            return FallbackName();
         }
 
-        return Path.GetFileName(uri.Path) is { Length: > 0 } fileName
+        using ICursor? cursor = ContentResolver!.Query(uri, [IOpenableColumns.DisplayName], null, null, null);
+        if (cursor is null || !cursor.MoveToFirst())
+        {
+            return FallbackName();
+        }
+
+        int columnIndex = cursor.GetColumnIndex(IOpenableColumns.DisplayName);
+        if (columnIndex < 0)
+        {
+            return FallbackName();
+        }
+
+        string? displayName = cursor.GetString(columnIndex);
+        return string.IsNullOrWhiteSpace(displayName) ? FallbackName() : displayName;
+
+        string FallbackName() => Path.GetFileName(uri.Path) is { Length: > 0 } fileName
             ? fileName
-            : "received.txt";
+            : throw new InvalidOperationException($"The shared file has no name and could not be identified ('{uri}').");
     }
 }
