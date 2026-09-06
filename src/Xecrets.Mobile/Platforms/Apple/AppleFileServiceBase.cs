@@ -28,23 +28,22 @@
 
 #endregion Copyright and GPL License
 
-using System;
-using System.IO;
 using System.Threading.Tasks;
 
 using Foundation;
 
 using UniformTypeIdentifiers;
 
+using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Utilities;
 using Xecrets.Mobile.Services;
 
 namespace Xecrets.Mobile.Platforms.Apple;
 
-public abstract class AppleFileServiceBase : FileServiceBase
+public abstract class AppleFileServiceBase(IPickedWritableFileFactory pickedWritableFileFactory) : FileServiceBase
 {
-    public override async Task<PickedWritableFile?> PickWritableFileAsync(string pickerTitle, FilePickerKind pickerKind)
+    public override async Task<IPickedWritableFile?> PickWritableFileAsync(string pickerTitle, FilePickerKind pickerKind)
     {
         UTType contentType = pickerKind == FilePickerKind.Encrypted
             ? UTType.CreateExportedType(EncryptedFileType.UniformTypeIdentifier)
@@ -55,57 +54,6 @@ public abstract class AppleFileServiceBase : FileServiceBase
             return null;
         }
 
-        NSUrl fileUrl = selectedUrl;
-        return new PickedWritableFile(
-            fileUrl.LastPathComponent!,
-            action => WithAccessAsync(fileUrl, action),
-            () => Task.FromResult(IsWritable(fileUrl)),
-            () => Task.FromResult(IsWritable(fileUrl)),
-            () => Task.FromResult(new FileInfo(fileUrl.Path!).Length),
-            () => Task.FromResult<Stream>(new FileStream(fileUrl.Path!, FileMode.Open, FileAccess.Write, FileShare.None)),
-            name =>
-            {
-                try
-                {
-                    string path = Path.Combine(fileUrl.RemoveLastPathComponent().Path!, name);
-                    File.Move(fileUrl.Path!, path);
-                    fileUrl = NSUrl.FromFilename(path);
-                    return Task.FromResult(true);
-                }
-                catch (IOException)
-                {
-                    return Task.FromResult(false);
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    return Task.FromResult(false);
-                }
-            },
-            () =>
-            {
-                File.Delete(fileUrl.Path!);
-                return Task.CompletedTask;
-            });
+        return pickedWritableFileFactory.Create(selectedUrl);
     }
-
-    private static async Task WithAccessAsync(NSUrl url, Func<Task> action)
-    {
-        bool isAccessing = url.StartAccessingSecurityScopedResource();
-        if (!isAccessing)
-        {
-            throw new UnauthorizedAccessException("The selected file could not be accessed.");
-        }
-
-        try
-        {
-            await action();
-        }
-        finally
-        {
-            url.StopAccessingSecurityScopedResource();
-        }
-    }
-
-    private static bool IsWritable(NSUrl url) =>
-        url.TryGetResource(NSUrl.IsWritableKey, out NSObject value, out NSError _) && ((NSNumber)value).BoolValue;
 }

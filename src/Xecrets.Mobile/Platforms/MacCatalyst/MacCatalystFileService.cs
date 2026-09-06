@@ -32,13 +32,14 @@ using System;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
+using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Platforms.Apple;
 
 namespace Xecrets.Mobile.Platforms.MacCatalyst;
 
 [SupportedOSPlatform("maccatalyst")]
-public class MacCatalystFileService : AppleFileServiceBase
+public class MacCatalystFileService(IPickedWritableFileFactory pickedWritableFileFactory) : AppleFileServiceBase(pickedWritableFileFactory)
 {
     public override string PlatformId => "maccatalyst";
 

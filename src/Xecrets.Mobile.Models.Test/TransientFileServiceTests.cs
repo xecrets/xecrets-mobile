@@ -222,7 +222,7 @@ public sealed class TransientFileServiceTests
 
     private sealed class TestFileWiper(Func<Stream, long, Task> overwriteAsync) : IFileWiper
     {
-        public Task<FileWipeStatus> WipeAsync(PickedWritableFile file) => throw new NotSupportedException();
+        public Task<FileWipeStatus> WipeAsync(IPickedWritableFile file) => throw new NotSupportedException();
         public Task OverwriteAsync(Stream stream, long length) => overwriteAsync(stream, length);
     }
 
@@ -263,7 +263,7 @@ public sealed class TransientFileServiceTests
         public string AppDataDirectory => throw new NotSupportedException();
         public string PlatformId => throw new NotSupportedException();
         public Task<PickedFile?> PickFileAsync(string pickerTitle, FilePickerKind pickerKind) => throw new NotSupportedException();
-        public Task<PickedWritableFile?> PickWritableFileAsync(string pickerTitle, FilePickerKind pickerKind) => throw new NotSupportedException();
+        public Task<IPickedWritableFile?> PickWritableFileAsync(string pickerTitle, FilePickerKind pickerKind) => throw new NotSupportedException();
         public Task<bool> OpenInAsync(string filePath, string displayName) => throw new NotSupportedException();
         public Task SendToAsync(string filePath, string displayName, string contentType) => throw new NotSupportedException();
         public Task<SaveFileResult> SaveAsAsync(Stream stream, string displayName, string originalSourcePath) => throw new NotSupportedException();

@@ -42,6 +42,7 @@ internal static class MauiAppBuilderExtensions
 {
     internal static MauiAppBuilder ConfigurePlatform(this MauiAppBuilder builder)
     {
+        builder.Services.AddSingleton<IPickedWritableFileFactory, ApplePickedWritableFileFactory>();
         builder.Services.AddSingleton<IFileService, MacCatalystFileService>();
         builder.Services.AddSingleton<IWorkFolderService, AppleWorkFolderService>();
         builder.Services.AddSingleton<IUserInterfaceService, DefaultUserInterfaceService>();

@@ -28,14 +28,40 @@
 
 #endregion Copyright and GPL License
 
-namespace Xecrets.Mobile.Models.Models;
+using System;
+using System.Runtime.Versioning;
+using System.Threading.Tasks;
 
-public sealed record PickedWritableFile(
-    string FileName,
-    Func<Func<Task>, Task> WithAccessAsync,
-    Func<Task<bool>> CanWriteAsync,
-    Func<Task<bool>> CanDeleteAsync,
-    Func<Task<long>> GetLengthAsync,
-    Func<Task<Stream>> OpenWriteAsync,
-    Func<string, Task<bool>> RenameIfPossibleAsync,
-    Func<Task> DeleteAsync);
+using Windows.Storage;
+
+using Xecrets.Mobile.Models.Abstractions;
+
+namespace Xecrets.Mobile.Platforms.Windows;
+
+[SupportedOSPlatform("windows10.0.19041")]
+internal sealed class WindowsPickedWritableFile(StorageFile file) : IPickedWritableFile
+{
+    public Task<T> WithAccessAsync<T>(Func<Task<T>> action) => action();
+
+    public Task<bool> CanWriteAsync() => Task.FromResult((file.Attributes & FileAttributes.ReadOnly) == 0);
+
+    public Task<bool> CanDeleteAsync() => Task.FromResult((file.Attributes & FileAttributes.ReadOnly) == 0);
+
+    public async Task<long> GetLengthAsync() => (await file.GetBasicPropertiesAsync()).Size;
+
+    public async Task<Stream> OpenWriteAsync() => await file.OpenStreamForWriteAsync();
+
+    public async Task RenameIfPossibleAsync(string newFileName)
+    {
+        try
+        {
+            await file.RenameAsync(newFileName, NameCollisionOption.FailIfExists);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // This is just a best effort
+        }
+    }
+
+    public async Task DeleteAsync() => await file.DeleteAsync(StorageDeleteOption.PermanentDelete);
+}

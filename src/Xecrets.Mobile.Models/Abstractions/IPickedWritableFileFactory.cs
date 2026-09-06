@@ -28,50 +28,13 @@
 
 #endregion Copyright and GPL License
 
-using System;
-using System.Runtime.Versioning;
-using System.Threading.Tasks;
+namespace Xecrets.Mobile.Models.Abstractions;
 
-using Windows.Storage;
-using Windows.Storage.Pickers;
-using Windows.System;
-
-using Xecrets.Mobile.Models.Abstractions;
-using Xecrets.Mobile.Models.Models;
-
-using Xecrets.Mobile.Services;
-
-namespace Xecrets.Mobile.Platforms.Windows;
-
-[SupportedOSPlatform("windows10.0.19041")]
-public class WindowsFileService(IPickedWritableFileFactory pickedWritableFileFactory) : FileServiceBase
+// Builds an IPickedWritableFile from the platform-native handle a file picker just returned. Each
+// platform provides its own implementation, and only ever passes its own native handle type (e.g. an
+// Android.Net.Uri, an NSUrl, or a Windows.Storage.StorageFile) to its own factory's Create - the runtime
+// cast inside Create is safe by construction.
+public interface IPickedWritableFileFactory
 {
-    public override string PlatformId => "windows";
-
-    public override async Task<IPickedWritableFile?> PickWritableFileAsync(string pickerTitle, FilePickerKind pickerKind)
-    {
-        FileOpenPicker picker = new();
-        picker.FileTypeFilter.Add(pickerKind == FilePickerKind.Encrypted ? Extensions.EncryptedExtension : "*");
-        InitializeWithWindow.Initialize(picker, GetWindowHandle());
-        StorageFile? selectedFile = await picker.PickSingleFileAsync();
-        if (selectedFile is null)
-        {
-            return null;
-        }
-
-        return pickedWritableFileFactory.Create(selectedFile);
-    }
-
-    public override async Task<bool> CanViewFileAsync(DecryptedFileInfo file)
-    {
-        if (!file.ContentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        StorageFile storageFile = await StorageFile.GetFileFromPathAsync(file.FilePath);
-        LaunchQuerySupportStatus status = await Launcher.QueryFileSupportAsync(storageFile);
-
-        return status == LaunchQuerySupportStatus.Available;
-    }
+    IPickedWritableFile Create(object handle);
 }

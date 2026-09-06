@@ -34,7 +34,7 @@ namespace Xecrets.Mobile.Models.Abstractions;
 
 public interface IFileWiper
 {
-    Task<FileWipeStatus> WipeAsync(PickedWritableFile file);
+    Task<FileWipeStatus> WipeAsync(IPickedWritableFile file);
 
     // The core overwrite, with no rights checks, rename, or delete - callers that own those concerns
     // (WipeAsync, or a caller wiping its own files directly) build on top of this.

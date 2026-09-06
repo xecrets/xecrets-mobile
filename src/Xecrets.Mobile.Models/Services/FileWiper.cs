@@ -38,15 +38,13 @@ namespace Xecrets.Mobile.Models.Services;
 
 public sealed class FileWiper : IFileWiper
 {
-    public async Task<FileWipeStatus> WipeAsync(PickedWritableFile file)
+    public Task<FileWipeStatus> WipeAsync(IPickedWritableFile file)
     {
-        FileWipeStatus status = FileWipeStatus.Succeeded;
-        await file.WithAccessAsync(async () =>
+        return file.WithAccessAsync(async () =>
         {
             if (!await file.CanWriteAsync() || !await file.CanDeleteAsync())
             {
-                status = FileWipeStatus.InsufficientRights;
-                return;
+                return FileWipeStatus.InsufficientRights;
             }
 
             long length = await file.GetLengthAsync();
@@ -60,11 +58,11 @@ public sealed class FileWiper : IFileWiper
                 fileStream.Flush(true);
             }
 
-            _ = await file.RenameIfPossibleAsync(Path.GetRandomFileName());
+            await file.RenameIfPossibleAsync(Path.GetRandomFileName());
             await file.DeleteAsync();
-        });
 
-        return status;
+            return FileWipeStatus.Succeeded;
+        });
     }
 
     public async Task OverwriteAsync(Stream stream, long length)

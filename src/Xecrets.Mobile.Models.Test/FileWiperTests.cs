@@ -30,6 +30,7 @@
 
 using NUnit.Framework;
 
+using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
 
@@ -38,28 +39,54 @@ namespace Xecrets.Mobile.Models.Test;
 [TestFixture]
 public sealed class FileWiperTests
 {
+    private sealed class FakePickedWritableFile : IPickedWritableFile
+    {
+        public Func<Task<bool>> CanWrite { get; init; } = () => Task.FromResult(true);
+
+        public Func<Task<bool>> CanDelete { get; init; } = () => Task.FromResult(true);
+
+        public Func<Task<long>> GetLength { get; init; } = () => throw new AssertionException("The file should not be inspected.");
+
+        public Func<Task<Stream>> OpenWrite { get; init; } = () => throw new AssertionException("The file should not be opened.");
+
+        public Func<string, Task<bool>> RenameIfPossible { get; init; } = _ => throw new AssertionException("The file should not be renamed.");
+
+        public Func<Task> Delete { get; init; } = () => throw new AssertionException("The file should not be deleted.");
+
+        public Task<T> WithAccessAsync<T>(Func<Task<T>> action) => action();
+
+        public Task<bool> CanWriteAsync() => CanWrite();
+
+        public Task<bool> CanDeleteAsync() => CanDelete();
+
+        public Task<long> GetLengthAsync() => GetLength();
+
+        public Task<Stream> OpenWriteAsync() => OpenWrite();
+
+        public Task RenameIfPossibleAsync(string newFileName) => RenameIfPossible(newFileName);
+
+        public Task DeleteAsync() => Delete();
+    }
+
     [Test]
     public async Task WipeAsyncReturnsInsufficientRightsWithoutChangingFile()
     {
         bool wasOpened = false;
         bool wasDeleted = false;
-        PickedWritableFile file = new(
-            "document.txt",
-            action => action(),
-            () => Task.FromResult(false),
-            () => Task.FromResult(true),
-            () => throw new AssertionException("The file should not be inspected."),
-            () =>
+        IPickedWritableFile file = new FakePickedWritableFile
+        {
+            CanWrite = () => Task.FromResult(false),
+            OpenWrite = () =>
             {
                 wasOpened = true;
                 return Task.FromResult<Stream>(Stream.Null);
             },
-            _ => throw new AssertionException("The file should not be renamed."),
-            () =>
+            Delete = () =>
             {
                 wasDeleted = true;
                 return Task.CompletedTask;
-            });
+            },
+        };
 
         FileWipeStatus status = await new FileWiper().WipeAsync(file);
 
@@ -73,19 +100,17 @@ public sealed class FileWiperTests
     {
         byte[] contents = new byte[1024];
         bool wasDeleted = false;
-        PickedWritableFile file = new(
-            "document.txt",
-            action => action(),
-            () => Task.FromResult(true),
-            () => Task.FromResult(true),
-            () => Task.FromResult((long)contents.Length),
-            () => Task.FromResult<Stream>(new MemoryStream(contents, writable: true)),
-            _ => Task.FromResult(false),
-            () =>
+        IPickedWritableFile file = new FakePickedWritableFile
+        {
+            GetLength = () => Task.FromResult((long)contents.Length),
+            OpenWrite = () => Task.FromResult<Stream>(new MemoryStream(contents, writable: true)),
+            RenameIfPossible = _ => Task.FromResult(false),
+            Delete = () =>
             {
                 wasDeleted = true;
                 return Task.CompletedTask;
-            });
+            },
+        };
 
         FileWipeStatus status = await new FileWiper().WipeAsync(file);
 

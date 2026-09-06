@@ -184,7 +184,7 @@ public partial class HomePageModel(
             IsBusy = true;
             StatusText = string.Empty;
 
-            PickedWritableFile? file = await fileService.PickWritableFileAsync(
+            IPickedWritableFile? file = await fileService.PickWritableFileAsync(
                 AppTexts.DialogTitleSelectFilesToWipe,
                 FilePickerKind.Any);
             if (file is null || !await UserInterfaceService.DisplayConfirmationAsync(AppTexts.MessageTextConfirmWipe))
