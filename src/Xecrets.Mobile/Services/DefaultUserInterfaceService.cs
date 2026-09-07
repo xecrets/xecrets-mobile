@@ -51,15 +51,18 @@ public class DefaultUserInterfaceService(IBuildInformation buildInformation) : I
         ? Application.Current.Windows[0].Page as Shell
         : null;
 
+    private static string? CurrentRoute => AppShell?.CurrentItem?.CurrentItem?.CurrentItem is { } shellContent
+        ? Routing.GetRoute(shellContent)
+        : null;
+
     public bool IsShellAvailable => AppShell is not null;
 
     public bool CanProcessIncomingFiles =>
-        AppShell?.CurrentPage is { } currentPage &&
-        Routing.GetRoute(currentPage) is "home" or "login" or "create-profile";
+        CurrentRoute is "home" or "login" or "create-profile";
 
     public bool CanReceiveIncomingFiles =>
-        AppShell?.CurrentPage is not { } currentPage ||
-        Routing.GetRoute(currentPage) is "startup" or "home" or "login" or "create-profile";
+        AppShell is null ||
+        CurrentRoute is "startup" or "home" or "login" or "create-profile";
 
     public Task InvokeOnMainThreadAsync(Func<Task> action) => MainThread.InvokeOnMainThreadAsync(action);
 
