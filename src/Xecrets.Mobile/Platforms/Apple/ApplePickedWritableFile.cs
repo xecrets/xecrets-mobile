@@ -92,7 +92,7 @@ internal sealed class ApplePickedWritableFile(NSUrl url) : IPickedWritableFile
 
     public Task DeleteAsync()
     {
-        File.Delete(fileUrl.Path!);
+        File.Delete(_fileUrl.Path!);
         return Task.CompletedTask;
     }
 
