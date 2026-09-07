@@ -61,7 +61,7 @@ public class AppSceneDelegate : MauiUISceneDelegate
 
         foreach (UIOpenUrlContext context in urlContexts)
         {
-            _ = AppleIncomingFileHandler.HandleIncomingUrlAsync(context.Url);
+            AppleIncomingFileHandler.HandleIncomingUrl(context.Url);
         }
     }
 }

@@ -35,6 +35,7 @@ namespace Xecrets.Mobile.Models.Services;
 
 public sealed class SessionExitService(
     IPreviewService previewService,
+    DecryptionPasswordRequestState passwordRequestState,
     ITransientFileService transientFileService,
     IProfileService profileService,
     IUserInterfaceService userInterfaceService)
@@ -42,6 +43,7 @@ public sealed class SessionExitService(
     public async Task ExitAsync()
     {
         previewService.Current.Clear();
+        passwordRequestState.Clear();
         await transientFileService.MaybeWipeTrackedFilesAsync();
         profileService.SignOut();
 

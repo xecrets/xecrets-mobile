@@ -47,11 +47,22 @@ namespace Xecrets.Mobile.Services;
 
 public class DefaultUserInterfaceService(IBuildInformation buildInformation) : IUserInterfaceService
 {
-    public bool IsShellAvailable => Shell.Current is not null;
+    private static Shell? AppShell => Application.Current?.Windows.Count == 1
+        ? Application.Current.Windows[0].Page as Shell
+        : null;
+
+    private static string? CurrentRoute => AppShell?.CurrentItem?.CurrentItem?.CurrentItem is { } shellContent
+        ? Routing.GetRoute(shellContent)
+        : null;
+
+    public bool IsShellAvailable => AppShell is not null;
 
     public bool CanProcessIncomingFiles =>
-        Shell.Current?.CurrentPage is { } currentPage &&
-        Routing.GetRoute(currentPage) is not "startup" and not "crash";
+        CurrentRoute is "home" or "login" or "create-profile";
+
+    public bool CanReceiveIncomingFiles =>
+        AppShell is null ||
+        CurrentRoute is "startup" or "home" or "login" or "create-profile";
 
     public Task InvokeOnMainThreadAsync(Func<Task> action) => MainThread.InvokeOnMainThreadAsync(action);
 
@@ -73,7 +84,7 @@ public class DefaultUserInterfaceService(IBuildInformation buildInformation) : I
             MobileTexts.LabelCancel,
             initialValue: initialValue);
 
-    public virtual Task DisplayTransientMessageAsync(string message) =>
+    public Task DisplayTransientMessageAsync(string message) =>
         Toast.Make(message, ToastDuration.Long).Show();
 
     public Task NavigateToAsync(AppDestination destination)

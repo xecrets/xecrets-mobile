@@ -38,6 +38,8 @@ public interface IUserInterfaceService
 
     bool CanProcessIncomingFiles { get; }
 
+    bool CanReceiveIncomingFiles { get; }
+
     Task InvokeOnMainThreadAsync(Func<Task> action);
 
     Task DisplayMessageAsync(string message);

@@ -48,6 +48,11 @@ public sealed class IncomingFileService(
     public Task ReceiveAsync(Func<Task<IncomingFileInfo>> receiveFileAsync)
         => transientFileService.RunExclusiveAsync(() => userInterfaceService.InvokeOnMainThreadAsync(async () =>
         {
+            if (_pendingFile is not null || !userInterfaceService.CanReceiveIncomingFiles)
+            {
+                return;
+            }
+
             _pendingFile = await receiveFileAsync();
             if (userInterfaceService.CanProcessIncomingFiles)
             {
@@ -59,7 +64,18 @@ public sealed class IncomingFileService(
 
     private async Task ProcessPendingCoreAsync()
     {
-        if (_pendingFile is null || !userInterfaceService.IsShellAvailable)
+        if (_pendingFile is null)
+        {
+            return;
+        }
+
+        if (!File.Exists(_pendingFile.FilePath))
+        {
+            _pendingFile = null;
+            return;
+        }
+
+        if (!userInterfaceService.IsShellAvailable)
         {
             return;
         }
@@ -84,8 +100,13 @@ public sealed class IncomingFileService(
 
         if (isEncrypted)
         {
-            bool isPrepared = await previewService.PrepareImportedAsync(file.FilePath);
-            if (!isPrepared)
+            PreviewPreparationStatus status = await previewService.PrepareImportedAsync(file.FilePath);
+            if (status == PreviewPreparationStatus.Cancelled)
+            {
+                return;
+            }
+
+            if (status == PreviewPreparationStatus.WrongPassword)
             {
                 if (previewService.HasPendingPasswordRequest)
                 {
@@ -110,6 +131,14 @@ public sealed class IncomingFileService(
     {
         try
         {
+            await using (FileStream? input = file.FilePath.OpenReadIfExists())
+            {
+                if (input is null)
+                {
+                    return;
+                }
+            }
+
             PickedFile pickedFile = new(
                 file.DisplayName,
                 file.FilePath,

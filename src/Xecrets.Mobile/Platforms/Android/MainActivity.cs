@@ -50,7 +50,7 @@ using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Platforms.Android;
 
-[Activity(Theme = "@style/Maui.SplashTheme", MainLauncher = true, Exported = true, LaunchMode = LaunchMode.SingleTop,
+[Activity(Theme = "@style/Maui.SplashTheme", MainLauncher = true, Exported = true, LaunchMode = LaunchMode.SingleTask,
     ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation | ConfigChanges.UiMode |
                            ConfigChanges.ScreenLayout | ConfigChanges.SmallestScreenSize | ConfigChanges.Density)]
 [IntentFilter([Intent.ActionSend], Categories = [Intent.CategoryDefault], DataMimeType = "text/plain")]
@@ -86,7 +86,7 @@ public class MainActivity : MauiAppCompatActivity, IActivityResultCallback
         return _documentPickerCompletion.Task;
     }
 
-    protected override void OnCreate(Bundle? savedInstanceState)
+    protected override async void OnCreate(Bundle? savedInstanceState)
     {
         _documentPickerLauncher = RegisterForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -94,14 +94,14 @@ public class MainActivity : MauiAppCompatActivity, IActivityResultCallback
 
         // https://wagenheimer.com/blog/dont-let-android-15-break-your-maui-app-the-3-step-edge-to-edge-fix
         base.OnCreate(savedInstanceState);
-        _ = HandleIncomingIntentAsync(Intent!);
+        await HandleIncomingIntentAsync(Intent!);
     }
 
-    protected override void OnNewIntent(Intent? intent)
+    protected override async void OnNewIntent(Intent? intent)
     {
         base.OnNewIntent(intent);
         Intent = intent;
-        _ = HandleIncomingIntentAsync(intent!);
+        await HandleIncomingIntentAsync(intent!);
     }
 
     public void OnActivityResult(Java.Lang.Object? result)
@@ -114,6 +114,28 @@ public class MainActivity : MauiAppCompatActivity, IActivityResultCallback
     }
 
     private async Task HandleIncomingIntentAsync(Intent intent)
+    {
+        try
+        {
+            await HandleIncomingIntentCoreAsync(intent);
+        }
+        catch (Exception ex)
+        {
+            IUserInterfaceService userInterfaceService =
+                MauiProgram.Services!.GetRequiredService<IUserInterfaceService>();
+            if (userInterfaceService.CanProcessIncomingFiles)
+            {
+                await userInterfaceService.DisplayMessageAsync(ex.FormatException());
+            }
+            else
+            {
+                MauiProgram.Services!.GetRequiredService<ICrashLogService>()
+                    .WriteCrashLog("Incoming file exception", ex);
+            }
+        }
+    }
+
+    private async Task HandleIncomingIntentCoreAsync(Intent intent)
     {
         AndroidUri? uri = GetIncomingUri(intent);
         ContentResolver contentResolver = ContentResolver!;
@@ -135,19 +157,7 @@ public class MainActivity : MauiAppCompatActivity, IActivityResultCallback
             return;
         }
 
-        string displayName;
-        try
-        {
-            displayName = GetDisplayName(uri);
-        }
-        catch (Exception ex)
-        {
-            IUserInterfaceService userInterfaceService =
-                MauiProgram.Services!.GetRequiredService<IUserInterfaceService>();
-            await userInterfaceService.DisplayMessageAsync(ex.FormatException());
-            return;
-        }
-
+        string displayName = GetDisplayName(uri);
         string contentType = contentResolver.GetType(uri) ?? ContentTypeDetector.DetectContentType(displayName);
         Stream? inputStream = contentResolver.OpenInputStream(uri);
         if (inputStream is null)

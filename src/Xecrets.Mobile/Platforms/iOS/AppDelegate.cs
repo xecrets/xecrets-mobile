@@ -50,7 +50,7 @@ public class AppDelegate : MauiUIApplicationDelegate
 
     public override bool OpenUrl(UIApplication application, NSUrl url, NSDictionary options)
     {
-        _ = AppleIncomingFileHandler.HandleIncomingUrlAsync(url);
+        AppleIncomingFileHandler.HandleIncomingUrl(url);
         return true;
     }
 

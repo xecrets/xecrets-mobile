@@ -168,6 +168,7 @@ public sealed class TransientFileServiceTests
         TestUserInterfaceService userInterface = new()
         {
             CanProcessIncomingFiles = !pending,
+            CanReceiveIncomingFiles = true,
             IsShellAvailable = true,
             NavigateAsync = async () =>
             {
@@ -218,7 +219,7 @@ public sealed class TransientFileServiceTests
         => new(new TestFileService(_cacheDirectory), new TestFileWiper(overwriteAsync));
 
     private static IncomingFileService CreateIncomingService(ITransientFileService transient)
-        => new(null!, transient, null!, null!, null!, new TestUserInterfaceService());
+        => new(null!, transient, null!, null!, null!, new TestUserInterfaceService { CanReceiveIncomingFiles = true });
 
     private sealed class TestFileWiper(Func<Stream, long, Task> overwriteAsync) : IFileWiper
     {
@@ -230,6 +231,7 @@ public sealed class TransientFileServiceTests
     {
         public bool IsShellAvailable { get; init; }
         public bool CanProcessIncomingFiles { get; init; }
+        public bool CanReceiveIncomingFiles { get; init; }
         public Func<Task> NavigateAsync { get; init; } = () => throw new NotSupportedException();
         public Task InvokeOnMainThreadAsync(Func<Task> action) => action();
         public Task DisplayMessageAsync(string message) => throw new NotSupportedException();
