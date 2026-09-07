@@ -29,6 +29,7 @@
 #endregion Copyright and GPL License
 
 using System;
+using System.IO;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
@@ -43,13 +44,13 @@ internal sealed class WindowsPickedWritableFile(StorageFile file) : IPickedWrita
 {
     public Task<T> WithAccessAsync<T>(Func<Task<T>> action) => action();
 
-    public Task<bool> CanWriteAsync() => Task.FromResult((file.Attributes & FileAttributes.ReadOnly) == 0);
+    public Task<bool> CanWriteAsync() => Task.FromResult((file.Attributes & global::Windows.Storage.FileAttributes.ReadOnly) == 0);
 
-    public Task<bool> CanDeleteAsync() => Task.FromResult((file.Attributes & FileAttributes.ReadOnly) == 0);
+    public Task<bool> CanDeleteAsync() => Task.FromResult((file.Attributes & global::Windows.Storage.FileAttributes.ReadOnly) == 0);
 
-    public async Task<long> GetLengthAsync() => (await file.GetBasicPropertiesAsync()).Size;
+    public async Task<long> GetLengthAsync() => (long)(await file.GetBasicPropertiesAsync()).Size;
 
-    public async Task<Stream> OpenWriteAsync() => await file.OpenStreamForWriteAsync();
+    public Task<Stream> OpenWriteAsync() => file.OpenStreamForWriteAsync();
 
     public async Task RenameIfPossibleAsync(string newFileName)
     {
