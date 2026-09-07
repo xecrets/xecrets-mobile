@@ -35,7 +35,6 @@
     xmlns:models="clr-namespace:Xecrets.Mobile.Models.Models;assembly=Xecrets.Mobile.Models"
     xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
     xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
-    xmlns:texts="clr-namespace:Xecrets.Texts;assembly=Xecrets.Texts"
     FlyoutBehavior="Flyout"
     Title="Xecrets.Mobile">
 
@@ -51,7 +50,7 @@
     <MenuItem x:Name="DebugMenuItem"
               x:DataType="local:AppShell"
               BindingContext="{x:Reference AppShellRoot}"
-              Text="{x:Static texts:Texts.MenuDebug}"
+              Text="{x:Static modelUtilities:MobileTexts.MenuDebug}"
               IconImageSource="{StaticResource IconDebug}"
               Command="{Binding DebugCommand}" />
 
@@ -63,7 +62,7 @@
 
     <MenuItem x:DataType="local:AppShell"
               BindingContext="{x:Reference AppShellRoot}"
-              Text="{x:Static texts:Texts.ButtonExit}"
+              Text="{x:Static modelUtilities:MobileTexts.ButtonExit}"
               IconImageSource="{StaticResource IconExit}"
               Command="{Binding ExitCommand}" />
 

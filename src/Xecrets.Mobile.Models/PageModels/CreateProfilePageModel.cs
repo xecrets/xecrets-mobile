@@ -34,8 +34,7 @@ using CommunityToolkit.Mvvm.Input;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
-
-using AppTexts = Xecrets.Texts.Texts;
+using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
@@ -73,7 +72,7 @@ public partial class CreateProfilePageModel(
 
             if (Password != ConfirmPassword)
             {
-                ErrorText = AppTexts.DialogValidationConfirmPassword;
+                ErrorText = MobileTexts.DialogValidationConfirmPassword;
                 return;
             }
 
@@ -82,9 +81,9 @@ public partial class CreateProfilePageModel(
             {
                 ErrorText = result.Status switch
                 {
-                    ProfileActionStatus.InvalidEmail => AppTexts.DialogValidationInvalidEmail,
-                    ProfileActionStatus.AlreadyExists => AppTexts.DialogValidationAlreadySignedIn,
-                    _ => AppTexts.DialogValidationInvalidEmail,
+                    ProfileActionStatus.InvalidEmail => MobileTexts.DialogValidationInvalidEmail,
+                    ProfileActionStatus.AlreadyExists => MobileTexts.DialogValidationAlreadySignedIn,
+                    _ => MobileTexts.DialogValidationInvalidEmail,
                 };
                 return;
             }

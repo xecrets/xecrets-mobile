@@ -35,8 +35,7 @@ using Xecrets.Common.Models;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Services;
-
-using AppTexts = Xecrets.Texts.Texts;
+using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
@@ -87,7 +86,7 @@ public partial class LoginPageModel(
             ProfileActionResult result = await profileService.LoginAsync(Password);
             if (!result.Succeeded)
             {
-                ErrorText = AppTexts.DialogValidationWrongPassword;
+                ErrorText = MobileTexts.DialogValidationWrongPassword;
                 return;
             }
 

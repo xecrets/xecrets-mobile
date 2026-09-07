@@ -37,8 +37,6 @@ using Xecrets.Mobile.Models.Services;
 using Xecrets.Mobile.Models.Utilities;
 using Xecrets.Texts;
 
-using AppTexts = Xecrets.Texts.Texts;
-
 namespace Xecrets.Mobile.Models.PageModels;
 
 public partial class HomePageModel(
@@ -91,7 +89,7 @@ public partial class HomePageModel(
             StatusText = string.Empty;
 
             PickedFile? file = await fileService.PickFileAsync(
-                AppTexts.DialogTitleSelectFilesToEncrypt,
+                MobileTexts.DialogTitleSelectFilesToEncrypt,
                 FilePickerKind.Any);
             if (file is null)
             {
@@ -185,9 +183,9 @@ public partial class HomePageModel(
             StatusText = string.Empty;
 
             IPickedWritableFile? file = await fileService.PickWritableFileAsync(
-                AppTexts.DialogTitleSelectFilesToWipe,
+                MobileTexts.DialogTitleSelectFilesToWipe,
                 FilePickerKind.Any);
-            if (file is null || !await UserInterfaceService.DisplayConfirmationAsync(AppTexts.MessageTextConfirmWipe))
+            if (file is null || !await UserInterfaceService.DisplayConfirmationAsync(MobileTexts.MessageTextConfirmWipe))
             {
                 return;
             }
@@ -195,7 +193,7 @@ public partial class HomePageModel(
             FileWipeStatus status = await fileWiper.WipeAsync(file);
             if (status == FileWipeStatus.InsufficientRights)
             {
-                await UserInterfaceService.DisplayMessageAsync(AppTexts.DialogTextInsufficientRights);
+                await UserInterfaceService.DisplayMessageAsync(MobileTexts.DialogTextInsufficientRights);
                 return;
             }
 
@@ -221,7 +219,7 @@ public partial class HomePageModel(
     private async Task<bool> PickAndPrepareAsync(bool enableTextEditing)
     {
         PickedFile? file = await fileService.PickFileAsync(
-            AppTexts.DialogTitleSelectFileToOpen,
+            MobileTexts.DialogTitleSelectFileToOpen,
             FilePickerKind.Encrypted);
         if (file is null)
         {
@@ -232,7 +230,7 @@ public partial class HomePageModel(
         bool isPrepared = await previewService.PrepareAsync(previewFile, enableTextEditing);
         if (!isPrepared && !previewService.HasPendingPasswordRequest)
         {
-            StatusText = AppTexts.DialogTextWrongPasswordOpen;
+            StatusText = MobileTexts.DialogTextWrongPasswordOpen;
         }
 
         return isPrepared;

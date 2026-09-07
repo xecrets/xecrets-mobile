@@ -155,6 +155,8 @@ public static class MobileTexts
     // "Encrypt…", the ellipsis is kept since a file selection follows.
     public static string ButtonEncrypt => AppTexts.ButtonEncryptMore;
 
+    public static string ButtonExit => AppTexts.ButtonExit;
+
     // "Help", also used as the overflow menu item text, see MenuHelp.
     public static string ButtonHelp => AppTexts.ButtonHelp;
 
@@ -164,26 +166,62 @@ public static class MobileTexts
     // "Save As…"
     public static string ButtonSaveAs => AppTexts.ButtonSaveAs.ToSentenceCase();
 
+    public static string ButtonWipe => AppTexts.ButtonWipe;
+
     // "Add a decryption password"
     public static string DialogTextAddPassword => AppTexts.DialogTextAddPassword;
+
+    public static string DialogTextInsufficientRights => AppTexts.DialogTextInsufficientRights;
 
     // "Canceled"
     public static string DialogTextOperationNotCompleted => AppTexts.FilesCanceledMessage;
 
+    public static string DialogTextWrongPasswordOpen => AppTexts.DialogTextWrongPasswordOpen;
+
     // "Encrypt copy to share"
     public static string DialogTitleEncryptCopyFor => AppTexts.DialogTitleEncryptCopyFor;
+
+    public static string DialogTitleSelectFilesToEncrypt => AppTexts.DialogTitleSelectFilesToEncrypt;
+
+    public static string DialogTitleSelectFilesToWipe => AppTexts.DialogTitleSelectFilesToWipe;
+
+    public static string DialogTitleSelectFileToOpen => AppTexts.DialogTitleSelectFileToOpen;
+
+    public static string DialogValidationAlreadySignedIn => AppTexts.DialogValidationAlreadySignedIn;
+
+    public static string DialogValidationConfirmPassword => AppTexts.DialogValidationConfirmPassword;
+
+    public static string DialogValidationInvalidEmail => AppTexts.DialogValidationInvalidEmail;
+
+    public static string DialogValidationWrongPassword => AppTexts.DialogValidationWrongPassword;
+
+    public static string DisplayNameProgram => AppTexts.DisplayNameProgram;
+
+    public static string FileEncryptionUrl => AppTexts.FileEncryptionUrl;
 
     // "Set up a local profile"
     public static string HeadingCreateUserFirstTimeSetup => AppTexts.HeadingCreateUserFirstTimeSetup;
 
+    public static string LabelCancel => AppTexts.LabelCancel;
+
+    public static string LabelNo => AppTexts.LabelNo;
+
+    public static string LabelYes => AppTexts.LabelYes;
+
     // "About"
     public static string MenuAbout => AppTexts.ButtonAbout;
+
+    public static string MenuDebug => AppTexts.MenuDebug;
 
     // "Help"
     public static string MenuHelp => ButtonHelp;
 
+    public static string MessageTextConfirmWipe => AppTexts.MessageTextConfirmWipe;
+
     // "Sign in to Xecrets Ez"
     public static string SignInHeading => AppTexts.SignInHeading;
+
+    public static string SiteUrl => AppTexts.SiteUrl;
 
     // "Adding a password is only for decryption, when you receive files from someone else, or you have used another
     // password previously. It does not affect encryption."
@@ -210,6 +248,8 @@ public static class MobileTexts
 
     // "Password to share"
     public static string WatermarkPasswordShare => AppTexts.WatermarkPasswordShare;
+
+    public static string XecretsHelpUrl => AppTexts.XecretsHelpUrl();
 
     #endregion Translated texts
 }

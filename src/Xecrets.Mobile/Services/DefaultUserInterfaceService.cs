@@ -40,9 +40,8 @@ using Microsoft.Maui.Controls;
 
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
+using Xecrets.Mobile.Models.Utilities;
 using Xecrets.Texts;
-
-using AppTexts = Xecrets.Texts.Texts;
 
 namespace Xecrets.Mobile.Services;
 
@@ -57,21 +56,21 @@ public class DefaultUserInterfaceService(IBuildInformation buildInformation) : I
     public Task InvokeOnMainThreadAsync(Func<Task> action) => MainThread.InvokeOnMainThreadAsync(action);
 
     public Task DisplayMessageAsync(string message) =>
-        Shell.Current.DisplayAlertAsync(AppTexts.DisplayNameProgram, message, AppTexts.LabelOk);
+        Shell.Current.DisplayAlertAsync(MobileTexts.DisplayNameProgram, message, MobileTexts.ButtonOk);
 
     public Task<bool> DisplayConfirmationAsync(string message) =>
         Shell.Current.DisplayAlertAsync(
-            AppTexts.DisplayNameProgram,
+            MobileTexts.DisplayNameProgram,
             message,
-            AppTexts.LabelYes,
-            AppTexts.LabelNo);
+            MobileTexts.LabelYes,
+            MobileTexts.LabelNo);
 
     public Task<string?> DisplayPromptAsync(string message, string initialValue) =>
         Shell.Current.DisplayPromptAsync(
-            AppTexts.DisplayNameProgram,
+            MobileTexts.DisplayNameProgram,
             message,
-            AppTexts.LabelOk,
-            AppTexts.LabelCancel,
+            MobileTexts.ButtonOk,
+            MobileTexts.LabelCancel,
             initialValue: initialValue);
 
     public virtual Task DisplayTransientMessageAsync(string message) =>

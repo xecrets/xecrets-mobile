@@ -35,8 +35,6 @@ using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Utilities;
 
-using AppTexts = Xecrets.Texts.Texts;
-
 namespace Xecrets.Mobile.Models.PageModels;
 
 public partial class EnterPasswordPageModel(
@@ -62,7 +60,7 @@ public partial class EnterPasswordPageModel(
     public void Initialize()
     {
         ErrorText = previewService.HasPendingPasswordRequest || workFolderOperationService.HasPendingPasswordRequest
-            ? AppTexts.DialogTextWrongPasswordOpen
+            ? MobileTexts.DialogTextWrongPasswordOpen
             : string.Empty;
     }
 
@@ -80,7 +78,7 @@ public partial class EnterPasswordPageModel(
                 : await previewService.PrepareWithPasswordAsync(Password);
             if (!isPrepared)
             {
-                ErrorText = AppTexts.DialogTextWrongPasswordOpen;
+                ErrorText = MobileTexts.DialogTextWrongPasswordOpen;
                 return;
             }
 

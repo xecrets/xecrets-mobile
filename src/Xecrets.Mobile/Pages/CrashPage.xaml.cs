@@ -37,8 +37,7 @@ using Microsoft.Maui.ApplicationModel.DataTransfer;
 using Xecrets.Mobile.Abstractions;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.PageModels;
-
-using AppTexts = Xecrets.Texts.Texts;
+using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
@@ -85,7 +84,7 @@ public partial class CrashPage
     private Task Report() => _userInterfaceService.OpenBrowserAsync(_supportUrl);
 
     [RelayCommand]
-    private Task Help() => _userInterfaceService.OpenBrowserAsync(AppTexts.XecretsHelpUrl());
+    private Task Help() => _userInterfaceService.OpenBrowserAsync(MobileTexts.XecretsHelpUrl);
 
     [RelayCommand]
     private async Task Continue()

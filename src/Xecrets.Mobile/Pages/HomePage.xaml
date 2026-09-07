@@ -31,7 +31,6 @@
              xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
              xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
              xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
-             xmlns:texts="clr-namespace:Xecrets.Texts;assembly=Xecrets.Texts"
              x:Class="Xecrets.Mobile.Pages.HomePage"
              x:DataType="pageModels:HomePageModel">
     <ContentPage.Resources>
@@ -80,7 +79,7 @@
                                              HorizontalOptions="Fill"
                                              Margin="0,8"
                                              Opacity="0.35" />
-                                    <Button Text="{x:Static texts:Texts.ButtonWipe}"
+                                    <Button Text="{x:Static modelUtilities:MobileTexts.ButtonWipe}"
                                             Command="{Binding WipeCommand}" />
                                 </VerticalStackLayout>
                             </VerticalStackLayout>

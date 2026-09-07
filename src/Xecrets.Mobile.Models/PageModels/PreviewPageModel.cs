@@ -35,8 +35,6 @@ using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Utilities;
 
-using AppTexts = Xecrets.Texts.Texts;
-
 namespace Xecrets.Mobile.Models.PageModels;
 
 public partial class PreviewPageModel(
@@ -93,7 +91,7 @@ public partial class PreviewPageModel(
         }
 
         FileNameText = string.IsNullOrWhiteSpace(state.OriginalFileName)
-            ? AppTexts.DisplayNameProgram
+            ? MobileTexts.DisplayNameProgram
             : state.OriginalFileName;
         MetadataText = CreateMetadataText(state);
         StatusText = string.Empty;

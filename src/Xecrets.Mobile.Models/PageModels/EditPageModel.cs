@@ -39,8 +39,6 @@ using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Utilities;
 using Xecrets.Texts;
 
-using AppTexts = Xecrets.Texts.Texts;
-
 namespace Xecrets.Mobile.Models.PageModels;
 
 public partial class EditPageModel(
@@ -87,7 +85,7 @@ public partial class EditPageModel(
 
         state.EnableTextEditing();
         FileNameText = string.IsNullOrWhiteSpace(state.OriginalFileName)
-            ? AppTexts.DisplayNameProgram
+            ? MobileTexts.DisplayNameProgram
             : state.OriginalFileName;
         Text = state.Text;
         IsSaveVisible = CanOverwriteSourcePath(state.SourcePath);

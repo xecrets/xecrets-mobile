@@ -30,6 +30,7 @@
 
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
+using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models.Services;
 
@@ -92,7 +93,7 @@ public sealed class IncomingFileService(
                 }
                 else
                 {
-                    await userInterfaceService.DisplayMessageAsync(Texts.Texts.DialogTextWrongPasswordOpen);
+                    await userInterfaceService.DisplayMessageAsync(MobileTexts.DialogTextWrongPasswordOpen);
                 }
 
                 return;

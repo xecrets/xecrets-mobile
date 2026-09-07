@@ -35,8 +35,6 @@ using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Utilities;
 
-using AppTexts = Xecrets.Texts.Texts;
-
 namespace Xecrets.Mobile.Models.PageModels;
 
 public abstract partial class PageModelBase(IUserInterfaceService userInterfaceService) : ObservableObject
@@ -47,10 +45,10 @@ public abstract partial class PageModelBase(IUserInterfaceService userInterfaceS
     private Task OpenHelp() => userInterfaceService.OpenBrowserAsync(MobileTexts.MobileHelpUrl);
 
     [RelayCommand]
-    private Task OpenXecretsHome() => userInterfaceService.OpenBrowserAsync(AppTexts.SiteUrl);
+    private Task OpenXecretsHome() => userInterfaceService.OpenBrowserAsync(MobileTexts.SiteUrl);
 
     [RelayCommand]
-    private Task OpenXecretsDesktop() => userInterfaceService.OpenBrowserAsync(AppTexts.FileEncryptionUrl);
+    private Task OpenXecretsDesktop() => userInterfaceService.OpenBrowserAsync(MobileTexts.FileEncryptionUrl);
 
     [RelayCommand]
     private Task OpenThirdPartyLicenses() =>

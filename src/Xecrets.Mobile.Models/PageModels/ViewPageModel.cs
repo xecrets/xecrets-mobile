@@ -33,8 +33,7 @@ using CommunityToolkit.Mvvm.Input;
 
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
-
-using AppTexts = Xecrets.Texts.Texts;
+using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
@@ -67,7 +66,7 @@ public partial class ViewPageModel(IPreviewService previewService, IUserInterfac
         }
 
         FileNameText = string.IsNullOrWhiteSpace(state.OriginalFileName)
-            ? AppTexts.DisplayNameProgram
+            ? MobileTexts.DisplayNameProgram
             : state.OriginalFileName;
         ImageFilePath = state is { Kind: PreviewKind.Image, File: not null }
             ? state.File.FilePath

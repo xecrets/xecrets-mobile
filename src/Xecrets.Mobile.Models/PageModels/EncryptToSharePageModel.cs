@@ -37,8 +37,6 @@ using Xecrets.Mobile.Models.Services;
 using Xecrets.Mobile.Models.Utilities;
 using Xecrets.Texts;
 
-using AppTexts = Xecrets.Texts.Texts;
-
 namespace Xecrets.Mobile.Models.PageModels;
 
 public partial class EncryptToSharePageModel(
@@ -81,7 +79,7 @@ public partial class EncryptToSharePageModel(
 
             string password = Password;
             PickedFile? file = await fileService.PickFileAsync(
-                AppTexts.DialogTitleSelectFilesToEncrypt,
+                MobileTexts.DialogTitleSelectFilesToEncrypt,
                 FilePickerKind.Any);
             if (file is null)
             {
