@@ -28,50 +28,40 @@
 
 #endregion Copyright and GPL License
 
-using System;
-using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
-using Windows.Storage;
-using Windows.Storage.Pickers;
-using Windows.System;
+using Foundation;
 
-using Xecrets.Mobile.Models.Abstractions;
-using Xecrets.Mobile.Models.Models;
+using Microsoft.Maui.ApplicationModel;
 
-using Xecrets.Mobile.Services;
+using UniformTypeIdentifiers;
 
-namespace Xecrets.Mobile.Platforms.Windows;
+using UIKit;
 
-[SupportedOSPlatform("windows10.0.19041")]
-public class WindowsFileService(IPickedWritableFileFactory pickedWritableFileFactory) : FileServiceBase
+namespace Xecrets.Mobile.Platforms.Apple;
+
+public static class AppleExtensions
 {
-    public override string PlatformId => "windows";
-
-    public override async Task<IPickedWritableFile?> PickWritableFileAsync(string pickerTitle, FilePickerKind pickerKind)
+    public static async Task<NSUrl?> PickUrlAsync(this UTType contentType, NSUrl? initialUrl)
     {
-        FileOpenPicker picker = new();
-        picker.FileTypeFilter.Add(pickerKind == FilePickerKind.Encrypted ? Extensions.EncryptedExtension : "*");
-        InitializeWithWindow.Initialize(picker, GetWindowHandle());
-        StorageFile? selectedFile = await picker.PickSingleFileAsync();
-        if (selectedFile is null)
+        UIDocumentPickerViewController picker = new([contentType], false)
         {
-            return null;
-        }
-
-        return pickedWritableFileFactory.Create(selectedFile);
+            DirectoryUrl = initialUrl,
+        };
+        PickerDelegate pickerDelegate = new();
+        picker.Delegate = pickerDelegate;
+        await Platform.GetCurrentUIViewController()!.PresentViewControllerAsync(picker, true);
+        return await pickerDelegate.Completion.Task;
     }
 
-    public override async Task<bool> CanViewFileAsync(DecryptedFileInfo file)
+    private sealed class PickerDelegate : UIDocumentPickerDelegate
     {
-        if (!file.ContentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
+        public TaskCompletionSource<NSUrl?> Completion { get; } = new();
 
-        StorageFile storageFile = await StorageFile.GetFileFromPathAsync(file.FilePath);
-        LaunchQuerySupportStatus status = await Launcher.QueryFileSupportAsync(storageFile);
+        public override void DidPickDocument(UIDocumentPickerViewController controller, NSUrl[] urls) =>
+            Completion.SetResult(urls[0]);
 
-        return status == LaunchQuerySupportStatus.Available;
+        public override void WasCancelled(UIDocumentPickerViewController controller) =>
+            Completion.SetResult(null);
     }
 }

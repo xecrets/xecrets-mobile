@@ -34,7 +34,7 @@ namespace Xecrets.Mobile.Models.Abstractions;
 
 public interface IIncomingFileService
 {
-    Task ReceiveAsync(IncomingFileInfo file);
+    Task ReceiveAsync(Func<Task<IncomingFileInfo>> receiveFileAsync);
 
     Task ProcessPendingAsync();
 }

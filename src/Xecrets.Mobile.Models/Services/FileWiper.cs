@@ -28,50 +28,62 @@
 
 #endregion Copyright and GPL License
 
-using System;
-using System.Runtime.Versioning;
-using System.Threading.Tasks;
-
-using Windows.Storage;
-using Windows.Storage.Pickers;
-using Windows.System;
+using System.Buffers;
+using System.Security.Cryptography;
 
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 
-using Xecrets.Mobile.Services;
+namespace Xecrets.Mobile.Models.Services;
 
-namespace Xecrets.Mobile.Platforms.Windows;
-
-[SupportedOSPlatform("windows10.0.19041")]
-public class WindowsFileService(IPickedWritableFileFactory pickedWritableFileFactory) : FileServiceBase
+public sealed class FileWiper : IFileWiper
 {
-    public override string PlatformId => "windows";
-
-    public override async Task<IPickedWritableFile?> PickWritableFileAsync(string pickerTitle, FilePickerKind pickerKind)
+    public Task<FileWipeStatus> WipeAsync(IPickedWritableFile file)
     {
-        FileOpenPicker picker = new();
-        picker.FileTypeFilter.Add(pickerKind == FilePickerKind.Encrypted ? Extensions.EncryptedExtension : "*");
-        InitializeWithWindow.Initialize(picker, GetWindowHandle());
-        StorageFile? selectedFile = await picker.PickSingleFileAsync();
-        if (selectedFile is null)
+        return file.WithAccessAsync(async () =>
         {
-            return null;
-        }
+            if (!await file.CanWriteAsync() || !await file.CanDeleteAsync())
+            {
+                return FileWipeStatus.InsufficientRights;
+            }
 
-        return pickedWritableFileFactory.Create(selectedFile);
+            long length = await file.GetLengthAsync();
+            await using Stream stream = await file.OpenWriteAsync();
+            await OverwriteAsync(stream, length);
+
+            // A plain FlushAsync only clears managed/OS buffers - for a genuine wipe of a file we don't
+            // control, force the random overwriting to physical storage before it's renamed and deleted.
+            if (stream is FileStream fileStream)
+            {
+                fileStream.Flush(true);
+            }
+
+            await file.RenameIfPossibleAsync(Path.GetRandomFileName());
+            await file.DeleteAsync();
+
+            return FileWipeStatus.Succeeded;
+        });
     }
 
-    public override async Task<bool> CanViewFileAsync(DecryptedFileInfo file)
+    public async Task OverwriteAsync(Stream stream, long length)
     {
-        if (!file.ContentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase))
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(81920);
+        try
         {
-            return false;
+            long remaining = length;
+            while (remaining > 0)
+            {
+                int toWrite = (int)Math.Min(buffer.Length, remaining);
+                RandomNumberGenerator.Fill(buffer.AsSpan(0, toWrite));
+                await stream.WriteAsync(buffer.AsMemory(0, toWrite));
+                remaining -= toWrite;
+            }
+
+            await stream.FlushAsync();
         }
-
-        StorageFile storageFile = await StorageFile.GetFileFromPathAsync(file.FilePath);
-        LaunchQuerySupportStatus status = await Launcher.QueryFileSupportAsync(storageFile);
-
-        return status == LaunchQuerySupportStatus.Available;
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
     }
 }

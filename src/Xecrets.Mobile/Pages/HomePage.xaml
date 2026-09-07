@@ -31,6 +31,7 @@
              xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
              xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
              xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
+             xmlns:texts="clr-namespace:Xecrets.Texts;assembly=Xecrets.Texts"
              x:Class="Xecrets.Mobile.Pages.HomePage"
              x:DataType="pageModels:HomePageModel">
     <ContentPage.Resources>
@@ -49,33 +50,39 @@
                     <Grid RowDefinitions="Auto,Auto">
                         <Grid x:Name="ContentBody" Grid.Row="1" Padding="{StaticResource PageInformationBodyPadding}">
                             <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
-                            <Label Text="{x:Static modelUtilities:MobileTexts.HomeContentTitle}"
-                                   HorizontalOptions="Center"
-                                   Style="{StaticResource Title1}" />
-                            <controls:PageMessages MessageText="{Binding MessageText}"
-                                                   StatusText="{Binding StatusText}" />
-                            <VerticalStackLayout x:Name="ActionButtonStack"
-                                                 HorizontalOptions="Center"
-                                                 Spacing="{StaticResource LayoutSpacing}">
-                                <Button Text="{x:Static modelUtilities:MobileTexts.ButtonDecrypt}"
-                                        Command="{Binding DecryptCommand}" />
-                                <Button Text="{x:Static modelUtilities:MobileTexts.ButtonEncrypt}"
-                                        Command="{Binding EncryptCommand}" />
-                                <BoxView HeightRequest="1"
-                                         HorizontalOptions="Fill"
-                                         Margin="0,8"
-                                         Opacity="0.35" />
-                                <Button Text="{x:Static modelUtilities:MobileTexts.ButtonDecryptAs}"
-                                        Command="{Binding DecryptAsCommand}" />
-                                <Button Text="{x:Static modelUtilities:MobileTexts.ButtonEncryptAs}"
-                                        Command="{Binding EncryptAsCommand}" />
+                                <Label Text="{x:Static modelUtilities:MobileTexts.HomeContentTitle}"
+                                       HorizontalOptions="Center"
+                                       Style="{StaticResource Title1}" />
+                                <controls:PageMessages MessageText="{Binding MessageText}"
+                                                       StatusText="{Binding StatusText}" />
+                                <VerticalStackLayout x:Name="ActionButtonStack"
+                                                     HorizontalOptions="Center"
+                                                     Spacing="{StaticResource LayoutSpacing}">
+                                    <Button Text="{x:Static modelUtilities:MobileTexts.ButtonDecrypt}"
+                                            Command="{Binding DecryptCommand}" />
+                                    <Button Text="{x:Static modelUtilities:MobileTexts.ButtonEncrypt}"
+                                            Command="{Binding EncryptCommand}" />
                                     <BoxView HeightRequest="1"
-                                         HorizontalOptions="Fill"
-                                         Margin="0,8"
-                                         Opacity="0.35" />
+                                             HorizontalOptions="Fill"
+                                             Margin="0,8"
+                                             Opacity="0.35" />
+                                    <Button Text="{x:Static modelUtilities:MobileTexts.ButtonDecryptAs}"
+                                            Command="{Binding DecryptAsCommand}" />
+                                    <Button Text="{x:Static modelUtilities:MobileTexts.ButtonEncryptAs}"
+                                            Command="{Binding EncryptAsCommand}" />
+                                    <BoxView HeightRequest="1"
+                                             HorizontalOptions="Fill"
+                                             Margin="0,8"
+                                             Opacity="0.35" />
                                     <Button Text="{x:Static modelUtilities:MobileTexts.ButtonEncryptToShare}"
-                                        Command="{Binding EncryptToShareCommand}" />
-                            </VerticalStackLayout>
+                                            Command="{Binding EncryptToShareCommand}" />
+                                    <BoxView HeightRequest="1"
+                                             HorizontalOptions="Fill"
+                                             Margin="0,8"
+                                             Opacity="0.35" />
+                                    <Button Text="{x:Static texts:Texts.ButtonWipe}"
+                                            Command="{Binding WipeCommand}" />
+                                </VerticalStackLayout>
                             </VerticalStackLayout>
                         </Grid>
                         <controls:PageInformationButton Grid.Row="0"

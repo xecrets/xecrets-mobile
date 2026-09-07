@@ -28,50 +28,15 @@
 
 #endregion Copyright and GPL License
 
-using System;
-using System.Runtime.Versioning;
-using System.Threading.Tasks;
-
-using Windows.Storage;
-using Windows.Storage.Pickers;
-using Windows.System;
-
-using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 
-using Xecrets.Mobile.Services;
+namespace Xecrets.Mobile.Models.Abstractions;
 
-namespace Xecrets.Mobile.Platforms.Windows;
-
-[SupportedOSPlatform("windows10.0.19041")]
-public class WindowsFileService(IPickedWritableFileFactory pickedWritableFileFactory) : FileServiceBase
+public interface IFileWiper
 {
-    public override string PlatformId => "windows";
+    Task<FileWipeStatus> WipeAsync(IPickedWritableFile file);
 
-    public override async Task<IPickedWritableFile?> PickWritableFileAsync(string pickerTitle, FilePickerKind pickerKind)
-    {
-        FileOpenPicker picker = new();
-        picker.FileTypeFilter.Add(pickerKind == FilePickerKind.Encrypted ? Extensions.EncryptedExtension : "*");
-        InitializeWithWindow.Initialize(picker, GetWindowHandle());
-        StorageFile? selectedFile = await picker.PickSingleFileAsync();
-        if (selectedFile is null)
-        {
-            return null;
-        }
-
-        return pickedWritableFileFactory.Create(selectedFile);
-    }
-
-    public override async Task<bool> CanViewFileAsync(DecryptedFileInfo file)
-    {
-        if (!file.ContentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        StorageFile storageFile = await StorageFile.GetFileFromPathAsync(file.FilePath);
-        LaunchQuerySupportStatus status = await Launcher.QueryFileSupportAsync(storageFile);
-
-        return status == LaunchQuerySupportStatus.Available;
-    }
+    // The core overwrite, with no rights checks, rename, or delete - callers that own those concerns
+    // (WipeAsync, or a caller wiping its own files directly) build on top of this.
+    Task OverwriteAsync(Stream stream, long length);
 }

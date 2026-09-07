@@ -28,50 +28,32 @@
 
 #endregion Copyright and GPL License
 
-using System;
-using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
-using Windows.Storage;
-using Windows.Storage.Pickers;
-using Windows.System;
+using Foundation;
+
+using UniformTypeIdentifiers;
 
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
-
+using Xecrets.Mobile.Models.Utilities;
 using Xecrets.Mobile.Services;
 
-namespace Xecrets.Mobile.Platforms.Windows;
+namespace Xecrets.Mobile.Platforms.Apple;
 
-[SupportedOSPlatform("windows10.0.19041")]
-public class WindowsFileService(IPickedWritableFileFactory pickedWritableFileFactory) : FileServiceBase
+public abstract class AppleFileServiceBase(IPickedWritableFileFactory pickedWritableFileFactory) : FileServiceBase
 {
-    public override string PlatformId => "windows";
-
     public override async Task<IPickedWritableFile?> PickWritableFileAsync(string pickerTitle, FilePickerKind pickerKind)
     {
-        FileOpenPicker picker = new();
-        picker.FileTypeFilter.Add(pickerKind == FilePickerKind.Encrypted ? Extensions.EncryptedExtension : "*");
-        InitializeWithWindow.Initialize(picker, GetWindowHandle());
-        StorageFile? selectedFile = await picker.PickSingleFileAsync();
-        if (selectedFile is null)
+        UTType contentType = pickerKind == FilePickerKind.Encrypted
+            ? UTType.CreateExportedType(EncryptedFileType.UniformTypeIdentifier)
+            : UTTypes.Data;
+        NSUrl? selectedUrl = await contentType.PickUrlAsync(null);
+        if (selectedUrl is null)
         {
             return null;
         }
 
-        return pickedWritableFileFactory.Create(selectedFile);
-    }
-
-    public override async Task<bool> CanViewFileAsync(DecryptedFileInfo file)
-    {
-        if (!file.ContentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        StorageFile storageFile = await StorageFile.GetFileFromPathAsync(file.FilePath);
-        LaunchQuerySupportStatus status = await Launcher.QueryFileSupportAsync(storageFile);
-
-        return status == LaunchQuerySupportStatus.Available;
+        return pickedWritableFileFactory.Create(selectedUrl);
     }
 }

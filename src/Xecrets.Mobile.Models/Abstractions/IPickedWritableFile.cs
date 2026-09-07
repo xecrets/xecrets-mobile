@@ -28,50 +28,24 @@
 
 #endregion Copyright and GPL License
 
-using System;
-using System.Runtime.Versioning;
-using System.Threading.Tasks;
+namespace Xecrets.Mobile.Models.Abstractions;
 
-using Windows.Storage;
-using Windows.Storage.Pickers;
-using Windows.System;
-
-using Xecrets.Mobile.Models.Abstractions;
-using Xecrets.Mobile.Models.Models;
-
-using Xecrets.Mobile.Services;
-
-namespace Xecrets.Mobile.Platforms.Windows;
-
-[SupportedOSPlatform("windows10.0.19041")]
-public class WindowsFileService(IPickedWritableFileFactory pickedWritableFileFactory) : FileServiceBase
+// A file the user picked via IFileService.PickWritableFileAsync, wrapping whatever platform-specific
+// handle (content Uri, security-scoped NSUrl, StorageFile) is needed to write to and eventually remove it.
+// Each platform provides its own implementation via IPickedWritableFileFactory.
+public interface IPickedWritableFile
 {
-    public override string PlatformId => "windows";
+    Task<T> WithAccessAsync<T>(Func<Task<T>> action);
 
-    public override async Task<IPickedWritableFile?> PickWritableFileAsync(string pickerTitle, FilePickerKind pickerKind)
-    {
-        FileOpenPicker picker = new();
-        picker.FileTypeFilter.Add(pickerKind == FilePickerKind.Encrypted ? Extensions.EncryptedExtension : "*");
-        InitializeWithWindow.Initialize(picker, GetWindowHandle());
-        StorageFile? selectedFile = await picker.PickSingleFileAsync();
-        if (selectedFile is null)
-        {
-            return null;
-        }
+    Task<bool> CanWriteAsync();
 
-        return pickedWritableFileFactory.Create(selectedFile);
-    }
+    Task<bool> CanDeleteAsync();
 
-    public override async Task<bool> CanViewFileAsync(DecryptedFileInfo file)
-    {
-        if (!file.ContentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
+    Task<long> GetLengthAsync();
 
-        StorageFile storageFile = await StorageFile.GetFileFromPathAsync(file.FilePath);
-        LaunchQuerySupportStatus status = await Launcher.QueryFileSupportAsync(storageFile);
+    Task<Stream> OpenWriteAsync();
 
-        return status == LaunchQuerySupportStatus.Available;
-    }
+    Task RenameIfPossibleAsync(string newFileName);
+
+    Task DeleteAsync();
 }

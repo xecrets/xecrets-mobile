@@ -40,5 +40,7 @@ public interface ITransientFileService
 
     string CreateEncryptedOutputPath(string originalFileName);
 
-    void WipeTrackedFiles();
+    Task RunExclusiveAsync(Func<Task> operation);
+
+    Task MaybeWipeTrackedFilesAsync();
 }

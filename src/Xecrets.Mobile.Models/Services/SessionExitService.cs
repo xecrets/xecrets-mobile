@@ -42,7 +42,7 @@ public sealed class SessionExitService(
     public async Task ExitAsync()
     {
         previewService.Current.Clear();
-        transientFileService.WipeTrackedFiles();
+        await transientFileService.MaybeWipeTrackedFilesAsync();
         profileService.SignOut();
 
         AppDestination destination = await profileService.HasProfileAsync()

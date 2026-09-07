@@ -33,45 +33,35 @@ using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
 using Windows.Storage;
-using Windows.Storage.Pickers;
-using Windows.System;
 
 using Xecrets.Mobile.Models.Abstractions;
-using Xecrets.Mobile.Models.Models;
-
-using Xecrets.Mobile.Services;
 
 namespace Xecrets.Mobile.Platforms.Windows;
 
 [SupportedOSPlatform("windows10.0.19041")]
-public class WindowsFileService(IPickedWritableFileFactory pickedWritableFileFactory) : FileServiceBase
+internal sealed class WindowsPickedWritableFile(StorageFile file) : IPickedWritableFile
 {
-    public override string PlatformId => "windows";
+    public Task<T> WithAccessAsync<T>(Func<Task<T>> action) => action();
 
-    public override async Task<IPickedWritableFile?> PickWritableFileAsync(string pickerTitle, FilePickerKind pickerKind)
+    public Task<bool> CanWriteAsync() => Task.FromResult((file.Attributes & FileAttributes.ReadOnly) == 0);
+
+    public Task<bool> CanDeleteAsync() => Task.FromResult((file.Attributes & FileAttributes.ReadOnly) == 0);
+
+    public async Task<long> GetLengthAsync() => (await file.GetBasicPropertiesAsync()).Size;
+
+    public async Task<Stream> OpenWriteAsync() => await file.OpenStreamForWriteAsync();
+
+    public async Task RenameIfPossibleAsync(string newFileName)
     {
-        FileOpenPicker picker = new();
-        picker.FileTypeFilter.Add(pickerKind == FilePickerKind.Encrypted ? Extensions.EncryptedExtension : "*");
-        InitializeWithWindow.Initialize(picker, GetWindowHandle());
-        StorageFile? selectedFile = await picker.PickSingleFileAsync();
-        if (selectedFile is null)
+        try
         {
-            return null;
+            await file.RenameAsync(newFileName, NameCollisionOption.FailIfExists);
         }
-
-        return pickedWritableFileFactory.Create(selectedFile);
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // This is just a best effort
+        }
     }
 
-    public override async Task<bool> CanViewFileAsync(DecryptedFileInfo file)
-    {
-        if (!file.ContentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        StorageFile storageFile = await StorageFile.GetFileFromPathAsync(file.FilePath);
-        LaunchQuerySupportStatus status = await Launcher.QueryFileSupportAsync(storageFile);
-
-        return status == LaunchQuerySupportStatus.Available;
-    }
+    public async Task DeleteAsync() => await file.DeleteAsync(StorageDeleteOption.PermanentDelete);
 }

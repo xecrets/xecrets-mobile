@@ -47,7 +47,7 @@ public static class MobileTexts
 
     // The breadcrumb segments, here and in the translated region below, are joined by
     // BreadcrumbSeparator to form the trail shown at the top of the pages that are shared between
-    // the encrypt and decrypt flows.
+    // the encrypted and decrypt flows.
     public static string BreadcrumbCopyToShare => "Copy to share";
 
     public static string BreadcrumbHome => "Home";
