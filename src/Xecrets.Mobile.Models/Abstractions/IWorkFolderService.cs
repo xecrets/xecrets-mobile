@@ -58,5 +58,5 @@ public interface IWorkFolderService
 
     Task SaveFoldersAsync(IReadOnlyList<WorkFolder> folders);
 
-    Task<WorkFolderFile?> PickFileAsync(WorkFolder folder, FilePickerKind pickerKind);
+    Task<WorkFolderFile?> PickFileAsync(WorkFolder? folder, FilePickerKind pickerKind);
 }

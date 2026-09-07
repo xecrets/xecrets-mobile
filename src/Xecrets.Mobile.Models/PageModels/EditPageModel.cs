@@ -114,7 +114,7 @@ public partial class EditPageModel(
             await using FileStream encrypted = File.Open(state.SourcePath, FileMode.Create, FileAccess.Write, FileShare.Read);
             await coreServices.EncryptAsync(cleartext, encrypted, request);
 
-            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextResultSaved);
+            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextFileEncrypted);
         }
         catch (Exception ex)
         {
@@ -167,7 +167,7 @@ public partial class EditPageModel(
                 IsSaveToLocationVisible = !IsSaveVisible;
             }
 
-            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextResultSaved);
+            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextFileEncrypted);
         }
         catch (OperationCanceledException)
         {

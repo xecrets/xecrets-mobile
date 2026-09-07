@@ -28,6 +28,8 @@
 
 #endregion Copyright and GPL License
 
+using Xecrets.Mobile.Models.Abstractions;
+
 namespace Xecrets.Mobile.Models.Models;
 
 public sealed record WorkFolderFile(
@@ -39,4 +41,5 @@ public sealed record WorkFolderFile(
     Func<Task<Stream>> OpenReadAsync,
     Func<string, Task<bool>> DestinationExistsAsync,
     Func<string, bool, Func<Stream, Task>, Task> WriteDestinationAsync,
-    Func<Task> DeleteAsync);
+    Func<Task> DeleteAsync,
+    IPickedWritableFile WritableFile);

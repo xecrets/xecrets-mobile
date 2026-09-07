@@ -199,7 +199,7 @@ public partial class PreviewPageModel(
                 state.SourcePath);
             if (!result.IsCancelled)
             {
-                await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextResultSaved);
+                await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextFileDecrypted);
             }
         }
         catch (OperationCanceledException)

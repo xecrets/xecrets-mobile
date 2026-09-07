@@ -57,6 +57,8 @@
                                 <VerticalStackLayout x:Name="ActionButtonStack"
                                                      HorizontalOptions="Center"
                                                      Spacing="{StaticResource LayoutSpacing}">
+                                    <Button Text="{x:Static modelUtilities:MobileTexts.WorkFoldersContentTitle}"
+                                            Command="{Binding MyFoldersCommand}" />
                                     <Button Text="{x:Static modelUtilities:MobileTexts.ButtonDecrypt}"
                                             Command="{Binding DecryptCommand}" />
                                     <Button Text="{x:Static modelUtilities:MobileTexts.ButtonEncrypt}"

@@ -97,7 +97,11 @@ public static class MobileTexts
 
     public static string DialogTextConfirmOverwrite => "The file \"{0}\" already exists. Overwrite it?";
 
-    public static string DialogTextResultSaved => "The action has completed.";
+    public static string DialogTextFileEncrypted => "The file was encrypted.";
+
+    public static string DialogTextFileDecrypted => "The file was decrypted.";
+
+    public static string DialogTextFileDeleted => "The file was deleted.";
 
     public static string DialogTextExceptionFormat => "An unexpected error \"{0}\" occurred.";
 
