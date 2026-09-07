@@ -29,7 +29,6 @@
 #endregion Copyright and GPL License
 
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -46,7 +45,29 @@ namespace Xecrets.Mobile.Platforms.Apple;
 
 internal static class AppleIncomingFileHandler
 {
-    public static async Task HandleIncomingUrlAsync(NSUrl url)
+    public static async void HandleIncomingUrl(NSUrl url)
+    {
+        try
+        {
+            await HandleIncomingUrlAsync(url);
+        }
+        catch (Exception ex)
+        {
+            IUserInterfaceService userInterfaceService =
+                MauiProgram.Services!.GetRequiredService<IUserInterfaceService>();
+            if (userInterfaceService.CanProcessIncomingFiles)
+            {
+                await userInterfaceService.DisplayMessageAsync(ex.FormatException());
+            }
+            else
+            {
+                MauiProgram.Services!.GetRequiredService<ICrashLogService>()
+                    .WriteCrashLog("Incoming file exception", ex);
+            }
+        }
+    }
+
+    private static async Task HandleIncomingUrlAsync(NSUrl url)
     {
         ITransientFileService transientFileStore = MauiProgram.Services!.GetRequiredService<ITransientFileService>();
         IIncomingFileService incomingFileService = MauiProgram.Services!.GetRequiredService<IIncomingFileService>();

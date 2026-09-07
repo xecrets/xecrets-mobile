@@ -73,10 +73,19 @@ public partial class EnterPasswordPageModel(
             ErrorText = string.Empty;
 
             bool isWorkFolderRequest = workFolderOperationService.HasPendingPasswordRequest;
-            bool isPrepared = isWorkFolderRequest
+            PreviewPreparationStatus status = isWorkFolderRequest
                 ? await workFolderOperationService.DecryptWithPasswordAsync(Password)
+                    ? PreviewPreparationStatus.Prepared
+                    : PreviewPreparationStatus.WrongPassword
                 : await previewService.PrepareWithPasswordAsync(Password);
-            if (!isPrepared)
+            if (status == PreviewPreparationStatus.Cancelled)
+            {
+                Password = string.Empty;
+                await UserInterfaceService.GoBackAsync();
+                return;
+            }
+
+            if (status == PreviewPreparationStatus.WrongPassword)
             {
                 ErrorText = MobileTexts.DialogTextWrongPasswordOpen;
                 return;

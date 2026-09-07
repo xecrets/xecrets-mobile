@@ -36,8 +36,27 @@ namespace Xecrets.Mobile.Models;
 
 public static class Extensions
 {
-    public static string ToSentenceCase(this string value) =>
-        char.ToUpper(value[0]) + value[1..].ToLower();
+    extension(string value)
+    {
+        public string ToSentenceCase() =>
+            char.ToUpper(value[0]) + value[1..].ToLower();
+
+        public FileStream? OpenReadIfExists()
+        {
+            try
+            {
+                return File.OpenRead(value);
+            }
+            catch (FileNotFoundException)
+            {
+                return null;
+            }
+            catch (DirectoryNotFoundException)
+            {
+                return null;
+            }
+        }
+    }
 
     public static async Task<SaveFileResult> SaveAsAsync(
         this IFileService fileService,

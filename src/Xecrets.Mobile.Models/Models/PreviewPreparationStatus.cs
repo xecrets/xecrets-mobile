@@ -28,19 +28,11 @@
 
 #endregion Copyright and GPL License
 
-using Xecrets.Mobile.Models.Models;
+namespace Xecrets.Mobile.Models.Models;
 
-namespace Xecrets.Mobile.Models.Abstractions;
-
-public interface IPreviewService
+public enum PreviewPreparationStatus
 {
-    IPreviewState Current { get; }
-
-    bool HasPendingPasswordRequest { get; }
-
-    Task<bool> PrepareAsync(DocumentPreviewFile encryptedFile, bool enableTextEditing);
-
-    Task<PreviewPreparationStatus> PrepareImportedAsync(string encryptedFilePath);
-
-    Task<PreviewPreparationStatus> PrepareWithPasswordAsync(string password);
+    Prepared,
+    WrongPassword,
+    Cancelled,
 }

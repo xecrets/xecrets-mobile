@@ -59,90 +59,106 @@ public sealed class PreviewService(
             await inputStream.CopyToAsync(outputStream);
         }
 
-        return await PrepareWithKnownPasswordsAsync(encryptedPath, sourcePath, enableTextEditing);
+        return await PrepareWithKnownPasswordsAsync(encryptedPath, sourcePath, enableTextEditing)
+            == PreviewPreparationStatus.Prepared;
     }
 
-    public async Task<bool> PrepareImportedAsync(string encryptedFilePath)
+    public async Task<PreviewPreparationStatus> PrepareImportedAsync(string encryptedFilePath)
     {
         return await PrepareWithKnownPasswordsAsync(encryptedFilePath, string.Empty, enableTextEditing: false);
     }
 
-    public async Task<bool> PrepareWithPasswordAsync(string password)
+    public async Task<PreviewPreparationStatus> PrepareWithPasswordAsync(string password)
     {
         if (!passwordRequestState.HasPendingRequest)
         {
-            return false;
+            return PreviewPreparationStatus.Cancelled;
         }
 
-        bool isPrepared = await TryPrepareAsync(
+        PreviewPreparationStatus status = await TryPrepareAsync(
             passwordRequestState.EncryptedPath,
             passwordRequestState.SourcePath,
             passwordRequestState.EnableTextEditing,
             new Identity(password, []));
 
-        if (!isPrepared)
+        if (status == PreviewPreparationStatus.WrongPassword)
         {
-            return false;
+            return status;
         }
 
         passwordRequestState.Clear();
+        if (status == PreviewPreparationStatus.Cancelled)
+        {
+            return status;
+        }
+
         await profileService.RecordExtraPasswordUseAsync(password);
-        return true;
+        return status;
     }
 
-    private async Task<bool> PrepareWithKnownPasswordsAsync(
+    private async Task<PreviewPreparationStatus> PrepareWithKnownPasswordsAsync(
         string encryptedPath,
         string sourcePath,
         bool enableTextEditing)
     {
         passwordRequestState.Clear();
 
-        bool isPrepared = await TryPrepareAsync(
+        PreviewPreparationStatus status = await TryPrepareAsync(
             encryptedPath,
             sourcePath,
             enableTextEditing,
             profileService.GetIdentity());
 
-        if (isPrepared)
+        if (status != PreviewPreparationStatus.WrongPassword)
         {
-            return true;
+            return status;
         }
 
         foreach (PasswordUsage extraPassword in profileService.GetExtraPasswords())
         {
-            isPrepared = await TryPrepareAsync(
+            status = await TryPrepareAsync(
                 encryptedPath,
                 sourcePath,
                 enableTextEditing,
                 new Identity(extraPassword.Password, []));
 
-            if (!isPrepared)
+            if (status == PreviewPreparationStatus.Cancelled)
+            {
+                return status;
+            }
+
+            if (status == PreviewPreparationStatus.WrongPassword)
             {
                 continue;
             }
 
             await profileService.RecordExtraPasswordUseAsync(extraPassword.Password);
-            return true;
+            return status;
         }
 
         passwordRequestState.Set(encryptedPath, sourcePath, enableTextEditing);
-        return false;
+        return PreviewPreparationStatus.WrongPassword;
     }
 
-    private async Task<bool> TryPrepareAsync(
+    private async Task<PreviewPreparationStatus> TryPrepareAsync(
         string encryptedPath,
         string sourcePath,
         bool enableTextEditing,
         Identity identity)
     {
-        await using FileStream encryptedStream = File.OpenRead(encryptedPath);
+        await using FileStream? encryptedStream = encryptedPath.OpenReadIfExists();
+        if (encryptedStream is null)
+        {
+            return PreviewPreparationStatus.Cancelled;
+        }
+
         using IDecryptionSession session = await coreServices.OpenDecryptionAsync(
             encryptedStream,
             new DecryptRequest([identity], new Progress<Progress>(_ => { })));
 
         if (!session.IsDecryptable)
         {
-            return false;
+            return PreviewPreparationStatus.WrongPassword;
         }
 
         string decryptedPath = transientFileService.CreateHandoffPath(session.OriginalFileName);
@@ -169,7 +185,7 @@ public sealed class PreviewService(
             previewState.SetExternal(file, sourcePath);
         }
 
-        return true;
+        return PreviewPreparationStatus.Prepared;
     }
 
     private static void TryMakeReadOnly(string filePath)
