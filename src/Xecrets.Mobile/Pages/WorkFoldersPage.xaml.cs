@@ -28,6 +28,8 @@
 
 #endregion Copyright and GPL License
 
+using CommunityToolkit.Mvvm.Input;
+
 using Xecrets.Mobile.Abstractions;
 using Xecrets.Mobile.Models.PageModels;
 using Xecrets.Mobile.Utilities;
@@ -36,8 +38,11 @@ namespace Xecrets.Mobile.Pages;
 
 public partial class WorkFoldersPage
 {
+    public IAsyncRelayCommand LoadCommand { get; }
+
     public WorkFoldersPage(WorkFoldersPageModel model, IPageHeaderService pageHeaderService)
     {
+        LoadCommand = model.LoadCommand;
         InitializeComponent();
         BindingContext = model;
         pageHeaderService.ApplyStandardHeader(this);

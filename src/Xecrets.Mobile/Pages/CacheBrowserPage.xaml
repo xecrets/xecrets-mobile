@@ -26,9 +26,9 @@
 -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:controls="clr-namespace:Microsoft.Maui.Controls;assembly=Microsoft.Maui.Controls"
              xmlns:models="clr-namespace:Xecrets.Mobile.Models.Models;assembly=Xecrets.Mobile.Models"
              xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
+             xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
              xmlns:system="clr-namespace:System;assembly=System.Runtime"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
@@ -37,8 +37,8 @@
              x:DataType="pageModels:CacheBrowserPageModel">
     <ContentPage.Behaviors>
         <toolkit:EventToCommandBehavior x:TypeArguments="system:EventArgs"
-                                        x:DataType="pageModels:CacheBrowserPageModel"
-                                        BindingContext="{Binding BindingContext, Source={x:Reference PageRoot}, x:DataType=controls:ContentPage}"
+                                        x:DataType="pages:CacheBrowserPage"
+                                        BindingContext="{x:Reference PageRoot}"
                                         EventName="Appearing"
                                         Command="{Binding LoadCommand}" />
     </ContentPage.Behaviors>
@@ -74,7 +74,7 @@
                               ColumnSpacing="{StaticResource LayoutSpacing}">
                             <Button Text="{Binding DisplayName}"
                                     HorizontalOptions="Fill"
-                                    Command="{Binding OpenCommand, Source={RelativeSource AncestorType={x:Type pageModels:CacheBrowserPageModel}, Mode=FindAncestorBindingContext}, x:DataType=pageModels:CacheBrowserPageModel}"
+                                    Command="{Binding OpenCommand}"
                                     CommandParameter="{Binding .}" />
                             <Label Grid.Column="1"
                                    Text="{Binding Details}"

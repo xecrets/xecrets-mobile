@@ -65,7 +65,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
         Folders = new WorkFolderCollection(RefreshListDisplayNames);
     }
 
-    public ObservableCollection<WorkFolder> Folders { get; }
+    public ObservableCollection<WorkFolderEntry> Folders { get; }
 
     public string Breadcrumb =>
         string.Join(MobileTexts.BreadcrumbSeparator, MobileTexts.BreadcrumbHome, MobileTexts.BreadcrumbMyFolders);
@@ -91,7 +91,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
             Folders.Clear();
             foreach (WorkFolder folder in await _workFolderService.GetFoldersAsync())
             {
-                Folders.Add(folder);
+                Folders.Add(CreateEntry(folder));
             }
         }
         catch (Exception ex)
@@ -162,8 +162,8 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
             IsBusy = true;
             StatusText = string.Empty;
             await _workFolderService.RemoveFolderAsync(folder);
-            Folders.Remove(folder);
-            await _workFolderService.SaveFoldersAsync(Folders);
+            Folders.Remove(Folders.Single(entry => entry.Folder == folder));
+            await _workFolderService.SaveFoldersAsync([.. Folders.Select(entry => entry.Folder)]);
         }
         catch (Exception ex)
         {
@@ -233,7 +233,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
         _refreshingListDisplayNames = true;
         try
         {
-            WorkFolder[] folders = [.. Folders];
+            WorkFolder[] folders = [.. Folders.Select(entry => entry.Folder)];
             string[] duplicateDisplayNames =
             [
                 .. folders
@@ -292,10 +292,10 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
                 for (int duplicateIndex = 0; duplicateIndex < duplicateIndexes.Length; duplicateIndex++)
                 {
                     int folderIndex = duplicateIndexes[duplicateIndex];
-                    Folders[folderIndex] = folders[folderIndex] with
+                    Folders[folderIndex] = CreateEntry(folders[folderIndex] with
                     {
                         ListDisplayName = proposedDisplayNames[duplicateIndex],
-                    };
+                    });
                 }
             }
         }
@@ -308,7 +308,10 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
     private static string BuildListDisplayName(string[] reversedPathSegments, int pathDepth) =>
         string.Join(Path.DirectorySeparatorChar, reversedPathSegments.Take(pathDepth).Reverse());
 
-    private sealed class WorkFolderCollection(Action changed) : ObservableCollection<WorkFolder>
+    private WorkFolderEntry CreateEntry(WorkFolder folder) =>
+        new(folder, RenameCommand, OpenCommand, RemoveCommand);
+
+    private sealed class WorkFolderCollection(Action changed) : ObservableCollection<WorkFolderEntry>
     {
         protected override void OnCollectionChanged(NotifyCollectionChangedEventArgs e)
         {

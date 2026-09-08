@@ -27,11 +27,11 @@
 -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:controls="clr-namespace:Microsoft.Maui.Controls;assembly=Microsoft.Maui.Controls"
              xmlns:f="clr-namespace:Fonts"
              xmlns:pageControls="clr-namespace:Xecrets.Mobile.Controls"
-             xmlns:models="clr-namespace:Xecrets.Common.Models;assembly=Xecrets.Common"
+             xmlns:mobileModels="clr-namespace:Xecrets.Mobile.Models.Models;assembly=Xecrets.Mobile.Models"
              xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
+             xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
              xmlns:system="clr-namespace:System;assembly=System.Runtime"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
@@ -41,8 +41,8 @@
              x:DataType="pageModels:WorkFoldersPageModel">
     <ContentPage.Behaviors>
         <toolkit:EventToCommandBehavior x:TypeArguments="system:EventArgs"
-                                        x:DataType="pageModels:WorkFoldersPageModel"
-                                        BindingContext="{Binding BindingContext, Source={x:Reference PageRoot}, x:DataType=controls:ContentPage}"
+                                        x:DataType="pages:WorkFoldersPage"
+                                        BindingContext="{x:Reference PageRoot}"
                                         EventName="Appearing"
                                         Command="{Binding LoadCommand}" />
     </ContentPage.Behaviors>
@@ -73,7 +73,7 @@
                                                  Spacing="{StaticResource LayoutSpacing}"
                                                  BindableLayout.ItemsSource="{Binding Folders}">
                             <BindableLayout.ItemTemplate>
-                                <DataTemplate x:DataType="models:WorkFolder">
+                                <DataTemplate x:DataType="mobileModels:WorkFolderEntry">
                                     <!-- Rename leads and remove trails, so that the two are as far apart as
                                          the row allows and neither is a likely mis-tap for the other. -->
                                     <Grid ColumnDefinitions="Auto,*,Auto"
@@ -81,8 +81,8 @@
                                         <ImageButton Grid.Column="0"
                                                      Background="Transparent"
                                                      Padding="8"
-                                                     Command="{Binding RenameCommand, Source={RelativeSource AncestorType={x:Type pageModels:WorkFoldersPageModel}, Mode=FindAncestorBindingContext}, x:DataType=pageModels:WorkFoldersPageModel}"
-                                                     CommandParameter="{Binding .}">
+                                                     Command="{Binding RenameCommand}"
+                                                     CommandParameter="{Binding Folder}">
                                             <ImageButton.Source>
                                                 <FontImageSource Glyph="{x:Static f:FluentUI.edit_28_regular}"
                                                                  FontFamily="{x:Static f:FluentUI.FontFamily}"
@@ -93,13 +93,13 @@
                                         <Button Grid.Column="1"
                                                 Text="{Binding ListDisplayName}"
                                                 LineBreakMode="MiddleTruncation"
-                                                Command="{Binding OpenCommand, Source={RelativeSource AncestorType={x:Type pageModels:WorkFoldersPageModel}, Mode=FindAncestorBindingContext}, x:DataType=pageModels:WorkFoldersPageModel}"
-                                                CommandParameter="{Binding .}" />
+                                                Command="{Binding OpenCommand}"
+                                                CommandParameter="{Binding Folder}" />
                                         <ImageButton Grid.Column="2"
                                                      Background="Transparent"
                                                      Padding="8"
-                                                     Command="{Binding RemoveCommand, Source={RelativeSource AncestorType={x:Type pageModels:WorkFoldersPageModel}, Mode=FindAncestorBindingContext}, x:DataType=pageModels:WorkFoldersPageModel}"
-                                                     CommandParameter="{Binding .}">
+                                                     Command="{Binding RemoveCommand}"
+                                                     CommandParameter="{Binding Folder}">
                                             <ImageButton.Source>
                                                 <FontImageSource Glyph="{x:Static f:FluentUI.delete_28_regular}"
                                                                  FontFamily="{x:Static f:FluentUI.FontFamily}"

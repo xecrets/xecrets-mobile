@@ -28,9 +28,16 @@
 
 #endregion Copyright and GPL License
 
+using CommunityToolkit.Mvvm.Input;
+
 namespace Xecrets.Mobile.Models.Models;
 
-public sealed record CacheBrowserEntry(string FilePath, string DisplayName, bool IsDirectory, long Size)
+public sealed record CacheBrowserEntry(
+    string FilePath,
+    string DisplayName,
+    bool IsDirectory,
+    long Size,
+    IAsyncRelayCommand<CacheBrowserEntry> OpenCommand)
 {
     public string Details => IsDirectory ? "Folder" : $"{Size:N0} bytes";
 }

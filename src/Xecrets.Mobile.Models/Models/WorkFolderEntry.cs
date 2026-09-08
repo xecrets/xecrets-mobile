@@ -30,20 +30,15 @@
 
 using CommunityToolkit.Mvvm.Input;
 
-using Xecrets.Mobile.Abstractions;
-using Xecrets.Mobile.Models.PageModels;
+using Xecrets.Common.Models;
 
-namespace Xecrets.Mobile.Pages;
+namespace Xecrets.Mobile.Models.Models;
 
-public partial class CacheBrowserPage
+public sealed record WorkFolderEntry(
+    WorkFolder Folder,
+    IAsyncRelayCommand<WorkFolder> RenameCommand,
+    IAsyncRelayCommand<WorkFolder> OpenCommand,
+    IAsyncRelayCommand<WorkFolder> RemoveCommand)
 {
-    public IAsyncRelayCommand LoadCommand { get; }
-
-    public CacheBrowserPage(CacheBrowserPageModel model, IPageHeaderService pageHeaderService)
-    {
-        LoadCommand = model.LoadCommand;
-        InitializeComponent();
-        BindingContext = model;
-        pageHeaderService.ApplyStandardHeader(this);
-    }
+    public string ListDisplayName => Folder.ListDisplayName;
 }
