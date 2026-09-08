@@ -38,6 +38,7 @@ using Xecrets.Common.Models;
 
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
+using Xecrets.Mobile.Models.Services;
 using Xecrets.Mobile.Models.Utilities;
 using Xecrets.Texts;
 
@@ -46,34 +47,30 @@ namespace Xecrets.Mobile.Models.PageModels;
 public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
 {
     private readonly IWorkFolderService _workFolderService;
-    private readonly IWorkFolderOperationService _operationService;
-    private readonly IFlowContext _flowContext;
-    private WorkFolderOperation _operation;
+    private readonly WorkFolderWorkflow _workflow;
     private bool _refreshingListDisplayNames;
 
     public WorkFoldersPageModel(
         IWorkFolderService workFolderService,
-        IWorkFolderOperationService operationService,
-        IFlowContext flowContext,
+        WorkFolderWorkflow workflow,
         IUserInterfaceService userInterfaceService)
         : base(userInterfaceService)
     {
         _workFolderService = workFolderService;
-        _operationService = operationService;
-        _flowContext = flowContext;
+        _workflow = workflow;
         Folders = new WorkFolderCollection(RefreshListDisplayNames);
     }
 
     public ObservableCollection<WorkFolder> Folders { get; }
 
     public string Breadcrumb =>
-        BreadcrumbFormatter.Format(_flowContext.Origin, _flowContext.Operation, MobileTexts.BreadcrumbMyFolders);
+        string.Join(MobileTexts.BreadcrumbSeparator, MobileTexts.BreadcrumbHome, MobileTexts.BreadcrumbMyFolders);
 
     [ObservableProperty] public partial string MessageText { get; set; } = string.Empty;
 
     [ObservableProperty] public partial string StatusText { get; set; } = string.Empty;
 
-    [ObservableProperty] public partial string Description { get; private set; } = string.Empty;
+    public string Description => MobileTexts.WorkFolderDescription;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(AddCommand))]
@@ -81,12 +78,6 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
     [NotifyCanExecuteChangedFor(nameof(RemoveCommand))]
     [NotifyCanExecuteChangedFor(nameof(RenameCommand))]
     public partial bool IsBusy { get; set; }
-
-    public void Initialize(WorkFolderOperation operation)
-    {
-        _operation = operation;
-        Description = MobileTexts.WorkFolderDescription;
-    }
 
     [RelayCommand]
     private async Task Load()
@@ -112,17 +103,13 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
         {
             IsBusy = true;
             StatusText = string.Empty;
-            WorkFolder? folder = await AddFolderWithRetryAsync();
+            WorkFolder? folder = await _workflow.AddFolderAsync();
             if (folder is null)
             {
                 return;
             }
 
-            if (Folders.All(item => item.Id != folder.Id))
-            {
-                Folders.Insert(0, folder);
-                await _workFolderService.SaveFoldersAsync(Folders);
-            }
+            await Load();
 
             await PickAndTransformAsync(folder);
         }
@@ -217,119 +204,20 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
 
     private async Task PickAndTransformAsync(WorkFolder initialFolder)
     {
-        WorkFolder folder = initialFolder;
-        while (true)
+        WorkFolderFile? file = await _workflow.PickFileAsync(FilePickerKind.Any, initialFolder);
+        await Load();
+        if (file is null)
         {
-            FilePickerKind pickerKind = _operation == WorkFolderOperation.Encrypt
-                ? FilePickerKind.Any
-                : FilePickerKind.Encrypted;
-            WorkFolderFile? file = await _workFolderService.PickFileAsync(folder, pickerKind);
-            if (file is null)
-            {
-                return;
-            }
-
-            WorkFolder? knownLocation = Folders.FirstOrDefault(item => item.Id == file.LocationId);
-            if (knownLocation is not null)
-            {
-                await TransformAsync(file);
-                await MoveFolderToTopAsync(knownLocation);
-                return;
-            }
-
-            if (file.IsInKnownWorkFolder)
-            {
-                WorkFolder discoveredFolder = await _workFolderService.AddDiscoveredFolderAsync(file);
-                Folders.Insert(0, discoveredFolder);
-                await _workFolderService.SaveFoldersAsync(Folders);
-                await TransformAsync(file);
-                return;
-            }
-
-            bool add = await UserInterfaceService.DisplayConfirmationAsync(MobileTexts.DialogTextAddUnknownWorkFolder);
-            if (add)
-            {
-                WorkFolder? addedFolder = await AddFolderWithRetryAsync(file.LocationId);
-                if (addedFolder is null)
-                {
-                    return;
-                }
-
-                if (Folders.All(item => item.Id != addedFolder.Id))
-                {
-                    Folders.Insert(0, addedFolder);
-                    await _workFolderService.SaveFoldersAsync(Folders);
-                }
-
-                folder = addedFolder;
-                continue;
-            }
-
-            return;
-        }
-    }
-
-    private async Task<WorkFolder?> AddFolderWithRetryAsync(string? initialLocationId = null)
-    {
-        while (true)
-        {
-            WorkFolderResult result = await _workFolderService.AddFolderAsync(initialLocationId);
-            if (result.Status == WorkFolderResultStatus.IsValid)
-            {
-                return result.Folder;
-            }
-
-            if (result.Status == WorkFolderResultStatus.Canceled)
-            {
-                return null;
-            }
-
-            string message = result.Status switch
-            {
-                WorkFolderResultStatus.NoAccess => MobileTexts.DialogTextFolderNoAccess,
-                WorkFolderResultStatus.NotFolder => MobileTexts.DialogTextSelectFolderFirst,
-                WorkFolderResultStatus.IsValid => throw new InvalidOperationException("Should never be here."),
-                WorkFolderResultStatus.Canceled => throw new InvalidOperationException("Should never be here."),
-                _ => throw new InvalidOperationException($"Unknown result status {result.Status}."),
-            };
-            await UserInterfaceService.DisplayMessageAsync(message);
-        }
-    }
-
-    private async Task TransformAsync(WorkFolderFile file)
-    {
-        if (_operation == WorkFolderOperation.Encrypt)
-        {
-            if (file.FileName.IsEncrypted())
-            {
-                await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextAlreadyEncrypted);
-                return;
-            }
-
-            await _operationService.EncryptAsync(file);
-            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextResultSaved);
             return;
         }
 
-        if (await _operationService.DecryptWithKnownPasswordsAsync(file))
-        {
-            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextResultSaved);
-            return;
-        }
-
-        await UserInterfaceService.NavigateToAsync(AppDestination.EnterPassword);
+        WorkFolderOperation operation = file.FileName.IsEncrypted()
+            ? WorkFolderOperation.Decrypt
+            : WorkFolderOperation.Encrypt;
+        await _workflow.TransformAsync(file, operation);
     }
 
     private bool CanUseCommand() => !IsBusy;
-    private async Task MoveFolderToTopAsync(WorkFolder folder)
-    {
-        int index = Folders.IndexOf(folder);
-        if (index > 0)
-        {
-            Folders.Move(index, 0);
-            await _workFolderService.SaveFoldersAsync(Folders);
-        }
-    }
 
     private void RefreshListDisplayNames()
     {

@@ -58,7 +58,9 @@ namespace Xecrets.Mobile.Platforms.Windows;
 // process runs with the user's own token, though, so there is no grant to persist in the first place: a plain
 // path is all that is needed to regain access on a later run, which is what WorkFolderStorage keeps in preferences.
 [SupportedOSPlatform("windows10.0.19041")]
-public sealed class WindowsWorkFolderService(WorkFolderStorage storage) : IWorkFolderService
+public sealed class WindowsWorkFolderService(
+    WorkFolderStorage storage,
+    IPickedWritableFileFactory pickedWritableFileFactory) : IWorkFolderService
 {
     public IReadOnlyList<string> GetPathSegments(WorkFolder folder) => WorkFolderStorage.BuildPathSegments(
         folder.Id,
@@ -111,11 +113,11 @@ public sealed class WindowsWorkFolderService(WorkFolderStorage storage) : IWorkF
 
     public Task SaveFoldersAsync(IReadOnlyList<WorkFolder> folders) => storage.SaveFoldersAsync(folders);
 
-    public async Task<WorkFolderFile?> PickFileAsync(WorkFolder folder, FilePickerKind pickerKind)
+    public async Task<WorkFolderFile?> PickFileAsync(WorkFolder? folder, FilePickerKind pickerKind)
     {
         FileOpenPicker picker = new()
         {
-            SettingsIdentifier = CreateSettingsIdentifier(folder.Id),
+            SettingsIdentifier = folder is null ? string.Empty : CreateSettingsIdentifier(folder.Id),
         };
         picker.FileTypeFilter.Add(pickerKind == FilePickerKind.Encrypted ? Extensions.EncryptedExtension : "*");
         InitializeWithWindow.Initialize(picker, GetWindowHandle());
@@ -140,7 +142,8 @@ public sealed class WindowsWorkFolderService(WorkFolderStorage storage) : IWorkF
             async () => await file.OpenStreamForReadAsync(),
             async name => await location.TryGetItemAsync(name) is not null,
             (name, overwrite, writer) => WriteFileAsync(location, name, overwrite, writer),
-            async () => await file.DeleteAsync(StorageDeleteOption.PermanentDelete));
+            async () => await file.DeleteAsync(StorageDeleteOption.PermanentDelete),
+            pickedWritableFileFactory.Create(file));
     }
 
     private static async Task ProbeAsync(StorageFolder folder)

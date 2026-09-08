@@ -114,7 +114,7 @@
                             </VerticalStackLayout>
                         </Grid>
                         <ImageButton Grid.Row="0"
-                                     HorizontalOptions="End"
+                                     HorizontalOptions="Start"
                                      VerticalOptions="Start"
                                      Background="Transparent"
                                      Padding="8"

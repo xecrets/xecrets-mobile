@@ -98,6 +98,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<SessionExitService>();
         builder.Services.AddSingleton<ICrashTestService, CrashTestService>();
         builder.Services.AddSingleton<IWorkFolderOperationService, WorkFolderOperationService>();
+        builder.Services.AddSingleton<WorkFolderWorkflow>();
         builder.Services.AddSingleton<WorkFolderStorage>();
         builder.Services.AddSingleton(CrashLog);
         builder.Services.AddSingleton<IBuildInformation>(buildInformation);

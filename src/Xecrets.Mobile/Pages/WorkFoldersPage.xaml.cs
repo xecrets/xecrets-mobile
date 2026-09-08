@@ -28,30 +28,19 @@
 
 #endregion Copyright and GPL License
 
-using System.Collections.Generic;
-
-using Microsoft.Maui.Controls;
-
 using Xecrets.Mobile.Abstractions;
-using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.PageModels;
 using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
-public partial class WorkFoldersPage : IQueryAttributable
+public partial class WorkFoldersPage
 {
     public WorkFoldersPage(WorkFoldersPageModel model, IPageHeaderService pageHeaderService)
     {
         InitializeComponent();
         BindingContext = model;
         pageHeaderService.ApplyStandardHeader(this);
-    }
-
-    public void ApplyQueryAttributes(IDictionary<string, object> query)
-    {
-        ((WorkFoldersPageModel)BindingContext).Initialize(
-            (WorkFolderOperation)query[nameof(NavigationParameter.Payload)]);
     }
 
     protected override void OnSizeAllocated(double width, double height)

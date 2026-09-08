@@ -43,6 +43,7 @@ public partial class HomePageModel(
     IProfileService profileService,
     IFileService fileService,
     IFileWiper fileWiper,
+    WorkFolderWorkflow workFolderWorkflow,
     IPreviewService previewService,
     IEncryptionPreparationService encryptionPreparationService,
     ICrashTestService crashTestService,
@@ -61,21 +62,16 @@ public partial class HomePageModel(
     public partial string StatusText { get; set; } = string.Empty;
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(EncryptCommand))]
+    [NotifyCanExecuteChangedFor(nameof(MyFoldersCommand))]
     [NotifyCanExecuteChangedFor(nameof(EncryptAsCommand))]
     [NotifyCanExecuteChangedFor(nameof(EncryptToShareCommand))]
-    [NotifyCanExecuteChangedFor(nameof(DecryptCommand))]
     [NotifyCanExecuteChangedFor(nameof(DecryptAsCommand))]
     [NotifyCanExecuteChangedFor(nameof(WipeCommand))]
     [NotifyCanExecuteChangedFor(nameof(SignOutCommand))]
     public partial bool IsBusy { get; set; }
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private Task Encrypt()
-    {
-        flowContext.Begin(FlowOrigin.Navigated, WorkFolderOperation.Encrypt);
-        return UserInterfaceService.NavigateToAsync(AppDestination.WorkFolders, WorkFolderOperation.Encrypt);
-    }
+    private Task MyFoldersAsync() => UserInterfaceService.NavigateToAsync(AppDestination.WorkFolders);
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private async Task EncryptAs()
@@ -127,13 +123,6 @@ public partial class HomePageModel(
     }
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private Task Decrypt()
-    {
-        flowContext.Begin(FlowOrigin.Navigated, WorkFolderOperation.Decrypt);
-        return UserInterfaceService.NavigateToAsync(AppDestination.WorkFolders, WorkFolderOperation.Decrypt);
-    }
-
-    [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private async Task DecryptAs()
     {
         flowContext.Begin(FlowOrigin.Navigated, WorkFolderOperation.Decrypt);
@@ -182,22 +171,20 @@ public partial class HomePageModel(
             IsBusy = true;
             StatusText = string.Empty;
 
-            IPickedWritableFile? file = await fileService.PickWritableFileAsync(
-                MobileTexts.DialogTitleSelectFilesToWipe,
-                FilePickerKind.Any);
+            WorkFolderFile? file = await workFolderWorkflow.PickFileAsync(FilePickerKind.Any);
             if (file is null || !await UserInterfaceService.DisplayConfirmationAsync(MobileTexts.MessageTextConfirmWipe))
             {
                 return;
             }
 
-            FileWipeStatus status = await fileWiper.WipeAsync(file);
+            FileWipeStatus status = await fileWiper.WipeAsync(file.WritableFile);
             if (status == FileWipeStatus.InsufficientRights)
             {
                 await UserInterfaceService.DisplayMessageAsync(MobileTexts.DialogTextInsufficientRights);
                 return;
             }
 
-            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextResultSaved);
+            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextFileDeleted);
         }
         catch (OperationCanceledException)
         {

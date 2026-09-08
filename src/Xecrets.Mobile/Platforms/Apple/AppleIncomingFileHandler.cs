@@ -54,17 +54,8 @@ internal static class AppleIncomingFileHandler
         }
         catch (Exception ex)
         {
-            IUserInterfaceService userInterfaceService =
-                MauiProgram.Services!.GetRequiredService<IUserInterfaceService>();
-            if (userInterfaceService.CanProcessIncomingFiles)
-            {
-                await userInterfaceService.DisplayMessageAsync(ex.FormatException());
-            }
-            else
-            {
-                MauiProgram.Services!.GetRequiredService<ICrashLogService>()
-                    .WriteCrashLog("Incoming file exception", ex);
-            }
+            MauiProgram.Services!.GetRequiredService<ICrashLogService>()
+                .WriteCrashLog("Incoming file exception", ex);
         }
     }
 
@@ -78,19 +69,30 @@ internal static class AppleIncomingFileHandler
             return;
         }
 
+        string sourcePath = url.Path ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(sourcePath))
+        {
+            return;
+        }
+
+        if (fileService.IsSelfHandoffReference(sourcePath))
+        {
+            IUserInterfaceService userInterfaceService = MauiProgram.Services!.GetRequiredService<IUserInterfaceService>();
+            await userInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextSelfHandoffRejected);
+            return;
+        }
+
         bool securityScoped = url.StartAccessingSecurityScopedResource();
+        if (!securityScoped)
+        {
+            await incomingFileService.ReceiveMessageAsync(MobileTexts.DialogTextIncomingFileAccessDenied);
+            return;
+        }
+
         try
         {
-            string sourcePath = url.Path ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath))
+            if (!File.Exists(sourcePath))
             {
-                return;
-            }
-
-            if (fileService.IsSelfHandoffReference(sourcePath))
-            {
-                IUserInterfaceService userInterfaceService = MauiProgram.Services!.GetRequiredService<IUserInterfaceService>();
-                await userInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextSelfHandoffRejected);
                 return;
             }
 

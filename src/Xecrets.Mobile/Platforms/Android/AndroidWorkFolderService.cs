@@ -52,7 +52,9 @@ using AndroidUri = Android.Net.Uri;
 
 namespace Xecrets.Mobile.Platforms.Android;
 
-public sealed class AndroidWorkFolderService(WorkFolderStorage storage) : IWorkFolderService
+public sealed class AndroidWorkFolderService(
+    WorkFolderStorage storage,
+    IPickedWritableFileFactory pickedWritableFileFactory) : IWorkFolderService
 {
     private const string _externalStorageAuthority = "com.android.externalstorage.documents";
 
@@ -145,7 +147,7 @@ public sealed class AndroidWorkFolderService(WorkFolderStorage storage) : IWorkF
 
     public Task SaveFoldersAsync(IReadOnlyList<WorkFolder> folders) => storage.SaveFoldersAsync(folders);
 
-    public async Task<WorkFolderFile?> PickFileAsync(WorkFolder folder, FilePickerKind pickerKind)
+    public async Task<WorkFolderFile?> PickFileAsync(WorkFolder? folder, FilePickerKind pickerKind)
     {
         Intent intent = new(Intent.ActionOpenDocument);
         intent.AddCategory(Intent.CategoryOpenable);
@@ -156,7 +158,10 @@ public sealed class AndroidWorkFolderService(WorkFolderStorage storage) : IWorkF
                 Intent.ExtraMimeTypes,
                 [EncryptedFileType.ContentType, "application/octet-stream"]);
         }
-        intent.PutExtra(DocumentsContract.ExtraInitialUri, AndroidUri.Parse(folder.Id));
+        if (folder is not null)
+        {
+            intent.PutExtra(DocumentsContract.ExtraInitialUri, AndroidUri.Parse(folder.Id));
+        }
         intent.AddFlags(ActivityFlags.GrantReadUriPermission | ActivityFlags.GrantWriteUriPermission);
 
         Intent? result = await ((MainActivity)Platform.CurrentActivity!).StartDocumentPickerAsync(intent);
@@ -197,7 +202,8 @@ public sealed class AndroidWorkFolderService(WorkFolderStorage storage) : IWorkF
             () => Task.FromResult<Stream>(ContentResolver.OpenInputStream(accessFileUri)!),
             name => Task.FromResult(FindChild(locationUri, name) is not null),
             (name, overwrite, writer) => WriteDocumentAsync(locationUri, name, overwrite, writer),
-            () => DeleteDocumentAsync(accessFileUri));
+            () => DeleteDocumentAsync(accessFileUri),
+            pickedWritableFileFactory.Create(accessFileUri));
     }
 
     private static async Task<string> ProbeAsync(AndroidUri folderUri)

@@ -95,7 +95,7 @@ public partial class EnterPasswordPageModel(
             if (isWorkFolderRequest)
             {
                 await UserInterfaceService.GoBackAsync();
-                await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextResultSaved);
+                await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextFileDecrypted);
             }
             else
             {

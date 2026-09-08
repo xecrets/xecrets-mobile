@@ -51,7 +51,9 @@ using Xecrets.Mobile.Services;
 
 namespace Xecrets.Mobile.Platforms.Apple;
 
-public sealed class AppleWorkFolderService(WorkFolderStorage storage) : IWorkFolderService
+public sealed class AppleWorkFolderService(
+    WorkFolderStorage storage,
+    IPickedWritableFileFactory pickedWritableFileFactory) : IWorkFolderService
 {
     private readonly Dictionary<string, (NSUrl Location, NSUrl AccessRoot)> _discoveredLocations = [];
 
@@ -143,10 +145,10 @@ public sealed class AppleWorkFolderService(WorkFolderStorage storage) : IWorkFol
 
     public Task SaveFoldersAsync(IReadOnlyList<WorkFolder> folders) => storage.SaveFoldersAsync(folders);
 
-    public async Task<WorkFolderFile?> PickFileAsync(WorkFolder folder, FilePickerKind pickerKind)
+    public async Task<WorkFolderFile?> PickFileAsync(WorkFolder? folder, FilePickerKind pickerKind)
     {
-        NSUrl folderUrl = ResolveGrant(folder.GrantId);
-        bool isAccessing = folderUrl.StartAccessingSecurityScopedResource();
+        NSUrl? folderUrl = folder is null ? null : ResolveGrant(folder.GrantId);
+        bool isAccessing = folderUrl?.StartAccessingSecurityScopedResource() == true;
         NSUrl? fileUrl;
         try
         {
@@ -159,7 +161,7 @@ public sealed class AppleWorkFolderService(WorkFolderStorage storage) : IWorkFol
         {
             if (isAccessing)
             {
-                folderUrl.StopAccessingSecurityScopedResource();
+                folderUrl!.StopAccessingSecurityScopedResource();
             }
         }
 
@@ -197,7 +199,8 @@ public sealed class AppleWorkFolderService(WorkFolderStorage storage) : IWorkFol
                 }
 
                 return Task.CompletedTask;
-            }));
+            }),
+            pickedWritableFileFactory.Create(fileUrl));
     }
 
     /// <summary>

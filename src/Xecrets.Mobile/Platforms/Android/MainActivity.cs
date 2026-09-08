@@ -42,7 +42,6 @@ using AndroidX.Activity.Result.Contract;
 using AndroidUri = Android.Net.Uri;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui;
-using Xecrets.Mobile.Models;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
@@ -119,19 +118,15 @@ public class MainActivity : MauiAppCompatActivity, IActivityResultCallback
         {
             await HandleIncomingIntentCoreAsync(intent);
         }
+        catch (Java.Lang.SecurityException)
+        {
+            await MauiProgram.Services!.GetRequiredService<IIncomingFileService>()
+                .ReceiveMessageAsync(MobileTexts.DialogTextIncomingFileAccessDenied);
+        }
         catch (Exception ex)
         {
-            IUserInterfaceService userInterfaceService =
-                MauiProgram.Services!.GetRequiredService<IUserInterfaceService>();
-            if (userInterfaceService.CanProcessIncomingFiles)
-            {
-                await userInterfaceService.DisplayMessageAsync(ex.FormatException());
-            }
-            else
-            {
-                MauiProgram.Services!.GetRequiredService<ICrashLogService>()
-                    .WriteCrashLog("Incoming file exception", ex);
-            }
+            MauiProgram.Services!.GetRequiredService<ICrashLogService>()
+                .WriteCrashLog("Incoming file exception", ex);
         }
     }
 
