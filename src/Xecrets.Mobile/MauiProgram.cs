@@ -122,6 +122,7 @@ public static class MauiProgram
         builder.Services.AddTransientWithShellRoute<AboutPage, AboutPageModel>("about");
         builder.Services.AddTransientWithShellRoute<ThirdPartyLicensesPage, ThirdPartyLicensesPageModel>("third-party-licenses");
         builder.Services.AddTransientWithShellRoute<DebugPage, DebugPageModel>("debug");
+        builder.Services.AddTransientWithShellRoute<CacheBrowserPage, CacheBrowserPageModel>("cache-browser");
 
         MauiApp app = builder.Build();
         Services = app.Services;

@@ -31,14 +31,33 @@
 using CommunityToolkit.Mvvm.Input;
 
 using Xecrets.Mobile.Models.Abstractions;
+using Xecrets.Mobile.Models.Data;
+using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
 public partial class DebugPageModel(
     ICrashTestService crashTestService,
+    IFileService fileService,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService)
 {
+    [RelayCommand]
+    private Task ViewSettingsJsonAsync()
+    {
+        string filePath = Path.Combine(fileService.AppDataDirectory, MobileDataStore.DataFileName);
+        FileInfo file = new(filePath);
+        return fileService.ViewFileAsync(new DecryptedFileInfo(
+            filePath,
+            MobileDataStore.DataFileName,
+            "text/plain",
+            file.Length,
+            PreviewKind.Text));
+    }
+
+    [RelayCommand]
+    private Task ViewCacheAsync() => UserInterfaceService.NavigateToAsync(AppDestination.CacheBrowser);
+
     [RelayCommand]
     private Task ArmEncryptManaged() =>
         ArmAndReturnAsync(CrashTestOperation.Encrypt, native: false);

@@ -38,15 +38,15 @@ namespace Xecrets.Mobile.Models.Data;
 
 public sealed class MobileDataStore(IFileService fileService, ICrashLogService crashLogService, TimeProvider timeProvider, IProtectedPayload protectedPayload) : IXecretsDataStore
 {
-    private const string _dataFileName = "xecrets-data.json";
+    internal const string DataFileName = "xecrets-data.json";
 
     private const string _extraCredentialsPayloadName = "extraCredentials";
 
     private readonly SemaphoreSlim _access = new(1, 1);
 
-    private string DataPath => Path.Combine(fileService.AppDataDirectory, _dataFileName);
+    private string DataPath => Path.Combine(fileService.AppDataDirectory, DataFileName);
 
-    public async Task<TResult> ReadAsync<TResult>(Func<ApplicationData, TResult> read)
+    private async Task<TResult> ReadAsync<TResult>(Func<ApplicationData, TResult> read)
     {
         await _access.WaitAsync();
         try
@@ -59,7 +59,7 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
         }
     }
 
-    public async Task<string> UpdateAsync(Action<ApplicationData> update)
+    private async Task<string> UpdateAsync(Action<ApplicationData> update)
     {
         await _access.WaitAsync();
         try
@@ -78,7 +78,7 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
     public async Task<IPersistentData<ApplicationSettings>> OpenApplicationSettingsAsync()
     {
         ApplicationSettings settings = await ReadAsync(document => document.ApplicationSettings);
-        return new PersistentData<ApplicationSettings>(settings, async (ApplicationSettings value) =>
+        return new PersistentData<ApplicationSettings>(settings, async value =>
             {
                 string serialized = await UpdateAsync(document => document.ApplicationSettings = value);
                 return serialized;

@@ -32,6 +32,15 @@
     <ScrollView>
         <VerticalStackLayout Padding="{StaticResource LayoutPadding}"
                              Spacing="{StaticResource LayoutSpacing}">
+            <Border Style="{StaticResource CardStyle}">
+                <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
+                    <Button Text="View Settings JSON"
+                            Command="{Binding ViewSettingsJsonCommand}" />
+                    <Button Text="View Cache"
+                            Command="{Binding ViewCacheCommand}" />
+                </VerticalStackLayout>
+            </Border>
+
             <Label Text="Crash testing"
                    HorizontalOptions="Center"
                    Style="{StaticResource Title1}" />

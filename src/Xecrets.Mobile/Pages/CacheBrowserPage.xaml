@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    Xecrets Ez Mobile - Copyright © 2026 Svante Seleborg, All Rights Reserved.
+
+    This code file is part of Xecrets Ez Mobile, an application that uses the Xecrets.Net library, parts of which in turn
+    are derived from AxCrypt as licensed under GPL v3 or later. This code is not derived from AxCrypt. It is separately
+    authored and copyrighted, and licensed only as follows unless explicitly licensed otherwise.
+
+    Xecrets Ez Mobile is free software: you can redistribute it and/or modify it under the terms of the GNU General
+    Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+    later version.
+
+    No additional permission is granted beyond that license. If you incorporate this code into a larger work and
+    distribute that work to others, you are responsible for complying with the GNU General Public License version 3 or
+    later. See https://www.gnu.org/licenses/ for more information.
+
+    Xecrets Ez Mobile is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+    implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+    details.
+
+    You should have received a copy of the GNU General Public License along with Xecrets Ez Mobile. If not, see
+    <https://www.gnu.org/licenses/>.
+
+    The source repository can be found at https://github.com/xecrets/xecrets-mobile please go there for more information,
+    suggestions and contributions. You may also visit https://www.axantum.com for more information about the author.
+-->
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:Microsoft.Maui.Controls;assembly=Microsoft.Maui.Controls"
+             xmlns:models="clr-namespace:Xecrets.Mobile.Models.Models;assembly=Xecrets.Mobile.Models"
+             xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
+             xmlns:system="clr-namespace:System;assembly=System.Runtime"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
+             x:Class="Xecrets.Mobile.Pages.CacheBrowserPage"
+             x:Name="PageRoot"
+             x:DataType="pageModels:CacheBrowserPageModel">
+    <ContentPage.Behaviors>
+        <toolkit:EventToCommandBehavior x:TypeArguments="system:EventArgs"
+                                        x:DataType="pageModels:CacheBrowserPageModel"
+                                        BindingContext="{Binding BindingContext, Source={x:Reference PageRoot}, x:DataType=controls:ContentPage}"
+                                        EventName="Appearing"
+                                        Command="{Binding LoadCommand}" />
+    </ContentPage.Behaviors>
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <utilities:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+    <ScrollView>
+        <VerticalStackLayout Padding="{StaticResource LayoutPadding}"
+                             Spacing="{StaticResource LayoutSpacing}">
+            <Label Text="Cache"
+                   HorizontalOptions="Center"
+                   Style="{StaticResource Title1}" />
+            <Label Text="{Binding CurrentPath}"
+                   Style="{StaticResource Body2}" />
+            <Grid ColumnDefinitions="*,*"
+                  ColumnSpacing="{StaticResource LayoutSpacing}">
+                <Button Text="Up"
+                        Command="{Binding UpCommand}" />
+                <Button Grid.Column="1"
+                        Text="Refresh"
+                        Command="{Binding LoadCommand}" />
+            </Grid>
+            <Label Text="{Binding StatusText}"
+                   IsVisible="{Binding StatusText, Converter={StaticResource StringNotEmptyConverter}}"
+                   Style="{StaticResource Body2}" />
+            <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}"
+                                 BindableLayout.ItemsSource="{Binding Entries}">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate x:DataType="models:CacheBrowserEntry">
+                        <Grid ColumnDefinitions="*,Auto"
+                              ColumnSpacing="{StaticResource LayoutSpacing}">
+                            <Button Text="{Binding DisplayName}"
+                                    HorizontalOptions="Fill"
+                                    Command="{Binding OpenCommand, Source={RelativeSource AncestorType={x:Type pageModels:CacheBrowserPageModel}, Mode=FindAncestorBindingContext}, x:DataType=pageModels:CacheBrowserPageModel}"
+                                    CommandParameter="{Binding .}" />
+                            <Label Grid.Column="1"
+                                   Text="{Binding Details}"
+                                   VerticalOptions="Center"
+                                   Style="{StaticResource Body2}" />
+                        </Grid>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

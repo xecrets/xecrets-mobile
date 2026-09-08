@@ -125,6 +125,7 @@ public class DefaultUserInterfaceService(IBuildInformation buildInformation) : I
             AppDestination.About => "about",
             AppDestination.ThirdPartyLicenses => "third-party-licenses",
             AppDestination.Debug => "debug",
+            AppDestination.CacheBrowser => "cache-browser",
             _ => throw new ArgumentOutOfRangeException(nameof(destination), destination, @"Unknown app destination."),
         };
     }

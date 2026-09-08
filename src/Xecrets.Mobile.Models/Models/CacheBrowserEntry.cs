@@ -30,21 +30,7 @@
 
 namespace Xecrets.Mobile.Models.Models;
 
-public enum AppDestination
+public sealed record CacheBrowserEntry(string FilePath, string DisplayName, bool IsDirectory, long Size)
 {
-    Crash,
-    Login,
-    CreateProfile,
-    Home,
-    Preview,
-    View,
-    Edit,
-    EncryptResult,
-    EncryptToShare,
-    WorkFolders,
-    EnterPassword,
-    About,
-    ThirdPartyLicenses,
-    Debug,
-    CacheBrowser,
+    public string Details => IsDirectory ? "Folder" : $"{Size:N0} bytes";
 }

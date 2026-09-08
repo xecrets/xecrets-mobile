@@ -28,23 +28,17 @@
 
 #endregion Copyright and GPL License
 
-namespace Xecrets.Mobile.Models.Models;
+using Xecrets.Mobile.Abstractions;
+using Xecrets.Mobile.Models.PageModels;
 
-public enum AppDestination
+namespace Xecrets.Mobile.Pages;
+
+public partial class CacheBrowserPage
 {
-    Crash,
-    Login,
-    CreateProfile,
-    Home,
-    Preview,
-    View,
-    Edit,
-    EncryptResult,
-    EncryptToShare,
-    WorkFolders,
-    EnterPassword,
-    About,
-    ThirdPartyLicenses,
-    Debug,
-    CacheBrowser,
+    public CacheBrowserPage(CacheBrowserPageModel model, IPageHeaderService pageHeaderService)
+    {
+        InitializeComponent();
+        BindingContext = model;
+        pageHeaderService.ApplyStandardHeader(this);
+    }
 }
