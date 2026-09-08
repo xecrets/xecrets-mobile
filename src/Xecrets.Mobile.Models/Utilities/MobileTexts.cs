@@ -101,6 +101,8 @@ public static class MobileTexts
 
     public static string DialogTextFileDecrypted => "The file was decrypted.";
 
+    public static string DialogTextFileSaved => "The file was saved.";
+
     public static string DialogTextFileDeleted => "The file was deleted.";
 
     public static string DialogTextExceptionFormat => "An unexpected error \"{0}\" occurred.";

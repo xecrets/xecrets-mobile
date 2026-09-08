@@ -19,6 +19,7 @@ decide, rather than doing it and offering to undo it.
 
 ## Building
 
+- Solution files (`.slnx`) are normally stored in the `src` folder under the repository root. Run solution builds from there.
 - Build with `dotnet build` from this project's directory, with no `-f`/`--framework` flag.
 - Do not pass `-f`/`--framework` to `dotnet build` here: it sets `TargetFramework` as a global MSBuild property that leaks into the cross-repo `ProjectReference`s (Xecrets.Core, AxCrypt.*, Xecrets.Texts, Xecrets.Localization, etc.), which are not multi-targeted, causing a spurious `NETSDK1005` "Assets file doesn't have a target for ..." error even right after a clean restore.
 - Plain `dotnet build` builds all configured `TargetFrameworks` (currently `net10.0-android` and `net10.0-windows10.0.19041.0` on Windows) and succeeds.

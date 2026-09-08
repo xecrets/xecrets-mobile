@@ -28,6 +28,7 @@
 
 #endregion Copyright and GPL License
 
+using System;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
@@ -72,9 +73,13 @@ public partial class IOSServices : PlatformServicesBase
                 return;
             }
 
-            handler.PlatformView.TextContentType = purpose == PasswordEntryPurpose.NewPassword
-                ? UITextContentType.NewPassword
-                : UITextContentType.Password;
+            handler.PlatformView.TextContentType = purpose switch
+            {
+                PasswordEntryPurpose.NewPassword => UITextContentType.NewPassword,
+                PasswordEntryPurpose.ExistingPassword => UITextContentType.Password,
+                PasswordEntryPurpose.SharePassword => null!,
+                _ => throw new InvalidOperationException($"Invalid password entry purpose '{purpose}'."),
+            };
         });
     }
 

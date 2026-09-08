@@ -167,7 +167,7 @@ public partial class EditPageModel(
                 IsSaveToLocationVisible = !IsSaveVisible;
             }
 
-            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextFileEncrypted);
+            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextFileSaved);
         }
         catch (OperationCanceledException)
         {

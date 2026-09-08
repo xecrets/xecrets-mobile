@@ -84,7 +84,13 @@ public class AndroidServices : PlatformServicesBase
 
             if (OperatingSystem.IsAndroidVersionAtLeast(26))
             {
-                handler.PlatformView.SetAutofillHints(purpose == PasswordEntryPurpose.NewPassword ? "newPassword" : "password");
+                handler.PlatformView.SetAutofillHints(purpose switch
+                {
+                    PasswordEntryPurpose.NewPassword => "newPassword",
+                    PasswordEntryPurpose.SharePassword => "notApplicable",
+                    PasswordEntryPurpose.ExistingPassword => "password",
+                    _ => throw new InvalidOperationException($"Invalid password entry purpose '{purpose}'."),
+                });
             }
 
             if (OperatingSystem.IsAndroidVersionAtLeast(30))

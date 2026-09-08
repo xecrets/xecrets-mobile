@@ -43,7 +43,7 @@ public partial class EncryptToSharePage
     {
         InitializeComponent();
         BindingContext = model;
-        platformServices.ConfigurePasswordEntry(PasswordEntryControl.Entry, PasswordEntryPurpose.ExistingPassword);
+        platformServices.ConfigurePasswordEntry(PasswordEntryControl.Entry, PasswordEntryPurpose.SharePassword);
         pageHeaderService.ApplyStandardHeader(this);
     }
 

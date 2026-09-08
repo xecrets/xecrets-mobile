@@ -34,4 +34,5 @@ public enum PasswordEntryPurpose
 {
     ExistingPassword,
     NewPassword,
+    SharePassword,
 }
