@@ -63,11 +63,11 @@ public static class MobileTexts
 
     public static string BreadcrumbSeparator => " › ";
 
-    public static string ButtonDecryptAs => "Decrypt and…";
+    public static string ButtonDecryptAs => "Decrypt copy and…";
 
-    public static string ButtonEncryptAs => "Encrypt and…";
+    public static string ButtonEncryptAs => "Encrypt copy and…";
 
-    public static string ButtonEncryptToShare => "Encrypt to… and…";
+    public static string ButtonEncryptToShare => "Encrypt copy with…";
 
     public static string ButtonOpenIn => "Open in…";
 
@@ -117,7 +117,7 @@ public static class MobileTexts
 
     public static string HomeContentTitle => "Actions";
 
-    public static string HomeDescription => "Choose an action. Work with files where they are stored. Work in the app and select what to do next. Encrypt a copy with a separate password.";
+    public static string HomeDescription => "Choose an action. Work with files where they are stored in \"my folders\". Work with copies in the app and select what to do next. Encrypt a copy with a separate password.";
 
     public static string MenuInfo => "Xecrets home";
 
@@ -139,12 +139,9 @@ public static class MobileTexts
 
     #region Translated texts
 
-    // "Decrypt", without the ellipsis of ButtonDecrypt, since a breadcrumb names a place and not an
-    // action that leads on to a selection.
-    public static string BreadcrumbDecrypt => ButtonDecrypt.StripEllipsis();
+    public static string BreadcrumbDecrypt => AppTexts.ButtonDecrypt;
 
-    // "Encrypt", see BreadcrumbDecrypt.
-    public static string BreadcrumbEncrypt => ButtonEncrypt.StripEllipsis();
+    public static string BreadcrumbEncrypt => AppTexts.ButtonEncrypt;
 
     // "Password"
     public static string BreadcrumbPassword => WatermarkPassword;
@@ -152,14 +149,8 @@ public static class MobileTexts
     // "Create"
     public static string ButtonCreate => AppTexts.LabelCreate;
 
-    // "Decrypt…", the ellipsis is kept since a file selection follows.
-    public static string ButtonDecrypt => AppTexts.ButtonDecryptMore;
-
     // "Edit"
     public static string ButtonEdit => AppTexts.ButtonEdit;
-
-    // "Encrypt…", the ellipsis is kept since a file selection follows.
-    public static string ButtonEncrypt => AppTexts.ButtonEncryptMore;
 
     public static string ButtonExit => AppTexts.ButtonExit;
 

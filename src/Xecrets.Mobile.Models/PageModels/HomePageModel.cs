@@ -63,10 +63,8 @@ public partial class HomePageModel(
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(MyFoldersCommand))]
-    [NotifyCanExecuteChangedFor(nameof(EncryptCommand))]
     [NotifyCanExecuteChangedFor(nameof(EncryptAsCommand))]
     [NotifyCanExecuteChangedFor(nameof(EncryptToShareCommand))]
-    [NotifyCanExecuteChangedFor(nameof(DecryptCommand))]
     [NotifyCanExecuteChangedFor(nameof(DecryptAsCommand))]
     [NotifyCanExecuteChangedFor(nameof(WipeCommand))]
     [NotifyCanExecuteChangedFor(nameof(SignOutCommand))]
@@ -74,9 +72,6 @@ public partial class HomePageModel(
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private Task MyFoldersAsync() => UserInterfaceService.NavigateToAsync(AppDestination.WorkFolders);
-
-    [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private Task EncryptAsync() => PickAndTransformAsync(WorkFolderOperation.Encrypt);
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private async Task EncryptAs()
@@ -126,9 +121,6 @@ public partial class HomePageModel(
         flowContext.Begin(FlowOrigin.Navigated, WorkFolderOperation.Encrypt);
         await UserInterfaceService.NavigateToAsync(AppDestination.EncryptToShare);
     }
-
-    [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private Task DecryptAsync() => PickAndTransformAsync(WorkFolderOperation.Decrypt);
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private async Task DecryptAs()
@@ -193,36 +185,6 @@ public partial class HomePageModel(
             }
 
             await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextFileDeleted);
-        }
-        catch (OperationCanceledException)
-        {
-            StatusText = string.Empty;
-        }
-        catch (Exception ex)
-        {
-            StatusText = ex.FormatException();
-        }
-        finally
-        {
-            IsBusy = false;
-        }
-    }
-
-    private async Task PickAndTransformAsync(WorkFolderOperation operation)
-    {
-        try
-        {
-            IsBusy = true;
-            StatusText = string.Empty;
-
-            FilePickerKind pickerKind = operation == WorkFolderOperation.Decrypt
-                ? FilePickerKind.Encrypted
-                : FilePickerKind.Any;
-            WorkFolderFile? file = await workFolderWorkflow.PickFileAsync(pickerKind);
-            if (file is not null)
-            {
-                await workFolderWorkflow.TransformAsync(file, operation);
-            }
         }
         catch (OperationCanceledException)
         {

@@ -7,7 +7,7 @@
                  Padding="8"
                  Clicked="OnClicked">
         <ImageButton.Source>
-            <FontImageSource Glyph="{x:Static f:FluentUI.info_28_regular}"
+            <FontImageSource Glyph="{x:Static f:FluentUI.question_circle_28_regular}"
                              FontFamily="{x:Static f:FluentUI.FontFamily}"
                              Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
                              Size="28" />

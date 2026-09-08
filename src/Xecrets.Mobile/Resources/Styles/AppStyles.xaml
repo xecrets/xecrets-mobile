@@ -34,7 +34,7 @@
 
     <Style x:Key="PageInformationButtonCorner"
            TargetType="controls:PageInformationButton">
-        <Setter Property="HorizontalOptions" Value="Start" />
+        <Setter Property="HorizontalOptions" Value="End" />
         <Setter Property="VerticalOptions" Value="Start" />
         <Setter Property="Margin" Value="0" />
     </Style>
