@@ -85,7 +85,7 @@ public static class MobileTexts
 
     public static string CrashPageTitle => "Sorry, we crashed!";
 
-    public static string WorkFolderDescription => "First add or select a folder, then a file to work with.";
+    public static string WorkFolderDescription => "Select or add a folder, then the file to encrypt or decrypt.";
 
     public static string DialogTextAddUnknownWorkFolder => "Do you want to add this folder?";
 
