@@ -28,15 +28,30 @@
 
 #endregion Copyright and GPL License
 
-using Xecrets.Mobile.Models.Models;
+namespace Xecrets.Mobile.Models.Models;
 
-namespace Xecrets.Mobile.Models.Abstractions;
 
-public interface IIncomingFileService
+public sealed record IncomingFileRequest
 {
-    Task ReceiveAsync(Func<Task<IncomingFileInfo>> receiveFileAsync);
+    public static readonly IncomingFileRequest Empty = new(null, null);
 
-    Task ReceiveMessageAsync(string message);
+    private IncomingFileRequest(IncomingFileInfo? file, string? message)
+    {
+        File = file;
+        Message = message;
+    }
 
-    Task ProcessPendingAsync();
+    public IncomingFileRequest(IncomingFileInfo file)
+    {
+        File = file;
+    }
+
+    public IncomingFileRequest(string message)
+    {
+        Message = message;
+    }
+
+    public readonly IncomingFileInfo? File;
+
+    public readonly string? Message;
 }

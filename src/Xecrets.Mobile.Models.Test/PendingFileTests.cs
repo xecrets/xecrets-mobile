@@ -131,6 +131,21 @@ public sealed class PendingFileTests
         Assert.That(userInterface.Destinations, Is.Empty);
     }
 
+    [Test]
+    public async Task PendingIncomingMessageDisplaysOnceWithoutAuthentication()
+    {
+        TransientFileService transient = CreateTransientService();
+        TestUserInterfaceService userInterface = new() { CanReceiveIncomingFiles = true };
+        IncomingFileService incoming = new(new TestProfileService(), transient, null!, null!, null!, userInterface);
+
+        await incoming.ReceiveMessageAsync(MobileTexts.DialogTextIncomingFileAccessDenied);
+        await incoming.ProcessPendingAsync();
+        await incoming.ProcessPendingAsync();
+
+        Assert.That(userInterface.Messages, Is.EqualTo(new[] { MobileTexts.DialogTextIncomingFileAccessDenied }));
+        Assert.That(userInterface.Destinations, Is.Empty);
+    }
+
     [TestCase("input.txt", AppDestination.EncryptResult)]
     [TestCase("input.axx", AppDestination.Preview)]
     public async Task ExistingIncomingFileProcessesAfterSignIn(string name, AppDestination destination)

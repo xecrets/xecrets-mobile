@@ -43,40 +43,49 @@ public sealed class IncomingFileService(
     IUserInterfaceService userInterfaceService)
     : IIncomingFileService
 {
-    private IncomingFileInfo? _pendingFile;
+    private IncomingFileRequest _pendingRequest = IncomingFileRequest.Empty;
 
     public Task ReceiveAsync(Func<Task<IncomingFileInfo>> receiveFileAsync)
         => transientFileService.RunExclusiveAsync(() => userInterfaceService.InvokeOnMainThreadAsync(async () =>
         {
-            if (_pendingFile is not null || !userInterfaceService.CanReceiveIncomingFiles)
+            if (_pendingRequest != IncomingFileRequest.Empty || !userInterfaceService.CanReceiveIncomingFiles)
             {
                 return;
             }
 
-            _pendingFile = await receiveFileAsync();
+            _pendingRequest = new IncomingFileRequest(await receiveFileAsync());
             if (userInterfaceService.CanProcessIncomingFiles)
             {
                 await ProcessPendingCoreAsync();
             }
         }));
 
+    public Task ReceiveMessageAsync(string message)
+        => transientFileService.RunExclusiveAsync(() => userInterfaceService.InvokeOnMainThreadAsync(async () =>
+        {
+            _pendingRequest = new IncomingFileRequest(message);
+            await ProcessPendingCoreAsync();
+        }));
+
     public Task ProcessPendingAsync() => transientFileService.RunExclusiveAsync(ProcessPendingCoreAsync);
 
     private async Task ProcessPendingCoreAsync()
     {
-        if (_pendingFile is null)
+        if (_pendingRequest.Message is not null && userInterfaceService.IsShellAvailable)
+        {
+            await userInterfaceService.DisplayMessageAsync(_pendingRequest.Message);
+            _pendingRequest = IncomingFileRequest.Empty;
+            return;
+        }
+
+        if (_pendingRequest.File is null)
         {
             return;
         }
 
-        if (!File.Exists(_pendingFile.FilePath))
+        if (!File.Exists(_pendingRequest.File.FilePath))
         {
-            _pendingFile = null;
-            return;
-        }
-
-        if (!userInterfaceService.IsShellAvailable)
-        {
+            _pendingRequest = IncomingFileRequest.Empty;
             return;
         }
 
@@ -86,8 +95,8 @@ public sealed class IncomingFileService(
             return;
         }
 
-        IncomingFileInfo file = _pendingFile;
-        _pendingFile = null;
+        IncomingFileInfo file = _pendingRequest.File;
+        _pendingRequest = IncomingFileRequest.Empty;
         await HandleAuthenticatedAsync(file);
     }
 

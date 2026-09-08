@@ -50,13 +50,12 @@ public partial class StartupPageModel(
         ? TimeSpan.FromSeconds(2)
         : TimeSpan.FromSeconds(1);
 
-    [ObservableProperty]
-    private partial bool IsBusy { get; set; }
+    private bool _isNavigating;
 
     [RelayCommand]
     private async Task Initialize()
     {
-        if (IsBusy)
+        if (_isNavigating)
         {
             return;
         }
@@ -65,7 +64,7 @@ public partial class StartupPageModel(
 
         try
         {
-            IsBusy = true;
+            _isNavigating = true;
 
             if (crashLogService.HasPendingCrashLog)
             {
@@ -77,33 +76,35 @@ public partial class StartupPageModel(
         }
         finally
         {
-            IsBusy = false;
+            _isNavigating = false;
         }
     }
 
     [RelayCommand]
     private async Task ContinueAfterCrash()
     {
+        if (_isNavigating)
+        {
+            return;
+        }
+
         try
         {
-            IsBusy = true;
+            _isNavigating = true;
             await NavigateToNormalStartAsync(null);
         }
         finally
         {
-            IsBusy = false;
+            _isNavigating = false;
         }
     }
 
     private async Task NavigateToNormalStartAsync(long? startTimestamp)
     {
         AppDestination destination;
-        bool shouldProcessPendingFiles = false;
-
         if (profileService.IsAuthenticated)
         {
             destination = AppDestination.Home;
-            shouldProcessPendingFiles = true;
         }
         else
         {
@@ -117,10 +118,7 @@ public partial class StartupPageModel(
 
         await userInterfaceService.NavigateToAsync(destination);
 
-        if (shouldProcessPendingFiles)
-        {
-            await incomingFileService.ProcessPendingAsync();
-        }
+        await incomingFileService.ProcessPendingAsync();
     }
 
     private async Task DelayUntilMinimumStartupDurationAsync(long startTimestamp)

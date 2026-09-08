@@ -95,6 +95,8 @@ public static class MobileTexts
 
     public static string DialogTextAlreadyEncrypted => "This file is already encrypted.";
 
+    public static string DialogTextIncomingFileAccessDenied => "The app that sent this file did not grant access to it.";
+
     public static string DialogTextConfirmOverwrite => "The file \"{0}\" already exists. Overwrite it?";
 
     public static string DialogTextFileEncrypted => "The file was encrypted.";
