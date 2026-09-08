@@ -32,7 +32,6 @@ using System.Text;
 
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Utilities;
-using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Models.Services;
 
@@ -378,10 +377,6 @@ public static class ContentTypeDetector
             ? PreviewKind.Image
             : contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) ? PreviewKind.Image : PreviewKind.External;
     }
-
-    public static bool IsEncryptedFile(string fileName, string contentType)
-        => fileName.IsEncrypted() ||
-           contentType.Equals(EncryptedFileType.ContentType, StringComparison.OrdinalIgnoreCase);
 
     private static bool LooksLikeTextFile(string filePath)
     {

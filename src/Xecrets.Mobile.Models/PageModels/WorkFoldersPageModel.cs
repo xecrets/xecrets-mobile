@@ -35,6 +35,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 using Xecrets.Common.Models;
+using Xecrets.Core.Abstractions;
 
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
@@ -48,16 +49,19 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
 {
     private readonly IWorkFolderService _workFolderService;
     private readonly WorkFolderWorkflow _workflow;
+    private readonly ICoreServices _coreServices;
     private bool _refreshingListDisplayNames;
 
     public WorkFoldersPageModel(
         IWorkFolderService workFolderService,
         WorkFolderWorkflow workflow,
+        ICoreServices coreServices,
         IUserInterfaceService userInterfaceService)
         : base(userInterfaceService)
     {
         _workFolderService = workFolderService;
         _workflow = workflow;
+        _coreServices = coreServices;
         Folders = new WorkFolderCollection(RefreshListDisplayNames);
     }
 
@@ -211,7 +215,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
             return;
         }
 
-        WorkFolderOperation operation = file.FileName.IsEncrypted()
+        WorkFolderOperation operation = await _coreServices.IsEncryptedAsync(file.OpenReadAsync)
             ? WorkFolderOperation.Decrypt
             : WorkFolderOperation.Encrypt;
         await _workflow.TransformAsync(file, operation);

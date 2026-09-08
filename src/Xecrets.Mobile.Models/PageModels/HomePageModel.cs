@@ -31,6 +31,8 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
+using Xecrets.Core.Abstractions;
+
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
@@ -49,6 +51,7 @@ public partial class HomePageModel(
     ICrashTestService crashTestService,
     SessionExitService sessionExitService,
     IFlowContext flowContext,
+    ICoreServices coreServices,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel
 {
@@ -92,7 +95,7 @@ public partial class HomePageModel(
                 return;
             }
 
-            if (file.FileName.IsEncrypted())
+            if (await coreServices.IsEncryptedAsync(file.OpenReadAsync))
             {
                 await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextAlreadyEncrypted);
                 return;

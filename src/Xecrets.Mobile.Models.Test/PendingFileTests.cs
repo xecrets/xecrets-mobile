@@ -71,7 +71,7 @@ public sealed class PendingFileTests
         TransientFileService transient = CreateTransientService();
         TestUserInterfaceService userInterface = new() { CanReceiveIncomingFiles = true };
         TestProfileService profile = new() { IsAuthenticated = authenticated };
-        IncomingFileService incoming = new(profile, transient, null!, null!, null!, userInterface);
+        IncomingFileService incoming = new(profile, transient, null!, null!, null!, null!, userInterface);
         string path = transient.CreateIncomingPath(name);
         await incoming.ReceiveAsync(async () =>
         {
@@ -96,7 +96,7 @@ public sealed class PendingFileTests
     {
         TransientFileService transient = CreateTransientService();
         TestUserInterfaceService userInterface = new() { CanProcessIncomingFiles = true, CanReceiveIncomingFiles = true };
-        IncomingFileService incoming = new(new TestProfileService(), transient, null!, null!, null!, userInterface);
+        IncomingFileService incoming = new(new TestProfileService(), transient, null!, null!, null!, null!, userInterface);
         int receivedCount = 0;
 
         Task Receive(string name) => incoming.ReceiveAsync(async () =>
@@ -118,7 +118,7 @@ public sealed class PendingFileTests
     {
         TransientFileService transient = CreateTransientService();
         TestUserInterfaceService userInterface = new();
-        IncomingFileService incoming = new(new TestProfileService(), transient, null!, null!, null!, userInterface);
+        IncomingFileService incoming = new(new TestProfileService(), transient, null!, null!, null!, null!, userInterface);
         int receivedCount = 0;
 
         await incoming.ReceiveAsync(() =>
@@ -136,7 +136,7 @@ public sealed class PendingFileTests
     {
         TransientFileService transient = CreateTransientService();
         TestUserInterfaceService userInterface = new() { CanReceiveIncomingFiles = true };
-        IncomingFileService incoming = new(new TestProfileService(), transient, null!, null!, null!, userInterface);
+        IncomingFileService incoming = new(new TestProfileService(), transient, null!, null!, null!, null!, userInterface);
 
         await incoming.ReceiveMessageAsync(MobileTexts.DialogTextIncomingFileAccessDenied);
         await incoming.ProcessPendingAsync();
@@ -146,9 +146,11 @@ public sealed class PendingFileTests
         Assert.That(userInterface.Destinations, Is.Empty);
     }
 
-    [TestCase("input.txt", AppDestination.EncryptResult)]
-    [TestCase("input.axx", AppDestination.Preview)]
-    public async Task ExistingIncomingFileProcessesAfterSignIn(string name, AppDestination destination)
+    [TestCase("input.txt", false, AppDestination.EncryptResult)]
+    [TestCase("input.axx", false, AppDestination.EncryptResult)]
+    [TestCase("input.txt", true, AppDestination.Preview)]
+    [TestCase("input.axx", true, AppDestination.Preview)]
+    public async Task ExistingIncomingFileProcessesAfterSignIn(string name, bool isEncrypted, AppDestination destination)
     {
         TransientFileService transient = CreateTransientService();
         TestUserInterfaceService userInterface = new() { CanProcessIncomingFiles = true, CanReceiveIncomingFiles = true };
@@ -156,11 +158,11 @@ public sealed class PendingFileTests
         TestCoreServices core = new();
         PreviewService preview = new(core, profile, transient, new PreviewState(), new DecryptionPasswordRequestState());
         IncomingFileService incoming = new(profile, transient, preview,
-            new EncryptionPreparationService(profile, transient, core), new FlowContext(), userInterface);
+            new EncryptionPreparationService(profile, transient, core), new FlowContext(), core, userInterface);
         await incoming.ReceiveAsync(async () =>
         {
             string path = transient.CreateIncomingPath(name);
-            await File.WriteAllTextAsync(path, "input");
+            await File.WriteAllBytesAsync(path, isEncrypted ? [0xe0] : [0x00]);
             return new IncomingFileInfo(path, name, "application/octet-stream");
         });
         Assert.That(userInterface.Destinations, Is.EqualTo(new[] { AppDestination.Login }));
@@ -361,6 +363,12 @@ public sealed class PendingFileTests
 
     private sealed class TestCoreServices(Exception? decryptionFailure = null) : ICoreServices
     {
+        public async Task<bool> IsEncryptedAsync(Func<Task<Stream>> openReadAsync)
+        {
+            await using Stream stream = await openReadAsync();
+            return stream.ReadByte() == 0xe0;
+        }
+
         public Task EncryptAsync(Stream cleartext, Stream encrypted, EncryptRequest request) => cleartext.CopyToAsync(encrypted);
         public Task<IDecryptionSession> OpenDecryptionAsync(Stream encrypted, DecryptRequest request) =>
             Task.FromResult<IDecryptionSession>(new TestDecryptionSession(request.Identities[0].Passphrase == "password", decryptionFailure));

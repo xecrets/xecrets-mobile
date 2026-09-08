@@ -28,9 +28,13 @@
 
 #endregion Copyright and GPL License
 
+using System.Diagnostics.CodeAnalysis;
+
 using NUnit.Framework;
 
 using Xecrets.Common.Models;
+using Xecrets.Core.Abstractions;
+using Xecrets.Core.Models;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.PageModels;
@@ -51,7 +55,7 @@ public sealed class WorkFolderWorkflowTests
         folders.Files.Enqueue(first);
         folders.Files.Enqueue(second);
         TestUserInterfaceService userInterface = new() { Confirmation = true };
-        WorkFolderWorkflow workflow = new(folders, null!, null!, userInterface);
+        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, userInterface);
 
         WorkFolderFile? selected = await workflow.PickFileAsync(FilePickerKind.Any);
 
@@ -68,7 +72,7 @@ public sealed class WorkFolderWorkflowTests
         TestWorkFolderService folders = new();
         folders.Files.Enqueue(CreateFile("input.txt", "unknown", false));
         TestUserInterfaceService userInterface = new();
-        WorkFolderWorkflow workflow = new(folders, null!, null!, userInterface);
+        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, userInterface);
 
         Assert.That(await workflow.PickFileAsync(FilePickerKind.Any), Is.Null);
         Assert.That(folders.AddLocations, Is.Empty);
@@ -82,7 +86,7 @@ public sealed class WorkFolderWorkflowTests
         WorkFolderFile file = CreateFile("input.txt", "known/child", true);
         folders.Files.Enqueue(file);
         TestUserInterfaceService userInterface = new();
-        WorkFolderWorkflow workflow = new(folders, null!, null!, userInterface);
+        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, userInterface);
 
         Assert.That(await workflow.PickFileAsync(FilePickerKind.Any), Is.SameAs(file));
         Assert.That(userInterface.ConfirmationCount, Is.Zero);
@@ -90,17 +94,20 @@ public sealed class WorkFolderWorkflowTests
         Assert.That(folders.Folders[0].Id, Is.EqualTo("known/child"));
     }
 
-    [TestCase("input.txt", WorkFolderOperation.Encrypt)]
-    [TestCase("input.axx", WorkFolderOperation.Decrypt)]
-    public async Task MyFoldersSelectsOperationFromFileName(string name, WorkFolderOperation expected)
+    [TestCase("input.txt", false, WorkFolderOperation.Encrypt)]
+    [TestCase("input.axx", false, WorkFolderOperation.Encrypt)]
+    [TestCase("input.txt", true, WorkFolderOperation.Decrypt)]
+    [TestCase("input.axx", true, WorkFolderOperation.Decrypt)]
+    public async Task MyFoldersSelectsOperationFromFileContents(string name, bool isEncrypted, WorkFolderOperation expected)
     {
         TestWorkFolderService folders = new();
-        folders.Files.Enqueue(CreateFile(name, "known", true));
+        folders.Files.Enqueue(CreateFile(name, "known", true, isEncrypted));
         TestOperationService operations = new();
         TestUserInterfaceService userInterface = new();
         FlowContext flow = new();
-        WorkFolderWorkflow workflow = new(folders, operations, flow, userInterface);
-        WorkFoldersPageModel page = new(folders, workflow, userInterface);
+        FileDetectionCoreServices coreServices = new();
+        WorkFolderWorkflow workflow = new(folders, operations, flow, coreServices, userInterface);
+        WorkFoldersPageModel page = new(folders, workflow, coreServices, userInterface);
 
         await page.OpenCommand.ExecuteAsync(folders.Folders[0]);
 
@@ -115,16 +122,16 @@ public sealed class WorkFolderWorkflowTests
     {
         TestOperationService operations = new() { CanDecrypt = false };
         TestUserInterfaceService userInterface = new();
-        WorkFolderWorkflow workflow = new(null!, operations, new FlowContext(), userInterface);
+        WorkFolderWorkflow workflow = new(null!, operations, new FlowContext(), null!, userInterface);
 
         await workflow.TransformAsync(CreateFile("input.axx", "known", true), WorkFolderOperation.Decrypt);
 
         Assert.That(userInterface.Destinations, Is.EqualTo(new[] { AppDestination.EnterPassword }));
     }
 
-    private static WorkFolderFile CreateFile(string name, string location, bool known) =>
+    private static WorkFolderFile CreateFile(string name, string location, bool known, bool isEncrypted = false) =>
         new(name, location, location, "grant", known,
-            () => throw new NotSupportedException(),
+            () => Task.FromResult<Stream>(new MemoryStream(isEncrypted ? [0xe0] : [0x00])),
             _ => throw new NotSupportedException(),
             (_, _, _) => throw new NotSupportedException(),
             () => throw new NotSupportedException(),
@@ -190,6 +197,25 @@ public sealed class WorkFolderWorkflowTests
         }
         public Task<bool> DecryptWithPasswordAsync(string password) => throw new NotSupportedException();
         public void CancelPasswordRequest() => throw new NotSupportedException();
+    }
+
+    private sealed class FileDetectionCoreServices : ICoreServices
+    {
+        public async Task<bool> IsEncryptedAsync(Func<Task<Stream>> openReadAsync)
+        {
+            await using Stream stream = await openReadAsync();
+            return stream.ReadByte() == 0xe0;
+        }
+
+        public Task EncryptAsync(Stream cleartext, Stream encrypted, EncryptRequest request) => throw new NotSupportedException();
+        public Task<IDecryptionSession> OpenDecryptionAsync(Stream encrypted, DecryptRequest request) => throw new NotSupportedException();
+        public Task<KeyPair> CreateKeyPairAsync(string email, string passphrase, DateTimeOffset createdUtc) => throw new NotSupportedException();
+        public bool TryLoadKeyPair(ReadOnlyMemory<byte> encryptedKeyPair, IReadOnlyList<string> passphrases,
+            [NotNullWhen(true)] out LoadedKeyPair? loadedKeyPair) => throw new NotSupportedException();
+        public string ExportPublicKey(PublicKey publicKey) => throw new NotSupportedException();
+        public PublicKey? ImportPublicKey(string serializedPublicKey) => throw new NotSupportedException();
+        public PrivateKeyImportResult ImportPrivateKeys(string serializedAccounts, PrivateKeyImportRequest request) => throw new NotSupportedException();
+        public bool TryParseEmail(string email, [NotNullWhen(true)] out string? address) => throw new NotSupportedException();
     }
 
     private sealed class TestUserInterfaceService : IUserInterfaceService

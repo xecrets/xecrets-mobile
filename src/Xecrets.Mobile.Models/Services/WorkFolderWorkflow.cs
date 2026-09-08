@@ -29,6 +29,7 @@
 #endregion Copyright and GPL License
 
 using Xecrets.Common.Models;
+using Xecrets.Core.Abstractions;
 
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
@@ -41,6 +42,7 @@ public sealed class WorkFolderWorkflow(
     IWorkFolderService workFolderService,
     IWorkFolderOperationService operationService,
     IFlowContext flowContext,
+    ICoreServices coreServices,
     IUserInterfaceService userInterfaceService)
 {
     public async Task<WorkFolderFile?> PickFileAsync(FilePickerKind pickerKind, WorkFolder? initialFolder = null)
@@ -108,7 +110,7 @@ public sealed class WorkFolderWorkflow(
         flowContext.Begin(FlowOrigin.Navigated, operation);
         if (operation == WorkFolderOperation.Encrypt)
         {
-            if (file.FileName.IsEncrypted())
+            if (await coreServices.IsEncryptedAsync(file.OpenReadAsync))
             {
                 await userInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextAlreadyEncrypted);
                 return;

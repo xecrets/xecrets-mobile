@@ -180,7 +180,7 @@ public sealed class TransientFileServiceTests
                 }
             }
         };
-        IncomingFileService incoming = new(new TestProfileService(), transient, null!, null!, null!, userInterface);
+        IncomingFileService incoming = new(new TestProfileService(), transient, null!, null!, null!, null!, userInterface);
         Task processing = incoming.ReceiveAsync(async () =>
         {
             string path = transient.CreateIncomingPath("new.txt");
@@ -219,7 +219,7 @@ public sealed class TransientFileServiceTests
         => new(new TestFileService(_cacheDirectory), new TestFileWiper(overwriteAsync));
 
     private static IncomingFileService CreateIncomingService(ITransientFileService transient)
-        => new(null!, transient, null!, null!, null!, new TestUserInterfaceService { CanReceiveIncomingFiles = true });
+        => new(null!, transient, null!, null!, null!, null!, new TestUserInterfaceService { CanReceiveIncomingFiles = true });
 
     private sealed class TestFileWiper(Func<Stream, long, Task> overwriteAsync) : IFileWiper
     {

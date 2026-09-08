@@ -28,6 +28,8 @@
 
 #endregion Copyright and GPL License
 
+using Xecrets.Core.Abstractions;
+
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Utilities;
@@ -40,6 +42,7 @@ public sealed class IncomingFileService(
     IPreviewService previewService,
     IEncryptionPreparationService encryptionPreparationService,
     IFlowContext flowContext,
+    ICoreServices coreServices,
     IUserInterfaceService userInterfaceService)
     : IIncomingFileService
 {
@@ -102,7 +105,8 @@ public sealed class IncomingFileService(
 
     private async Task HandleAuthenticatedAsync(IncomingFileInfo file)
     {
-        bool isEncrypted = ContentTypeDetector.IsEncryptedFile(file.DisplayName, file.ContentType);
+        bool isEncrypted = await coreServices.IsEncryptedAsync(
+            () => Task.FromResult<Stream>(File.OpenRead(file.FilePath)));
         flowContext.Begin(
             FlowOrigin.ReceivedFile,
             isEncrypted ? WorkFolderOperation.Decrypt : WorkFolderOperation.Encrypt);
