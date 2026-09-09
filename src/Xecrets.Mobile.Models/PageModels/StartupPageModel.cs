@@ -101,15 +101,9 @@ public partial class StartupPageModel(
 
     private async Task NavigateToNormalStartAsync(long? startTimestamp)
     {
-        AppDestination destination;
-        if (profileService.IsAuthenticated)
-        {
-            destination = AppDestination.Home;
-        }
-        else
-        {
-            destination = await profileService.HasProfileAsync() ? AppDestination.Login : AppDestination.CreateProfile;
-        }
+        AppDestination destination = profileService.IsAuthenticated
+            ? AppDestination.Home
+            : await profileService.HasProfileAsync() ? AppDestination.Login : AppDestination.CreateProfile;
 
         if (startTimestamp.HasValue)
         {

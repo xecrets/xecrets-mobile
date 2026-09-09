@@ -39,20 +39,22 @@ namespace Xecrets.Mobile.Models.PageModels;
 public partial class DebugPageModel(
     ICrashTestService crashTestService,
     IFileService fileService,
+    IPreviewService previewService,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService)
 {
     [RelayCommand]
-    private Task ViewSettingsJsonAsync()
+    private async Task ViewSettingsJsonAsync()
     {
         string filePath = Path.Combine(fileService.AppDataDirectory, MobileDataStore.DataFileName);
         FileInfo file = new(filePath);
-        return fileService.ViewFileAsync(new DecryptedFileInfo(
+        await previewService.PrepareTextAsync(new DecryptedFileInfo(
             filePath,
             MobileDataStore.DataFileName,
             "text/plain",
             file.Length,
-            PreviewKind.Text));
+            PreviewKind.Text), enableTextEditing: false);
+        await UserInterfaceService.NavigateToAsync(AppDestination.View);
     }
 
     [RelayCommand]

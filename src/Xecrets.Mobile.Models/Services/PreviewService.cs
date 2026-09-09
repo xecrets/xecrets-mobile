@@ -48,6 +48,12 @@ public sealed class PreviewService(
 
     public bool HasPendingPasswordRequest => passwordRequestState.HasPendingRequest;
 
+    public async Task PrepareTextAsync(DecryptedFileInfo file, bool enableTextEditing)
+    {
+        string text = await File.ReadAllTextAsync(file.FilePath);
+        previewState.SetText(file, string.Empty, text, enableTextEditing);
+    }
+
     public async Task<bool> PrepareAsync(DocumentPreviewFile encryptedFile, bool enableTextEditing)
     {
         string sourcePath = encryptedFile.SourcePath;
@@ -177,8 +183,7 @@ public sealed class PreviewService(
         }
         else if (file.Kind == PreviewKind.Text)
         {
-            string text = await File.ReadAllTextAsync(decryptedPath);
-            previewState.SetText(file, sourcePath, text, enableTextEditing);
+            await PrepareTextAsync(file, enableTextEditing);
         }
         else
         {

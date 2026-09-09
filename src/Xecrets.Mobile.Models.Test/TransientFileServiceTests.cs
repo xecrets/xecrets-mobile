@@ -156,6 +156,29 @@ public sealed class TransientFileServiceTests
         await transient.RunExclusiveAsync(() => Task.CompletedTask).WaitAsync(TimeSpan.FromSeconds(5));
     }
 
+    [Test]
+    public async Task WipeClearsUnprotectedCacheEntries()
+    {
+        string unprotectedDirectory = Path.Combine(_cacheDirectory, "legacy-cache");
+        string crashLogDirectory = Path.Combine(_cacheDirectory, "XecretsCrashLogs");
+        string oatDirectory = Path.Combine(_cacheDirectory, "oat_primary");
+        Directory.CreateDirectory(unprotectedDirectory);
+        Directory.CreateDirectory(crashLogDirectory);
+        Directory.CreateDirectory(oatDirectory);
+        await File.WriteAllTextAsync(Path.Combine(_cacheDirectory, "legacy-file"), "legacy");
+        await File.WriteAllTextAsync(Path.Combine(unprotectedDirectory, "legacy-file"), "legacy");
+        await File.WriteAllTextAsync(Path.Combine(crashLogDirectory, "crashlog.txt"), "crash");
+        await File.WriteAllTextAsync(Path.Combine(oatDirectory, "base.art"), "runtime");
+        TransientFileService transient = CreateService((_, _) => Task.CompletedTask);
+
+        await transient.MaybeWipeTrackedFilesAsync();
+
+        Assert.That(File.Exists(Path.Combine(_cacheDirectory, "legacy-file")), Is.False);
+        Assert.That(Directory.Exists(unprotectedDirectory), Is.False);
+        Assert.That(File.Exists(Path.Combine(crashLogDirectory, "crashlog.txt")), Is.True);
+        Assert.That(File.Exists(Path.Combine(oatDirectory, "base.art")), Is.True);
+    }
+
     [TestCase(false, false)]
     [TestCase(false, true)]
     [TestCase(true, false)]

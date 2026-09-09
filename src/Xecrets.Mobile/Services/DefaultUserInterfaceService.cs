@@ -84,7 +84,7 @@ public class DefaultUserInterfaceService(IBuildInformation buildInformation) : I
             MobileTexts.LabelCancel,
             initialValue: initialValue);
 
-    public Task DisplayTransientMessageAsync(string message) =>
+    public virtual Task DisplayTransientMessageAsync(string message) =>
         Toast.Make(message, ToastDuration.Long).Show();
 
     public Task NavigateToAsync(AppDestination destination)

@@ -110,7 +110,7 @@ public sealed class PendingFileTests
         await Task.WhenAll(Receive("first.txt"), Receive("second.txt"));
 
         Assert.That(receivedCount, Is.EqualTo(1));
-        Assert.That(userInterface.Destinations, Is.EqualTo(new[] { AppDestination.Login }));
+        Assert.That(userInterface.Destinations, Is.EqualTo([AppDestination.Login]));
     }
 
     [Test]
@@ -142,7 +142,7 @@ public sealed class PendingFileTests
         await incoming.ProcessPendingAsync();
         await incoming.ProcessPendingAsync();
 
-        Assert.That(userInterface.Messages, Is.EqualTo(new[] { MobileTexts.DialogTextIncomingFileAccessDenied }));
+        Assert.That(userInterface.Messages, Is.EqualTo([MobileTexts.DialogTextIncomingFileAccessDenied]));
         Assert.That(userInterface.Destinations, Is.Empty);
     }
 
@@ -165,13 +165,13 @@ public sealed class PendingFileTests
             await File.WriteAllBytesAsync(path, isEncrypted ? [0xe0] : [0x00]);
             return new IncomingFileInfo(path, name, "application/octet-stream");
         });
-        Assert.That(userInterface.Destinations, Is.EqualTo(new[] { AppDestination.Login }));
+        Assert.That(userInterface.Destinations, Is.EqualTo([AppDestination.Login]));
 
         profile.IsAuthenticated = true;
         await incoming.ProcessPendingAsync();
         await incoming.ProcessPendingAsync();
 
-        Assert.That(userInterface.Destinations, Is.EqualTo(new[] { AppDestination.Login, destination }));
+        Assert.That(userInterface.Destinations, Is.EqualTo([AppDestination.Login, destination]));
         Assert.That(userInterface.Messages, Is.Empty);
     }
 
@@ -240,8 +240,8 @@ public sealed class PendingFileTests
         Assert.That(page.Password, Is.Empty);
         Assert.That(page.ErrorText, Is.Empty);
         Assert.That(state.Text, Is.EqualTo("decrypted"));
-        Assert.That(profile.RecordedPasswords, Is.EqualTo(new[] { "password" }));
-        Assert.That(userInterface.Destinations, Is.EqualTo(new[] { AppDestination.Preview }));
+        Assert.That(profile.RecordedPasswords, Is.EqualTo(["password"]));
+        Assert.That(userInterface.Destinations, Is.EqualTo([AppDestination.Preview]));
     }
 
     [Test]
@@ -304,7 +304,7 @@ public sealed class PendingFileTests
         Assert.That(pendingWhenWiped, Is.False);
         Assert.That(File.Exists(path), Is.False);
         Assert.That(profile.IsAuthenticated, Is.False);
-        Assert.That(userInterface.Destinations, Is.EqualTo(new[] { AppDestination.Login }));
+        Assert.That(userInterface.Destinations, Is.EqualTo([AppDestination.Login]));
         Assert.That(await preview.PrepareWithPasswordAsync("password"), Is.EqualTo(PreviewPreparationStatus.Cancelled));
     }
 

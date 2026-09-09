@@ -31,12 +31,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
 using Android.Content;
 using Android.Content.PM;
+
 using AndroidX.Core.Content;
 
 using Xecrets.Mobile.Models.Abstractions;

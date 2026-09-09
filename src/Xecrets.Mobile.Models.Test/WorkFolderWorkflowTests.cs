@@ -61,7 +61,7 @@ public sealed class WorkFolderWorkflowTests
 
         Assert.That(selected, Is.SameAs(second));
         Assert.That(folders.PickedFolders, Is.EqualTo(new WorkFolder?[] { null, null }));
-        Assert.That(folders.AddLocations, Is.EqualTo(new[] { "unknown" }));
+        Assert.That(folders.AddLocations, Is.EqualTo(["unknown"]));
         Assert.That(userInterface.ConfirmationCount, Is.EqualTo(1));
         Assert.That(userInterface.Destinations, Is.Empty);
     }
@@ -113,7 +113,7 @@ public sealed class WorkFolderWorkflowTests
 
         Assert.That(operations.Operation, Is.EqualTo(expected));
         Assert.That(flow.Operation, Is.EqualTo(expected));
-        Assert.That(folders.PickerKinds, Is.EqualTo(new[] { FilePickerKind.Any }));
+        Assert.That(folders.PickerKinds, Is.EqualTo([FilePickerKind.Any]));
         Assert.That(page.StatusText, Is.Empty);
     }
 
@@ -126,7 +126,7 @@ public sealed class WorkFolderWorkflowTests
 
         await workflow.TransformAsync(CreateFile("input.axx", "known", true), WorkFolderOperation.Decrypt);
 
-        Assert.That(userInterface.Destinations, Is.EqualTo(new[] { AppDestination.EnterPassword }));
+        Assert.That(userInterface.Destinations, Is.EqualTo([AppDestination.EnterPassword]));
     }
 
     private static WorkFolderFile CreateFile(string name, string location, bool known, bool isEncrypted = false) =>

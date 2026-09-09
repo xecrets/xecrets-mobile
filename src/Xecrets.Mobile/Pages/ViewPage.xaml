@@ -44,9 +44,12 @@
                             <FileImageSource File="{Binding ImageFilePath}" />
                         </Image.Source>
                     </Image>
-                    <Label Text="{Binding Text}"
-                           IsVisible="{Binding IsTextVisible}"
-                           Style="{StaticResource Body2}" />
+                    <Editor Text="{Binding Text, Mode=OneWay}"
+                            IsReadOnly="True"
+                            IsVisible="{Binding IsTextVisible}"
+                            AutoSize="TextChanges"
+                            BackgroundColor="Transparent"
+                            FontSize="15" />
                 </VerticalStackLayout>
             </Border>
             <Button Text="{x:Static modelUtilities:MobileTexts.LabelClose}"

@@ -35,6 +35,8 @@ namespace Xecrets.Mobile.Models.Services;
 
 public sealed class TransientFileService(IFileService fileService, IFileWiper fileWiper) : ITransientFileService
 {
+    private static readonly IReadOnlyCollection<string> _protectedCacheDirectoryNames = ["oat_primary", "XecretsCrashLogs"];
+
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     private readonly string _rootDirectory = CreateRootDirectory(fileService);
@@ -92,16 +94,11 @@ public sealed class TransientFileService(IFileService fileService, IFileWiper fi
     }
 
     private async Task WipeTrackedFilesCoreAsync()
-    {
-        if (Directory.Exists(_rootDirectory))
-        {
-            await WipeDirectoryAsync(_rootDirectory);
-        }
-    }
+        => await WipeDirectoryAsync(fileService.CacheDirectory, _protectedCacheDirectoryNames);
 
     // Recursive post-order descent: fully wipe each subdirectory (and try to remove it) before touching
     // this directory's own files, then try to remove this directory once everything under it is gone.
-    private async Task WipeDirectoryAsync(string directory)
+    private async Task WipeDirectoryAsync(string directory, IReadOnlyCollection<string> protectedDirectoryNames)
     {
         string[] subdirectories;
         string[] files;
@@ -119,7 +116,12 @@ public sealed class TransientFileService(IFileService fileService, IFileWiper fi
 
         foreach (string subdirectory in subdirectories)
         {
-            await WipeDirectoryAsync(subdirectory);
+            if (protectedDirectoryNames.Contains(Path.GetFileName(subdirectory), StringComparer.Ordinal))
+            {
+                continue;
+            }
+
+            await WipeDirectoryAsync(subdirectory, []);
         }
 
         foreach (string file in files)
@@ -127,7 +129,10 @@ public sealed class TransientFileService(IFileService fileService, IFileWiper fi
             await TryWipeAsync(file);
         }
 
-        TryDeleteIfEmpty(directory);
+        if (directory != fileService.CacheDirectory)
+        {
+            TryDeleteIfEmpty(directory);
+        }
     }
 
     private async Task TryWipeAsync(string path)

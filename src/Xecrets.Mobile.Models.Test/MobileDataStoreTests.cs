@@ -97,7 +97,7 @@ public sealed class MobileDataStoreTests
 
         IReadOnlyList<UserSummary> users = await _store.GetUsersAsync();
 
-        Assert.That(users.Select(user => user.DisplayName), Is.EqualTo(new[] { "Same", "Same (2)" }));
+        Assert.That(users.Select(user => user.DisplayName), Is.EqualTo(["Same", "Same (2)"]));
         Assert.That(users[0].Id, Is.Not.EqualTo(users[1].Id));
     }
 
@@ -178,7 +178,7 @@ public sealed class MobileDataStoreTests
         UserSummary summary = (await _store.GetUsersAsync()).Single();
         Assert.That(summary.Email, Is.EqualTo("new@example.com"));
         Assert.That(summary.DisplayName, Is.EqualTo("New"));
-        Assert.That((await user.GetSignInKeysAsync()).Single().ProtectedBytes, Is.EqualTo(new byte[] { 9 }));
+        Assert.That((await user.GetSignInKeysAsync()).Single().ProtectedBytes, Is.EqualTo([9]));
     }
 
     [Test]

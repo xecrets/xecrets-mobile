@@ -41,7 +41,6 @@ using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
 using Xecrets.Mobile.Models.Utilities;
-using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
