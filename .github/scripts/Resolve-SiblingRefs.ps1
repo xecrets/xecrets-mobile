@@ -45,10 +45,12 @@ $siblings = Get-Siblings $branch
 $net = $siblings['xecrets-net']
 $common = $siblings['xecrets-common']
 $localization = $siblings['xecrets-localization']
+$words = $siblings['xecrets-words']
 
 @(
     "net-sha=$($net.Sha)"
     "common-sha=$($common.Sha)"
     "localization-sha=$($localization.Sha)"
+    "words-sha=$($words.Sha)"
 ) | Add-Content -Path $env:GITHUB_OUTPUT
-Write-Output "Building '$branch': xecrets-net@$($net.Ref) ($($net.Sha)), xecrets-common@$($common.Ref) ($($common.Sha)), xecrets-localization@$($localization.Ref) ($($localization.Sha))"
+Write-Output "Building '$branch': xecrets-net@$($net.Ref) ($($net.Sha)), xecrets-common@$($common.Ref) ($($common.Sha)), xecrets-localization@$($localization.Ref) ($($localization.Sha)), xecrets-words@$($words.Ref) ($($words.Sha))"

@@ -243,5 +243,7 @@ public sealed class WorkFolderWorkflowTests
         public Task NavigateToAsync(AppDestination destination, object parameter) => NavigateToAsync(destination);
         public Task GoBackAsync() => throw new NotSupportedException();
         public Task OpenBrowserAsync(string url) => throw new NotSupportedException();
+
+        public Task SetClipboardTextAsync(string text) => throw new NotSupportedException();
     }
 }

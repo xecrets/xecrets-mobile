@@ -72,13 +72,13 @@
 
     <OnIdiom x:Key="LayoutPadding"
              x:TypeArguments="Thickness"
-             Default="20">
+             Default="16">
         <OnIdiom.Desktop>32</OnIdiom.Desktop>
     </OnIdiom>
 
     <OnIdiom x:Key="ContentTitleLayoutPadding"
              x:TypeArguments="Thickness"
-             Default="20,8,20,20">
+             Default="16,8,16,16">
         <OnIdiom.Desktop>32,12,32,32</OnIdiom.Desktop>
     </OnIdiom>
 
@@ -86,6 +86,17 @@
              x:TypeArguments="x:Double"
              Default="12">
         <OnIdiom.Desktop>16</OnIdiom.Desktop>
+    </OnIdiom>
+
+    <!-- Between an icon button and the control beside it. -->
+    <x:Double x:Key="IconRowSpacing">4</x:Double>
+
+    <!-- Cancels the horizontal card body padding (PageInformationBodyPadding) for an icon row, so that
+         its icons line up with the icons in the card corners, such as PageInformationButtonCorner. -->
+    <OnIdiom x:Key="IconRowMargin"
+             x:TypeArguments="Thickness"
+             Default="-16,0">
+        <OnIdiom.Desktop>-24,0</OnIdiom.Desktop>
     </OnIdiom>
 
     <OnIdiom x:Key="CardPadding"
@@ -96,9 +107,16 @@
 
     <OnIdiom x:Key="PageInformationBodyPadding"
              x:TypeArguments="Thickness"
-             Default="20,0,20,20">
+             Default="16,0,16,16">
         <OnIdiom.Desktop>24,0,24,24</OnIdiom.Desktop>
     </OnIdiom>
+
+    <OnPlatform x:Key="MonospaceFontFamily"
+                x:TypeArguments="x:String">
+        <On Platform="Android" Value="monospace" />
+        <On Platform="iOS, MacCatalyst" Value="Menlo" />
+        <On Platform="WinUI" Value="Consolas" />
+    </OnPlatform>
 
     <FontImageSource x:Key="IconLight"
                 Glyph="{x:Static f:FluentUI.weather_sunny_28_regular}"
@@ -117,6 +135,11 @@
                 Size="{StaticResource size240}" />
     <FontImageSource x:Key="IconDebug"
                 Glyph="{x:Static f:FluentUI.bug_24_regular}"
+                FontFamily="{x:Static f:FluentUI.FontFamily}"
+                Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                Size="{StaticResource size240}" />
+    <FontImageSource x:Key="IconSuggestPasswordMenu"
+                Glyph="{x:Static f:FluentUI.password_24_regular}"
                 FontFamily="{x:Static f:FluentUI.FontFamily}"
                 Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
                 Size="{StaticResource size240}" />
@@ -271,9 +294,7 @@
                 Value="{OnPlatform WinUI=None, Default=Bold}" />
     </Style>
 
-    <!-- The name of the file a page is working on, at the top of its card. A strong body style rather than a
-         title, because a file name is unbounded user data: it stays readable where a long name wraps, and it
-         pairs with the Body2 metadata line below it. Change the base here to restyle all four pages. -->
+    <!-- The name of the file a page is working on, at the top of its card. Change the base here to restyle all four pages. -->
     <Style x:Key="FileNameStyle"
            TargetType="Label"
            BasedOn="{StaticResource Body1Strong}" />
@@ -337,8 +358,7 @@
         <Setter Property="FontSize" Value="16" />
     </Style>
 
-    <!-- Error and status text. A read-only Editor rather than a Label, so that the text, which can carry
-         exception detail worth reporting, can be selected and copied. Sized to match Caption1. -->
+    <!-- Error and status text, selectable. -->
     <Style TargetType="Editor" x:Key="StatusTextStyle">
         <Setter Property="TextColor" Value="Red" />
         <Setter Property="BackgroundColor" Value="Transparent" />
@@ -347,7 +367,7 @@
         <Setter Property="IsReadOnly" Value="True" />
     </Style>
 
-    <!-- Informational text uses the same selectable presentation as status text, but is visually distinct from errors. -->
+    <!-- Informational text, selectable, visually distinct from errors. -->
     <Style TargetType="Editor" x:Key="MessageTextStyle">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}" />
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource LightOutline}, Dark={StaticResource DarkOutline}}" />

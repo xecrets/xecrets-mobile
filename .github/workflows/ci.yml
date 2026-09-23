@@ -41,7 +41,7 @@
 #     built by the contributor before submission. The unsigned pull-request paths below
 #     remain defensive in case pull-request validation is enabled in the future.
 #
-# Sibling repositories (xecrets-net, xecrets-common, xecrets-localization):
+# Sibling repositories (xecrets-net, xecrets-common, xecrets-localization, xecrets-words):
 #   - Resolved from the branch matching the mobile branch; if a sibling has no branch
 #     with that name, it falls back to 'develop'. The version job resolves each selected
 #     branch to an immutable commit SHA, and every platform checks out that same SHA.
@@ -98,6 +98,7 @@ env:
   XECRETS_NET_REF: ''
   XECRETS_COMMON_REF: ''
   XECRETS_LOCALIZATION_REF: ''
+  XECRETS_WORDS_REF: ''
 
 jobs:
   lint:
@@ -140,6 +141,7 @@ jobs:
       xecrets-net-sha: ${{ steps.siblings.outputs.net-sha }}
       xecrets-common-sha: ${{ steps.siblings.outputs.common-sha }}
       xecrets-localization-sha: ${{ steps.siblings.outputs.localization-sha }}
+      xecrets-words-sha: ${{ steps.siblings.outputs.words-sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -189,6 +191,13 @@ jobs:
           ref: ${{ needs.version.outputs.xecrets-localization-sha }}
           path: xecrets-localization
 
+      - name: Checkout xecrets-words
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: xecrets/xecrets-words
+          ref: ${{ needs.version.outputs.xecrets-words-sha }}
+          path: xecrets-words
+
       - name: Set up .NET (pinned by global.json)
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
@@ -233,6 +242,13 @@ jobs:
           repository: xecrets/xecrets-localization
           ref: ${{ needs.version.outputs.xecrets-localization-sha }}
           path: xecrets-localization
+
+      - name: Checkout xecrets-words
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: xecrets/xecrets-words
+          ref: ${{ needs.version.outputs.xecrets-words-sha }}
+          path: xecrets-words
 
       - name: Set up .NET (pinned by global.json)
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
@@ -400,6 +416,13 @@ jobs:
           ref: ${{ needs.version.outputs.xecrets-localization-sha }}
           path: xecrets-localization
 
+      - name: Checkout xecrets-words
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: xecrets/xecrets-words
+          ref: ${{ needs.version.outputs.xecrets-words-sha }}
+          path: xecrets-words
+
       - name: Select Xcode (pinned by .xcode-version)
         run: |
           $ErrorActionPreference = 'Stop'
@@ -547,6 +570,7 @@ jobs:
           NET_SHA: ${{ needs.version.outputs.xecrets-net-sha }}
           COMMON_SHA: ${{ needs.version.outputs.xecrets-common-sha }}
           LOCALIZATION_SHA: ${{ needs.version.outputs.xecrets-localization-sha }}
+          WORDS_SHA: ${{ needs.version.outputs.xecrets-words-sha }}
         run: |
           $ErrorActionPreference = 'Stop'
 
@@ -556,6 +580,7 @@ jobs:
               "xecrets-net=$env:NET_SHA"
               "xecrets-common=$env:COMMON_SHA"
               "xecrets-localization=$env:LOCALIZATION_SHA"
+              "xecrets-words=$env:WORDS_SHA"
           ) | Set-Content -Path $stateFile
           Get-Content $stateFile
 

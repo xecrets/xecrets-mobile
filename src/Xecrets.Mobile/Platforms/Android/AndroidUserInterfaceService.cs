@@ -28,39 +28,21 @@
 
 #endregion Copyright and GPL License
 
-using Xecrets.Mobile.Models.Models;
+using System;
+using System.Threading.Tasks;
 
-namespace Xecrets.Mobile.Models.Abstractions;
+using Microsoft.Maui.ApplicationModel.DataTransfer;
 
-public interface IUserInterfaceService
+using Xecrets.Mobile.Models.Abstractions;
+using Xecrets.Mobile.Services;
+
+namespace Xecrets.Mobile.Platforms.Android;
+
+public class AndroidUserInterfaceService(IBuildInformation buildInformation) : DefaultUserInterfaceService(buildInformation)
 {
-    bool IsShellAvailable { get; }
-
-    bool CanProcessIncomingFiles { get; }
-
-    bool CanReceiveIncomingFiles { get; }
-
-    Task InvokeOnMainThreadAsync(Func<Task> action);
-
-    Task DisplayMessageAsync(string message);
-
-    Task<bool> DisplayConfirmationAsync(string message);
-
-    /// <summary>
-    /// Asks the user for a line of text, starting from <paramref name="initialValue"/>. Returns null if
-    /// the user cancels.
-    /// </summary>
-    Task<string?> DisplayPromptAsync(string message, string initialValue);
-
-    Task DisplayTransientMessageAsync(string message);
-
-    Task NavigateToAsync(AppDestination destination);
-
-    Task NavigateToAsync(AppDestination destination, object parameter);
-
-    Task GoBackAsync();
-
-    Task OpenBrowserAsync(string url);
-
-    Task SetClipboardTextAsync(string text);
+    // Android 13 (API 33) and later show their own confirmation of what was copied.
+    public override Task SetClipboardTextAsync(string text) =>
+        OperatingSystem.IsAndroidVersionAtLeast(33)
+            ? Clipboard.Default.SetTextAsync(text)
+            : base.SetClipboardTextAsync(text);
 }

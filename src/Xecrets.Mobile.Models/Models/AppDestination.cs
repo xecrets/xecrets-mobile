@@ -47,4 +47,5 @@ public enum AppDestination
     ThirdPartyLicenses,
     Debug,
     CacheBrowser,
+    SuggestPassword,
 }

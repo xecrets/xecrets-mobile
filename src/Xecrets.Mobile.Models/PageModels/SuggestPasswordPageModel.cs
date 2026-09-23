@@ -28,39 +28,53 @@
 
 #endregion Copyright and GPL License
 
-using Xecrets.Mobile.Models.Models;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
-namespace Xecrets.Mobile.Models.Abstractions;
+using Xecrets.Mobile.Models.Abstractions;
+using Xecrets.Words.Abstractions;
 
-public interface IUserInterfaceService
+namespace Xecrets.Mobile.Models.PageModels;
+
+public partial class SuggestPasswordPageModel(
+    IPasswordSuggestions passwordSuggestions,
+    IUserInterfaceService userInterfaceService) : PageModelBase(userInterfaceService), IStatusTextPageModel
 {
-    bool IsShellAvailable { get; }
+    [ObservableProperty]
+    public partial string MessageText { get; set; } = string.Empty;
 
-    bool CanProcessIncomingFiles { get; }
+    [ObservableProperty]
+    public partial string StatusText { get; set; } = string.Empty;
 
-    bool CanReceiveIncomingFiles { get; }
+    [ObservableProperty]
+    public partial string StrongPassword { get; set; } = string.Empty;
 
-    Task InvokeOnMainThreadAsync(Func<Task> action);
+    [ObservableProperty]
+    public partial string SimplePassword { get; set; } = string.Empty;
 
-    Task DisplayMessageAsync(string message);
+    [RelayCommand]
+    private void Initialize()
+    {
+        StrongPassword = passwordSuggestions.StrongPassword();
+        SimplePassword = passwordSuggestions.SimplePassword();
+    }
 
-    Task<bool> DisplayConfirmationAsync(string message);
+    [RelayCommand]
+    private Task CopyPasswordAsync(string cp)
+    {
+        string pw = cp switch
+        {
+            "Strong" => StrongPassword,
+            "Simple" => SimplePassword,
+            _ => throw new InvalidOperationException($"Unknown command parameter '{cp}'.")
+        };
 
-    /// <summary>
-    /// Asks the user for a line of text, starting from <paramref name="initialValue"/>. Returns null if
-    /// the user cancels.
-    /// </summary>
-    Task<string?> DisplayPromptAsync(string message, string initialValue);
+        return UserInterfaceService.SetClipboardTextAsync(pw);
+    }
 
-    Task DisplayTransientMessageAsync(string message);
+    [RelayCommand]
+    private void SuggestStrongPassword() => StrongPassword = passwordSuggestions.StrongPassword();
 
-    Task NavigateToAsync(AppDestination destination);
-
-    Task NavigateToAsync(AppDestination destination, object parameter);
-
-    Task GoBackAsync();
-
-    Task OpenBrowserAsync(string url);
-
-    Task SetClipboardTextAsync(string text);
+    [RelayCommand]
+    private void SuggestSimplePassword() => SimplePassword = passwordSuggestions.SimplePassword();
 }

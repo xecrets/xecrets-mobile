@@ -105,6 +105,8 @@ public static class MobileTexts
 
     public static string DialogTextFileDeleted => "The file was deleted.";
 
+    public static string DialogTextCopiedToClipboard => "Copied to the clipboard.";
+
     public static string DialogTextExceptionFormat => "An unexpected error \"{0}\" occurred.";
 
     public static string DialogTextFolderName => "Enter a label for this folder";
@@ -125,6 +127,8 @@ public static class MobileTexts
     public static string MenuThirdPartyLicenses => ThirdPartyLicensesPageTitle;
 
     public static string MenuXecretsDesktop => "Xecrets desktop";
+
+    public static string SuggestPasswordDescription => "Suggested passwords that are strong, and easy to type and remember. Use » for a new suggestion, and the copy button to copy it to the clipboard.";
 
     public static string ThirdPartyLicensesPageExplanation => "The application includes the following third-party material, under the terms reproduced here.";
 
@@ -209,6 +213,9 @@ public static class MobileTexts
     public static string MenuAbout => AppTexts.ButtonAbout;
 
     public static string MenuDebug => AppTexts.MenuDebug;
+
+    // "Suggest password", also used as the page title.
+    public static string MenuSuggestPassword => AppTexts.DialogTitleSuggestPassword;
 
     // "Help"
     public static string MenuHelp => ButtonHelp;

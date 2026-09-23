@@ -62,7 +62,7 @@ function Resolve-Sibling {
     throw "Neither '$Branch' nor 'develop' exists in $Repo"
 }
 
-# Resolves all three siblings for the given mobile branch. The insertion order is
+# Resolves all siblings for the given mobile branch. The insertion order is
 # also the line order of the build-state artifact, so do not reorder.
 function Get-Siblings {
     param([string]$Branch)
@@ -71,5 +71,6 @@ function Get-Siblings {
         'xecrets-net'          = Resolve-Sibling 'axantum/xecrets-net' $env:XECRETS_NET_REF $Branch
         'xecrets-common'       = Resolve-Sibling 'xecrets/xecrets-common' $env:XECRETS_COMMON_REF $Branch
         'xecrets-localization' = Resolve-Sibling 'xecrets/xecrets-localization' $env:XECRETS_LOCALIZATION_REF $Branch
+        'xecrets-words'        = Resolve-Sibling 'xecrets/xecrets-words' $env:XECRETS_WORDS_REF $Branch
     }
 }

@@ -36,6 +36,7 @@ using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Maui.Core;
 
 using Microsoft.Maui.ApplicationModel;
+using Microsoft.Maui.ApplicationModel.DataTransfer;
 using Microsoft.Maui.Controls;
 
 using Xecrets.Mobile.Models.Abstractions;
@@ -126,6 +127,7 @@ public class DefaultUserInterfaceService(IBuildInformation buildInformation) : I
             AppDestination.ThirdPartyLicenses => "third-party-licenses",
             AppDestination.Debug => "debug",
             AppDestination.CacheBrowser => "cache-browser",
+            AppDestination.SuggestPassword => "suggest-password",
             _ => throw new ArgumentOutOfRangeException(nameof(destination), destination, @"Unknown app destination."),
         };
     }
@@ -134,6 +136,12 @@ public class DefaultUserInterfaceService(IBuildInformation buildInformation) : I
 
     public Task OpenBrowserAsync(string url) => Launcher.Default.OpenAsync(
         url.ToSite(buildInformation.IsDebug || buildInformation.IsBeta));
+
+    public virtual async Task SetClipboardTextAsync(string text)
+    {
+        await Clipboard.Default.SetTextAsync(text);
+        await DisplayTransientMessageAsync(MobileTexts.DialogTextCopiedToClipboard);
+    }
 
     private static Task NavigateToRouteAsync(string route) => Shell.Current.GoToAsync(route);
 

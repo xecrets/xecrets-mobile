@@ -339,6 +339,8 @@ public sealed class PendingFileTests
             return Task.CompletedTask;
         }
         public Task OpenBrowserAsync(string url) => throw new NotSupportedException();
+
+        public Task SetClipboardTextAsync(string text) => throw new NotSupportedException();
     }
 
     private sealed class TestProfileService : IProfileService

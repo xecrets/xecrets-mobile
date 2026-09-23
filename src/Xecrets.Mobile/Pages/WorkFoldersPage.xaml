@@ -77,7 +77,8 @@
                                     <!-- Rename leads and remove trails, so that the two are as far apart as
                                          the row allows and neither is a likely mis-tap for the other. -->
                                     <Grid ColumnDefinitions="Auto,*,Auto"
-                                          ColumnSpacing="{StaticResource LayoutSpacing}">
+                                          ColumnSpacing="{StaticResource IconRowSpacing}"
+                                          Margin="{StaticResource IconRowMargin}">
                                         <ImageButton Grid.Column="0"
                                                      Background="Transparent"
                                                      Padding="8"

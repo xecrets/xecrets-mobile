@@ -90,6 +90,13 @@ public partial class AppShell
     }
 
     [RelayCommand]
+    private async Task SuggestPasswordAsync()
+    {
+        FlyoutIsPresented = false;
+        await _userInterfaceService.NavigateToAsync(AppDestination.SuggestPassword);
+    }
+
+    [RelayCommand]
     private async Task AboutAsync()
     {
         FlyoutIsPresented = false;

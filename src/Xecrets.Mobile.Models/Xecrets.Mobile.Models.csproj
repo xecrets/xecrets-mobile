@@ -19,6 +19,7 @@
         <ProjectReference Include="..\..\..\xecrets-common\src\Xecrets.Common\Xecrets.Common.csproj" />
         <ProjectReference Include="..\..\..\xecrets-net\Xecrets.Core\Xecrets.Core.csproj" />
         <ProjectReference Include="..\..\..\xecrets-common\src\Xecrets.Texts\Xecrets.Texts.csproj" />
+        <ProjectReference Include="..\..\..\xecrets-words\src\Xecrets.Words\Xecrets.Words.csproj" />
     </ItemGroup>
 
 </Project>

@@ -45,6 +45,11 @@ public partial class App : MauiWinUIApplication
     public App()
     {
         MauiProgram.CrashLog.RegisterHandlers();
+
+        // Exceptions thrown in WinUI callbacks, including MAUI startup in OnLaunched, fail fast
+        // without reaching AppDomain.UnhandledException.
+        UnhandledException += (_, args) =>
+            MauiProgram.CrashLog.WriteCrashLog("Unhandled WinUI exception", args.Exception);
         InitializeComponent();
     }
 

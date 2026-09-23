@@ -50,6 +50,7 @@ using Xecrets.Mobile.Pages;
 using Xecrets.Mobile.Services;
 using Xecrets.Mobile.Utilities;
 using Xecrets.Texts;
+using Xecrets.Words;
 
 namespace Xecrets.Mobile;
 
@@ -78,6 +79,7 @@ public static class MauiProgram
         builder.ConfigurePlatform();
 
         builder.Services.AddXecretsCore();
+        builder.Services.ConfigureWords();
 
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddSingleton<IProtectedPayload, ProtectedPayload>();
@@ -123,6 +125,7 @@ public static class MauiProgram
         builder.Services.AddTransientWithShellRoute<ThirdPartyLicensesPage, ThirdPartyLicensesPageModel>("third-party-licenses");
         builder.Services.AddTransientWithShellRoute<DebugPage, DebugPageModel>("debug");
         builder.Services.AddTransientWithShellRoute<CacheBrowserPage, CacheBrowserPageModel>("cache-browser");
+        builder.Services.AddTransientWithShellRoute<SuggestPasswordPage, SuggestPasswordPageModel>("suggest-password");
 
         MauiApp app = builder.Build();
         Services = app.Services;

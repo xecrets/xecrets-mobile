@@ -51,6 +51,7 @@
   <Project Path="../../xecrets-common/src/Xecrets.Common/Xecrets.Common.csproj" />
   <Project Path="../../xecrets-net/Xecrets.Core/Xecrets.Core.csproj" />
   <Project Path="../../xecrets-common/src/Xecrets.Texts/Xecrets.Texts.csproj" />
+  <Project Path="../../xecrets-words/src/Xecrets.Words/Xecrets.Words.csproj" />
   <Project Path="Xecrets.Mobile.Models/Xecrets.Mobile.Models.csproj" />
   <Project Path="Xecrets.Mobile/Xecrets.Mobile.csproj">
     <Deploy />

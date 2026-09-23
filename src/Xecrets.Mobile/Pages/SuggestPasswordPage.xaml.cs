@@ -28,39 +28,35 @@
 
 #endregion Copyright and GPL License
 
-using Xecrets.Mobile.Models.Models;
+using CommunityToolkit.Mvvm.Input;
 
-namespace Xecrets.Mobile.Models.Abstractions;
+using Xecrets.Mobile.Abstractions;
+using Xecrets.Mobile.Models.PageModels;
+using Xecrets.Mobile.Utilities;
 
-public interface IUserInterfaceService
+namespace Xecrets.Mobile.Pages;
+
+public partial class SuggestPasswordPage
 {
-    bool IsShellAvailable { get; }
+    public IRelayCommand InitializeCommand { get; }
 
-    bool CanProcessIncomingFiles { get; }
+    public SuggestPasswordPage(SuggestPasswordPageModel model, IPageHeaderService pageHeaderService)
+    {
+        InitializeCommand = model.InitializeCommand;
+        InitializeComponent();
+        BindingContext = model;
+        pageHeaderService.ApplyStandardHeader(this);
+    }
 
-    bool CanReceiveIncomingFiles { get; }
+    protected override void OnSizeAllocated(double width, double height)
+    {
+        base.OnSizeAllocated(width, height);
 
-    Task InvokeOnMainThreadAsync(Func<Task> action);
+        UpdateCenteredContentLayout(width);
+    }
 
-    Task DisplayMessageAsync(string message);
-
-    Task<bool> DisplayConfirmationAsync(string message);
-
-    /// <summary>
-    /// Asks the user for a line of text, starting from <paramref name="initialValue"/>. Returns null if
-    /// the user cancels.
-    /// </summary>
-    Task<string?> DisplayPromptAsync(string message, string initialValue);
-
-    Task DisplayTransientMessageAsync(string message);
-
-    Task NavigateToAsync(AppDestination destination);
-
-    Task NavigateToAsync(AppDestination destination, object parameter);
-
-    Task GoBackAsync();
-
-    Task OpenBrowserAsync(string url);
-
-    Task SetClipboardTextAsync(string text);
+    private void UpdateCenteredContentLayout(double pageWidth)
+    {
+        LayoutMetrics.UpdateCenteredContentLayout(pageWidth, ContentRoot, ContentColumn, ActionButtonStack, ContentBody.Padding);
+    }
 }
