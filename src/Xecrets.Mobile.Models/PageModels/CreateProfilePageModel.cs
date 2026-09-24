@@ -35,11 +35,14 @@ using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
 using Xecrets.Mobile.Models.Utilities;
+using Xecrets.Words.Abstractions;
+using Xecrets.Words.Model;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
 public partial class CreateProfilePageModel(
     IProfileService profileService,
+    IStrengthMeter strengthMeter,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService)
 {
@@ -53,6 +56,12 @@ public partial class CreateProfilePageModel(
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(CreateCommand))]
     public partial string ConfirmPassword { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial double PasswordStrength { get; set; }
+
+    [ObservableProperty]
+    public partial StrengthColor PasswordStrengthColor { get; set; }
 
     [ObservableProperty]
     public partial string ErrorText { get; set; } = string.Empty;
@@ -101,4 +110,11 @@ public partial class CreateProfilePageModel(
 
     private bool CanCreate()
         => !IsBusy && Password.Length > 0 && ConfirmPassword.Length > 0;
+
+    partial void OnPasswordChanged(string value)
+    {
+        int strength = strengthMeter.StrengthPercent(value);
+        PasswordStrength = strength / 100.0;
+        PasswordStrengthColor = strengthMeter.ToStrengthColor(strength);
+    }
 }

@@ -43,7 +43,6 @@ using Microsoft.Maui.Storage;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Utilities;
-using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Services;
 
@@ -81,7 +80,7 @@ public abstract class FileServiceBase : IFileService
                     { DevicePlatform.Android, [EncryptedFileType.ContentType, "application/octet-stream"] },
                     { DevicePlatform.iOS, [EncryptedFileType.UniformTypeIdentifier] },
                     { DevicePlatform.MacCatalyst, [EncryptedFileType.UniformTypeIdentifier] },
-                    { DevicePlatform.WinUI, [Extensions.EncryptedExtension] },
+                    { DevicePlatform.WinUI, [Texts.Extensions.EncryptedExtension] },
                 }),
             _ => throw new ArgumentOutOfRangeException(nameof(pickerKind)),
         };

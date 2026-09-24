@@ -48,7 +48,6 @@ using Xecrets.Common.Models;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Services;
-using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Platforms.Windows;
 
@@ -119,7 +118,7 @@ public sealed class WindowsWorkFolderService(
         {
             SettingsIdentifier = folder is null ? string.Empty : CreateSettingsIdentifier(folder.Id),
         };
-        picker.FileTypeFilter.Add(pickerKind == FilePickerKind.Encrypted ? Extensions.EncryptedExtension : "*");
+        picker.FileTypeFilter.Add(pickerKind == FilePickerKind.Encrypted ? Texts.Extensions.EncryptedExtension : "*");
         InitializeWithWindow.Initialize(picker, GetWindowHandle());
         StorageFile? file = await picker.PickSingleFileAsync();
         if (file is null)
