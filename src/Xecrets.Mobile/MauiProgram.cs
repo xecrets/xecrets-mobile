@@ -111,9 +111,9 @@ public static class MauiProgram
 
         builder.Services.AddTransient<StartupPageModel>();
         builder.Services.AddTransient<LoginPageModel>();
-        builder.Services.AddTransient<CreateProfilePageModel>();
         builder.Services.AddTransient<HomePageModel>();
 
+        builder.Services.AddTransientWithShellRoute<CreateProfilePage, CreateProfilePageModel>("create-profile");
         builder.Services.AddTransientWithShellRoute<PreviewPage, PreviewPageModel>("preview");
         builder.Services.AddTransientWithShellRoute<ViewPage, ViewPageModel>("view");
         builder.Services.AddTransientWithShellRoute<EditPage, EditPageModel>("edit");
@@ -126,6 +126,7 @@ public static class MauiProgram
         builder.Services.AddTransientWithShellRoute<DebugPage, DebugPageModel>("debug");
         builder.Services.AddTransientWithShellRoute<CacheBrowserPage, CacheBrowserPageModel>("cache-browser");
         builder.Services.AddTransientWithShellRoute<SuggestPasswordPage, SuggestPasswordPageModel>("suggest-password");
+        builder.Services.AddTransientWithShellRoute<WelcomePage, WelcomePageModel>("welcome");
 
         MauiApp app = builder.Build();
         Services = app.Services;

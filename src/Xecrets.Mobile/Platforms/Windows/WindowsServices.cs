@@ -31,6 +31,7 @@
 using System.Runtime.Versioning;
 
 using Microsoft.Maui;
+using Microsoft.Maui.Controls;
 using Microsoft.Maui.Handlers;
 using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
@@ -50,6 +51,13 @@ public class WindowsServices : PlatformServicesBase
             ApplyFontWeight(view, handler.PlatformView, TextBlock.FontWeightProperty));
         ButtonHandler.Mapper.AppendToMapping(nameof(ITextStyle.Font), (handler, view) =>
             ApplyFontWeight(view, handler.PlatformView, Control.FontWeightProperty));
+    }
+
+    public override (double Left, double Right) GetWindowGaps(VisualElement view)
+    {
+        FrameworkElement platformView = (FrameworkElement)view.Handler!.PlatformView!;
+        double left = platformView.TransformToVisual(null).TransformPoint(default).X;
+        return (left, platformView.XamlRoot.Size.Width - left - platformView.ActualWidth);
     }
 
     private static void ApplyFontWeight(

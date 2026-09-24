@@ -50,6 +50,8 @@ public abstract class PlatformServicesBase : IPlatformServices
         Environment.FailFast("Artificial native crash.");
     }
 
+    public abstract (double Left, double Right) GetWindowGaps(VisualElement view);
+
     public virtual void ConfigurePasswordEntry(Entry entry, PasswordEntryPurpose purpose)
     {
         // TextFlagNoSuggestions (Android) and its equivalents are already applied by MAUI's own

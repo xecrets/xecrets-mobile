@@ -43,4 +43,10 @@ public interface IPlatformServices
     void RegisterCrashHandlers(ICrashLogService crashLogService);
 
     void CrashNative();
+
+    /// <summary>
+    /// The distances from the laid out <paramref name="view"/> to the left and right edges of its window, in
+    /// device-independent units, measured on the platform view.
+    /// </summary>
+    (double Left, double Right) GetWindowGaps(VisualElement view);
 }

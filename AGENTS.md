@@ -99,6 +99,8 @@ and action SHAs in `.github/workflows/ci.yml`. Do not introduce dependencies on
 - Use CommunityToolkit MVVM patterns already present in the repo, such as `[ObservableProperty]` and `[RelayCommand]`.
 - Keep constructors simple and favor dependency injection through `MauiProgram`.
 - In XAML, prefer `x:DataType` and compiled bindings when the surrounding file already uses them.
+- Never bind with `Source={x:Reference SomeNamedElement}` to a named element other than the page, or through `BindingContext` of a referenced element. These cause trim warnings. Instead, give the page `x:Name="PageRoot"`, expose the needed value from the code-behind as a public property (for example `public IRelayCommand InitializeCommand { get; }` or `public Entry PasswordTextEntry => PasswordEntryControl.Entry;`), and bind to it with `{x:Reference PageRoot}` and `x:DataType` set to the page type, for example `BindingContext="{x:Reference PageRoot}"` with `x:DataType="pages:SuggestPasswordPage"`, or `{Binding PasswordTextEntry.Width, Source={x:Reference PageRoot}, x:DataType=pages:CreateProfilePage}`.
+- Do not use the `{OnIdiom ...}` markup extension, which is not trim safe and fails the Release build with IL2026. Use the typed element form instead, e.g. `<OnIdiom x:TypeArguments="Thickness" Default="...">` with `<OnIdiom.Desktop>...</OnIdiom.Desktop>`, as a property element or a shared resource in `AppStyles.xaml`.
 - Put reusable styling, icons, and layout constants in shared resource dictionaries instead of duplicating values.
 - Keep code-behind limited to initialization, event-to-command bridging, and platform or control glue.
 - Prefer bindings, behaviors, converters, and templates over imperative UI code when the existing pattern already supports it.

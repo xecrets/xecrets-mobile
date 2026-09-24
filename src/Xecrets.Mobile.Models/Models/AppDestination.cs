@@ -34,6 +34,7 @@ public enum AppDestination
 {
     Crash,
     Login,
+    Introduction,
     CreateProfile,
     Home,
     Preview,
@@ -48,4 +49,5 @@ public enum AppDestination
     Debug,
     CacheBrowser,
     SuggestPassword,
+    Welcome,
 }

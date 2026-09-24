@@ -28,6 +28,8 @@
 
 #endregion Copyright and GPL License
 
+using Xecrets.Mobile.Models.Models;
+
 using AppTexts = Xecrets.Texts.Texts;
 
 namespace Xecrets.Mobile.Models.Utilities;
@@ -139,7 +141,49 @@ public static class MobileTexts
 
     public static string MobileHelpUrl => "https://www.axantum.com/help/mobile";
 
+    public static string MenuWelcome => "Welcome";
+
+    // The first line is the heading. The placeholders such as "(c)" must never be translated, and must stay at the
+    // start of their line. Each is replaced at runtime by an icon, making the line a bullet. The same placeholder may be
+    // used more than once.
+    public static string WelcomeText => """
+        Welcome to Xecrets Ez
+
+        Encrypt and decrypt your files on Windows, Linux, macOS, Android and iOS. On your phone you can:
+
+        (c) Create an entirely local profile.
+        (e) Encrypt and decrypt files in place.
+        (f) Work with favorite folders.
+        (v) Decrypt and share, view or edit files.
+        (s) Encrypt and send or share files.
+        (p) Suggest strong pronounceable passwords.
+        (w) Securely overwrite and delete files.
+        (o) Always work offline.
+
+        ...and more! Get the desktop app to work with encrypted files there too.
+        """;
+
     #endregion Untranslated texts
+
+    public static IReadOnlyList<WelcomeLine> WelcomeLines(IReadOnlyDictionary<string, string> iconMap) =>
+    [
+        .. WelcomeText
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(line => ToWelcomeLine(line, iconMap)),
+    ];
+
+    private static WelcomeLine ToWelcomeLine(string line, IReadOnlyDictionary<string, string> iconMap)
+    {
+        foreach ((string placeholder, string icon) in iconMap)
+        {
+            if (line.StartsWith(placeholder, StringComparison.Ordinal))
+            {
+                return new WelcomeLine(icon, line[placeholder.Length..].Trim());
+            }
+        }
+
+        return new WelcomeLine(string.Empty, line);
+    }
 
     #region Translated texts
 
@@ -197,6 +241,9 @@ public static class MobileTexts
     public static string DialogValidationWrongPassword => AppTexts.DialogValidationWrongPassword;
 
     public static string DisplayNameProgram => AppTexts.DisplayNameProgram;
+
+    // "Don't show this again"
+    public static string DontShowAgain => AppTexts.DontShowAgain;
 
     public static string FileEncryptionUrl => AppTexts.FileEncryptionUrl;
 

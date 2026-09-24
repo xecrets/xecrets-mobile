@@ -35,9 +35,11 @@ using Android.Runtime;
 using Android.Text;
 using Android.Graphics;
 using AndroidContentCaptureImportance = Android.Views.ViewImportantForContentCapture;
+using AndroidView = Android.Views.View;
 
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Devices;
 using Microsoft.Maui.Handlers;
 
 using Xecrets.Mobile.Abstractions;
@@ -61,6 +63,16 @@ public class AndroidServices : PlatformServicesBase
         global::Android.OS.Process.SendSignal(
             global::Android.OS.Process.MyPid(),
             (global::Android.OS.Signal)6);
+    }
+
+    public override (double Left, double Right) GetWindowGaps(VisualElement view)
+    {
+        AndroidView platformView = (AndroidView)view.Handler!.PlatformView!;
+
+        int[] location = new int[2];
+        platformView.GetLocationInWindow(location);
+        double density = DeviceDisplay.Current.MainDisplayInfo.Density;
+        return (location[0] / density, (platformView.RootView!.Width - location[0] - platformView.Width) / density);
     }
 
     // Registered as a DI singleton, so this runs exactly once per app lifetime. AppendToMapping

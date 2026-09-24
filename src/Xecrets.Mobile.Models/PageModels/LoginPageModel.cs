@@ -68,7 +68,7 @@ public partial class LoginPageModel(
         SignInKey? profile = await profileService.LoadProfileAsync();
         if (profile is null)
         {
-            await UserInterfaceService.NavigateToAsync(AppDestination.CreateProfile);
+            await UserInterfaceService.NavigateToAsync(AppDestination.Introduction);
             return;
         }
 
@@ -92,6 +92,11 @@ public partial class LoginPageModel(
 
             Password = string.Empty;
             await UserInterfaceService.NavigateToAsync(AppDestination.Home);
+            if (await profileService.ShouldShowAsync(DontShowAgain.WelcomeInformation))
+            {
+                await UserInterfaceService.NavigateToAsync(AppDestination.Welcome, true);
+            }
+
             await incomingFileService.ProcessPendingAsync();
         }
         finally

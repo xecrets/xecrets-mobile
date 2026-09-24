@@ -28,6 +28,7 @@
 
 #endregion Copyright and GPL License
 
+using Xecrets.Common.Models;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Utilities;
@@ -56,6 +57,61 @@ public static class Extensions
                 return null;
             }
         }
+    }
+
+    extension(DontShowAgain dontShowAgain)
+    {
+        public string? Stringify()
+        {
+            if (dontShowAgain == DontShowAgain.None)
+            {
+                return null;
+            }
+
+            List<string> values = [];
+            foreach (DontShowAgain value in Enum.GetValues<DontShowAgain>())
+            {
+                if (value == DontShowAgain.None)
+                {
+                    continue;
+                }
+
+                if (dontShowAgain.HasFlag(value))
+                {
+                    values.Add(value.ToString());
+                }
+            }
+
+            return string.Join(",", values);
+        }
+    }
+
+    extension(UserSettings settings)
+    {
+        public bool ShouldShow(DontShowAgain flagToCheck) =>
+            !ParseDontShowAgain(settings.DontShowAgain).HasFlag(flagToCheck);
+
+        public void SetDontShowAgain(DontShowAgain flagToSet) =>
+            settings.DontShowAgain = (ParseDontShowAgain(settings.DontShowAgain) | flagToSet).Stringify();
+    }
+
+    private static DontShowAgain ParseDontShowAgain(string? dontShowAgain)
+    {
+        if (dontShowAgain == null)
+        {
+            return DontShowAgain.None;
+        }
+
+        DontShowAgain flags = DontShowAgain.None;
+        foreach (string value in dontShowAgain.Split(','))
+        {
+            if (Enum.TryParse(value, out DontShowAgain flag))
+            {
+                flags |= flag;
+            }
+        }
+
+        return flags;
     }
 
     public static async Task<SaveFileResult> SaveAsAsync(

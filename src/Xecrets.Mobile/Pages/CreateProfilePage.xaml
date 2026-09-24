@@ -28,9 +28,11 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
              xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
+             xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
              xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
              xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
              x:Class="Xecrets.Mobile.Pages.CreateProfilePage"
+             x:Name="PageRoot"
              x:DataType="pageModels:CreateProfilePageModel">
     <ContentPage.Resources>
         <ResourceDictionary>
@@ -61,10 +63,25 @@
                                                 ToolTipProperties.Text="{x:Static modelUtilities:MobileTexts.ToolTipMasterPassword}"
                                                 ReturnType="Next" />
                         <ProgressBar HorizontalOptions="Start"
-                                     Margin="{OnIdiom Default='0,-6,0,0', Desktop='0,-8,0,0'}"
-                                     WidthRequest="{Binding Entry.Width, Source={x:Reference PasswordEntryControl}, x:DataType=controls:PasswordEntry}"
+                                     WidthRequest="{Binding PasswordTextEntry.Width, Source={x:Reference PageRoot}, x:DataType=pages:CreateProfilePage}"
                                      Progress="{Binding PasswordStrength}"
-                                     ProgressColor="{Binding PasswordStrengthColor, Converter={StaticResource StrengthColorToColorConverter}}" />
+                                     ProgressColor="{Binding PasswordStrengthColor, Converter={StaticResource StrengthColorToColorConverter}}">
+                            <ProgressBar.Margin>
+                                <OnIdiom x:TypeArguments="Thickness"
+                                         Default="0,-6,0,0">
+                                    <OnIdiom.Desktop>0,-8,0,0</OnIdiom.Desktop>
+                                </OnIdiom>
+                            </ProgressBar.Margin>
+                            <!-- Opacity, not IsVisible, so the space stays reserved and nothing moves when typing starts. -->
+                            <ProgressBar.Triggers>
+                                <DataTrigger TargetType="ProgressBar"
+                                             Binding="{Binding Password}"
+                                             Value="">
+                                    <Setter Property="Opacity"
+                                            Value="0" />
+                                </DataTrigger>
+                            </ProgressBar.Triggers>
+                        </ProgressBar>
                         <controls:PasswordEntry x:Name="ConfirmPasswordEntryControl"
                                                 Text="{Binding ConfirmPassword, Mode=TwoWay}"
                                                 Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkConfirmPassword}"

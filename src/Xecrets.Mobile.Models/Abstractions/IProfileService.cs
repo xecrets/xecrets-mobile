@@ -31,6 +31,7 @@
 using Xecrets.Core.Models;
 using Xecrets.Common.Models;
 
+using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
 
 namespace Xecrets.Mobile.Models.Abstractions;
@@ -58,4 +59,8 @@ public interface IProfileService
     Task RecordExtraPasswordUseAsync(string password);
 
     PublicKey GetPublicKey();
+
+    Task<bool> ShouldShowAsync(DontShowAgain notice);
+
+    Task SetDontShowAgainAsync(DontShowAgain notice);
 }

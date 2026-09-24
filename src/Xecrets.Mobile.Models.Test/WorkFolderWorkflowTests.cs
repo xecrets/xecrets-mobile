@@ -226,6 +226,7 @@ public sealed class WorkFolderWorkflowTests
         public bool IsShellAvailable => true;
         public bool CanProcessIncomingFiles => true;
         public bool CanReceiveIncomingFiles => true;
+        public IReadOnlyDictionary<string, string> IconMap => throw new NotSupportedException();
         public Task InvokeOnMainThreadAsync(Func<Task> action) => action();
         public Task DisplayMessageAsync(string message) => Task.CompletedTask;
         public Task<bool> DisplayConfirmationAsync(string message)

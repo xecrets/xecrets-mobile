@@ -62,6 +62,8 @@ public partial class IOSServices : PlatformServicesBase
         _ = RaiseSignal(6);
     }
 
+    public override (double Left, double Right) GetWindowGaps(VisualElement view) => view.GetWindowGaps();
+
     public IOSServices()
     {
         AppleTypography.RegisterSemiboldMappings();

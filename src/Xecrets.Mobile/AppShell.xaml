@@ -88,9 +88,9 @@
         ContentTemplate="{DataTemplate pages:LoginPage}" />
 
     <ShellContent
-        Route="create-profile"
+        Route="introduction"
         FlyoutItemIsVisible="False"
-        ContentTemplate="{DataTemplate pages:CreateProfilePage}" />
+        ContentTemplate="{DataTemplate pages:WelcomePage}" />
 
     <ShellContent
         Route="home"

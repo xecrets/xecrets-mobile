@@ -255,6 +255,7 @@ public sealed class TransientFileServiceTests
         public bool IsShellAvailable { get; init; }
         public bool CanProcessIncomingFiles { get; init; }
         public bool CanReceiveIncomingFiles { get; init; }
+        public IReadOnlyDictionary<string, string> IconMap => throw new NotSupportedException();
         public Func<Task> NavigateAsync { get; init; } = () => throw new NotSupportedException();
         public Task InvokeOnMainThreadAsync(Func<Task> action) => action();
         public Task DisplayMessageAsync(string message) => throw new NotSupportedException();
@@ -282,6 +283,8 @@ public sealed class TransientFileServiceTests
         public IReadOnlyList<PasswordUsage> GetExtraPasswords() => throw new NotSupportedException();
         public Task RecordExtraPasswordUseAsync(string password) => throw new NotSupportedException();
         public PublicKey GetPublicKey() => throw new NotSupportedException();
+        public Task<bool> ShouldShowAsync(DontShowAgain notice) => throw new NotSupportedException();
+        public Task SetDontShowAgainAsync(DontShowAgain notice) => throw new NotSupportedException();
     }
 
     private sealed class TestFileService(string cacheDirectory) : IFileService

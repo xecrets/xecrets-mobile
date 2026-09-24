@@ -64,6 +64,16 @@ public static class LayoutMetrics
         double cardContentWidth = contentColumnWidth
             - (contentPadding ?? contentColumn.Padding).HorizontalThickness
             - (2 * contentColumn.StrokeThickness);
-        actionButtonStack.WidthRequest = Math.Min(cardContentWidth, _actionButtonStackMaximumWidth);
+        UpdateActionButtonStackWidth(cardContentWidth, actionButtonStack);
+    }
+
+    public static void UpdateActionButtonStackWidth(double availableWidth, VisualElement actionButtonStack)
+    {
+        if (availableWidth <= 0)
+        {
+            return;
+        }
+
+        actionButtonStack.WidthRequest = Math.Min(availableWidth, _actionButtonStackMaximumWidth);
     }
 }

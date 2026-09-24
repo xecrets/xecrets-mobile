@@ -43,11 +43,13 @@ using Xecrets.Mobile.Models.Utilities;
 namespace Xecrets.Mobile.Utilities;
 
 public sealed class PageHeaderService(
-    IProfileService profileService) : IPageHeaderService
+    IProfileService profileService,
+    IPlatformServices platformServices) : IPageHeaderService
 {
     public void ApplyStandardHeader(ContentPage page)
     {
         page.ToolbarItems.Add(CreateOverflowItem(MobileTexts.MenuHelp, HeaderCommand.Help));
+        page.ToolbarItems.Add(CreateOverflowItem(MobileTexts.MenuWelcome, HeaderCommand.Welcome));
         page.ToolbarItems.Add(CreateOverflowItem(MobileTexts.MenuInfo, HeaderCommand.XecretsHome));
         page.ToolbarItems.Add(CreateOverflowItem(MobileTexts.MenuXecretsDesktop, HeaderCommand.XecretsDesktop));
         page.ToolbarItems.Add(CreateOverflowItem(MobileTexts.MenuThirdPartyLicenses, HeaderCommand.ThirdPartyLicenses));
@@ -102,7 +104,31 @@ public sealed class PageHeaderService(
         }
 
         titleView.Children.Add(titleLayout);
+
+        // Shell hosts the title view natively and never sizes it, but lays out its content. The content moves without
+        // resizing when the space Shell gives the title view changes, such as when the toolbar items appear.
+        titleLayout.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName is nameof(VisualElement.X) or nameof(VisualElement.Width))
+            {
+                CenterInWindow(titleView, titleLayout);
+            }
+        };
+        titleView.Loaded += (_, _) => CenterInWindow(titleView, titleLayout);
         Shell.SetTitleView(page, titleView);
+    }
+
+    // Shell places the title view between its own navigation button and toolbar, which differ in width. Pad the
+    // narrower side so that the title is centered in the window.
+    private void CenterInWindow(View titleView, View titleLayout)
+    {
+        if (!titleView.IsLoaded)
+        {
+            return;
+        }
+
+        (double left, double right) = platformServices.GetWindowGaps(titleView);
+        titleLayout.Margin = new Thickness(Math.Max(0, right - left), 0, Math.Max(0, left - right), 0);
     }
 
     private static ToolbarItem CreateOverflowItem(string text, HeaderCommand command)
@@ -116,6 +142,9 @@ public sealed class PageHeaderService(
         {
             case HeaderCommand.Help:
                 item.SetBinding(MenuItem.CommandProperty, static (PageModelBase pageModel) => pageModel.OpenHelpCommand);
+                break;
+            case HeaderCommand.Welcome:
+                item.SetBinding(MenuItem.CommandProperty, static (PageModelBase pageModel) => pageModel.OpenWelcomeCommand);
                 break;
             case HeaderCommand.XecretsHome:
                 item.SetBinding(MenuItem.CommandProperty, static (PageModelBase pageModel) => pageModel.OpenXecretsHomeCommand);
@@ -136,6 +165,7 @@ public sealed class PageHeaderService(
     private enum HeaderCommand
     {
         Help,
+        Welcome,
         XecretsHome,
         XecretsDesktop,
         ThirdPartyLicenses,

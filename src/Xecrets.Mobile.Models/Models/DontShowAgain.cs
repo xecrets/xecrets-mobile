@@ -28,50 +28,14 @@
 
 #endregion Copyright and GPL License
 
-using System.Threading.Tasks;
+namespace Xecrets.Mobile.Models.Models;
 
-using CoreGraphics;
-
-using Foundation;
-
-using Microsoft.Maui.ApplicationModel;
-using Microsoft.Maui.Controls;
-
-using UniformTypeIdentifiers;
-
-using UIKit;
-
-namespace Xecrets.Mobile.Platforms.Apple;
-
-public static class AppleExtensions
+/// <summary>
+/// Notices the user can choose not to see again, persisted by name in <c>UserSettings.DontShowAgain</c>.
+/// </summary>
+[Flags]
+public enum DontShowAgain
 {
-    public static async Task<NSUrl?> PickUrlAsync(this UTType contentType, NSUrl? initialUrl)
-    {
-        UIDocumentPickerViewController picker = new([contentType], false)
-        {
-            DirectoryUrl = initialUrl,
-        };
-        PickerDelegate pickerDelegate = new();
-        picker.Delegate = pickerDelegate;
-        await Platform.GetCurrentUIViewController()!.PresentViewControllerAsync(picker, true);
-        return await pickerDelegate.Completion.Task;
-    }
-
-    public static (double Left, double Right) GetWindowGaps(this VisualElement view)
-    {
-        UIView platformView = (UIView)view.Handler!.PlatformView!;
-        CGRect frame = platformView.ConvertRectToView(platformView.Bounds, null);
-        return (frame.Left, platformView.Window!.Bounds.Width - frame.Right);
-    }
-
-    private sealed class PickerDelegate : UIDocumentPickerDelegate
-    {
-        public TaskCompletionSource<NSUrl?> Completion { get; } = new();
-
-        public override void DidPickDocument(UIDocumentPickerViewController controller, NSUrl[] urls) =>
-            Completion.SetResult(urls[0]);
-
-        public override void WasCancelled(UIDocumentPickerViewController controller) =>
-            Completion.SetResult(null);
-    }
+    None = 0,
+    WelcomeInformation = 1,
 }

@@ -31,98 +31,58 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-using System.Diagnostics;
-
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
+using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
-public partial class StartupPageModel(
+public partial class WelcomePageModel(
     IProfileService profileService,
-    IIncomingFileService incomingFileService,
-    IBuildInformation buildInformation,
-    ICrashLogService crashLogService,
     IUserInterfaceService userInterfaceService)
-    : ObservableObject
+    : PageModelBase(userInterfaceService)
 {
-    private readonly TimeSpan _minimumStartupDuration = buildInformation.IsDebug
-        ? TimeSpan.FromSeconds(2)
-        : TimeSpan.FromSeconds(1);
+    private readonly IReadOnlyList<WelcomeLine> _welcomeLines = MobileTexts.WelcomeLines(userInterfaceService.IconMap);
 
-    private bool _isNavigating;
+    public string Heading => _welcomeLines[0].Text;
 
-    [RelayCommand]
-    private async Task Initialize()
+    public IReadOnlyList<WelcomeLine> Introduction =>
+        [.. _welcomeLines.Skip(1).TakeWhile(line => line.Icon.Length == 0)];
+
+    // From the first bullet on, so that the bullet section can be set apart from the introduction.
+    public IReadOnlyList<WelcomeLine> Lines =>
+        [.. _welcomeLines.Skip(1).SkipWhile(line => line.Icon.Length == 0)];
+
+    [ObservableProperty]
+    public partial bool IsDontShowAgainAvailable { get; private set; }
+
+    [ObservableProperty]
+    public partial bool DontShowAgain { get; set; }
+
+    // As the Shell root before a profile exists, the page leads on to profile creation, so that backing out of that
+    // returns here. Pushed on top of another page, it is initialized with a payload and returns there.
+    private bool _isIntroduction = true;
+
+    public void Initialize(bool isDontShowAgainAvailable)
     {
-        if (_isNavigating)
-        {
-            return;
-        }
-
-        long startTimestamp = Stopwatch.GetTimestamp();
-
-        try
-        {
-            _isNavigating = true;
-
-            if (crashLogService.HasPendingCrashLog)
-            {
-                await userInterfaceService.NavigateToAsync(AppDestination.Crash);
-                return;
-            }
-
-            await NavigateToNormalStartAsync(startTimestamp);
-        }
-        finally
-        {
-            _isNavigating = false;
-        }
+        _isIntroduction = false;
+        IsDontShowAgainAvailable = isDontShowAgainAvailable;
     }
 
     [RelayCommand]
-    private async Task ContinueAfterCrash()
+    private async Task Ok()
     {
-        if (_isNavigating)
+        if (_isIntroduction)
         {
+            await UserInterfaceService.NavigateToAsync(AppDestination.CreateProfile);
             return;
         }
 
-        try
+        if (IsDontShowAgainAvailable && DontShowAgain)
         {
-            _isNavigating = true;
-            await NavigateToNormalStartAsync(null);
-        }
-        finally
-        {
-            _isNavigating = false;
-        }
-    }
-
-    private async Task NavigateToNormalStartAsync(long? startTimestamp)
-    {
-        AppDestination destination = profileService.IsAuthenticated
-            ? AppDestination.Home
-            : await profileService.HasProfileAsync() ? AppDestination.Login : AppDestination.Introduction;
-
-        if (startTimestamp.HasValue)
-        {
-            await DelayUntilMinimumStartupDurationAsync(startTimestamp.Value);
+            await profileService.SetDontShowAgainAsync(Models.DontShowAgain.WelcomeInformation);
         }
 
-        await userInterfaceService.NavigateToAsync(destination);
-
-        await incomingFileService.ProcessPendingAsync();
-    }
-
-    private async Task DelayUntilMinimumStartupDurationAsync(long startTimestamp)
-    {
-        TimeSpan elapsed = Stopwatch.GetElapsedTime(startTimestamp);
-        TimeSpan remaining = _minimumStartupDuration - elapsed;
-
-        if (remaining > TimeSpan.Zero)
-        {
-            await Task.Delay(remaining);
-        }
+        await UserInterfaceService.GoBackAsync();
     }
 }

@@ -28,6 +28,8 @@
 
 #endregion Copyright and GPL License
 
+using Microsoft.Maui.Controls;
+
 using Xecrets.Mobile.Abstractions;
 using Xecrets.Mobile.Models.PageModels;
 using Xecrets.Mobile.Utilities;
@@ -36,6 +38,8 @@ namespace Xecrets.Mobile.Pages;
 
 public partial class CreateProfilePage
 {
+    public Entry PasswordTextEntry => PasswordEntryControl.Entry;
+
     public CreateProfilePage(
         CreateProfilePageModel model,
         IPlatformServices platformServices,

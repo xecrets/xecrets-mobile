@@ -49,7 +49,7 @@ public sealed class SessionExitService(
 
         AppDestination destination = await profileService.HasProfileAsync()
             ? AppDestination.Login
-            : AppDestination.CreateProfile;
+            : AppDestination.Introduction;
         await userInterfaceService.NavigateToAsync(destination);
     }
 }

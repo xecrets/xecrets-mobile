@@ -35,6 +35,7 @@ using Xecrets.Common.Models;
 using Xecrets.Mobile.Models.Data;
 
 using Xecrets.Mobile.Models.Abstractions;
+using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Services;
 
@@ -133,4 +134,13 @@ public sealed class ProfileService(
         session.ProfileKeyPair is not null
             ? session.ProfileKeyPair.PublicKey
             : throw new InvalidOperationException("No authenticated profile is available.");
+
+    public async Task<bool> ShouldShowAsync(DontShowAgain notice) =>
+        (await session.UserStore!.LoadSettingsAsync()).Value.ShouldShow(notice);
+
+    public async Task SetDontShowAgainAsync(DontShowAgain notice)
+    {
+        await using IEditScope<UserSettings> settings = (await session.UserStore!.LoadSettingsAsync()).BeginEdit();
+        settings.Value.SetDontShowAgain(notice);
+    }
 }

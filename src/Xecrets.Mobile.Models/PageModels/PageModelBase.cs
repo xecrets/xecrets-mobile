@@ -51,6 +51,9 @@ public abstract partial class PageModelBase(IUserInterfaceService userInterfaceS
     private Task OpenXecretsDesktop() => userInterfaceService.OpenBrowserAsync(MobileTexts.FileEncryptionUrl);
 
     [RelayCommand]
+    private Task OpenWelcome() => userInterfaceService.NavigateToAsync(AppDestination.Welcome, false);
+
+    [RelayCommand]
     private Task OpenThirdPartyLicenses() =>
         userInterfaceService.NavigateToAsync(AppDestination.ThirdPartyLicenses);
 }

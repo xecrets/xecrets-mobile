@@ -315,6 +315,7 @@ public sealed class PendingFileTests
         public bool IsShellAvailable => true;
         public bool CanProcessIncomingFiles { get; init; }
         public bool CanReceiveIncomingFiles { get; init; }
+        public IReadOnlyDictionary<string, string> IconMap => throw new NotSupportedException();
         public List<AppDestination> Destinations { get; } = [];
         public List<string> Messages { get; } = [];
         public int BackCount { get; private set; }
@@ -361,6 +362,8 @@ public sealed class PendingFileTests
             return Task.CompletedTask;
         }
         public PublicKey GetPublicKey() => null!;
+        public Task<bool> ShouldShowAsync(DontShowAgain notice) => throw new NotSupportedException();
+        public Task SetDontShowAgainAsync(DontShowAgain notice) => throw new NotSupportedException();
     }
 
     private sealed class TestCoreServices(Exception? decryptionFailure = null) : ICoreServices

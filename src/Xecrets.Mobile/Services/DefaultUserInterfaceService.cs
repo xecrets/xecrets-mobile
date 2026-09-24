@@ -35,6 +35,8 @@ using System.Threading.Tasks;
 using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Maui.Core;
 
+using Fonts;
+
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.ApplicationModel.DataTransfer;
 using Microsoft.Maui.Controls;
@@ -58,12 +60,24 @@ public class DefaultUserInterfaceService(IBuildInformation buildInformation) : I
 
     public bool IsShellAvailable => AppShell is not null;
 
+    public IReadOnlyDictionary<string, string> IconMap { get; } = new Dictionary<string, string>
+    {
+        ["(c)"] = FluentUI.person_add_24_regular,
+        ["(e)"] = FluentUI.lock_closed_24_regular,
+        ["(f)"] = FluentUI.folder_24_regular,
+        ["(v)"] = FluentUI.lock_open_24_regular,
+        ["(s)"] = FluentUI.share_24_regular,
+        ["(p)"] = FluentUI.password_24_regular,
+        ["(w)"] = FluentUI.delete_24_regular,
+        ["(o)"] = FluentUI.cloud_off_24_regular,
+    };
+
     public bool CanProcessIncomingFiles =>
-        CurrentRoute is "home" or "login" or "create-profile";
+        CurrentRoute is "home" or "login" or "introduction";
 
     public bool CanReceiveIncomingFiles =>
         AppShell is null ||
-        CurrentRoute is "startup" or "home" or "login" or "create-profile";
+        CurrentRoute is "startup" or "home" or "login" or "introduction";
 
     public Task InvokeOnMainThreadAsync(Func<Task> action) => MainThread.InvokeOnMainThreadAsync(action);
 
@@ -114,7 +128,8 @@ public class DefaultUserInterfaceService(IBuildInformation buildInformation) : I
         {
             AppDestination.Crash => "//crash",
             AppDestination.Login => "//login",
-            AppDestination.CreateProfile => "//create-profile",
+            AppDestination.Introduction => "//introduction",
+            AppDestination.CreateProfile => "create-profile",
             AppDestination.Home => "//home",
             AppDestination.Preview => "preview",
             AppDestination.View => "view",
@@ -128,6 +143,7 @@ public class DefaultUserInterfaceService(IBuildInformation buildInformation) : I
             AppDestination.Debug => "debug",
             AppDestination.CacheBrowser => "cache-browser",
             AppDestination.SuggestPassword => "suggest-password",
+            AppDestination.Welcome => "welcome",
             _ => throw new ArgumentOutOfRangeException(nameof(destination), destination, @"Unknown app destination."),
         };
     }

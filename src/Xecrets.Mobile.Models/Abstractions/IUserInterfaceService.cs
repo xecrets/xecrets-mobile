@@ -40,6 +40,11 @@ public interface IUserInterfaceService
 
     bool CanReceiveIncomingFiles { get; }
 
+    /// <summary>
+    /// Maps text placeholders, such as "(c)", to icon glyphs.
+    /// </summary>
+    IReadOnlyDictionary<string, string> IconMap { get; }
+
     Task InvokeOnMainThreadAsync(Func<Task> action);
 
     Task DisplayMessageAsync(string message);

@@ -56,6 +56,8 @@ public class MacCatalystServices : PlatformServicesBase
         AppleCrashHandler.Register(crashLogService);
     }
 
+    public override (double Left, double Right) GetWindowGaps(VisualElement view) => view.GetWindowGaps();
+
     public MacCatalystServices()
     {
         AppleTypography.RegisterSemiboldMappings();

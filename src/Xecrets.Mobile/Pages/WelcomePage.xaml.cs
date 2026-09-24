@@ -28,50 +28,39 @@
 
 #endregion Copyright and GPL License
 
-using System.Threading.Tasks;
+using System.Collections.Generic;
 
-using CoreGraphics;
-
-using Foundation;
-
-using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls;
 
-using UniformTypeIdentifiers;
+using Xecrets.Mobile.Abstractions;
+using Xecrets.Mobile.Models.Abstractions;
+using Xecrets.Mobile.Models.Models;
+using Xecrets.Mobile.Models.PageModels;
+using Xecrets.Mobile.Utilities;
 
-using UIKit;
+namespace Xecrets.Mobile.Pages;
 
-namespace Xecrets.Mobile.Platforms.Apple;
-
-public static class AppleExtensions
+public partial class WelcomePage : IQueryAttributable
 {
-    public static async Task<NSUrl?> PickUrlAsync(this UTType contentType, NSUrl? initialUrl)
+    public WelcomePage(WelcomePageModel model, IProfileService profileService, IPageHeaderService pageHeaderService)
     {
-        UIDocumentPickerViewController picker = new([contentType], false)
+        InitializeComponent();
+        BindingContext = model;
+        pageHeaderService.ApplyStandardHeaderTitle(this, profileService.IsAuthenticated ? profileService.CurrentEmail : string.Empty);
+    }
+
+    public void ApplyQueryAttributes(IDictionary<string, object> query)
+    {
+        if (query.TryGetValue(nameof(NavigationParameter.Payload), out object? payload))
         {
-            DirectoryUrl = initialUrl,
-        };
-        PickerDelegate pickerDelegate = new();
-        picker.Delegate = pickerDelegate;
-        await Platform.GetCurrentUIViewController()!.PresentViewControllerAsync(picker, true);
-        return await pickerDelegate.Completion.Task;
+            ((WelcomePageModel)BindingContext).Initialize((bool)payload);
+        }
     }
 
-    public static (double Left, double Right) GetWindowGaps(this VisualElement view)
+    protected override void OnSizeAllocated(double width, double height)
     {
-        UIView platformView = (UIView)view.Handler!.PlatformView!;
-        CGRect frame = platformView.ConvertRectToView(platformView.Bounds, null);
-        return (frame.Left, platformView.Window!.Bounds.Width - frame.Right);
-    }
+        base.OnSizeAllocated(width, height);
 
-    private sealed class PickerDelegate : UIDocumentPickerDelegate
-    {
-        public TaskCompletionSource<NSUrl?> Completion { get; } = new();
-
-        public override void DidPickDocument(UIDocumentPickerViewController controller, NSUrl[] urls) =>
-            Completion.SetResult(urls[0]);
-
-        public override void WasCancelled(UIDocumentPickerViewController controller) =>
-            Completion.SetResult(null);
+        LayoutMetrics.UpdateActionButtonStackWidth(width - ContentRoot.Padding.HorizontalThickness, ActionButtonStack);
     }
 }
