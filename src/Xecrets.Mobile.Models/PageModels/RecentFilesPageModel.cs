@@ -86,6 +86,7 @@ public partial class RecentFilesPageModel : PageModelBase, IStatusTextPageModel
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ReverseCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ReloadCommand))]
     public partial bool IsBusy { get; set; }
 
     [RelayCommand]
@@ -128,6 +129,13 @@ public partial class RecentFilesPageModel : PageModelBase, IStatusTextPageModel
         {
             StatusText = ex.FormatException();
         }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanUseCommand))]
+    private async Task Reload()
+    {
+        ResetView();
+        await Load();
     }
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
@@ -182,10 +190,15 @@ public partial class RecentFilesPageModel : PageModelBase, IStatusTextPageModel
             return;
         }
 
+        ResetView();
+        ShowRows();
+    }
+
+    private void ResetView()
+    {
         _completed.Clear();
         _rowOrder = [];
         _pendingSourceId = null;
-        ShowRows();
     }
 
     /// <summary>

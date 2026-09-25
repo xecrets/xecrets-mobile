@@ -57,6 +57,11 @@
                              FontFamily="{x:Static f:FluentUI.FontFamily}"
                              Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
                              Size="28" />
+            <FontImageSource x:Key="IconReload"
+                             Glyph="{x:Static f:FluentUI.arrow_sync_24_regular}"
+                             FontFamily="{x:Static f:FluentUI.FontFamily}"
+                             Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                             Size="24" />
         </ResourceDictionary>
     </ContentPage.Resources>
     <Grid>
@@ -122,6 +127,13 @@
                             </VerticalStackLayout>
                             </VerticalStackLayout>
                         </Grid>
+                        <ImageButton Grid.Row="0"
+                                     HorizontalOptions="Start"
+                                     VerticalOptions="Start"
+                                     Background="Transparent"
+                                     Padding="8"
+                                     Source="{StaticResource IconReload}"
+                                     Command="{Binding ReloadCommand}" />
                         <pageControls:PageInformationButton Grid.Row="0"
                                                              Style="{StaticResource PageInformationButtonCorner}"
                                                              Title="{x:Static modelUtilities:MobileTexts.RecentFilesContentTitle}"

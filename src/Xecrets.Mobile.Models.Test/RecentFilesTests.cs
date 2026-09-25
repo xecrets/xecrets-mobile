@@ -164,6 +164,23 @@ public sealed class RecentFilesTests
     }
 
     [Test]
+    public async Task ReloadShowsTheCurrentFilteredListAndKeepsTheFilter()
+    {
+        TestRecentFilesService recentFiles = new() { Files = ["folder/one.txt", "folder/two.txt", "folder/old.axx"] };
+        RecentFilesPageModel page = CreatePage(recentFiles, new TestWorkFolderService());
+        await page.LoadCommand.ExecuteAsync(null);
+        await page.ReverseCommand.ExecuteAsync(page.Files[1]);
+        recentFiles.Files.Add("folder/three.txt");
+
+        await page.ReloadCommand.ExecuteAsync(null);
+
+        Assert.That(page.SelectedState, Is.EqualTo(SelectedFileState.Decrypted));
+        Assert.That(
+            page.Files.Select(file => (file.Id, file.IsCompleted)),
+            Is.EqualTo(new[] { ("folder/one.txt", false), ("folder/three.txt", false) }));
+    }
+
+    [Test]
     public async Task AllShowsBothStatesWithTheCompletedResultOnlyInPlace()
     {
         TestRecentFilesService recentFiles = new() { Files = ["folder/one.txt", "folder/old.axx", "folder/two.txt"] };
