@@ -74,14 +74,17 @@
                         HorizontalOptions="Center"
                         Style="{StaticResource PageInformationCardStyle}">
                     <Grid RowDefinitions="Auto,Auto">
-                        <Grid x:Name="ContentBody" Grid.Row="1" Padding="{StaticResource PageInformationBodyPadding}">
+                        <Grid x:Name="ContentBody" Grid.Row="1" Padding="{StaticResource IconRowBodyPadding}">
                             <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
                             <Label Text="{x:Static modelUtilities:MobileTexts.RecentFilesContentTitle}"
+                                   Margin="{StaticResource IconRowBodyContentMargin}"
                                    HorizontalOptions="Center"
                                    Style="{StaticResource Title1}" />
-                            <pageControls:PageMessages MessageText="{Binding MessageText}"
+                            <pageControls:PageMessages Margin="{StaticResource IconRowBodyContentMargin}"
+                                                       MessageText="{Binding MessageText}"
                                                        StatusText="{Binding StatusText}" />
-                            <pageControls:FileStateSelector SelectedState="{Binding SelectedState}"
+                            <pageControls:FileStateSelector Margin="{StaticResource IconRowBodyContentMargin}"
+                                                            SelectedState="{Binding SelectedState}"
                                                             HorizontalOptions="Center" />
                             <VerticalStackLayout x:Name="ActionButtonStack"
                                                  HorizontalOptions="Center"
@@ -90,8 +93,7 @@
                             <BindableLayout.ItemTemplate>
                                 <DataTemplate x:DataType="mobileModels:RecentFileEntry">
                                     <Grid ColumnDefinitions="*,Auto"
-                                          ColumnSpacing="{StaticResource IconRowSpacing}"
-                                          Margin="{StaticResource IconRowMargin}">
+                                          ColumnSpacing="{StaticResource IconRowSpacing}">
                                         <Grid.Triggers>
                                             <DataTrigger TargetType="Grid"
                                                          Binding="{Binding IsCompleted}"
@@ -117,7 +119,7 @@
                                                 <DataTrigger TargetType="ImageButton"
                                                              Binding="{Binding IsCompleted}"
                                                              Value="True">
-                                                    <Setter Property="IsVisible" Value="False" />
+                                                    <Setter Property="IsEnabled" Value="False" />
                                                 </DataTrigger>
                                             </ImageButton.Triggers>
                                         </ImageButton>

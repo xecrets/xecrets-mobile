@@ -91,13 +91,6 @@
     <!-- Between an icon button and the control beside it. -->
     <x:Double x:Key="IconRowSpacing">4</x:Double>
 
-    <!-- Cancels the horizontal card body padding (PageInformationBodyPadding) for an icon row, so that
-         its icons line up with the icons in the card corners, such as PageInformationButtonCorner. -->
-    <OnIdiom x:Key="IconRowMargin"
-             x:TypeArguments="Thickness"
-             Default="-16,0">
-        <OnIdiom.Desktop>-24,0</OnIdiom.Desktop>
-    </OnIdiom>
 
     <OnIdiom x:Key="CardPadding"
              x:TypeArguments="Thickness"
@@ -109,6 +102,22 @@
              x:TypeArguments="Thickness"
              Default="16,0,16,16">
         <OnIdiom.Desktop>24,0,24,24</OnIdiom.Desktop>
+    </OnIdiom>
+
+    <!-- The card body padding for a page with icon rows. The rows span the full card width, so that their
+         icons line up with the icons in the card corners, such as PageInformationButtonCorner. A negative
+         row margin would do the same visually, but the part of a row outside its parent does not receive
+         taps. The other content takes the horizontal padding as IconRowBodyContentMargin. -->
+    <OnIdiom x:Key="IconRowBodyPadding"
+             x:TypeArguments="Thickness"
+             Default="0,0,0,16">
+        <OnIdiom.Desktop>0,0,0,24</OnIdiom.Desktop>
+    </OnIdiom>
+
+    <OnIdiom x:Key="IconRowBodyContentMargin"
+             x:TypeArguments="Thickness"
+             Default="16,0">
+        <OnIdiom.Desktop>24,0</OnIdiom.Desktop>
     </OnIdiom>
 
     <OnPlatform x:Key="MonospaceFontFamily"

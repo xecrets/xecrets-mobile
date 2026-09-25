@@ -37,6 +37,7 @@ using Microsoft.Maui.Hosting;
 
 using System;
 using System.Globalization;
+using System.Text;
 
 using Xecrets.Core.Public;
 using Xecrets.Common.Abstractions;
@@ -62,6 +63,9 @@ public static class MauiProgram
 
     public static MauiApp CreateMauiApp()
     {
+        // AxCrypt 1.x files use Windows-1252 for the passphrase and the original file name.
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
         string deviceFormattingCultureName = CultureInfo.CurrentCulture.Name;
         BuildInformation buildInformation = new();
         MauiAppBuilder builder = MauiApp.CreateBuilder();
