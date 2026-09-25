@@ -67,17 +67,17 @@ public sealed class AppleFileStateSelectorHandler() : ViewHandler<FileStateSelec
     private static void MapSelectedState(AppleFileStateSelectorHandler handler, FileStateSelector selector) =>
         handler.PlatformView.SelectedSegment = selector.SelectedState switch
         {
-            FileState.Encrypted => 0,
-            FileState.Decrypted => 1,
-            FileState.All => 2,
+            SelectedFileState.Encrypted => 0,
+            SelectedFileState.Decrypted => 1,
+            SelectedFileState.All => 2,
             _ => throw new InvalidOperationException($"Unknown file state {selector.SelectedState}."),
         };
 
     private void OnValueChanged(object? sender, EventArgs e) =>
         VirtualView.SelectedState = PlatformView.SelectedSegment switch
         {
-            0 => FileState.Encrypted,
-            1 => FileState.Decrypted,
-            _ => FileState.All,
+            0 => SelectedFileState.Encrypted,
+            1 => SelectedFileState.Decrypted,
+            _ => SelectedFileState.All,
         };
 }
