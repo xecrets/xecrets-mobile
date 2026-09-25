@@ -49,5 +49,6 @@ public enum AppDestination
     Debug,
     CacheBrowser,
     SuggestPassword,
+    RecentFiles,
     Welcome,
 }

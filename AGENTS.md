@@ -82,6 +82,7 @@ and action SHAs in `.github/workflows/ci.yml`. Do not introduce dependencies on
 - Do not qualify member access with `this.` (e.g. call `Foo()`, not `this.Foo()`), except when calling an extension method, where `this.` is appropriate (e.g. `this.ApplyStandardHeader()`) — extension methods cannot be called unqualified.
 - Keep nullable annotations enabled and initialize nullable-friendly defaults where appropriate, such as `string.Empty` and empty collection literals.
 - Prefer collection expressions such as `[.. source]` over `source.ToArray()` when materializing a collection as an array.
+- Prefer collection expressions such as `[a, b]` over array creation expressions such as `new[] { a, b }` or `new T[] { a, b }`.
 - Prefer small, focused classes and methods. Keep code-behind thin and move behavior into page models, services, utilities, or repositories.
 - An interface implementation must not expose functionality beyond the members defined by the interface. Move supporting operations to separate collaborators.
 - Follow the existing `async` naming pattern: methods that return `Task` or `Task<T>` should use an `Async` suffix.

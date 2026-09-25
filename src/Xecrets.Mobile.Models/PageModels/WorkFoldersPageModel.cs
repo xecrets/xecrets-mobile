@@ -41,6 +41,7 @@ using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
 using Xecrets.Mobile.Models.Utilities;
+using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
@@ -49,25 +50,40 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
     private readonly IWorkFolderService _workFolderService;
     private readonly WorkFolderWorkflow _workflow;
     private readonly ICoreServices _coreServices;
+    private readonly IRecentFilesService _recentFilesService;
+    private readonly IWorkFolderFileOperations _fileOperations;
     private bool _refreshingListDisplayNames;
 
     public WorkFoldersPageModel(
         IWorkFolderService workFolderService,
         WorkFolderWorkflow workflow,
         ICoreServices coreServices,
+        IRecentFilesService recentFilesService,
+        IWorkFolderFileOperations fileOperations,
         IUserInterfaceService userInterfaceService)
         : base(userInterfaceService)
     {
         _workFolderService = workFolderService;
         _workflow = workflow;
         _coreServices = coreServices;
+        _recentFilesService = recentFilesService;
+        _fileOperations = fileOperations;
         Folders = new WorkFolderCollection(RefreshListDisplayNames);
     }
 
     public ObservableCollection<WorkFolderEntry> Folders { get; }
 
-    public string Breadcrumb =>
-        string.Join(MobileTexts.BreadcrumbSeparator, MobileTexts.BreadcrumbHome, MobileTexts.BreadcrumbMyFolders);
+    public string Breadcrumb => PickAction == WorkFolderPickAction.AddToRecentFiles
+        ? string.Join(
+            MobileTexts.BreadcrumbSeparator,
+            MobileTexts.BreadcrumbHome,
+            MobileTexts.BreadcrumbRecentFiles,
+            MobileTexts.BreadcrumbMyFolders)
+        : string.Join(MobileTexts.BreadcrumbSeparator, MobileTexts.BreadcrumbHome, MobileTexts.BreadcrumbMyFolders);
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Breadcrumb))]
+    public partial WorkFolderPickAction PickAction { get; set; }
 
     [ObservableProperty] public partial string MessageText { get; set; } = string.Empty;
 
@@ -114,7 +130,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
 
             await Load();
 
-            await PickAndTransformAsync(folder);
+            await PickAndUseFileAsync(folder);
         }
         catch (OperationCanceledException)
         {
@@ -137,7 +153,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
         {
             IsBusy = true;
             StatusText = string.Empty;
-            await PickAndTransformAsync(folder);
+            await PickAndUseFileAsync(folder);
         }
         catch (OperationCanceledException)
         {
@@ -205,7 +221,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
         }
     }
 
-    private async Task PickAndTransformAsync(WorkFolder initialFolder)
+    private async Task PickAndUseFileAsync(WorkFolder initialFolder)
     {
         WorkFolderFile? file = await _workflow.PickFileAsync(FilePickerKind.Any, initialFolder);
         await Load();
@@ -214,7 +230,15 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
             return;
         }
 
-        WorkFolderOperation operation = await _coreServices.IsEncryptedAsync(file.OpenReadAsync)
+        if (PickAction == WorkFolderPickAction.AddToRecentFiles)
+        {
+            await _recentFilesService.AddAsync(file.Id);
+            await UserInterfaceService.GoBackAsync(file.FileName.IsEncrypted() ? SelectedFileState.Encrypted : SelectedFileState.Decrypted);
+
+            return;
+        }
+
+        WorkFolderOperation operation = await _coreServices.IsEncryptedAsync(() => _fileOperations.OpenReadAsync(file))
             ? WorkFolderOperation.Decrypt
             : WorkFolderOperation.Encrypt;
         await _workflow.TransformAsync(file, operation);

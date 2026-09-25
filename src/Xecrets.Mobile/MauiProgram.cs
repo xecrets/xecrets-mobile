@@ -37,6 +37,7 @@ using Microsoft.Maui.Hosting;
 
 using System;
 using System.Globalization;
+using System.Text;
 
 using Xecrets.Core.Public;
 using Xecrets.Common.Abstractions;
@@ -62,6 +63,9 @@ public static class MauiProgram
 
     public static MauiApp CreateMauiApp()
     {
+        // AxCrypt 1.x files use Windows-1252 for the passphrase and the original file name.
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
         string deviceFormattingCultureName = CultureInfo.CurrentCulture.Name;
         BuildInformation buildInformation = new();
         MauiAppBuilder builder = MauiApp.CreateBuilder();
@@ -101,6 +105,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<ICrashTestService, CrashTestService>();
         builder.Services.AddSingleton<IWorkFolderOperationService, WorkFolderOperationService>();
         builder.Services.AddSingleton<WorkFolderWorkflow>();
+        builder.Services.AddSingleton<IRecentFilesService, RecentFilesService>();
         builder.Services.AddSingleton<WorkFolderStorage>();
         builder.Services.AddSingleton(CrashLog);
         builder.Services.AddSingleton<IBuildInformation>(buildInformation);
@@ -126,6 +131,7 @@ public static class MauiProgram
         builder.Services.AddTransientWithShellRoute<DebugPage, DebugPageModel>("debug");
         builder.Services.AddTransientWithShellRoute<CacheBrowserPage, CacheBrowserPageModel>("cache-browser");
         builder.Services.AddTransientWithShellRoute<SuggestPasswordPage, SuggestPasswordPageModel>("suggest-password");
+        builder.Services.AddTransientWithShellRoute<RecentFilesPage, RecentFilesPageModel>("recent-files");
         builder.Services.AddTransientWithShellRoute<WelcomePage, WelcomePageModel>("welcome");
 
         MauiApp app = builder.Build();

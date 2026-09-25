@@ -43,6 +43,12 @@ public partial class HomePage
         pageHeaderService.ApplyStandardHeader(this);
     }
 
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+        await ((HomePageModel)BindingContext).LoadAsync();
+    }
+
     protected override void OnDisappearing()
     {
         base.OnDisappearing();

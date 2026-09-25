@@ -28,14 +28,11 @@
 
 #endregion Copyright and GPL License
 
-using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
 using Android.Content;
-using Android.Content.PM;
 
 using AndroidX.Core.Content;
 
@@ -93,52 +90,24 @@ public class AndroidFileService(IPickedWritableFileFactory pickedWritableFileFac
 
     public override Task ViewFileAsync(DecryptedFileInfo file)
     {
-        Intent quickViewIntent = CreateQuickViewIntent(GetUri(file.FilePath), file.ContentType);
-        ComponentName? resolved = quickViewIntent.ResolveActivity(Platform.AppContext.PackageManager!);
-        if (resolved != null)
-        {
-            quickViewIntent.SetPackage(resolved.PackageName);
-        }
-        quickViewIntent.PutExtra(Intent.ExtraQuickViewFeatures, [QuickViewConstants.FeatureView]);
-
-        Platform.CurrentActivity!.StartActivity(quickViewIntent);
+        GetUri(file.FilePath).CreateQuickViewIntent(file.ContentType).StartQuickView();
         return Task.CompletedTask;
     }
 
     private static AndroidUri GetUri(string filePath) =>
         FileProvider.GetUriForFile(Platform.AppContext, $"{Platform.AppContext.PackageName}.fileProvider", new AndroidFile(filePath))!;
 
-    private static Intent CreateQuickViewIntent(AndroidUri uri, string contentType)
-    {
-        Intent intent = new(Intent.ActionQuickView);
-        intent.SetDataAndTypeAndNormalize(uri, contentType);
-        intent.AddFlags(ActivityFlags.GrantReadUriPermission);
-        return intent;
-    }
-
-    // The system Quick Viewer (e.g. com.android.documentsui) commonly registers ACTION_QUICK_VIEW with
-    // mimeType="*/*", so HasExternalHandler(quickViewIntent) matches every content type even though the
-    // viewer only actually renders this narrower set - anything outside it launches fine but shows its
-    // own "Unable to preview file" screen. This is the single source of truth for whether View is
-    // available at all: View means genuine Quick View, nothing else - "Open In..." is the separate,
-    // already-working path to a real app via ACTION_VIEW for every other content type.
     private static bool TryGetQuickViewIntent(DecryptedFileInfo file, [NotNullWhen(true)] out Intent? quickViewIntent)
     {
         quickViewIntent = null;
 
-        bool supportsQuickView =
-            file.ContentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase) ||
-            file.ContentType.Equals("text/plain", StringComparison.OrdinalIgnoreCase) ||
-            file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) ||
-            file.ContentType.StartsWith("video/", StringComparison.OrdinalIgnoreCase) ||
-            file.ContentType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase);
-        if (!supportsQuickView)
+        if (!file.ContentType.IsQuickViewContentType())
         {
             return false;
         }
 
-        Intent intent = CreateQuickViewIntent(GetUri(file.FilePath), file.ContentType);
-        if (HasExternalHandler(intent))
+        Intent intent = GetUri(file.FilePath).CreateQuickViewIntent(file.ContentType);
+        if (intent.HasExternalHandler())
         {
             quickViewIntent = intent;
             return true;
@@ -156,7 +125,7 @@ public class AndroidFileService(IPickedWritableFileFactory pickedWritableFileFac
         viewIntent.SetDataAndType(uri, resolvedContentType);
         viewIntent.AddFlags(ActivityFlags.GrantReadUriPermission);
 
-        return Task.FromResult(TryStartExternalChooser(viewIntent, displayName));
+        return Task.FromResult(viewIntent.TryStartExternalChooser(displayName));
     }
 
     public override Task SendToAsync(string filePath, string displayName, string contentType)
@@ -168,7 +137,7 @@ public class AndroidFileService(IPickedWritableFileFactory pickedWritableFileFac
         sendIntent.PutExtra(Intent.ExtraStream, uri);
         sendIntent.AddFlags(ActivityFlags.GrantReadUriPermission);
 
-        TryStartExternalChooser(sendIntent, displayName);
+        sendIntent.TryStartExternalChooser(displayName);
         return Task.CompletedTask;
     }
 
@@ -190,44 +159,6 @@ public class AndroidFileService(IPickedWritableFileFactory pickedWritableFileFac
         return (uri, resolvedContentType);
     }
 
-    // Xecrets Ez hands off its own decrypted files via this same FileProvider authority (see
-    // TransientFileService.CreateHandoffPath), so an incoming content Uri served by our own authority is always a file
-    // we created ourselves, never a genuine share from another app - our FileProvider is not exported, so no other app
-    // can mint a working Uri against it.
     public override bool IsSelfHandoffReference(string reference) =>
         AndroidUri.Parse(reference)?.Authority == $"{Platform.AppContext.PackageName}.fileProvider";
-
-    // Xecrets Ez's own manifest intent-filters (content scheme, any mime type) make it a valid resolver for its own
-    // outgoing View/Send requests, on top of any genuine external app. Excluding our own package here, and from the
-    // chooser below, is what stops Xecrets from ever opening a file it just handed to "another app" back on itself.
-    private static bool HasExternalHandler(Intent intent)
-    {
-        IList<ResolveInfo> activities = Platform.AppContext.PackageManager!.QueryIntentActivities(
-            intent,
-            PackageInfoFlags.MatchDefaultOnly);
-        foreach (ResolveInfo activity in activities)
-        {
-            if (activity.ActivityInfo?.PackageName != Platform.AppContext.PackageName)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool TryStartExternalChooser(Intent intent, string title)
-    {
-        if (!HasExternalHandler(intent))
-        {
-            return false;
-        }
-
-        Intent chooser = Intent.CreateChooser(intent, title)!;
-        chooser.PutParcelableArrayListExtra(
-            Intent.ExtraExcludeComponents,
-            [new ComponentName(Platform.AppContext, Java.Lang.Class.FromType(typeof(MainActivity)))]);
-        Platform.CurrentActivity!.StartActivity(chooser);
-        return true;
-    }
 }

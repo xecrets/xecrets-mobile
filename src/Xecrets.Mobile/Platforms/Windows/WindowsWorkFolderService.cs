@@ -126,22 +126,50 @@ public sealed class WindowsWorkFolderService(
             return null;
         }
 
+        return await CreateFileAsync(file);
+    }
+
+    public async Task<WorkFolderFileResult> OpenFileAsync(string fileId)
+    {
+        if (await FindAccessFolderAsync(fileId) is null)
+        {
+            return WorkFolderFileResult.NoAccess;
+        }
+
+        StorageFile file;
+        try
+        {
+            file = await StorageFile.GetFileFromPathAsync(fileId);
+        }
+        catch (FileNotFoundException)
+        {
+            return WorkFolderFileResult.NotFound;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return WorkFolderFileResult.NoAccess;
+        }
+
+        return WorkFolderFileResult.Valid(await CreateFileAsync(file));
+    }
+
+    public IReadOnlyList<string> GetFilePathSegments(string fileId) =>
+        fileId.Split(
+            [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar],
+            StringSplitOptions.RemoveEmptyEntries);
+
+    private async Task<WorkFolderFile> CreateFileAsync(StorageFile file)
+    {
         StorageFolder location = await file.GetParentAsync();
-        WorkFolder? accessFolder = (await GetFoldersAsync())
-            .Where(item => IsDescendant(item.Id, file.Path))
-            .OrderByDescending(item => item.Id.Length)
-            .FirstOrDefault();
+        WorkFolder? accessFolder = await FindAccessFolderAsync(file.Path);
 
         return new WorkFolderFile(
+            file.Path,
             file.Name,
             location.Path,
             location.DisplayName,
             accessFolder?.GrantId ?? string.Empty,
             accessFolder is not null,
-            async () => await file.OpenStreamForReadAsync(),
-            async name => await location.TryGetItemAsync(name) is not null,
-            (name, overwrite, writer) => WriteFileAsync(location, name, overwrite, writer),
-            async () => await file.DeleteAsync(StorageDeleteOption.PermanentDelete),
             pickedWritableFileFactory.Create(file));
     }
 
@@ -183,44 +211,11 @@ public sealed class WindowsWorkFolderService(
         }
     }
 
-    private static async Task WriteFileAsync(
-        StorageFolder folder,
-        string name,
-        bool overwrite,
-        Func<Stream, Task> writer)
-    {
-        StorageFile temporary = await folder.CreateFileAsync(
-            $".xecrets-{Guid.NewGuid():N}.tmp",
-            CreationCollisionOption.FailIfExists);
-        string temporaryName = temporary.Name;
-        bool destinationCommitted = false;
-        try
-        {
-            await using (Stream output = await temporary.OpenStreamForWriteAsync())
-            {
-                await writer(output);
-            }
-
-            if (overwrite)
-            {
-                StorageFile existing = (StorageFile)await folder.GetItemAsync(name);
-                await temporary.MoveAndReplaceAsync(existing);
-                destinationCommitted = true;
-            }
-            else
-            {
-                await temporary.RenameAsync(name, NameCollisionOption.FailIfExists);
-                destinationCommitted = true;
-            }
-        }
-        finally
-        {
-            if (!destinationCommitted && await folder.TryGetItemAsync(temporaryName) is not null)
-            {
-                await temporary.DeleteAsync(StorageDeleteOption.PermanentDelete);
-            }
-        }
-    }
+    private async Task<WorkFolder?> FindAccessFolderAsync(string filePath) =>
+        (await GetFoldersAsync())
+            .Where(item => IsDescendant(item.Id, filePath))
+            .OrderByDescending(item => item.Id.Length)
+            .FirstOrDefault();
 
     private static bool IsDescendant(string folderPath, string filePath) =>
         filePath.StartsWith(folderPath.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar,

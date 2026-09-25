@@ -87,6 +87,6 @@ public partial class DebugPageModel(
     private async Task ArmAndReturnAsync(CrashTestOperation operation, bool native)
     {
         crashTestService.Arm(operation, native);
-        await UserInterfaceService.GoBackAsync();
+        await UserInterfaceService.GoBackAsync(null);
     }
 }

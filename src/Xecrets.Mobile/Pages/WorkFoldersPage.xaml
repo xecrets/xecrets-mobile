@@ -61,12 +61,14 @@
                         HorizontalOptions="Center"
                         Style="{StaticResource PageInformationCardStyle}">
                     <Grid RowDefinitions="Auto,Auto">
-                        <Grid x:Name="ContentBody" Grid.Row="1" Padding="{StaticResource PageInformationBodyPadding}">
+                        <Grid x:Name="ContentBody" Grid.Row="1" Padding="{StaticResource IconRowBodyPadding}">
                             <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
                             <Label Text="{x:Static modelUtilities:MobileTexts.WorkFoldersContentTitle}"
+                                   Margin="{StaticResource IconRowBodyContentMargin}"
                                    HorizontalOptions="Center"
                                    Style="{StaticResource Title1}" />
-                            <pageControls:PageMessages MessageText="{Binding MessageText}"
+                            <pageControls:PageMessages Margin="{StaticResource IconRowBodyContentMargin}"
+                                                       MessageText="{Binding MessageText}"
                                                        StatusText="{Binding StatusText}" />
                             <VerticalStackLayout x:Name="ActionButtonStack"
                                                  HorizontalOptions="Center"
@@ -77,8 +79,7 @@
                                     <!-- Rename leads and remove trails, so that the two are as far apart as
                                          the row allows and neither is a likely mis-tap for the other. -->
                                     <Grid ColumnDefinitions="Auto,*,Auto"
-                                          ColumnSpacing="{StaticResource IconRowSpacing}"
-                                          Margin="{StaticResource IconRowMargin}">
+                                          ColumnSpacing="{StaticResource IconRowSpacing}">
                                         <ImageButton Grid.Column="0"
                                                      Background="Transparent"
                                                      Padding="8"

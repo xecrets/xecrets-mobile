@@ -16,6 +16,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <InternalsVisibleTo Include="Xecrets.Mobile.Models.Test" />
+    </ItemGroup>
+
+    <ItemGroup>
         <ProjectReference Include="..\..\..\xecrets-common\src\Xecrets.Common\Xecrets.Common.csproj" />
         <ProjectReference Include="..\..\..\xecrets-net\Xecrets.Core\Xecrets.Core.csproj" />
         <ProjectReference Include="..\..\..\xecrets-common\src\Xecrets.Texts\Xecrets.Texts.csproj" />

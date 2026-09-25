@@ -81,7 +81,7 @@ public partial class EnterPasswordPageModel(
             if (status == PreviewPreparationStatus.Cancelled)
             {
                 Password = string.Empty;
-                await UserInterfaceService.GoBackAsync();
+                await UserInterfaceService.GoBackAsync(null);
                 return;
             }
 
@@ -94,7 +94,7 @@ public partial class EnterPasswordPageModel(
             Password = string.Empty;
             if (isWorkFolderRequest)
             {
-                await UserInterfaceService.GoBackAsync();
+                await UserInterfaceService.GoBackAsync(null);
                 await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextFileDecrypted);
             }
             else

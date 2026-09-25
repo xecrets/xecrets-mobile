@@ -83,6 +83,6 @@ public partial class WelcomePageModel(
             await profileService.SetDontShowAgainAsync(Models.DontShowAgain.WelcomeInformation);
         }
 
-        await UserInterfaceService.GoBackAsync();
+        await UserInterfaceService.GoBackAsync(null);
     }
 }

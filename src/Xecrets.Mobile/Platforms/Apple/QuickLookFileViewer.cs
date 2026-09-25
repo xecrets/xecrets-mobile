@@ -49,11 +49,17 @@ namespace Xecrets.Mobile.Platforms.Apple;
 internal static class QuickLookFileViewer
 {
     public static Task<bool> CanViewAsync(DecryptedFileInfo file) =>
-        Task.FromResult(QLPreviewController.CanPreviewItem(NSUrl.FromFilename(file.FilePath)));
+        Task.FromResult(CanView(NSUrl.FromFilename(file.FilePath)));
 
-    public static async Task ViewAsync(DecryptedFileInfo file)
+    public static Task ViewAsync(DecryptedFileInfo file) => ViewAsync(NSUrl.FromFilename(file.FilePath));
+
+    public static bool CanView(NSUrl item) => QLPreviewController.CanPreviewItem(item);
+
+    /// <summary>
+    /// Previews the item, completing when the preview is dismissed.
+    /// </summary>
+    public static async Task ViewAsync(NSUrl item)
     {
-        NSUrl item = NSUrl.FromFilename(file.FilePath);
         UIViewController presentingController = Platform.GetCurrentUIViewController()!;
         SingleItemQuickLookController previewController = new(item);
         TaskCompletionSource dismissed = new(TaskCreationOptions.RunContinuationsAsynchronously);

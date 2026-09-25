@@ -63,7 +63,7 @@ public interface IUserInterfaceService
 
     Task NavigateToAsync(AppDestination destination, object parameter);
 
-    Task GoBackAsync();
+    Task GoBackAsync(object? parameter);
 
     Task OpenBrowserAsync(string url);
 

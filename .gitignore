@@ -27,6 +27,8 @@ obj
 **/.idea/**/dbnavigator.xml
 **/.idea/**/AndroidProjectSystem.xml
 **/.idea/libraries
+**/.idea/**/deploymentTargetSelector.xml
+**/.idea/**/deploymentTargetDropDown.xml
 
 # Signing material. Never belongs in the repository.
 *.p12

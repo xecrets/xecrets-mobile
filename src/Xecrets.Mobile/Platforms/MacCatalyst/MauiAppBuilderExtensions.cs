@@ -32,6 +32,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Hosting;
 
 using Xecrets.Mobile.Abstractions;
+using Xecrets.Mobile.Controls;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Platforms.Apple;
 using Xecrets.Mobile.Services;
@@ -45,8 +46,11 @@ internal static class MauiAppBuilderExtensions
         builder.Services.AddSingleton<IPickedWritableFileFactory, ApplePickedWritableFileFactory>();
         builder.Services.AddSingleton<IFileService, MacCatalystFileService>();
         builder.Services.AddSingleton<IWorkFolderService, AppleWorkFolderService>();
+        builder.Services.AddSingleton<IWorkFolderFileOperations, AppleWorkFolderFileOperations>();
+        builder.Services.AddSingleton<IWorkFolderFileLauncher, AppleWorkFolderFileLauncher>();
         builder.Services.AddSingleton<IUserInterfaceService, DefaultUserInterfaceService>();
         builder.Services.AddSingleton<IPlatformServices, MacCatalystServices>();
+        builder.ConfigureMauiHandlers(handlers => handlers.AddHandler<FileStateSelector, AppleFileStateSelectorHandler>());
         return builder;
     }
 }

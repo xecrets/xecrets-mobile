@@ -143,7 +143,7 @@ public partial class EncryptResultPageModel(
     {
         DeleteTemporaryFile(Result.FilePath);
         Result = EncryptionPreparationResult.Empty;
-        await UserInterfaceService.GoBackAsync();
+        await UserInterfaceService.GoBackAsync(null);
     }
 
     private bool CanUseCommand()

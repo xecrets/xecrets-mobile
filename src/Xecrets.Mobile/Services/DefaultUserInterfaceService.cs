@@ -143,12 +143,20 @@ public class DefaultUserInterfaceService(IBuildInformation buildInformation) : I
             AppDestination.Debug => "debug",
             AppDestination.CacheBrowser => "cache-browser",
             AppDestination.SuggestPassword => "suggest-password",
+            AppDestination.RecentFiles => "recent-files",
             AppDestination.Welcome => "welcome",
             _ => throw new ArgumentOutOfRangeException(nameof(destination), destination, @"Unknown app destination."),
         };
     }
 
-    public Task GoBackAsync() => NavigateToRouteAsync("..");
+    public Task GoBackAsync(object? parameter) => parameter is null
+        ? NavigateToRouteAsync("..")
+        : Shell.Current.GoToAsync(
+            "..",
+            new ShellNavigationQueryParameters
+            {
+                { nameof(NavigationParameter.Payload), parameter },
+            });
 
     public Task OpenBrowserAsync(string url) => Launcher.Default.OpenAsync(
         url.ToSite(buildInformation.IsDebug || buildInformation.IsBeta));

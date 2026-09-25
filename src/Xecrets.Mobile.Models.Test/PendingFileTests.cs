@@ -334,8 +334,13 @@ public sealed class PendingFileTests
             return Task.CompletedTask;
         }
         public Task NavigateToAsync(AppDestination destination, object parameter) => NavigateToAsync(destination);
-        public Task GoBackAsync()
+        public Task GoBackAsync(object? parameter)
         {
+            if (parameter is not null)
+            {
+                throw new NotSupportedException();
+            }
+
             BackCount++;
             return Task.CompletedTask;
         }

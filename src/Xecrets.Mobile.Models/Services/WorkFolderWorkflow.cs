@@ -40,6 +40,7 @@ namespace Xecrets.Mobile.Models.Services;
 public sealed class WorkFolderWorkflow(
     IWorkFolderService workFolderService,
     IWorkFolderOperationService operationService,
+    IWorkFolderFileOperations fileOperations,
     IFlowContext flowContext,
     ICoreServices coreServices,
     IUserInterfaceService userInterfaceService)
@@ -104,29 +105,33 @@ public sealed class WorkFolderWorkflow(
         }
     }
 
-    public async Task TransformAsync(WorkFolderFile file, WorkFolderOperation operation)
+    /// <summary>
+    /// Encrypts or decrypts a file, returning false when the user was sent on to enter a password for it.
+    /// </summary>
+    public async Task<bool> TransformAsync(WorkFolderFile file, WorkFolderOperation operation)
     {
         flowContext.Begin(FlowOrigin.Navigated, operation);
         if (operation == WorkFolderOperation.Encrypt)
         {
-            if (await coreServices.IsEncryptedAsync(file.OpenReadAsync))
+            if (await coreServices.IsEncryptedAsync(() => fileOperations.OpenReadAsync(file)))
             {
                 await userInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextAlreadyEncrypted);
-                return;
+                return true;
             }
 
             await operationService.EncryptAsync(file);
             await userInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextFileEncrypted);
-            return;
+            return true;
         }
 
         if (await operationService.DecryptWithKnownPasswordsAsync(file))
         {
             await userInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextFileDecrypted);
-            return;
+            return true;
         }
 
         await userInterfaceService.NavigateToAsync(AppDestination.EnterPassword);
+        return false;
     }
 
     private async Task MoveFolderToTopAsync(WorkFolder folder)

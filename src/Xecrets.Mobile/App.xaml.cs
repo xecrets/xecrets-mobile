@@ -104,5 +104,6 @@ public partial class App
         _sessionExitService,
         _buildInformation,
         _dataStore,
-        _services.GetRequiredService<StartupPageModel>());
+        _services.GetRequiredService<StartupPageModel>(),
+        _services.GetRequiredService<ProfileSession>());
 }

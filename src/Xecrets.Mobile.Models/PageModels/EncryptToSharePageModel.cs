@@ -98,7 +98,7 @@ public partial class EncryptToSharePageModel(
             await profileService.RecordExtraPasswordUseAsync(password);
 
             Password = string.Empty;
-            await UserInterfaceService.GoBackAsync();
+            await UserInterfaceService.GoBackAsync(null);
             await UserInterfaceService.NavigateToAsync(AppDestination.EncryptResult, result);
         }
         catch (OperationCanceledException)

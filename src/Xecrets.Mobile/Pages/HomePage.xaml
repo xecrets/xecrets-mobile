@@ -59,6 +59,8 @@
                                                      Spacing="{StaticResource LayoutSpacing}">
                                     <Button Text="{x:Static modelUtilities:MobileTexts.WorkFoldersContentTitle}"
                                             Command="{Binding MyFoldersCommand}" />
+                                    <Button Text="{x:Static modelUtilities:MobileTexts.RecentFilesContentTitle}"
+                                            Command="{Binding RecentFilesCommand}" />
                                     <BoxView HeightRequest="1"
                                              HorizontalOptions="Fill"
                                              Margin="0,8"

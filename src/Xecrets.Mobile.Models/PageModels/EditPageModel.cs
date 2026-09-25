@@ -79,7 +79,7 @@ public partial class EditPageModel(
         IPreviewState state = previewService.Current;
         if (!state.IsReady || state.Kind != PreviewKind.Text)
         {
-            await UserInterfaceService.GoBackAsync();
+            await UserInterfaceService.GoBackAsync(null);
             return;
         }
 
@@ -186,7 +186,7 @@ public partial class EditPageModel(
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private async Task Close()
     {
-        await UserInterfaceService.GoBackAsync();
+        await UserInterfaceService.GoBackAsync(null);
     }
 
     private bool CanUseCommand()

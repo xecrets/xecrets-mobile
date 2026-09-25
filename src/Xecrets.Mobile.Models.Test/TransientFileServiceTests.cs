@@ -264,7 +264,7 @@ public sealed class TransientFileServiceTests
         public Task DisplayTransientMessageAsync(string message) => throw new NotSupportedException();
         public Task NavigateToAsync(AppDestination destination) => NavigateAsync();
         public Task NavigateToAsync(AppDestination destination, object parameter) => throw new NotSupportedException();
-        public Task GoBackAsync() => throw new NotSupportedException();
+        public Task GoBackAsync(object? parameter) => throw new NotSupportedException();
         public Task OpenBrowserAsync(string url) => throw new NotSupportedException();
 
         public Task SetClipboardTextAsync(string text) => throw new NotSupportedException();

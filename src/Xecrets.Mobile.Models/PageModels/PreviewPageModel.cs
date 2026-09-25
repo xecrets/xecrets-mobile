@@ -86,7 +86,7 @@ public partial class PreviewPageModel(
         IPreviewState state = previewService.Current;
         if (!state.IsReady)
         {
-            await UserInterfaceService.GoBackAsync();
+            await UserInterfaceService.GoBackAsync(null);
             return;
         }
 
@@ -254,7 +254,7 @@ public partial class PreviewPageModel(
     private async Task Close()
     {
         previewService.Current.Clear();
-        await UserInterfaceService.GoBackAsync();
+        await UserInterfaceService.GoBackAsync(null);
     }
 
     private bool CanUseCommand()

@@ -32,14 +32,12 @@ using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Models.Models;
 
+/// <param name="Id">The platform reference to the file itself, used to open it again later.</param>
 public sealed record WorkFolderFile(
+    string Id,
     string FileName,
     string LocationId,
     string LocationDisplayName,
     string LocationGrantId,
     bool IsInKnownWorkFolder,
-    Func<Task<Stream>> OpenReadAsync,
-    Func<string, Task<bool>> DestinationExistsAsync,
-    Func<string, bool, Func<Stream, Task>, Task> WriteDestinationAsync,
-    Func<Task> DeleteAsync,
     IPickedWritableFile WritableFile);

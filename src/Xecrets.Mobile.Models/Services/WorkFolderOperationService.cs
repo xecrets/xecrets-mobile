@@ -42,6 +42,8 @@ namespace Xecrets.Mobile.Models.Services;
 public sealed class WorkFolderOperationService(
     ICoreServices coreServices,
     IProfileService profileService,
+    IRecentFilesService recentFilesService,
+    IWorkFolderFileOperations fileOperations,
     IUserInterfaceService userInterfaceService)
     : IWorkFolderOperationService
 {
@@ -55,12 +57,14 @@ public sealed class WorkFolderOperationService(
         bool overwrite = await ConfirmOverwriteAsync(file, destinationName);
         EncryptRequest request = CreateEncryptRequest(file.FileName);
 
-        await using Stream cleartext = await file.OpenReadAsync();
-        await file.WriteDestinationAsync(
+        await using Stream cleartext = await fileOperations.OpenReadAsync(file);
+        string resultId = await fileOperations.WriteDestinationAsync(
+            file,
             destinationName,
             overwrite,
             encrypted => coreServices.EncryptAsync(cleartext, encrypted, request));
-        await file.DeleteAsync();
+        await fileOperations.DeleteAsync(file);
+        await recentFilesService.AddAsync(resultId);
     }
 
     public async Task<bool> DecryptWithKnownPasswordsAsync(WorkFolderFile file)
@@ -103,7 +107,7 @@ public sealed class WorkFolderOperationService(
 
     private async Task<bool> TryDecryptAsync(WorkFolderFile file, Identity identity)
     {
-        await using Stream encrypted = await file.OpenReadAsync();
+        await using Stream encrypted = await fileOperations.OpenReadAsync(file);
         using IDecryptionSession session = await coreServices.OpenDecryptionAsync(
             encrypted,
             new DecryptRequest([identity], new Progress<Progress>(_ => { })));
@@ -113,17 +117,19 @@ public sealed class WorkFolderOperationService(
         }
 
         bool overwrite = await ConfirmOverwriteAsync(file, session.OriginalFileName);
-        await file.WriteDestinationAsync(
+        string resultId = await fileOperations.WriteDestinationAsync(
+            file,
             session.OriginalFileName,
             overwrite,
             session.DecryptAsync);
-        await file.DeleteAsync();
+        await fileOperations.DeleteAsync(file);
+        await recentFilesService.AddAsync(resultId);
         return true;
     }
 
     private async Task<bool> ConfirmOverwriteAsync(WorkFolderFile file, string destinationName)
     {
-        if (!await file.DestinationExistsAsync(destinationName))
+        if (!await fileOperations.DestinationExistsAsync(file, destinationName))
         {
             return false;
         }

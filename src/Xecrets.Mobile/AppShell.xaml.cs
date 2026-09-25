@@ -51,18 +51,21 @@ public partial class AppShell
     private readonly SessionExitService _sessionExitService;
     private readonly IXecretsDataStore _dataStore;
     private readonly StartupPageModel _startupPageModel;
+    private readonly ProfileSession _profileSession;
 
     public AppShell(
         IUserInterfaceService userInterfaceService,
         SessionExitService sessionExitService,
         IBuildInformation buildInformation,
         IXecretsDataStore dataStore,
-        StartupPageModel startupPageModel)
+        StartupPageModel startupPageModel,
+        ProfileSession profileSession)
     {
         _userInterfaceService = userInterfaceService;
         _sessionExitService = sessionExitService;
         _dataStore = dataStore;
         _startupPageModel = startupPageModel;
+        _profileSession = profileSession;
         InitializeComponent();
         SetFlyoutItemIsVisible(DebugMenuItem, buildInformation.IsDebug || buildInformation.IsBeta);
         UpdateThemeButtons(ThemePreference.System);
@@ -71,6 +74,8 @@ public partial class AppShell
     [RelayCommand]
     private async Task NavigatedAsync(ShellNavigatedEventArgs args)
     {
+        // Signing in and out always navigates, and recent files are kept per signed-in profile.
+        SetFlyoutItemIsVisible(RecentFilesMenuItem, _profileSession.UserStore is not null);
         if (args.Current.Location.OriginalString != "//startup")
         {
             return;
@@ -87,6 +92,13 @@ public partial class AppShell
         await using IEditScope<ApplicationSettings> settings =
             (await _dataStore.OpenApplicationSettingsAsync()).BeginEdit();
         settings.Value.Theme = preference.ToString();
+    }
+
+    [RelayCommand]
+    private async Task RecentFilesAsync()
+    {
+        FlyoutIsPresented = false;
+        await _userInterfaceService.NavigateToAsync(AppDestination.RecentFiles);
     }
 
     [RelayCommand]

@@ -59,6 +59,9 @@ public static class MobileTexts
 
     public static string BreadcrumbReceivedFile => "Received file";
 
+    // "Recent files"
+    public static string BreadcrumbRecentFiles => RecentFilesContentTitle;
+
     public static string BreadcrumbResult => "Result";
 
     public static string BreadcrumbSeparator => " › ";
@@ -107,6 +110,12 @@ public static class MobileTexts
 
     public static string DialogTextFileDeleted => "The file was deleted.";
 
+    public static string DialogTextRecentFileNotFound => "The file no longer exists.";
+
+    public static string DialogTextNoAppToOpenFile => "There is no app on this device that can open this file.";
+
+    public static string DialogTextRecentFileNoAccess => "Access to the folder of this file has been lost. Add the folder again in \"my folders\".";
+
     public static string DialogTextCopiedToClipboard => "Copied to the clipboard.";
 
     public static string DialogTextExceptionFormat => "An unexpected error \"{0}\" occurred.";
@@ -116,6 +125,12 @@ public static class MobileTexts
     public static string DialogTextResult => "The file is only saved locally in the app. Choose an action for what to do with it next.";
 
     public static string DialogTextSelfHandoffRejected => "Xecrets Ez can't handle files from itself.";
+
+    public static string FileStateAll => "All";
+
+    public static string FileStateDecrypted => "Decrypted";
+
+    public static string FileStateEncrypted => "Encrypted";
 
     public static string EncryptToShareDescription => "Enter a separate password for the encrypted copy. Share the password through a different channel.";
 
@@ -128,7 +143,14 @@ public static class MobileTexts
     // "Third-Party Licenses"
     public static string MenuThirdPartyLicenses => ThirdPartyLicensesPageTitle;
 
+    // "Recent files"
+    public static string MenuRecentFiles => RecentFilesContentTitle;
+
     public static string MenuXecretsDesktop => "Xecrets desktop";
+
+    public static string RecentFilesContentTitle => "Recent files";
+
+    public static string RecentFilesDescription => "Files recently encrypted or decrypted in \"my folders\", most recent first. Choose to show decrypted or encrypted files, and use the lock button to encrypt or decrypt a file. Tap a decrypted file to open it in another app, or an encrypted file to share or send it. Use the add button to add a file from \"my folders\".";
 
     public static string SuggestPasswordDescription => "Suggested passwords that are strong, and easy to type and remember. Use » for a new suggestion, and the copy button to copy it to the clipboard.";
 
@@ -146,7 +168,8 @@ public static class MobileTexts
     // The first line is the heading. The placeholders such as "(c)" must never be translated, and must stay at the
     // start of their line. Each is replaced at runtime by an icon, making the line a bullet. The same placeholder may be
     // used more than once.
-    public static string WelcomeText => """
+    private static string WelcomeText =>
+        """
         Welcome to Xecrets Ez
 
         Encrypt and decrypt your files on Windows, Linux, macOS, Android and iOS. On your phone you can:

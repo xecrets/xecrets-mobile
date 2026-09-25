@@ -55,7 +55,7 @@ public sealed class WorkFolderWorkflowTests
         folders.Files.Enqueue(first);
         folders.Files.Enqueue(second);
         TestUserInterfaceService userInterface = new() { Confirmation = true };
-        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, userInterface);
+        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, userInterface);
 
         WorkFolderFile? selected = await workflow.PickFileAsync(FilePickerKind.Any);
 
@@ -72,7 +72,7 @@ public sealed class WorkFolderWorkflowTests
         TestWorkFolderService folders = new();
         folders.Files.Enqueue(CreateFile("input.txt", "unknown", false));
         TestUserInterfaceService userInterface = new();
-        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, userInterface);
+        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, userInterface);
 
         Assert.That(await workflow.PickFileAsync(FilePickerKind.Any), Is.Null);
         Assert.That(folders.AddLocations, Is.Empty);
@@ -86,7 +86,7 @@ public sealed class WorkFolderWorkflowTests
         WorkFolderFile file = CreateFile("input.txt", "known/child", true);
         folders.Files.Enqueue(file);
         TestUserInterfaceService userInterface = new();
-        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, userInterface);
+        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, userInterface);
 
         Assert.That(await workflow.PickFileAsync(FilePickerKind.Any), Is.SameAs(file));
         Assert.That(userInterface.ConfirmationCount, Is.Zero);
@@ -101,13 +101,20 @@ public sealed class WorkFolderWorkflowTests
     public async Task MyFoldersSelectsOperationFromFileContents(string name, bool isEncrypted, WorkFolderOperation expected)
     {
         TestWorkFolderService folders = new();
-        folders.Files.Enqueue(CreateFile(name, "known", true, isEncrypted));
+        WorkFolderFile file = CreateFile(name, "known", true);
+        folders.Files.Enqueue(file);
+        TestFileOperations fileOperations = new();
+        if (isEncrypted)
+        {
+            fileOperations.Encrypted.Add(file.Id);
+        }
         TestOperationService operations = new();
         TestUserInterfaceService userInterface = new();
         FlowContext flow = new();
         FileDetectionCoreServices coreServices = new();
-        WorkFolderWorkflow workflow = new(folders, operations, flow, coreServices, userInterface);
-        WorkFoldersPageModel page = new(folders, workflow, coreServices, userInterface);
+        WorkFolderWorkflow workflow = new(folders, operations, fileOperations, flow, coreServices, userInterface);
+        WorkFoldersPageModel page = new(
+            folders, workflow, coreServices, new TestRecentFilesService(), fileOperations, userInterface);
 
         await page.OpenCommand.ExecuteAsync(folders.Folders[0]);
 
@@ -117,25 +124,46 @@ public sealed class WorkFolderWorkflowTests
         Assert.That(page.StatusText, Is.Empty);
     }
 
+    [TestCase("input.txt", SelectedFileState.Decrypted)]
+    [TestCase("input.axx", SelectedFileState.Encrypted)]
+    public async Task AddingToRecentFilesAddsPickedFileAndGoesBackWithItsState(string name, SelectedFileState expected)
+    {
+        TestWorkFolderService folders = new();
+        folders.Files.Enqueue(CreateFile(name, "known", true));
+        TestOperationService operations = new();
+        TestRecentFilesService recentFiles = new();
+        TestUserInterfaceService userInterface = new();
+        FileDetectionCoreServices coreServices = new();
+        TestFileOperations fileOperations = new();
+        WorkFolderWorkflow workflow = new(
+            folders, operations, fileOperations, new FlowContext(), coreServices, userInterface);
+        WorkFoldersPageModel page = new(folders, workflow, coreServices, recentFiles, fileOperations, userInterface)
+        {
+            PickAction = WorkFolderPickAction.AddToRecentFiles,
+        };
+
+        await page.OpenCommand.ExecuteAsync(folders.Folders[0]);
+
+        Assert.That(recentFiles.Files, Is.EqualTo([$"known/{name}"]));
+        Assert.That(userInterface.BackParameter, Is.EqualTo(expected));
+        Assert.That(operations.Operation, Is.Null);
+        Assert.That(page.StatusText, Is.Empty);
+    }
+
     [Test]
     public async Task WrongPasswordNavigatesToExistingPasswordPage()
     {
         TestOperationService operations = new() { CanDecrypt = false };
         TestUserInterfaceService userInterface = new();
-        WorkFolderWorkflow workflow = new(null!, operations, new FlowContext(), null!, userInterface);
+        WorkFolderWorkflow workflow = new(null!, operations, null!, new FlowContext(), null!, userInterface);
 
         await workflow.TransformAsync(CreateFile("input.axx", "known", true), WorkFolderOperation.Decrypt);
 
         Assert.That(userInterface.Destinations, Is.EqualTo([AppDestination.EnterPassword]));
     }
 
-    private static WorkFolderFile CreateFile(string name, string location, bool known, bool isEncrypted = false) =>
-        new(name, location, location, "grant", known,
-            () => Task.FromResult<Stream>(new MemoryStream(isEncrypted ? [0xe0] : [0x00])),
-            _ => throw new NotSupportedException(),
-            (_, _, _) => throw new NotSupportedException(),
-            () => throw new NotSupportedException(),
-            null!);
+    private static WorkFolderFile CreateFile(string name, string location, bool known) =>
+        new($"{location}/{name}", name, location, location, "grant", known, null!);
 
     private sealed class TestWorkFolderService : IWorkFolderService
     {
@@ -178,6 +206,19 @@ public sealed class WorkFolderWorkflowTests
             PickerKinds.Add(pickerKind);
             return Task.FromResult(Files.Dequeue());
         }
+        public Task<WorkFolderFileResult> OpenFileAsync(string fileId) => throw new NotSupportedException();
+        public IReadOnlyList<string> GetFilePathSegments(string fileId) => throw new NotSupportedException();
+    }
+
+    private sealed class TestFileOperations : IWorkFolderFileOperations
+    {
+        public HashSet<string> Encrypted { get; } = [];
+        public Task<Stream> OpenReadAsync(WorkFolderFile file) =>
+            Task.FromResult<Stream>(new MemoryStream(Encrypted.Contains(file.Id) ? [0xe0] : [0x00]));
+        public Task<bool> DestinationExistsAsync(WorkFolderFile file, string name) => throw new NotSupportedException();
+        public Task<string> WriteDestinationAsync(WorkFolderFile file, string name, bool overwrite, Func<Stream, Task> writer) =>
+            throw new NotSupportedException();
+        public Task DeleteAsync(WorkFolderFile file) => throw new NotSupportedException();
     }
 
     private sealed class TestOperationService : IWorkFolderOperationService
@@ -242,9 +283,26 @@ public sealed class WorkFolderWorkflowTests
             return Task.CompletedTask;
         }
         public Task NavigateToAsync(AppDestination destination, object parameter) => NavigateToAsync(destination);
-        public Task GoBackAsync() => throw new NotSupportedException();
+        public object? BackParameter { get; private set; }
+        public Task GoBackAsync(object? parameter)
+        {
+            BackParameter = parameter;
+            return Task.CompletedTask;
+        }
         public Task OpenBrowserAsync(string url) => throw new NotSupportedException();
 
         public Task SetClipboardTextAsync(string text) => throw new NotSupportedException();
+    }
+
+    private sealed class TestRecentFilesService : IRecentFilesService
+    {
+        public List<string> Files { get; } = [];
+        public Task<IReadOnlyList<string>> GetFilesAsync() => throw new NotSupportedException();
+        public Task AddAsync(string fileId)
+        {
+            Files.Add(fileId);
+            return Task.CompletedTask;
+        }
+        public Task RemoveAsync(string fileId) => throw new NotSupportedException();
     }
 }

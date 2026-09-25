@@ -59,4 +59,17 @@ public interface IWorkFolderService
     Task SaveFoldersAsync(IReadOnlyList<WorkFolder> folders);
 
     Task<WorkFolderFile?> PickFileAsync(WorkFolder? folder, FilePickerKind pickerKind);
+
+    /// <summary>
+    /// Opens a file again from its <see cref="WorkFolderFile.Id"/>, through the persisted access grant of the
+    /// known folder that contains it. The result is <see cref="WorkFolderFileResultStatus.NoAccess"/> when no
+    /// such grant is available or it is denied.
+    /// </summary>
+    Task<WorkFolderFileResult> OpenFileAsync(string fileId);
+
+    /// <summary>
+    /// Gets the path segments of a file from its <see cref="WorkFolderFile.Id"/> alone, without accessing it.
+    /// The result is non-empty and its final segment is the file name.
+    /// </summary>
+    IReadOnlyList<string> GetFilePathSegments(string fileId);
 }

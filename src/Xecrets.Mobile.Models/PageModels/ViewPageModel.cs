@@ -61,7 +61,7 @@ public partial class ViewPageModel(IPreviewService previewService, IUserInterfac
         IPreviewState state = previewService.Current;
         if (!state.IsReady || (state.Kind != PreviewKind.Image && state.Kind != PreviewKind.Text))
         {
-            await UserInterfaceService.GoBackAsync();
+            await UserInterfaceService.GoBackAsync(null);
             return;
         }
 
@@ -79,6 +79,6 @@ public partial class ViewPageModel(IPreviewService previewService, IUserInterfac
     [RelayCommand]
     private async Task Close()
     {
-        await UserInterfaceService.GoBackAsync();
+        await UserInterfaceService.GoBackAsync(null);
     }
 }

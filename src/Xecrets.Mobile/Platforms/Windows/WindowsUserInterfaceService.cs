@@ -44,11 +44,14 @@ public class WindowsUserInterfaceService(IBuildInformation buildInformation) : D
     // A Toast on Windows is an operating system notification rather than something shown in the app,
     // and it needs the app to be registered with the notification system, which an unpackaged app
     // isn't. Put the message on the page's message line instead.
+    private IDispatcherTimer? _timer;
+
     public override Task DisplayTransientMessageAsync(string message)
     {
         Page currentPage = Shell.Current.CurrentPage;
         if (currentPage.BindingContext is IStatusTextPageModel pageModel)
         {
+            _timer?.Stop();
             pageModel.MessageText = message;
 
             IDispatcherTimer timer = currentPage.Dispatcher.CreateTimer();
@@ -60,6 +63,7 @@ public class WindowsUserInterfaceService(IBuildInformation buildInformation) : D
                 pageModel.MessageText = string.Empty;
             };
 
+            _timer = timer;
             timer.Start();
         }
 
