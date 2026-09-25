@@ -42,7 +42,7 @@ public sealed class RecentFilesService(ProfileSession profileSession) : IRecentF
     public async Task<IReadOnlyList<string>> GetFilesAsync() =>
         [.. (await profileSession.UserStore!.LoadRecentFilesAsync()).Value.Files];
 
-    public async Task RecordTransformAsync(string sourceId, string resultId)
+    public async Task RecordTransformAsync(string resultId)
     {
         await using IEditScope<RecentFiles> scope =
             (await profileSession.UserStore!.LoadRecentFilesAsync()).BeginEdit();
@@ -50,7 +50,7 @@ public sealed class RecentFilesService(ProfileSession profileSession) : IRecentF
         [
             resultId,
             .. scope.Value.Files
-                .Where(file => file != sourceId && file != resultId)
+                .Where(file => file != resultId)
                 .Take(_maxRecentListLength - 1),
         ];
     }

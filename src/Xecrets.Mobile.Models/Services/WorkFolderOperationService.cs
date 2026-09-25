@@ -62,7 +62,7 @@ public sealed class WorkFolderOperationService(
             overwrite,
             encrypted => coreServices.EncryptAsync(cleartext, encrypted, request));
         await file.DeleteAsync();
-        await recentFilesService.RecordTransformAsync(file.Id, resultId);
+        await recentFilesService.RecordTransformAsync(resultId);
     }
 
     public async Task<bool> DecryptWithKnownPasswordsAsync(WorkFolderFile file)
@@ -120,7 +120,7 @@ public sealed class WorkFolderOperationService(
             overwrite,
             session.DecryptAsync);
         await file.DeleteAsync();
-        await recentFilesService.RecordTransformAsync(file.Id, resultId);
+        await recentFilesService.RecordTransformAsync(resultId);
         return true;
     }
 

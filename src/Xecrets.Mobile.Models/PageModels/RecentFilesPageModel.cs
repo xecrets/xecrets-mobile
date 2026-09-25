@@ -96,14 +96,6 @@ public partial class RecentFilesPageModel : PageModelBase, IStatusTextPageModel
         {
             IReadOnlyList<string> fileIds = await _recentFilesService.GetFilesAsync();
 
-            // A successful operation replaces its source with the result at the top of the list. The source is
-            // still listed while a decryption waits for a password, or if the operation did not complete.
-            if (_pendingSourceId is not null && !fileIds.Contains(_pendingSourceId))
-            {
-                _completed[_pendingSourceId] = fileIds[0];
-                _pendingSourceId = null;
-            }
-
             List<RecentFileEntry> available = [];
             foreach (string fileId in fileIds)
             {
@@ -114,6 +106,14 @@ public partial class RecentFilesPageModel : PageModelBase, IStatusTextPageModel
                 }
 
                 available.Add(CreateEntry(fileId, result.File));
+            }
+
+            // A successful operation deletes its source and puts the result at the top of the list. The source still
+            // exists while a decryption waits for a password, or if the operation did not complete.
+            if (_pendingSourceId is not null && available.All(entry => entry.Id != _pendingSourceId))
+            {
+                _completed[_pendingSourceId] = fileIds[0];
+                _pendingSourceId = null;
             }
 
             _available = available;

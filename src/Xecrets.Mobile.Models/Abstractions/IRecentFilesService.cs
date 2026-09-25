@@ -39,7 +39,8 @@ public interface IRecentFilesService
     Task<IReadOnlyList<string>> GetFilesAsync();
 
     /// <summary>
-    /// Replaces the source file of an encryption or decryption with its result, at the top of the list.
+    /// Puts the result of an encryption or decryption at the top of the list. The source is kept, so that it is listed
+    /// again if it reappears.
     /// </summary>
-    Task RecordTransformAsync(string sourceId, string resultId);
+    Task RecordTransformAsync(string resultId);
 }

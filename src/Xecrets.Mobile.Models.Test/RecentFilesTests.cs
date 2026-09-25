@@ -49,14 +49,14 @@ namespace Xecrets.Mobile.Models.Test;
 public sealed class RecentFilesTests
 {
     [Test]
-    public async Task RecordTransformReplacesSourceWithResultAtTop()
+    public async Task RecordTransformPutsResultAtTopAndKeepsSource()
     {
         TestUserDataStore store = new() { Files = ["a.axx", "b.txt", "c.txt"] };
         RecentFilesService service = new(SignedIn(store));
 
-        await service.RecordTransformAsync("b.txt", "b-txt.axx");
+        await service.RecordTransformAsync("b-txt.axx");
 
-        Assert.That(await service.GetFilesAsync(), Is.EqualTo(["b-txt.axx", "a.axx", "c.txt"]));
+        Assert.That(await service.GetFilesAsync(), Is.EqualTo(["b-txt.axx", "a.axx", "b.txt", "c.txt"]));
     }
 
     [Test]
@@ -65,9 +65,9 @@ public sealed class RecentFilesTests
         TestUserDataStore store = new() { Files = ["a.axx", "b-txt.axx", "b.txt"] };
         RecentFilesService service = new(SignedIn(store));
 
-        await service.RecordTransformAsync("b.txt", "b-txt.axx");
+        await service.RecordTransformAsync("b-txt.axx");
 
-        Assert.That(await service.GetFilesAsync(), Is.EqualTo(["b-txt.axx", "a.axx"]));
+        Assert.That(await service.GetFilesAsync(), Is.EqualTo(["b-txt.axx", "a.axx", "b.txt"]));
     }
 
     [Test]
@@ -76,7 +76,7 @@ public sealed class RecentFilesTests
         TestUserDataStore store = new() { Files = [.. Enumerable.Range(0, 25).Select(i => $"{i}.txt")] };
         RecentFilesService service = new(SignedIn(store));
 
-        await service.RecordTransformAsync("source.txt", "result.axx");
+        await service.RecordTransformAsync("result.axx");
 
         IReadOnlyList<string> files = await service.GetFilesAsync();
         Assert.That(files, Has.Count.EqualTo(25));
@@ -151,7 +151,7 @@ public sealed class RecentFilesTests
 
         await page.ReverseCommand.ExecuteAsync(page.Files[1]);
 
-        Assert.That(recentFiles.Files, Is.EqualTo(["folder/two-txt.axx", "folder/one.txt", "folder/old.axx"]));
+        Assert.That(recentFiles.Files, Is.EqualTo(["folder/two-txt.axx", "folder/one.txt", "folder/two.txt", "folder/old.axx"]));
         Assert.That(page.SelectedState, Is.EqualTo(SelectedFileState.Decrypted));
         Assert.That(
             page.Files.Select(file => (file.Id, file.IsCompleted)),
@@ -223,7 +223,7 @@ public sealed class RecentFilesTests
         userInterface ??= new TestUserInterfaceService();
         WorkFolderWorkflow workflow = new(
             folders,
-            new TestOperationService(recentFiles),
+            new TestOperationService(recentFiles, folders),
             new FlowContext(),
             new TestCoreServices(),
             userInterface);
@@ -281,9 +281,9 @@ public sealed class RecentFilesTests
     {
         public List<string> Files { get; set; } = [];
         public Task<IReadOnlyList<string>> GetFilesAsync() => Task.FromResult<IReadOnlyList<string>>([.. Files]);
-        public Task RecordTransformAsync(string sourceId, string resultId)
+        public Task RecordTransformAsync(string resultId)
         {
-            Files = [resultId, .. Files.Where(file => file != sourceId && file != resultId)];
+            Files = [resultId, .. Files.Where(file => file != resultId)];
             return Task.CompletedTask;
         }
     }
@@ -307,14 +307,19 @@ public sealed class RecentFilesTests
         public Task<WorkFolderFile?> PickFileAsync(WorkFolder? folder, FilePickerKind pickerKind) => throw new NotSupportedException();
     }
 
-    private sealed class TestOperationService(IRecentFilesService recentFiles) : IWorkFolderOperationService
+    private sealed class TestOperationService(IRecentFilesService recentFiles, TestWorkFolderService folders)
+        : IWorkFolderOperationService
     {
         public bool HasPendingPasswordRequest => false;
-        public Task EncryptAsync(WorkFolderFile file) =>
-            recentFiles.RecordTransformAsync(file.Id, $"{file.LocationId}/{Path.GetFileNameWithoutExtension(file.FileName)}-txt.axx");
+        public Task EncryptAsync(WorkFolderFile file)
+        {
+            folders.Missing.Add(file.Id);
+            return recentFiles.RecordTransformAsync($"{file.LocationId}/{Path.GetFileNameWithoutExtension(file.FileName)}-txt.axx");
+        }
         public async Task<bool> DecryptWithKnownPasswordsAsync(WorkFolderFile file)
         {
-            await recentFiles.RecordTransformAsync(file.Id, $"{file.LocationId}/decrypted.txt");
+            folders.Missing.Add(file.Id);
+            await recentFiles.RecordTransformAsync($"{file.LocationId}/decrypted.txt");
             return true;
         }
         public Task<bool> DecryptWithPasswordAsync(string password) => throw new NotSupportedException();
