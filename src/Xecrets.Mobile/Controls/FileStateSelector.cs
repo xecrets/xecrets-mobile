@@ -28,28 +28,28 @@
 
 #endregion Copyright and GPL License
 
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Maui.Hosting;
+using Microsoft.Maui.Controls;
 
-using System.Runtime.Versioning;
+using Xecrets.Mobile.Models.Models;
 
-using Xecrets.Mobile.Abstractions;
-using Xecrets.Mobile.Controls;
-using Xecrets.Mobile.Models.Abstractions;
+namespace Xecrets.Mobile.Controls;
 
-namespace Xecrets.Mobile.Platforms.Windows;
-
-[SupportedOSPlatform("windows10.0.19041")]
-internal static class MauiAppBuilderExtensions
+/// <summary>
+/// Selects between encrypted and decrypted files, shown as the native segmented control of each platform through
+/// a platform specific handler.
+/// </summary>
+public partial class FileStateSelector : View
 {
-    internal static MauiAppBuilder ConfigurePlatform(this MauiAppBuilder builder)
+    public static readonly BindableProperty SelectedStateProperty = BindableProperty.Create(
+        nameof(SelectedState),
+        typeof(SelectedFileState),
+        typeof(FileStateSelector),
+        SelectedFileState.Encrypted,
+        BindingMode.TwoWay);
+
+    public SelectedFileState SelectedState
     {
-        builder.Services.AddSingleton<IPickedWritableFileFactory, WindowsPickedWritableFileFactory>();
-        builder.Services.AddSingleton<IFileService, WindowsFileService>();
-        builder.Services.AddSingleton<IWorkFolderService, WindowsWorkFolderService>();
-        builder.Services.AddSingleton<IUserInterfaceService, WindowsUserInterfaceService>();
-        builder.Services.AddSingleton<IPlatformServices, WindowsServices>();
-        builder.ConfigureMauiHandlers(handlers => handlers.AddHandler<FileStateSelector, WindowsFileStateSelectorHandler>());
-        return builder;
+        get => (SelectedFileState)GetValue(SelectedStateProperty);
+        set => SetValue(SelectedStateProperty, value);
     }
 }

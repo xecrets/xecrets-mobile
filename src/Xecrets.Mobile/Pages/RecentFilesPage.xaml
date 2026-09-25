@@ -47,16 +47,6 @@
     </ContentPage.Behaviors>
     <ContentPage.Resources>
         <ResourceDictionary>
-            <FontImageSource x:Key="IconShowDecrypted"
-                             Glyph="{x:Static f:FluentUI.lock_open_24_regular}"
-                             FontFamily="{x:Static f:FluentUI.FontFamily}"
-                             Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
-                             Size="24" />
-            <FontImageSource x:Key="IconShowEncrypted"
-                             Glyph="{x:Static f:FluentUI.lock_closed_24_regular}"
-                             FontFamily="{x:Static f:FluentUI.FontFamily}"
-                             Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
-                             Size="24" />
             <FontImageSource x:Key="IconEncryptFile"
                              Glyph="{x:Static f:FluentUI.lock_closed_28_regular}"
                              FontFamily="{x:Static f:FluentUI.FontFamily}"
@@ -86,18 +76,8 @@
                                    Style="{StaticResource Title1}" />
                             <pageControls:PageMessages MessageText="{Binding MessageText}"
                                                        StatusText="{Binding StatusText}" />
-                            <Button Text="{Binding FilterText}"
-                                    ImageSource="{StaticResource IconShowDecrypted}"
-                                    HorizontalOptions="Center"
-                                    Command="{Binding ToggleFilterCommand}">
-                                <Button.Triggers>
-                                    <DataTrigger TargetType="Button"
-                                                 Binding="{Binding ShowEncrypted}"
-                                                 Value="True">
-                                        <Setter Property="ImageSource" Value="{StaticResource IconShowEncrypted}" />
-                                    </DataTrigger>
-                                </Button.Triggers>
-                            </Button>
+                            <pageControls:FileStateSelector SelectedState="{Binding SelectedState}"
+                                                            HorizontalOptions="Center" />
                             <VerticalStackLayout x:Name="ActionButtonStack"
                                                  HorizontalOptions="Center"
                                                  Spacing="{StaticResource LayoutSpacing}"

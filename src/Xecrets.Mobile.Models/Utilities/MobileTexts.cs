@@ -124,6 +124,12 @@ public static class MobileTexts
 
     public static string DialogTextSelfHandoffRejected => "Xecrets Ez can't handle files from itself.";
 
+    public static string FileStateAll => "All";
+
+    public static string FileStateDecrypted => "Decrypted";
+
+    public static string FileStateEncrypted => "Encrypted";
+
     public static string EncryptToShareDescription => "Enter a separate password for the encrypted copy. Share the password through a different channel.";
 
     public static string HomeContentTitle => "Actions";
@@ -142,11 +148,7 @@ public static class MobileTexts
 
     public static string RecentFilesContentTitle => "Recent files";
 
-    public static string RecentFilesDecrypted => "Decrypted files";
-
     public static string RecentFilesDescription => "Files recently encrypted or decrypted in \"my folders\", most recent first. Choose to show decrypted or encrypted files, and use the lock button to encrypt or decrypt a file.";
-
-    public static string RecentFilesEncrypted => "Encrypted files";
 
     public static string SuggestPasswordDescription => "Suggested passwords that are strong, and easy to type and remember. Use » for a new suggestion, and the copy button to copy it to the clipboard.";
 

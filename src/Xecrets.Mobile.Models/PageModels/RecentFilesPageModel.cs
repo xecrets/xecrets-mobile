@@ -55,6 +55,7 @@ public partial class RecentFilesPageModel : PageModelBase, IStatusTextPageModel
     // The order of the rows in the current filter view, by source file id for completed rows.
     private List<string> _rowOrder = [];
 
+    private List<RecentFileEntry> _available = [];
     private bool _isFilterChosen;
     private string? _pendingSourceId;
 
@@ -81,14 +82,9 @@ public partial class RecentFilesPageModel : PageModelBase, IStatusTextPageModel
 
     public string Description => MobileTexts.RecentFilesDescription;
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(FilterText))]
-    public partial bool ShowEncrypted { get; set; }
-
-    public string FilterText => ShowEncrypted ? MobileTexts.RecentFilesEncrypted : MobileTexts.RecentFilesDecrypted;
+    [ObservableProperty] public partial SelectedFileState SelectedState { get; set; }
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(ToggleFilterCommand))]
     [NotifyCanExecuteChangedFor(nameof(ReverseCommand))]
     public partial bool IsBusy { get; set; }
 
@@ -119,28 +115,19 @@ public partial class RecentFilesPageModel : PageModelBase, IStatusTextPageModel
                 available.Add(CreateEntry(fileId, result.File));
             }
 
+            _available = available;
             if (!_isFilterChosen)
             {
-                ShowEncrypted = available.All(entry => entry.IsEncrypted);
+                SelectedState = available.All(entry => entry.IsEncrypted) ? SelectedFileState.Encrypted : SelectedFileState.Decrypted;
                 _isFilterChosen = true;
             }
 
-            ShowRows(available);
+            ShowRows();
         }
         catch (Exception ex)
         {
             StatusText = ex.FormatException();
         }
-    }
-
-    [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private async Task ToggleFilter()
-    {
-        ShowEncrypted = !ShowEncrypted;
-        _completed.Clear();
-        _rowOrder = [];
-        _pendingSourceId = null;
-        await Load();
     }
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
@@ -186,13 +173,28 @@ public partial class RecentFilesPageModel : PageModelBase, IStatusTextPageModel
 
     private bool CanUseCommand() => !IsBusy;
 
+    // Changing the filter only regroups the files already loaded. The default chosen by the first load is not a
+    // change of filter.
+    partial void OnSelectedStateChanged(SelectedFileState value)
+    {
+        if (!_isFilterChosen)
+        {
+            return;
+        }
+
+        _completed.Clear();
+        _rowOrder = [];
+        _pendingSourceId = null;
+        ShowRows();
+    }
+
     /// <summary>
     /// Shows the available files of the current filter, keeping the order of the rows already shown so that the
     /// result of a completed operation takes the place of its source.
     /// </summary>
-    private void ShowRows(List<RecentFileEntry> available)
+    private void ShowRows()
     {
-        Dictionary<string, RecentFileEntry> entries = available.ToDictionary(entry => entry.Id);
+        Dictionary<string, RecentFileEntry> entries = _available.ToDictionary(entry => entry.Id);
         List<(string Key, RecentFileEntry Entry)> rows = [];
         foreach (string key in _rowOrder)
         {
@@ -203,14 +205,16 @@ public partial class RecentFilesPageModel : PageModelBase, IStatusTextPageModel
                     rows.Add((key, result with { IsCompleted = true }));
                 }
             }
-            else if (entries.TryGetValue(key, out RecentFileEntry? entry) && entry.IsEncrypted == ShowEncrypted)
+            else if (entries.TryGetValue(key, out RecentFileEntry? entry) && IsShown(entry))
             {
                 rows.Add((key, entry));
             }
         }
 
-        rows.AddRange(available
-            .Where(entry => entry.IsEncrypted == ShowEncrypted && rows.All(row => row.Key != entry.Id))
+        // Compared by entry rather than by key, since a completed result is also listed by itself when all files are
+        // shown.
+        rows.AddRange(_available
+            .Where(entry => IsShown(entry) && rows.All(row => row.Entry.Id != entry.Id))
             .Select(entry => (entry.Id, entry)));
 
         _rowOrder = [.. rows.Select(row => row.Key)];
@@ -220,6 +224,14 @@ public partial class RecentFilesPageModel : PageModelBase, IStatusTextPageModel
             Files.Add(entry);
         }
     }
+
+    private bool IsShown(RecentFileEntry entry) => SelectedState switch
+    {
+        SelectedFileState.Encrypted => entry.IsEncrypted,
+        SelectedFileState.Decrypted => !entry.IsEncrypted,
+        SelectedFileState.All => true,
+        _ => throw new InvalidOperationException($"Unknown file state {SelectedState}."),
+    };
 
     private RecentFileEntry CreateEntry(string fileId, WorkFolderFile? file)
     {

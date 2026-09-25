@@ -115,16 +115,16 @@ public sealed class RecentFilesTests
         Assert.That(recentFiles.Files, Is.Empty);
     }
 
-    [TestCase(new[] { "a.axx", "b.txt" }, false)]
-    [TestCase(new[] { "a.axx" }, true)]
-    [TestCase(new string[0], true)]
-    public async Task DefaultFilterShowsDecryptedUnlessThereAreNone(string[] files, bool expectedShowEncrypted)
+    [TestCase(new[] { "a.axx", "b.txt" }, SelectedFileState.Decrypted)]
+    [TestCase(new[] { "a.axx" }, SelectedFileState.Encrypted)]
+    [TestCase(new string[0], SelectedFileState.Encrypted)]
+    public async Task DefaultFilterShowsDecryptedUnlessThereAreNone(string[] files, SelectedFileState expectedState)
     {
         RecentFilesPageModel page = CreatePage(new TestRecentFilesService { Files = [.. files] }, new TestWorkFolderService());
 
         await page.LoadCommand.ExecuteAsync(null);
 
-        Assert.That(page.ShowEncrypted, Is.EqualTo(expectedShowEncrypted));
+        Assert.That(page.SelectedState, Is.EqualTo(expectedState));
     }
 
     [Test]
@@ -152,15 +152,34 @@ public sealed class RecentFilesTests
         await page.ReverseCommand.ExecuteAsync(page.Files[1]);
 
         Assert.That(recentFiles.Files, Is.EqualTo(["folder/two-txt.axx", "folder/one.txt", "folder/old.axx"]));
-        Assert.That(page.ShowEncrypted, Is.False);
+        Assert.That(page.SelectedState, Is.EqualTo(SelectedFileState.Decrypted));
         Assert.That(
             page.Files.Select(file => (file.Id, file.IsCompleted)),
             Is.EqualTo(new[] { ("folder/one.txt", false), ("folder/two-txt.axx", true) }));
 
-        await page.ToggleFilterCommand.ExecuteAsync(null);
-        await page.ToggleFilterCommand.ExecuteAsync(null);
+        page.SelectedState = SelectedFileState.Encrypted;
+        page.SelectedState = SelectedFileState.Decrypted;
 
         Assert.That(page.Files.Select(file => (file.Id, file.IsCompleted)), Is.EqualTo(new[] { ("folder/one.txt", false) }));
+    }
+
+    [Test]
+    public async Task AllShowsBothStatesWithTheCompletedResultOnlyInPlace()
+    {
+        TestRecentFilesService recentFiles = new() { Files = ["folder/one.txt", "folder/old.axx", "folder/two.txt"] };
+        RecentFilesPageModel page = CreatePage(recentFiles, new TestWorkFolderService());
+        await page.LoadCommand.ExecuteAsync(null);
+        page.SelectedState = SelectedFileState.All;
+
+        Assert.That(
+            page.Files.Select(file => file.Id),
+            Is.EqualTo(["folder/one.txt", "folder/old.axx", "folder/two.txt"]));
+
+        await page.ReverseCommand.ExecuteAsync(page.Files[2]);
+
+        Assert.That(
+            page.Files.Select(file => (file.Id, file.IsCompleted)),
+            Is.EqualTo(new[] { ("folder/one.txt", false), ("folder/old.axx", false), ("folder/two-txt.axx", true) }));
     }
 
     [Test]

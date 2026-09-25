@@ -32,6 +32,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Hosting;
 
 using Xecrets.Mobile.Abstractions;
+using Xecrets.Mobile.Controls;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Services;
 
@@ -46,6 +47,7 @@ internal static class MauiAppBuilderExtensions
         builder.Services.AddSingleton<IWorkFolderService, AndroidWorkFolderService>();
         builder.Services.AddSingleton<IUserInterfaceService, AndroidUserInterfaceService>();
         builder.Services.AddSingleton<IPlatformServices, AndroidServices>();
+        builder.ConfigureMauiHandlers(handlers => handlers.AddHandler<FileStateSelector, AndroidFileStateSelectorHandler>());
         return builder;
     }
 }

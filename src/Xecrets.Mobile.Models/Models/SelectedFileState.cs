@@ -28,28 +28,11 @@
 
 #endregion Copyright and GPL License
 
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Maui.Hosting;
+namespace Xecrets.Mobile.Models.Models;
 
-using System.Runtime.Versioning;
-
-using Xecrets.Mobile.Abstractions;
-using Xecrets.Mobile.Controls;
-using Xecrets.Mobile.Models.Abstractions;
-
-namespace Xecrets.Mobile.Platforms.Windows;
-
-[SupportedOSPlatform("windows10.0.19041")]
-internal static class MauiAppBuilderExtensions
+public enum SelectedFileState
 {
-    internal static MauiAppBuilder ConfigurePlatform(this MauiAppBuilder builder)
-    {
-        builder.Services.AddSingleton<IPickedWritableFileFactory, WindowsPickedWritableFileFactory>();
-        builder.Services.AddSingleton<IFileService, WindowsFileService>();
-        builder.Services.AddSingleton<IWorkFolderService, WindowsWorkFolderService>();
-        builder.Services.AddSingleton<IUserInterfaceService, WindowsUserInterfaceService>();
-        builder.Services.AddSingleton<IPlatformServices, WindowsServices>();
-        builder.ConfigureMauiHandlers(handlers => handlers.AddHandler<FileStateSelector, WindowsFileStateSelectorHandler>());
-        return builder;
-    }
+    Encrypted,
+    Decrypted,
+    All,
 }
