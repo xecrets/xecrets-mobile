@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+    Xecrets Ez Mobile - Copyright © 2026 Svante Seleborg, All Rights Reserved.
+
+    This code file is part of Xecrets Ez Mobile, an application that uses the Xecrets.Net library, parts of which in turn
+    are derived from AxCrypt as licensed under GPL v3 or later. This code is not derived from AxCrypt. It is separately
+    authored and copyrighted, and licensed only as follows unless explicitly licensed otherwise.
+
+    Xecrets Ez Mobile is free software: you can redistribute it and/or modify it under the terms of the GNU General
+    Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+    later version.
+
+    No additional permission is granted beyond that license. If you incorporate this code into a larger work and
+    distribute that work to others, you are responsible for complying with the GNU General Public License version 3 or
+    later. See https://www.gnu.org/licenses/ for more information.
+
+    Xecrets Ez Mobile is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+    implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+    details.
+
+    You should have received a copy of the GNU General Public License along with Xecrets Ez Mobile. If not, see
+    <https://www.gnu.org/licenses/>.
+
+    The source repository can be found at https://github.com/xecrets/xecrets-mobile please go there for more information,
+    suggestions and contributions. You may also visit https://www.axantum.com for more information about the author.
+-->
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:f="clr-namespace:Fonts"
+             xmlns:pageControls="clr-namespace:Xecrets.Mobile.Controls"
+             xmlns:mobileModels="clr-namespace:Xecrets.Mobile.Models.Models;assembly=Xecrets.Mobile.Models"
+             xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
+             xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
+             xmlns:system="clr-namespace:System;assembly=System.Runtime"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
+             x:Class="Xecrets.Mobile.Pages.RecentFilesPage"
+             x:Name="PageRoot"
+             x:DataType="pageModels:RecentFilesPageModel">
+    <ContentPage.Behaviors>
+        <toolkit:EventToCommandBehavior x:TypeArguments="system:EventArgs"
+                                        x:DataType="pages:RecentFilesPage"
+                                        BindingContext="{x:Reference PageRoot}"
+                                        EventName="Appearing"
+                                        Command="{Binding LoadCommand}" />
+    </ContentPage.Behaviors>
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <FontImageSource x:Key="IconShowDecrypted"
+                             Glyph="{x:Static f:FluentUI.lock_open_24_regular}"
+                             FontFamily="{x:Static f:FluentUI.FontFamily}"
+                             Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                             Size="24" />
+            <FontImageSource x:Key="IconShowEncrypted"
+                             Glyph="{x:Static f:FluentUI.lock_closed_24_regular}"
+                             FontFamily="{x:Static f:FluentUI.FontFamily}"
+                             Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                             Size="24" />
+            <FontImageSource x:Key="IconEncryptFile"
+                             Glyph="{x:Static f:FluentUI.lock_closed_28_regular}"
+                             FontFamily="{x:Static f:FluentUI.FontFamily}"
+                             Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                             Size="28" />
+            <FontImageSource x:Key="IconDecryptFile"
+                             Glyph="{x:Static f:FluentUI.lock_open_28_regular}"
+                             FontFamily="{x:Static f:FluentUI.FontFamily}"
+                             Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                             Size="28" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+    <Grid>
+        <ScrollView>
+            <VerticalStackLayout x:Name="ContentRoot"
+                                 Padding="{StaticResource LayoutPadding}"
+                                 Spacing="{StaticResource LayoutSpacing}">
+                <pageControls:PageBreadcrumb Text="{Binding Breadcrumb}" />
+                <Border x:Name="ContentColumn"
+                        HorizontalOptions="Center"
+                        Style="{StaticResource PageInformationCardStyle}">
+                    <Grid RowDefinitions="Auto,Auto">
+                        <Grid x:Name="ContentBody" Grid.Row="1" Padding="{StaticResource PageInformationBodyPadding}">
+                            <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
+                            <Label Text="{x:Static modelUtilities:MobileTexts.RecentFilesContentTitle}"
+                                   HorizontalOptions="Center"
+                                   Style="{StaticResource Title1}" />
+                            <pageControls:PageMessages MessageText="{Binding MessageText}"
+                                                       StatusText="{Binding StatusText}" />
+                            <Button Text="{Binding FilterText}"
+                                    ImageSource="{StaticResource IconShowDecrypted}"
+                                    HorizontalOptions="Center"
+                                    Command="{Binding ToggleFilterCommand}">
+                                <Button.Triggers>
+                                    <DataTrigger TargetType="Button"
+                                                 Binding="{Binding ShowEncrypted}"
+                                                 Value="True">
+                                        <Setter Property="ImageSource" Value="{StaticResource IconShowEncrypted}" />
+                                    </DataTrigger>
+                                </Button.Triggers>
+                            </Button>
+                            <VerticalStackLayout x:Name="ActionButtonStack"
+                                                 HorizontalOptions="Center"
+                                                 Spacing="{StaticResource LayoutSpacing}"
+                                                 BindableLayout.ItemsSource="{Binding Files}">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="mobileModels:RecentFileEntry">
+                                    <Grid ColumnDefinitions="*,Auto"
+                                          ColumnSpacing="{StaticResource IconRowSpacing}"
+                                          Margin="{StaticResource IconRowMargin}">
+                                        <Grid.Triggers>
+                                            <DataTrigger TargetType="Grid"
+                                                         Binding="{Binding IsCompleted}"
+                                                         Value="True">
+                                                <Setter Property="Opacity" Value="0.5" />
+                                            </DataTrigger>
+                                        </Grid.Triggers>
+                                        <Entry Grid.Column="0"
+                                               Text="{Binding DisplayPath}"
+                                               IsReadOnly="True" />
+                                        <ImageButton Grid.Column="1"
+                                                     Background="Transparent"
+                                                     Padding="8"
+                                                     Source="{StaticResource IconEncryptFile}"
+                                                     Command="{Binding ReverseCommand}"
+                                                     CommandParameter="{Binding .}">
+                                            <ImageButton.Triggers>
+                                                <DataTrigger TargetType="ImageButton"
+                                                             Binding="{Binding IsEncrypted}"
+                                                             Value="True">
+                                                    <Setter Property="Source" Value="{StaticResource IconDecryptFile}" />
+                                                </DataTrigger>
+                                                <DataTrigger TargetType="ImageButton"
+                                                             Binding="{Binding IsCompleted}"
+                                                             Value="True">
+                                                    <Setter Property="IsVisible" Value="False" />
+                                                </DataTrigger>
+                                            </ImageButton.Triggers>
+                                        </ImageButton>
+                                    </Grid>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                            </VerticalStackLayout>
+                            </VerticalStackLayout>
+                        </Grid>
+                        <pageControls:PageInformationButton Grid.Row="0"
+                                                             Style="{StaticResource PageInformationButtonCorner}"
+                                                             Title="{x:Static modelUtilities:MobileTexts.RecentFilesContentTitle}"
+                                                             Message="{Binding Description}" />
+                    </Grid>
+                </Border>
+            </VerticalStackLayout>
+        </ScrollView>
+        <ActivityIndicator IsRunning="{Binding IsBusy}"
+                           IsVisible="{Binding IsBusy}"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center" />
+    </Grid>
+</ContentPage>

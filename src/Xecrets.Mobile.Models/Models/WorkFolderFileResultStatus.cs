@@ -28,22 +28,11 @@
 
 #endregion Copyright and GPL License
 
-using Xecrets.Mobile.Models.Abstractions;
-
 namespace Xecrets.Mobile.Models.Models;
 
-/// <param name="Id">The platform reference to the file itself, used to open it again later.</param>
-/// <param name="WriteDestinationAsync">Writes a file with the given name next to this one, and returns the platform
-/// reference to the written file.</param>
-public sealed record WorkFolderFile(
-    string Id,
-    string FileName,
-    string LocationId,
-    string LocationDisplayName,
-    string LocationGrantId,
-    bool IsInKnownWorkFolder,
-    Func<Task<Stream>> OpenReadAsync,
-    Func<string, Task<bool>> DestinationExistsAsync,
-    Func<string, bool, Func<Stream, Task>, Task<string>> WriteDestinationAsync,
-    Func<Task> DeleteAsync,
-    IPickedWritableFile WritableFile);
+public enum WorkFolderFileResultStatus
+{
+    IsValid,
+    NotFound,
+    NoAccess,
+}

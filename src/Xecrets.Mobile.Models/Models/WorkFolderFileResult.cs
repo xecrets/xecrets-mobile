@@ -28,22 +28,24 @@
 
 #endregion Copyright and GPL License
 
-using Xecrets.Mobile.Models.Abstractions;
-
 namespace Xecrets.Mobile.Models.Models;
 
-/// <param name="Id">The platform reference to the file itself, used to open it again later.</param>
-/// <param name="WriteDestinationAsync">Writes a file with the given name next to this one, and returns the platform
-/// reference to the written file.</param>
-public sealed record WorkFolderFile(
-    string Id,
-    string FileName,
-    string LocationId,
-    string LocationDisplayName,
-    string LocationGrantId,
-    bool IsInKnownWorkFolder,
-    Func<Task<Stream>> OpenReadAsync,
-    Func<string, Task<bool>> DestinationExistsAsync,
-    Func<string, bool, Func<Stream, Task>, Task<string>> WriteDestinationAsync,
-    Func<Task> DeleteAsync,
-    IPickedWritableFile WritableFile);
+public sealed record WorkFolderFileResult
+{
+    private WorkFolderFileResult(WorkFolderFileResultStatus status, WorkFolderFile? file = null)
+    {
+        Status = status;
+        File = file;
+    }
+
+    public WorkFolderFileResultStatus Status { get; }
+
+    public WorkFolderFile? File { get; }
+
+    public static WorkFolderFileResult Valid(WorkFolderFile file) =>
+        new(WorkFolderFileResultStatus.IsValid, file);
+
+    public static WorkFolderFileResult NotFound { get; } = new(WorkFolderFileResultStatus.NotFound);
+
+    public static WorkFolderFileResult NoAccess { get; } = new(WorkFolderFileResultStatus.NoAccess);
+}

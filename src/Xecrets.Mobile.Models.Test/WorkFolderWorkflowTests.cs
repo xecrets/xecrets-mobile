@@ -130,7 +130,7 @@ public sealed class WorkFolderWorkflowTests
     }
 
     private static WorkFolderFile CreateFile(string name, string location, bool known, bool isEncrypted = false) =>
-        new(name, location, location, "grant", known,
+        new($"{location}/{name}", name, location, location, "grant", known,
             () => Task.FromResult<Stream>(new MemoryStream(isEncrypted ? [0xe0] : [0x00])),
             _ => throw new NotSupportedException(),
             (_, _, _) => throw new NotSupportedException(),
@@ -178,6 +178,8 @@ public sealed class WorkFolderWorkflowTests
             PickerKinds.Add(pickerKind);
             return Task.FromResult(Files.Dequeue());
         }
+        public Task<WorkFolderFileResult> OpenFileAsync(string fileId) => throw new NotSupportedException();
+        public IReadOnlyList<string> GetFilePathSegments(string fileId) => throw new NotSupportedException();
     }
 
     private sealed class TestOperationService : IWorkFolderOperationService

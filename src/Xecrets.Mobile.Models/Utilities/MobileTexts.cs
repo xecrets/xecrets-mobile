@@ -59,6 +59,9 @@ public static class MobileTexts
 
     public static string BreadcrumbReceivedFile => "Received file";
 
+    // "Recent files"
+    public static string BreadcrumbRecentFiles => RecentFilesContentTitle;
+
     public static string BreadcrumbResult => "Result";
 
     public static string BreadcrumbSeparator => " › ";
@@ -107,6 +110,10 @@ public static class MobileTexts
 
     public static string DialogTextFileDeleted => "The file was deleted.";
 
+    public static string DialogTextRecentFileNotFound => "The file no longer exists.";
+
+    public static string DialogTextRecentFileNoAccess => "Access to the folder of this file has been lost. Add the folder again in \"my folders\".";
+
     public static string DialogTextCopiedToClipboard => "Copied to the clipboard.";
 
     public static string DialogTextExceptionFormat => "An unexpected error \"{0}\" occurred.";
@@ -128,7 +135,18 @@ public static class MobileTexts
     // "Third-Party Licenses"
     public static string MenuThirdPartyLicenses => ThirdPartyLicensesPageTitle;
 
+    // "Recent files"
+    public static string MenuRecentFiles => RecentFilesContentTitle;
+
     public static string MenuXecretsDesktop => "Xecrets desktop";
+
+    public static string RecentFilesContentTitle => "Recent files";
+
+    public static string RecentFilesDecrypted => "Decrypted files";
+
+    public static string RecentFilesDescription => "Files recently encrypted or decrypted in \"my folders\", most recent first. Choose to show decrypted or encrypted files, and use the lock button to encrypt or decrypt a file.";
+
+    public static string RecentFilesEncrypted => "Encrypted files";
 
     public static string SuggestPasswordDescription => "Suggested passwords that are strong, and easy to type and remember. Use » for a new suggestion, and the copy button to copy it to the clipboard.";
 

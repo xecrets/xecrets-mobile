@@ -170,14 +170,45 @@ public sealed class AppleWorkFolderService(
             return null;
         }
 
+        return CreateFile(fileUrl, await FindKnownGrantAsync(fileUrl));
+    }
+
+    public async Task<WorkFolderFileResult> OpenFileAsync(string fileId)
+    {
+        NSUrl fileUrl = NSUrl.FromString(fileId)!;
+        NSUrl? grant = await FindResolvableGrantAsync(fileUrl);
+        if (grant is null)
+        {
+            return WorkFolderFileResult.NoAccess;
+        }
+
+        WorkFolderFileResultStatus status = await WithAccessAsync(grant, () => Task.FromResult(
+            !Directory.Exists(grant.Path!)
+                ? WorkFolderFileResultStatus.NoAccess
+                : File.Exists(fileUrl.Path!)
+                    ? WorkFolderFileResultStatus.IsValid
+                    : WorkFolderFileResultStatus.NotFound));
+        return status switch
+        {
+            WorkFolderFileResultStatus.IsValid => WorkFolderFileResult.Valid(CreateFile(fileUrl, grant)),
+            WorkFolderFileResultStatus.NotFound => WorkFolderFileResult.NotFound,
+            _ => WorkFolderFileResult.NoAccess,
+        };
+    }
+
+    public IReadOnlyList<string> GetFilePathSegments(string fileId) =>
+        NSUrl.FromString(fileId)!.Path!.Split('/', StringSplitOptions.RemoveEmptyEntries);
+
+    private WorkFolderFile CreateFile(NSUrl fileUrl, NSUrl? knownGrant)
+    {
         NSUrl locationUrl = fileUrl.RemoveLastPathComponent();
         string locationId = locationUrl.AbsoluteString!;
-        NSUrl? knownGrant = await FindKnownGrantAsync(fileUrl);
         bool isInKnownFolder = knownGrant is not null;
         NSUrl accessUrl = knownGrant ?? fileUrl;
         _discoveredLocations[locationId] = (locationUrl, accessUrl);
 
         return new WorkFolderFile(
+            fileUrl.AbsoluteString!,
             fileUrl.LastPathComponent!,
             locationId,
             GetDisplayName(locationUrl),
@@ -189,7 +220,11 @@ public sealed class AppleWorkFolderService(
                 () => Task.FromResult(File.Exists(Path.Combine(locationUrl.Path!, name)))),
             (name, overwrite, writer) => WithAccessAsync(
                 accessUrl,
-                () => WriteFileAsync(locationUrl.Path!, name, overwrite, writer)),
+                async () =>
+                {
+                    await WriteFileAsync(locationUrl.Path!, name, overwrite, writer);
+                    return locationUrl.Append(name, false).AbsoluteString!;
+                }),
             () => WithAccessAsync(accessUrl, () =>
             {
                 File.Delete(fileUrl.Path!);
@@ -322,6 +357,36 @@ public sealed class AppleWorkFolderService(
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Finds the grant of the known folder containing the file, skipping grants that can no longer be resolved,
+    /// such as when the bookmark is missing or the location it refers to is gone.
+    /// </summary>
+    private async Task<NSUrl?> FindResolvableGrantAsync(NSUrl file)
+    {
+        foreach (WorkFolder folder in (await storage.LoadFoldersAsync()).OrderByDescending(item => item.Id.Length))
+        {
+            NSUrl? grant = TryResolveGrant(folder.GrantId);
+            if (grant is not null && IsDescendant(grant, file))
+            {
+                return grant;
+            }
+        }
+
+        return null;
+    }
+
+    private static NSUrl? TryResolveGrant(string id)
+    {
+        try
+        {
+            return File.Exists(GetGrantPath(id)) ? ResolveGrant(id) : null;
+        }
+        catch (NSErrorException)
+        {
+            return null;
+        }
     }
 
     private static void SaveGrant(NSUrl url) => SaveGrant(url, url.AbsoluteString!);

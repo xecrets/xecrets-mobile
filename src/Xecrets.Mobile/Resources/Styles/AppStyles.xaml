@@ -143,6 +143,11 @@
                 FontFamily="{x:Static f:FluentUI.FontFamily}"
                 Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
                 Size="{StaticResource size240}" />
+    <FontImageSource x:Key="IconRecentFilesMenu"
+                Glyph="{x:Static f:FluentUI.history_24_regular}"
+                FontFamily="{x:Static f:FluentUI.FontFamily}"
+                Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                Size="{StaticResource size240}" />
     <FontImageSource x:Key="IconAbout"
                 Glyph="{x:Static f:FluentUI.info_24_regular}"
                 FontFamily="{x:Static f:FluentUI.FontFamily}"

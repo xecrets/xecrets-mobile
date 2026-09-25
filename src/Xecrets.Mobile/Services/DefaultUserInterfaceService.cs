@@ -143,6 +143,7 @@ public class DefaultUserInterfaceService(IBuildInformation buildInformation) : I
             AppDestination.Debug => "debug",
             AppDestination.CacheBrowser => "cache-browser",
             AppDestination.SuggestPassword => "suggest-password",
+            AppDestination.RecentFiles => "recent-files",
             AppDestination.Welcome => "welcome",
             _ => throw new ArgumentOutOfRangeException(nameof(destination), destination, @"Unknown app destination."),
         };

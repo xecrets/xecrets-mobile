@@ -211,12 +211,26 @@ public sealed class MobileDataStoreTests
     }
 
     [Test]
-    public async Task OpenFilesAndRecentFilesAreNotSupported()
+    public async Task OpenFilesAreNotSupported()
     {
         IUserDataStore user = await _store.CreateUserAsync(NewUser("a@example.com", "A", 1));
 
         Assert.That(async () => await user.LoadOpenFilesAsync(), Throws.TypeOf<NotSupportedException>());
-        Assert.That(async () => await user.LoadRecentFilesAsync(), Throws.TypeOf<NotSupportedException>());
+    }
+
+    [Test]
+    public async Task RecentFilesRoundTrip()
+    {
+        IUserDataStore user = await _store.CreateUserAsync(NewUser("a@example.com", "A", 1));
+        await using (IEditScope<RecentFiles> recentFiles = (await user.LoadRecentFilesAsync()).BeginEdit())
+        {
+            recentFiles.Value.Files = ["second", "first"];
+        }
+
+        ApplicationData stored = JsonFile.Deserialize<ApplicationData>(await File.ReadAllBytesAsync(DataPath), _ => { });
+
+        Assert.That((await user.LoadRecentFilesAsync()).Value.Files, Is.EqualTo(["second", "first"]));
+        Assert.That(stored.Users.Single().RecentFiles, Is.EqualTo(["second", "first"]));
     }
 
     private string DataPath => Path.Combine(_directory, "xecrets-data.json");

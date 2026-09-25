@@ -45,8 +45,8 @@ internal sealed class MobileUserDataStore(MobileDataStore store, UserId id, Time
         UserSettings settings = (await store.ReadUserAsync(Id)).Settings;
         return new PersistentData<UserSettings>(settings, async value =>
         {
-            string serialized = await store.UpdateUserAsync(Id, user => user.Settings = value);
-            return serialized;
+            await store.UpdateUserAsync(Id, user => user.Settings = value);
+            return JsonFile.Serialize(value);
         });
     }
 
@@ -71,16 +71,24 @@ internal sealed class MobileUserDataStore(MobileDataStore store, UserId id, Time
         PrivateKeyData privateKeys = (await store.ReadUserAsync(Id)).PrivateKeys;
         return new PersistentData<PrivateKeyData>(privateKeys, async value =>
             {
-                string serialized = await store.UpdateUserAsync(Id, user => user.PrivateKeys = value);
-                return serialized;
+                await store.UpdateUserAsync(Id, user => user.PrivateKeys = value);
+                return JsonFile.Serialize(value);
             });
     }
 
     public Task<IPersistentData<OpenFiles>> LoadOpenFilesAsync()
         => throw new NotSupportedException();
 
-    public Task<IPersistentData<RecentFiles>> LoadRecentFilesAsync()
-        => throw new NotSupportedException();
+    public async Task<IPersistentData<RecentFiles>> LoadRecentFilesAsync()
+    {
+        RecentFiles recentFiles = new() { Files = [.. (await store.ReadUserAsync(Id)).RecentFiles] };
+        return new PersistentData<RecentFiles>(recentFiles,
+            async value =>
+            {
+                await store.UpdateUserAsync(Id, user => user.RecentFiles = [.. value.Files]);
+                return JsonFile.Serialize(value);
+            });
+    }
 
     public async Task<IPersistentData<LicenseData>> LoadLicenseAsync()
     {
@@ -99,8 +107,8 @@ internal sealed class MobileUserDataStore(MobileDataStore store, UserId id, Time
         return new PersistentData<WorkFolders>(workFolders,
             async value =>
             {
-                string serialized = await store.UpdateUserAsync(Id, user => user.WorkFolders = value);
-                return serialized;
+                await store.UpdateUserAsync(Id, user => user.WorkFolders = value);
+                return JsonFile.Serialize(value);
             });
     }
 

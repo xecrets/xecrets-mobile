@@ -175,6 +175,70 @@ public sealed class AndroidWorkFolderService(
             .Where(item => IsDescendant(item, fileUri))
             .OrderByDescending(GetDocumentDepth)
             .FirstOrDefault();
+        return CreateFile(fileUri, accessFolder);
+    }
+
+    public async Task<WorkFolderFileResult> OpenFileAsync(string fileId)
+    {
+        AndroidUri fileUri = AndroidUri.Parse(fileId)!;
+        WorkFolder? accessFolder = (await storage.LoadFoldersAsync())
+            .FirstOrDefault(folder => IsGrantedThrough(folder, fileUri));
+        if (accessFolder is null || !HasPersistedGrant(accessFolder))
+        {
+            return WorkFolderFileResult.NoAccess;
+        }
+
+        try
+        {
+            using ICursor? cursor = ContentResolver.Query(
+                fileUri,
+                [DocumentsContract.Document.ColumnDocumentId],
+                null,
+                null,
+                null);
+            if (cursor?.MoveToFirst() != true)
+            {
+                return WorkFolderFileResult.NotFound;
+            }
+        }
+        catch (Java.Lang.SecurityException)
+        {
+            return WorkFolderFileResult.NoAccess;
+        }
+        catch (Exception ex) when (IsUnsupportedDocumentProviderOperation(ex))
+        {
+            return WorkFolderFileResult.NotFound;
+        }
+
+        return WorkFolderFileResult.Valid(CreateFile(fileUri, accessFolder));
+    }
+
+    public IReadOnlyList<string> GetFilePathSegments(string fileId)
+    {
+        AndroidUri uri = AndroidUri.Parse(fileId)!;
+        string documentId = DocumentsContract.GetDocumentId(uri)!;
+        if (uri.Authority == _externalStorageAuthority)
+        {
+            return documentId.Split([':', '/'], StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        // Other providers have opaque document ids, so the name can only be had from the provider itself.
+        try
+        {
+            return [GetDisplayName(uri)];
+        }
+        catch (Java.Lang.SecurityException)
+        {
+            return [GetExternalStorageDocumentDisplayName(documentId)];
+        }
+        catch (Exception ex) when (IsUnsupportedDocumentProviderOperation(ex))
+        {
+            return [GetExternalStorageDocumentDisplayName(documentId)];
+        }
+    }
+
+    private WorkFolderFile CreateFile(AndroidUri fileUri, WorkFolder? accessFolder)
+    {
         AndroidUri accessFileUri = accessFolder is null
             ? fileUri
             : DocumentsContract.BuildDocumentUriUsingTree(
@@ -190,6 +254,7 @@ public sealed class AndroidWorkFolderService(
         bool isInKnownFolder = accessFolder is not null;
 
         return new WorkFolderFile(
+            accessFileUri.ToString()!,
             GetDisplayName(accessFileUri),
             locationId,
             accessFolder is not null
@@ -285,7 +350,7 @@ public sealed class AndroidWorkFolderService(
         }
     }
 
-    private static async Task WriteDocumentAsync(
+    private static async Task<string> WriteDocumentAsync(
         AndroidUri folderUri,
         string name,
         bool overwrite,
@@ -308,9 +373,10 @@ public sealed class AndroidWorkFolderService(
             AndroidUri? backupUri = overwrite 
                 ? RenameDocument(FindChild(folderUri, name)!, $".xecrets-{Guid.NewGuid():N}.bak")
                 : null;
+            AndroidUri renamedUri;
             try
             {
-                AndroidUri renamedUri = RenameDocument(temporaryUri, name);
+                renamedUri = RenameDocument(temporaryUri, name);
                 if (GetDisplayName(renamedUri) != name)
                 {
                     throw new IOException("The destination file name is already in use.");
@@ -332,6 +398,8 @@ public sealed class AndroidWorkFolderService(
             {
                 throw new IOException("The replaced destination file could not be removed.");
             }
+
+            return renamedUri.ToString()!;
         }
         catch
         {
@@ -406,6 +474,24 @@ public sealed class AndroidWorkFolderService(
         string fileDocumentId = DocumentsContract.GetDocumentId(fileUri)!;
         return fileDocumentId.StartsWith(folderDocumentId.TrimEnd('/') + "/", StringComparison.Ordinal);
     }
+
+    /// <summary>
+    /// Tells if the file uri is built on the persisted tree grant of the folder, which is what gives access to it.
+    /// Folders discovered below a granted folder share the grant of that folder.
+    /// </summary>
+    private static bool IsGrantedThrough(WorkFolder folder, AndroidUri fileUri)
+    {
+        AndroidUri grantUri = AndroidUri.Parse(folder.GrantId)!;
+        return grantUri.Authority == fileUri.Authority &&
+            DocumentsContract.IsTreeUri(fileUri) &&
+            DocumentsContract.GetTreeDocumentId(grantUri) == DocumentsContract.GetTreeDocumentId(fileUri);
+    }
+
+    private static bool HasPersistedGrant(WorkFolder folder) =>
+        ContentResolver.PersistedUriPermissions.Any(permission =>
+            permission.Uri?.ToString() == folder.GrantId &&
+            permission.IsReadPermission &&
+            permission.IsWritePermission);
 
     private static AndroidUri GetTreeDocumentUri(AndroidUri treeUri) =>
         DocumentsContract.BuildDocumentUriUsingTree(treeUri, DocumentsContract.GetTreeDocumentId(treeUri)!)!;

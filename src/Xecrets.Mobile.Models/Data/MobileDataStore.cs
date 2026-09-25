@@ -59,15 +59,14 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
         }
     }
 
-    private async Task<string> UpdateAsync(Action<ApplicationData> update)
+    private async Task UpdateAsync(Action<ApplicationData> update)
     {
         await _access.WaitAsync();
         try
         {
             ApplicationData document = await LoadAsync();
             update(document);
-            string serialized = await SaveAsync(document);
-            return serialized;
+            await SaveAsync(document);
         }
         finally
         {
@@ -80,8 +79,8 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
         ApplicationSettings settings = await ReadAsync(document => document.ApplicationSettings);
         return new PersistentData<ApplicationSettings>(settings, async value =>
             {
-                string serialized = await UpdateAsync(document => document.ApplicationSettings = value);
-                return serialized;
+                await UpdateAsync(document => document.ApplicationSettings = value);
+                return JsonFile.Serialize(value);
             });
     }
 
@@ -221,7 +220,7 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
         return document;
     }
 
-    private Task<string> SaveAsync(ApplicationData document)
+    private Task SaveAsync(ApplicationData document)
     {
         Directory.CreateDirectory(fileService.AppDataDirectory);
         string temporaryPath = $"{DataPath}.tmp";
@@ -231,7 +230,7 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
             string serialized = JsonFile.Serialize(document);
             File.WriteAllText(temporaryPath, serialized);
             File.Move(temporaryPath, DataPath, true);
-            return Task.FromResult(serialized);
+            return Task.CompletedTask;
         }
         finally
         {
@@ -245,7 +244,7 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
     internal Task<LocalProfileData> ReadUserAsync(UserId userId) =>
         ReadAsync(document => FindUser(document, userId));
 
-    internal Task<string> UpdateUserAsync(UserId userId, Action<LocalProfileData> update) =>
+    internal Task UpdateUserAsync(UserId userId, Action<LocalProfileData> update) =>
         UpdateAsync(document => update(FindUser(document, userId)));
 
     private static LocalProfileData FindUser(ApplicationData document, UserId userId) =>

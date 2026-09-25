@@ -126,13 +126,45 @@ public sealed class WindowsWorkFolderService(
             return null;
         }
 
+        return await CreateFileAsync(file);
+    }
+
+    public async Task<WorkFolderFileResult> OpenFileAsync(string fileId)
+    {
+        if (await FindAccessFolderAsync(fileId) is null)
+        {
+            return WorkFolderFileResult.NoAccess;
+        }
+
+        StorageFile file;
+        try
+        {
+            file = await StorageFile.GetFileFromPathAsync(fileId);
+        }
+        catch (FileNotFoundException)
+        {
+            return WorkFolderFileResult.NotFound;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return WorkFolderFileResult.NoAccess;
+        }
+
+        return WorkFolderFileResult.Valid(await CreateFileAsync(file));
+    }
+
+    public IReadOnlyList<string> GetFilePathSegments(string fileId) =>
+        fileId.Split(
+            [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar],
+            StringSplitOptions.RemoveEmptyEntries);
+
+    private async Task<WorkFolderFile> CreateFileAsync(StorageFile file)
+    {
         StorageFolder location = await file.GetParentAsync();
-        WorkFolder? accessFolder = (await GetFoldersAsync())
-            .Where(item => IsDescendant(item.Id, file.Path))
-            .OrderByDescending(item => item.Id.Length)
-            .FirstOrDefault();
+        WorkFolder? accessFolder = await FindAccessFolderAsync(file.Path);
 
         return new WorkFolderFile(
+            file.Path,
             file.Name,
             location.Path,
             location.DisplayName,
@@ -183,7 +215,7 @@ public sealed class WindowsWorkFolderService(
         }
     }
 
-    private static async Task WriteFileAsync(
+    private static async Task<string> WriteFileAsync(
         StorageFolder folder,
         string name,
         bool overwrite,
@@ -220,7 +252,15 @@ public sealed class WindowsWorkFolderService(
                 await temporary.DeleteAsync(StorageDeleteOption.PermanentDelete);
             }
         }
+
+        return Path.Combine(folder.Path, name);
     }
+
+    private async Task<WorkFolder?> FindAccessFolderAsync(string filePath) =>
+        (await GetFoldersAsync())
+            .Where(item => IsDescendant(item.Id, filePath))
+            .OrderByDescending(item => item.Id.Length)
+            .FirstOrDefault();
 
     private static bool IsDescendant(string folderPath, string filePath) =>
         filePath.StartsWith(folderPath.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar,

@@ -54,6 +54,13 @@
               IconImageSource="{StaticResource IconDebug}"
               Command="{Binding DebugCommand}" />
 
+    <MenuItem x:Name="RecentFilesMenuItem"
+              x:DataType="local:AppShell"
+              BindingContext="{x:Reference AppShellRoot}"
+              Text="{x:Static modelUtilities:MobileTexts.MenuRecentFiles}"
+              IconImageSource="{StaticResource IconRecentFilesMenu}"
+              Command="{Binding RecentFilesCommand}" />
+
     <MenuItem x:DataType="local:AppShell"
               BindingContext="{x:Reference AppShellRoot}"
               Text="{x:Static modelUtilities:MobileTexts.MenuSuggestPassword}"

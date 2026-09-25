@@ -28,22 +28,15 @@
 
 #endregion Copyright and GPL License
 
-using Xecrets.Mobile.Models.Abstractions;
+using CommunityToolkit.Mvvm.Input;
 
 namespace Xecrets.Mobile.Models.Models;
 
-/// <param name="Id">The platform reference to the file itself, used to open it again later.</param>
-/// <param name="WriteDestinationAsync">Writes a file with the given name next to this one, and returns the platform
-/// reference to the written file.</param>
-public sealed record WorkFolderFile(
+/// <param name="IsCompleted">The file is the result of an encryption or decryption just made from the list, shown in
+/// place of its source as the indication that the operation succeeded.</param>
+public sealed record RecentFileEntry(
     string Id,
-    string FileName,
-    string LocationId,
-    string LocationDisplayName,
-    string LocationGrantId,
-    bool IsInKnownWorkFolder,
-    Func<Task<Stream>> OpenReadAsync,
-    Func<string, Task<bool>> DestinationExistsAsync,
-    Func<string, bool, Func<Stream, Task>, Task<string>> WriteDestinationAsync,
-    Func<Task> DeleteAsync,
-    IPickedWritableFile WritableFile);
+    string DisplayPath,
+    bool IsEncrypted,
+    bool IsCompleted,
+    IAsyncRelayCommand<RecentFileEntry> ReverseCommand);

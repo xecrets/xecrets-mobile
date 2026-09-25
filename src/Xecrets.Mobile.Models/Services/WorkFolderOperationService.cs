@@ -42,6 +42,7 @@ namespace Xecrets.Mobile.Models.Services;
 public sealed class WorkFolderOperationService(
     ICoreServices coreServices,
     IProfileService profileService,
+    IRecentFilesService recentFilesService,
     IUserInterfaceService userInterfaceService)
     : IWorkFolderOperationService
 {
@@ -56,11 +57,12 @@ public sealed class WorkFolderOperationService(
         EncryptRequest request = CreateEncryptRequest(file.FileName);
 
         await using Stream cleartext = await file.OpenReadAsync();
-        await file.WriteDestinationAsync(
+        string resultId = await file.WriteDestinationAsync(
             destinationName,
             overwrite,
             encrypted => coreServices.EncryptAsync(cleartext, encrypted, request));
         await file.DeleteAsync();
+        await recentFilesService.RecordTransformAsync(file.Id, resultId);
     }
 
     public async Task<bool> DecryptWithKnownPasswordsAsync(WorkFolderFile file)
@@ -113,11 +115,12 @@ public sealed class WorkFolderOperationService(
         }
 
         bool overwrite = await ConfirmOverwriteAsync(file, session.OriginalFileName);
-        await file.WriteDestinationAsync(
+        string resultId = await file.WriteDestinationAsync(
             session.OriginalFileName,
             overwrite,
             session.DecryptAsync);
         await file.DeleteAsync();
+        await recentFilesService.RecordTransformAsync(file.Id, resultId);
         return true;
     }
 

@@ -28,22 +28,35 @@
 
 #endregion Copyright and GPL License
 
-using Xecrets.Mobile.Models.Abstractions;
+using CommunityToolkit.Mvvm.Input;
 
-namespace Xecrets.Mobile.Models.Models;
+using Xecrets.Mobile.Abstractions;
+using Xecrets.Mobile.Models.PageModels;
+using Xecrets.Mobile.Utilities;
 
-/// <param name="Id">The platform reference to the file itself, used to open it again later.</param>
-/// <param name="WriteDestinationAsync">Writes a file with the given name next to this one, and returns the platform
-/// reference to the written file.</param>
-public sealed record WorkFolderFile(
-    string Id,
-    string FileName,
-    string LocationId,
-    string LocationDisplayName,
-    string LocationGrantId,
-    bool IsInKnownWorkFolder,
-    Func<Task<Stream>> OpenReadAsync,
-    Func<string, Task<bool>> DestinationExistsAsync,
-    Func<string, bool, Func<Stream, Task>, Task<string>> WriteDestinationAsync,
-    Func<Task> DeleteAsync,
-    IPickedWritableFile WritableFile);
+namespace Xecrets.Mobile.Pages;
+
+public partial class RecentFilesPage
+{
+    public IAsyncRelayCommand LoadCommand { get; }
+
+    public RecentFilesPage(RecentFilesPageModel model, IPageHeaderService pageHeaderService)
+    {
+        LoadCommand = model.LoadCommand;
+        InitializeComponent();
+        BindingContext = model;
+        pageHeaderService.ApplyStandardHeader(this);
+    }
+
+    protected override void OnSizeAllocated(double width, double height)
+    {
+        base.OnSizeAllocated(width, height);
+
+        UpdateCenteredContentLayout(width);
+    }
+
+    private void UpdateCenteredContentLayout(double pageWidth)
+    {
+        LayoutMetrics.UpdateCenteredContentLayout(pageWidth, ContentRoot, ContentColumn, ActionButtonStack, ContentBody.Padding);
+    }
+}
