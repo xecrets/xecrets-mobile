@@ -39,6 +39,7 @@ using System;
 using System.Globalization;
 using System.Text;
 
+using Xecrets.Core.Abstractions;
 using Xecrets.Core.Public;
 using Xecrets.Common.Abstractions;
 using Xecrets.Common.Implementation;
@@ -89,6 +90,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<IProtectedPayload, ProtectedPayload>();
         builder.Services.AddSingleton<MobileDataStore>();
         builder.Services.AddSingleton<IXecretsDataStore>(services => services.GetRequiredService<MobileDataStore>());
+        builder.Services.AddSingleton<IDeviceSettings, MobileDeviceSettings>();
         builder.Services.AddSingleton<IProfileStore, ProfileStore>();
         builder.Services.AddSingleton<ProfileSession>();
         builder.Services.AddSingleton<IFileWiper, FileWiper>();
@@ -135,6 +137,8 @@ public static class MauiProgram
         builder.Services.AddTransientWithShellRoute<WelcomePage, WelcomePageModel>("welcome");
 
         MauiApp app = builder.Build();
+        Runtime.UseDeviceSettings(app.Services.GetRequiredService<IDeviceSettings>());
+
         Services = app.Services;
         return app;
     }

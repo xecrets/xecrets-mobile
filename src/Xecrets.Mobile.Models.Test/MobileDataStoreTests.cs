@@ -90,6 +90,47 @@ public sealed class MobileDataStoreTests
     }
 
     [Test]
+    public async Task SynchronousApplicationSettingsReadSeesSavedChanges()
+    {
+        await using (IEditScope<ApplicationSettings> settings = _store.OpenApplicationSettings().BeginEdit())
+        {
+            settings.Value.Theme = "Changed";
+        }
+
+        Assert.That(_store.OpenApplicationSettings().Value.Theme, Is.EqualTo("Changed"));
+        Assert.That((await _store.OpenApplicationSettingsAsync()).Value.Theme, Is.EqualTo("Changed"));
+    }
+
+    [Test]
+    public async Task ExportedApplicationConfigurationExcludesDeviceSettings()
+    {
+        await using (IEditScope<ApplicationSettings> settings =
+                     (await _store.OpenApplicationSettingsAsync()).BeginEdit())
+        {
+            settings.Value.DeviceSettings.Values["key"] = "value";
+        }
+
+        ApplicationConfigurationPackage package = await _store.ExportApplicationConfigurationAsync();
+
+        Assert.That(package.Settings.DeviceSettings.Values, Is.Empty);
+        Assert.That((await _store.OpenApplicationSettingsAsync()).Value.DeviceSettings.Values["key"], Is.EqualTo("value"));
+    }
+
+    [Test]
+    public async Task ImportedApplicationConfigurationClearsDeviceSettings()
+    {
+        await using (IEditScope<ApplicationSettings> settings =
+                     (await _store.OpenApplicationSettingsAsync()).BeginEdit())
+        {
+            settings.Value.DeviceSettings.Values["key"] = "local";
+        }
+
+        await _store.ImportApplicationConfigurationAsync(await _store.ExportApplicationConfigurationAsync());
+
+        Assert.That((await _store.OpenApplicationSettingsAsync()).Value.DeviceSettings.Values, Is.Empty);
+    }
+
+    [Test]
     public async Task MultipleUsersHaveStableDisambiguatedNames()
     {
         await _store.CreateUserAsync(NewUser("same@example.com", "Same", 1));

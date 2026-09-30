@@ -30,6 +30,8 @@
 
 using System.Collections.Generic;
 
+using CommunityToolkit.Mvvm.Input;
+
 using Microsoft.Maui.Controls;
 
 using Xecrets.Mobile.Abstractions;
@@ -43,9 +45,18 @@ public partial class RecentFilesPage : IQueryAttributable
 {
     private readonly RecentFilesPageModel _model;
 
+    public IAsyncRelayCommand<RecentFileEntry> ReverseCommand { get; }
+
+    public IAsyncRelayCommand<RecentFileEntry> OpenCommand { get; }
+
+    public IAsyncRelayCommand<RecentFileEntry> RemoveCommand { get; }
+
     public RecentFilesPage(RecentFilesPageModel model, IPageHeaderService pageHeaderService)
     {
         _model = model;
+        ReverseCommand = model.ReverseCommand;
+        OpenCommand = model.OpenCommand;
+        RemoveCommand = model.RemoveCommand;
         InitializeComponent();
         BindingContext = model;
         pageHeaderService.ApplyStandardHeader(this);

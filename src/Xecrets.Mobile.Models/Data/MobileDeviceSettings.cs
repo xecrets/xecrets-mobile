@@ -28,28 +28,48 @@
 
 #endregion Copyright and GPL License
 
-using Microsoft.Maui.Controls;
+using Xecrets.Common.Abstractions;
+using Xecrets.Common.Models;
+using Xecrets.Core.Abstractions;
 
-using Xecrets.Mobile.Models.Models;
-
-namespace Xecrets.Mobile.Controls;
+namespace Xecrets.Mobile.Models.Data;
 
 /// <summary>
-/// Selects between encrypted and decrypted files, shown as the native segmented control of each platform through
-/// a platform specific handler.
+/// Persists Xecrets.Core device settings in <see cref="DeviceSettings.Values"/>.
 /// </summary>
-public partial class FileStateSelector : View
+public sealed class MobileDeviceSettings(IXecretsDataStore dataStore) : IDeviceSettings
 {
-    public static readonly BindableProperty SelectedStateProperty = BindableProperty.Create(
-        nameof(SelectedState),
-        typeof(SelectedFileState),
-        typeof(FileStateSelector),
-        SelectedFileState.All,
-        BindingMode.TwoWay);
+    private readonly Lazy<Dictionary<string, string>> _settings =
+        new(() => new Dictionary<string, string>(dataStore.OpenApplicationSettings().Value.DeviceSettings.Values));
 
-    public SelectedFileState SelectedState
+    public string this[string key]
     {
-        get => (SelectedFileState)GetValue(SelectedStateProperty);
-        set => SetValue(SelectedStateProperty, value);
+        get => _settings.Value.GetValueOrDefault(key, string.Empty);
+        set
+        {
+            if (this[key] == value)
+            {
+                return;
+            }
+
+            _settings.Value[key] = value;
+            Persist(settings => settings[key] = value);
+        }
     }
+
+    public void Clear()
+    {
+        _settings.Value.Clear();
+        Persist(settings => settings.Clear());
+    }
+
+    // IDeviceSettings is synchronous and Core may call it on the UI thread. Task.Run keeps the awaited continuations
+    // off the UI context, so the blocking wait cannot deadlock.
+    private void Persist(Action<Dictionary<string, string>> update) =>
+        Task.Run(async () =>
+        {
+            await using IEditScope<ApplicationSettings> settings =
+                (await dataStore.OpenApplicationSettingsAsync()).BeginEdit();
+            update(settings.Value.DeviceSettings.Values);
+        }).Wait();
 }

@@ -74,17 +74,21 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
         }
     }
 
-    public async Task<IPersistentData<ApplicationSettings>> OpenApplicationSettingsAsync()
-    {
-        ApplicationSettings settings = await ReadAsync(document => document.ApplicationSettings);
-        return new PersistentData<ApplicationSettings>(settings, async value =>
-            {
-                await UpdateAsync(document => document.ApplicationSettings = value);
-                return JsonFile.Serialize(value);
-            });
-    }
+    public async Task<IPersistentData<ApplicationSettings>> OpenApplicationSettingsAsync() =>
+        ApplicationSettingsData(await ReadAsync(document => document.ApplicationSettings));
 
-    public IPersistentData<ApplicationSettings> OpenApplicationSettings() => throw new NotSupportedException();
+    // Reads without _access, since a synchronous wait on it could deadlock. SaveAsync replaces the file atomically, so
+    // the read sees either the previous or the new document in full. On Windows, a save that overlaps this read fails,
+    // since a file that is open cannot be replaced there. This is in practice not an issue though as this is only called once on startup.
+    public IPersistentData<ApplicationSettings> OpenApplicationSettings() =>
+        ApplicationSettingsData(Validate(JsonFile.Load<ApplicationData>(DataPath, OnInvalidJson)).ApplicationSettings);
+
+    private PersistentData<ApplicationSettings> ApplicationSettingsData(ApplicationSettings settings) =>
+        new(settings, async value =>
+        {
+            await UpdateAsync(document => document.ApplicationSettings = value);
+            return JsonFile.Serialize(value);
+        });
 
     public async Task<IReadOnlyList<UserSummary>> GetUsersAsync()
     {
@@ -126,6 +130,7 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
     public async Task<ApplicationConfigurationPackage> ExportApplicationConfigurationAsync()
     {
         ApplicationSettings settings = await ReadAsync(document => document.ApplicationSettings);
+        settings.DeviceSettings = new DeviceSettings();
         return new ApplicationConfigurationPackage { Settings = settings };
     }
 
@@ -133,7 +138,10 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
     {
         ValidateVersion("application configuration package", package.Version,
             ApplicationConfigurationPackage.SupportedVersion);
-        return UpdateAsync(document => document.ApplicationSettings = package.Settings);
+        return UpdateAsync(document =>
+        {
+            document.ApplicationSettings = package.Settings;
+        });
     }
 
     public async Task<UserDataPackage> ExportUserAsync(UserId userId, IXecretsProtection protection)
@@ -203,11 +211,14 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
         }
     }
 
-    private async Task<ApplicationData> LoadAsync()
-    {
-        ApplicationData document = await JsonFile.LoadAsync<ApplicationData>(DataPath, exception =>
-            crashLogService.WriteCrashLog("Mobile data was invalid JSON; resetting to a new document.", exception));
+    private async Task<ApplicationData> LoadAsync() =>
+        Validate(await JsonFile.LoadAsync<ApplicationData>(DataPath, OnInvalidJson));
 
+    private void OnInvalidJson(Exception exception) =>
+        crashLogService.WriteCrashLog("Mobile data was invalid JSON; resetting to a new document.", exception);
+
+    private static ApplicationData Validate(ApplicationData document)
+    {
         if (document.Version != ApplicationData.SupportedVersion)
         {
             throw new XecretsDataFormatException(
@@ -220,7 +231,7 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
         return document;
     }
 
-    private Task SaveAsync(ApplicationData document)
+    private async Task SaveAsync(ApplicationData document)
     {
         Directory.CreateDirectory(fileService.AppDataDirectory);
         string temporaryPath = $"{DataPath}.tmp";
@@ -228,9 +239,8 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
         try
         {
             string serialized = JsonFile.Serialize(document);
-            File.WriteAllText(temporaryPath, serialized);
+            await File.WriteAllTextAsync(temporaryPath, serialized);
             File.Move(temporaryPath, DataPath, true);
-            return Task.CompletedTask;
         }
         finally
         {

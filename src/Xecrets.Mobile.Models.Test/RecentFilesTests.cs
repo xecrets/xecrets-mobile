@@ -119,9 +119,9 @@ public sealed class RecentFilesTests
         Assert.That(recentFiles.Files, Is.Empty);
     }
 
-    [TestCase(new object[] { new[] { "a.axx", "b.txt" } })]
-    [TestCase(new object[] { new[] { "a.axx" } })]
-    [TestCase(new object[] { new string[0] })]
+    [TestCase([new[] { "a.axx", "b.txt" }])]
+    [TestCase([new[] { "a.axx" }])]
+    [TestCase([new string[0]])]
     public async Task DefaultFilterShowsAll(string[] files)
     {
         RecentFilesPageModel page = CreatePage(new TestRecentFilesService { Files = [.. files] }, new TestWorkFolderService());

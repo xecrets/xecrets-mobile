@@ -31,7 +31,6 @@
 using System.Text;
 
 using Xecrets.Mobile.Models.Models;
-using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models.Services;
 
