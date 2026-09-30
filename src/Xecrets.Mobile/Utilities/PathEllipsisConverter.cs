@@ -37,14 +37,36 @@ using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Utilities;
 
-// Shortens a path to at most the number of characters given as the converter parameter, keeping its end.
-public sealed class PathEllipsisConverter : IValueConverter
+// Shortens a path to about the number of characters that fit the given width at the given font size, keeping its
+// end. The values are the path, the available width and the font size. The converter parameter enables shortening, so
+// that platforms which can truncate at the head themselves get the path unchanged.
+public sealed class PathEllipsisConverter : IMultiValueConverter
 {
-    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => value is string path && int.TryParse(parameter as string, CultureInfo.InvariantCulture, out int maxLength)
-            ? path.PathEllipsis(maxLength)
-            : value;
+    // A typical average character width of a proportional UI font, as a fraction of the font size.
+    private const double _averageCharacterWidthFactor = 0.50;
 
-    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    public object? Convert(object?[] values, Type targetType, object? parameter, CultureInfo culture)
+    {
+        // Each value arrives through a proxy property that defaults to null. If so, return null.
+        string? path = (string?)values[0];
+        if (path is null)
+        {
+            return null;
+        }
+
+        bool shorten = bool.Parse((string)parameter!);
+        double width = (double)values[1]!;
+
+        // The width is -1 until the label has been laid out.
+        if (!shorten || width < 0)
+        {
+            return path;
+        }
+
+        double fontSize = (double)values[2]!;
+        return path.PathEllipsis((int)(width / (fontSize * _averageCharacterWidthFactor)));
+    }
+
+    public object?[] ConvertBack(object? value, Type[] targetTypes, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();
 }

@@ -182,11 +182,19 @@
                                                             </DataTrigger>
                                                         </Border.Triggers>
                                                         <!-- WinUI can only trim the end, so on Windows the path is shortened to
-                                                 about the width of the row instead. -->
-                                                        <Label Text="{OnPlatform Default={Binding DisplayPath}, WinUI={Binding DisplayPath, Converter={StaticResource PathEllipsisConverter}, ConverterParameter=35}}"
-                                                   LineBreakMode="{OnPlatform Default=HeadTruncation, WinUI=NoWrap}"
+                                                 about what fits the width of the label instead. -->
+                                                        <Label LineBreakMode="{OnPlatform Default=HeadTruncation, WinUI=NoWrap}"
                                                    HorizontalTextAlignment="{OnPlatform Default=Start, WinUI=End}"
-                                                   VerticalOptions="Center" />
+                                                   VerticalOptions="Center">
+                                                            <Label.Text>
+                                                                <MultiBinding Converter="{StaticResource PathEllipsisConverter}"
+                                                                      ConverterParameter="{OnPlatform Default=False, WinUI=True}">
+                                                                    <Binding Path="DisplayPath" />
+                                                                    <Binding Path="Width" Source="{RelativeSource Self}" x:DataType="Label" />
+                                                                    <Binding Path="FontSize" Source="{RelativeSource Self}" x:DataType="Label" />
+                                                                </MultiBinding>
+                                                            </Label.Text>
+                                                        </Label>
                                                     </Border>
                                                     <ImageButton Grid.Column="2"
                                                      Background="Transparent"

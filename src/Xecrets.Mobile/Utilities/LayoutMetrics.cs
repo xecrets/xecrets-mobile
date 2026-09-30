@@ -39,14 +39,15 @@ public static class LayoutMetrics
 {
     private const double _actionButtonStackMaximumWidth = 420;
 
-    private const double _contentColumnMaximumWidth = 560;
+    private const double _contentColumnMaximumWidth = 960;
 
     public static void UpdateCenteredContentLayout(
         double pageWidth,
         Layout contentRoot,
         Border contentColumn,
         VisualElement actionButtonStack,
-        Thickness? contentPadding = null)
+        Thickness? contentPadding = null,
+        double actionButtonStackMaximumWidth = _actionButtonStackMaximumWidth)
     {
         double availableContentWidth = pageWidth - contentRoot.Padding.Left - contentRoot.Padding.Right;
         if (availableContentWidth <= 0)
@@ -64,16 +65,19 @@ public static class LayoutMetrics
         double cardContentWidth = contentColumnWidth
             - (contentPadding ?? contentColumn.Padding).HorizontalThickness
             - (2 * contentColumn.StrokeThickness);
-        UpdateActionButtonStackWidth(cardContentWidth, actionButtonStack);
+        UpdateActionButtonStackWidth(cardContentWidth, actionButtonStack, actionButtonStackMaximumWidth);
     }
 
-    public static void UpdateActionButtonStackWidth(double availableWidth, VisualElement actionButtonStack)
+    public static void UpdateActionButtonStackWidth(
+        double availableWidth,
+        VisualElement actionButtonStack,
+        double actionButtonStackMaximumWidth = _actionButtonStackMaximumWidth)
     {
         if (availableWidth <= 0)
         {
             return;
         }
 
-        actionButtonStack.WidthRequest = Math.Min(availableWidth, _actionButtonStackMaximumWidth);
+        actionButtonStack.WidthRequest = Math.Min(availableWidth, actionButtonStackMaximumWidth);
     }
 }
