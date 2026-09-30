@@ -48,7 +48,7 @@ public partial class RecentFilesPageModel(
     IWorkFolderFileLauncher fileLauncher,
     IUserInterfaceService userInterfaceService,
     TimeProvider timeProvider)
-    : PageModelBase(userInterfaceService), IStatusTextPageModel
+    : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
 {
     // Source file id to result file id, for operations completed from the list in the current filter view.
     private readonly Dictionary<string, string> _completed = [];

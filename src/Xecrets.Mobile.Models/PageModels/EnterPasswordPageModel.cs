@@ -42,7 +42,7 @@ public partial class EnterPasswordPageModel(
     IWorkFolderOperationService workFolderOperationService,
     IFlowContext flowContext,
     IUserInterfaceService userInterfaceService)
-    : PageModelBase(userInterfaceService)
+    : PageModelBase(userInterfaceService), IBreadcrumbPageModel
 {
     public string Breadcrumb =>
         BreadcrumbFormatter.Format(flowContext.Origin, flowContext.Operation, MobileTexts.BreadcrumbPassword);

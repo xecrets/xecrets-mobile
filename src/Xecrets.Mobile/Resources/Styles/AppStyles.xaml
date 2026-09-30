@@ -35,7 +35,7 @@
     <Style x:Key="PageInformationButtonCorner"
            TargetType="controls:PageInformationButton">
         <Setter Property="HorizontalOptions" Value="End" />
-        <Setter Property="VerticalOptions" Value="Start" />
+        <Setter Property="VerticalOptions" Value="Center" />
         <Setter Property="Margin" Value="0" />
     </Style>
 
@@ -88,6 +88,30 @@
         <OnIdiom.Desktop>16</OnIdiom.Desktop>
     </OnIdiom>
 
+    <!-- A divider between groups of action buttons. The negative margins cancel most of the stack spacing on
+         both sides, leaving the buttons around it a few pixels more than LayoutSpacing apart, which reads as
+         the same spacing once the divider line is between them. -->
+    <OnIdiom x:Key="ActionDividerMargin"
+             x:TypeArguments="Thickness"
+             Default="0,-4,0,-3">
+        <OnIdiom.Desktop>0,-6,0,-5</OnIdiom.Desktop>
+    </OnIdiom>
+
+    <Style x:Key="ActionDividerStyle"
+           TargetType="BoxView">
+        <Setter Property="HeightRequest" Value="1" />
+        <Setter Property="HorizontalOptions" Value="Fill" />
+        <Setter Property="Margin" Value="{StaticResource ActionDividerMargin}" />
+        <Setter Property="Opacity" Value="0.50" />
+    </Style>
+
+    <!-- Between the card title row and the card body. -->
+    <OnIdiom x:Key="CardTitleSpacing"
+             x:TypeArguments="x:Double"
+             Default="8">
+        <OnIdiom.Desktop>12</OnIdiom.Desktop>
+    </OnIdiom>
+
     <!-- Between an icon button and the control beside it. -->
     <x:Double x:Key="IconRowSpacing">4</x:Double>
 
@@ -112,6 +136,13 @@
              x:TypeArguments="Thickness"
              Default="0,0,0,16">
         <OnIdiom.Desktop>0,0,0,24</OnIdiom.Desktop>
+    </OnIdiom>
+
+    <!-- For a control with a trailing icon, such as PasswordEntry, so the icon lines up with the corner icons. -->
+    <OnIdiom x:Key="IconRowBodyLeadingMargin"
+             x:TypeArguments="Thickness"
+             Default="16,0,0,0">
+        <OnIdiom.Desktop>24,0,0,0</OnIdiom.Desktop>
     </OnIdiom>
 
     <OnIdiom x:Key="IconRowBodyContentMargin"
@@ -287,6 +318,16 @@
         <Setter Property="FontAttributes"
                 Value="{OnPlatform WinUI=None, Default=Bold}" />
     </Style>
+    <!-- The title of a card, placed in the top row between the corner icons and centered with them. The
+         horizontal margin clears the corner icons so the title stays centered on the card. -->
+    <Style x:Key="CardTitleStyle"
+           TargetType="Label"
+           BasedOn="{StaticResource Title1}">
+        <Setter Property="HorizontalOptions" Value="Center" />
+        <Setter Property="VerticalOptions" Value="Center" />
+        <Setter Property="HorizontalTextAlignment" Value="Center" />
+        <Setter Property="Margin" Value="52,0" />
+    </Style>
     <Style x:Key="LargeTitle"
            TargetType="Label">
         <Setter Property="FontSize"
@@ -335,14 +376,28 @@
     </Style>
 
 
+    <!-- The height of an action button, and of the icon buttons in a row beside one, so that a row of icons and
+         a button is exactly as tall as a plain action button. The minimum height overrides the 44 of the
+         implicit ImageButton style, which would otherwise win over HeightRequest. -->
+    <x:Double x:Key="ActionButtonHeight">40</x:Double>
+
+    <Style x:Key="ActionRowIconButtonStyle"
+           TargetType="ImageButton">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Padding" Value="8,6" />
+        <Setter Property="MinimumHeightRequest" Value="{StaticResource ActionButtonHeight}" />
+        <Setter Property="HeightRequest" Value="{StaticResource ActionButtonHeight}" />
+        <Setter Property="VerticalOptions" Value="Center" />
+    </Style>
+
     <Style TargetType="Button">
         <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
         <Setter Property="TextColor" Value="{StaticResource White}" />
         <Setter Property="utilities:Typography.FontWeight" Value="Semibold" />
         <Setter Property="FontSize" Value="16" />
         <Setter Property="CornerRadius" Value="12" />
-        <Setter Property="Padding" Value="18,13" />
-        <Setter Property="MinimumHeightRequest" Value="50" />
+        <Setter Property="Padding" Value="18,8" />
+        <Setter Property="MinimumHeightRequest" Value="{StaticResource ActionButtonHeight}" />
         <Setter Property="VisualStateManager.VisualStateGroups">
             <VisualStateGroupList>
                 <VisualStateGroup x:Name="CommonStates">

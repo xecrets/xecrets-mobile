@@ -219,6 +219,9 @@ public static class MobileTexts
     // "Password"
     public static string BreadcrumbPassword => WatermarkPassword;
 
+    // "Suggest password"
+    public static string BreadcrumbSuggestPassword => MenuSuggestPassword;
+
     // "Create"
     public static string ButtonCreate => AppTexts.LabelCreate;
 

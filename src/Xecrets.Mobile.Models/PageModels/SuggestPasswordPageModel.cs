@@ -32,6 +32,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 using Xecrets.Mobile.Models.Abstractions;
+using Xecrets.Mobile.Models.Utilities;
 using Xecrets.Words.Abstractions;
 
 namespace Xecrets.Mobile.Models.PageModels;
@@ -40,6 +41,9 @@ public partial class SuggestPasswordPageModel(
     IPasswordSuggestions passwordSuggestions,
     IUserInterfaceService userInterfaceService) : PageModelBase(userInterfaceService), IStatusTextPageModel
 {
+    [ObservableProperty]
+    public partial string Breadcrumb { get; set; } = MobileTexts.BreadcrumbSuggestPassword;
+
     [ObservableProperty]
     public partial string MessageText { get; set; } = string.Empty;
 
@@ -51,6 +55,15 @@ public partial class SuggestPasswordPageModel(
 
     [ObservableProperty]
     public partial string SimplePassword { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Continues the trail of the page that this page was opened on top of.
+    /// </summary>
+    public void SetParentBreadcrumb(string parentBreadcrumb) =>
+        Breadcrumb = string.Join(
+            MobileTexts.BreadcrumbSeparator,
+            parentBreadcrumb,
+            MobileTexts.BreadcrumbSuggestPassword);
 
     [RelayCommand]
     private void Initialize()

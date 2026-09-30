@@ -42,7 +42,7 @@ public partial class EncryptResultPageModel(
     IFileService fileService,
     IFlowContext flowContext,
     IUserInterfaceService userInterfaceService)
-    : PageModelBase(userInterfaceService), IStatusTextPageModel
+    : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
 {
     private const string _nonBreakingSpace = "\u00A0";
 

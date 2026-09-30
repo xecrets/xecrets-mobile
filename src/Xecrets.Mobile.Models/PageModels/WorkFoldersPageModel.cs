@@ -45,7 +45,7 @@ using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
-public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel
+public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel, IBreadcrumbPageModel
 {
     private readonly IWorkFolderService _workFolderService;
     private readonly WorkFolderWorkflow _workflow;

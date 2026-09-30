@@ -35,15 +35,23 @@ namespace Xecrets.Mobile.Controls;
 public sealed partial class PageMessages
 {
     public static readonly BindableProperty MessageTextProperty = BindableProperty.Create(
-        nameof(MessageText), typeof(string), typeof(PageMessages));
+        nameof(MessageText), typeof(string), typeof(PageMessages), propertyChanged: OnTextChanged);
 
     public static readonly BindableProperty StatusTextProperty = BindableProperty.Create(
-        nameof(StatusText), typeof(string), typeof(PageMessages));
+        nameof(StatusText), typeof(string), typeof(PageMessages), propertyChanged: OnTextChanged);
 
     public PageMessages()
     {
         InitializeComponent();
+        UpdateVisibility();
     }
+
+    // Hidden when empty, so that it takes no layout spacing in the parent.
+    private static void OnTextChanged(BindableObject bindable, object oldValue, object newValue) =>
+        ((PageMessages)bindable).UpdateVisibility();
+
+    private void UpdateVisibility() =>
+        IsVisible = !string.IsNullOrEmpty(MessageText) || !string.IsNullOrEmpty(StatusText);
 
     public string MessageText
     {

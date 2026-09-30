@@ -41,27 +41,24 @@
     <Grid>
         <ScrollView>
             <VerticalStackLayout x:Name="ContentRoot"
-                                 Padding="{StaticResource LayoutPadding}"
+                                 Padding="{StaticResource ContentTitleLayoutPadding}"
                                  Spacing="{StaticResource LayoutSpacing}">
                 <controls:PageBreadcrumb Text="{Binding Breadcrumb}" />
                 <Border x:Name="ContentColumn"
                         HorizontalOptions="Center"
                         Style="{StaticResource PageInformationCardStyle}">
-                    <Grid RowDefinitions="Auto,Auto">
+                    <Grid RowDefinitions="Auto,Auto" RowSpacing="{StaticResource CardTitleSpacing}">
                         <Grid x:Name="ContentBody"
                               Grid.Row="1"
-                              Padding="{StaticResource PageInformationBodyPadding}">
+                              Padding="{StaticResource IconRowBodyPadding}">
                             <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
-                            <Label Text="{x:Static modelUtilities:MobileTexts.DialogTitleEncryptCopyFor}"
-                                   HorizontalOptions="Center"
-                                   Style="{StaticResource Title1}" />
-                            <controls:PasswordEntry x:Name="PasswordEntryControl"
+                            <controls:PasswordEntry Margin="{StaticResource IconRowBodyLeadingMargin}" x:Name="PasswordEntryControl"
                                                     Text="{Binding Password, Mode=TwoWay}"
                                                     Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkPasswordShare}"
                                                     ReturnType="Go" />
-                            <controls:PageMessages MessageText="{Binding MessageText}"
+                            <controls:PageMessages Margin="{StaticResource IconRowBodyContentMargin}" MessageText="{Binding MessageText}"
                                                    StatusText="{Binding StatusText}" />
-                            <VerticalStackLayout x:Name="ActionButtonStack"
+                            <VerticalStackLayout x:Name="ActionButtonStack" Margin="{StaticResource IconRowBodyContentMargin}"
                                                  HorizontalOptions="Center"
                                                  Spacing="{StaticResource LayoutSpacing}">
                                 <Button Text="{x:Static modelUtilities:MobileTexts.ButtonOk}"
@@ -69,6 +66,9 @@
                             </VerticalStackLayout>
                             </VerticalStackLayout>
                         </Grid>
+                        <Label Grid.Row="0"
+                               Text="{x:Static modelUtilities:MobileTexts.DialogTitleEncryptCopyFor}"
+                               Style="{StaticResource CardTitleStyle}" />
                         <controls:PageInformationButton Grid.Row="0"
                                                         Style="{StaticResource PageInformationButtonCorner}"
                                                         Title="{x:Static modelUtilities:MobileTexts.DialogTitleEncryptCopyFor}"

@@ -28,48 +28,10 @@
 
 #endregion Copyright and GPL License
 
-using System.Collections.Generic;
+namespace Xecrets.Mobile.Models.Abstractions;
 
-using CommunityToolkit.Mvvm.Input;
-
-using Microsoft.Maui.Controls;
-
-using Xecrets.Mobile.Abstractions;
-using Xecrets.Mobile.Models.Models;
-using Xecrets.Mobile.Models.PageModels;
-using Xecrets.Mobile.Utilities;
-
-namespace Xecrets.Mobile.Pages;
-
-public partial class SuggestPasswordPage : IQueryAttributable
+// A page model that shows a breadcrumb, so that a page opened on top of it from the menu can continue its trail.
+public interface IBreadcrumbPageModel
 {
-    public IRelayCommand InitializeCommand { get; }
-
-    public SuggestPasswordPage(SuggestPasswordPageModel model, IPageHeaderService pageHeaderService)
-    {
-        InitializeCommand = model.InitializeCommand;
-        InitializeComponent();
-        BindingContext = model;
-        pageHeaderService.ApplyStandardHeader(this);
-    }
-
-    public void ApplyQueryAttributes(IDictionary<string, object> query)
-    {
-        if (query.TryGetValue(nameof(NavigationParameter.Payload), out object? payload))
-        {
-            ((SuggestPasswordPageModel)BindingContext).SetParentBreadcrumb((string)payload);
-        }
-    }
-
-    protected override void OnSizeAllocated(double width, double height)
-    {
-        base.OnSizeAllocated(width, height);
-
-        UpdateCenteredContentLayout(width);
-    }
-
-    private void UpdateCenteredContentLayout(double pageWidth)
-    {
-        LayoutMetrics.UpdateCenteredContentLayout(pageWidth, ContentRoot, ContentColumn, ActionButtonStack, ContentBody.Padding);
-    }
+    string Breadcrumb { get; }
 }

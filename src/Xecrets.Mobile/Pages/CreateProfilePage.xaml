@@ -47,17 +47,14 @@
             <Border x:Name="ContentColumn"
                     HorizontalOptions="Center"
                     Style="{StaticResource PageInformationCardStyle}">
-                <Grid RowDefinitions="Auto,Auto">
-                    <Grid x:Name="ContentBody" Grid.Row="1" Padding="{StaticResource PageInformationBodyPadding}">
+                <Grid RowDefinitions="Auto,Auto" RowSpacing="{StaticResource CardTitleSpacing}">
+                    <Grid x:Name="ContentBody" Grid.Row="1" Padding="{StaticResource IconRowBodyPadding}">
                         <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
-                        <Label Text="{x:Static modelUtilities:MobileTexts.HeadingCreateUserFirstTimeSetup}"
-                               HorizontalOptions="Center"
-                               Style="{StaticResource Title1}" />
-                        <Entry Text="{Binding Email}"
+                        <Entry Margin="{StaticResource IconRowBodyContentMargin}" Text="{Binding Email}"
                                Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkEmail}"
                                Keyboard="Email"
                                ReturnType="Next" />
-                        <controls:PasswordEntry x:Name="PasswordEntryControl"
+                        <controls:PasswordEntry Margin="{StaticResource IconRowBodyLeadingMargin}" x:Name="PasswordEntryControl"
                                                 Text="{Binding Password, Mode=TwoWay}"
                                                 Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkPassword}"
                                                 ToolTipProperties.Text="{x:Static modelUtilities:MobileTexts.ToolTipMasterPassword}"
@@ -68,8 +65,8 @@
                                      ProgressColor="{Binding PasswordStrengthColor, Converter={StaticResource StrengthColorToColorConverter}}">
                             <ProgressBar.Margin>
                                 <OnIdiom x:TypeArguments="Thickness"
-                                         Default="0,-6,0,0">
-                                    <OnIdiom.Desktop>0,-8,0,0</OnIdiom.Desktop>
+                                         Default="16,-6,0,0">
+                                    <OnIdiom.Desktop>24,-8,0,0</OnIdiom.Desktop>
                                 </OnIdiom>
                             </ProgressBar.Margin>
                             <!-- Opacity, not IsVisible, so the space stays reserved and nothing moves when typing starts. -->
@@ -82,16 +79,16 @@
                                 </DataTrigger>
                             </ProgressBar.Triggers>
                         </ProgressBar>
-                        <controls:PasswordEntry x:Name="ConfirmPasswordEntryControl"
+                        <controls:PasswordEntry Margin="{StaticResource IconRowBodyLeadingMargin}" x:Name="ConfirmPasswordEntryControl"
                                                 Text="{Binding ConfirmPassword, Mode=TwoWay}"
                                                 Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkConfirmPassword}"
                                                 ToolTipProperties.Text="{x:Static modelUtilities:MobileTexts.ToolTipMasterPassword}"
                                                 ReturnType="Go" />
-                        <Label Text="{Binding ErrorText}"
+                        <Label Margin="{StaticResource IconRowBodyContentMargin}" Text="{Binding ErrorText}"
                                TextColor="Red"
                                IsVisible="{Binding ErrorText, Converter={StaticResource StringNotEmptyConverter}}"
                                Style="{StaticResource Caption1}" />
-                        <VerticalStackLayout x:Name="ActionButtonStack"
+                        <VerticalStackLayout x:Name="ActionButtonStack" Margin="{StaticResource IconRowBodyContentMargin}"
                                              HorizontalOptions="Center"
                                              Spacing="{StaticResource LayoutSpacing}">
                             <Button Text="{x:Static modelUtilities:MobileTexts.ButtonCreate}"
@@ -99,6 +96,9 @@
                         </VerticalStackLayout>
                         </VerticalStackLayout>
                     </Grid>
+                    <Label Grid.Row="0"
+                           Text="{x:Static modelUtilities:MobileTexts.HeadingCreateUserFirstTimeSetup}"
+                           Style="{StaticResource CardTitleStyle}" />
                     <controls:PageInformationButton Grid.Row="0"
                                                     Style="{StaticResource PageInformationButtonCorner}"
                                                     Title="{x:Static modelUtilities:MobileTexts.HeadingCreateUserFirstTimeSetup}"

@@ -38,6 +38,7 @@
            Text="{Binding Text, Mode=OneWay}"
            IsVisible="{Binding Text, Converter={StaticResource StringNotEmptyConverter}}"
            HorizontalOptions="Center"
+           Margin="0,0,0,-4"
            HorizontalTextAlignment="Center"
            LineBreakMode="TailTruncation"
            Style="{StaticResource Caption1}"

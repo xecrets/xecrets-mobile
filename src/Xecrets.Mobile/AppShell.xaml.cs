@@ -105,6 +105,20 @@ public partial class AppShell
     private async Task SuggestPasswordAsync()
     {
         FlyoutIsPresented = false;
+
+        // Pushed on top of the current page, continuing its breadcrumb trail when it has one.
+        Page? currentPage = CurrentPage;
+        if (currentPage?.BindingContext is SuggestPasswordPageModel)
+        {
+            return;
+        }
+
+        if (currentPage?.BindingContext is IBreadcrumbPageModel { Breadcrumb: { Length: > 0 } breadcrumb })
+        {
+            await _userInterfaceService.NavigateToAsync(AppDestination.SuggestPassword, breadcrumb);
+            return;
+        }
+
         await _userInterfaceService.NavigateToAsync(AppDestination.SuggestPassword);
     }
 

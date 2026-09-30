@@ -53,8 +53,10 @@ public partial class HomePageModel(
     IRecentFilesService recentFilesService,
     ICoreServices coreServices,
     IUserInterfaceService userInterfaceService)
-    : PageModelBase(userInterfaceService), IStatusTextPageModel
+    : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
 {
+    public string Breadcrumb => MobileTexts.BreadcrumbHome;
+
     [ObservableProperty]
     public partial string Email { get; set; } = profileService.CurrentEmail;
 

@@ -54,19 +54,15 @@
     <Grid>
         <ScrollView>
             <VerticalStackLayout x:Name="ContentRoot"
-                                 Padding="{StaticResource LayoutPadding}"
+                                 Padding="{StaticResource ContentTitleLayoutPadding}"
                                  Spacing="{StaticResource LayoutSpacing}">
                 <pageControls:PageBreadcrumb Text="{Binding Breadcrumb}" />
                 <Border x:Name="ContentColumn"
                         HorizontalOptions="Center"
                         Style="{StaticResource PageInformationCardStyle}">
-                    <Grid RowDefinitions="Auto,Auto">
+                    <Grid RowDefinitions="Auto,Auto" RowSpacing="{StaticResource CardTitleSpacing}">
                         <Grid x:Name="ContentBody" Grid.Row="1" Padding="{StaticResource IconRowBodyPadding}">
                             <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
-                            <Label Text="{x:Static modelUtilities:MobileTexts.WorkFoldersContentTitle}"
-                                   Margin="{StaticResource IconRowBodyContentMargin}"
-                                   HorizontalOptions="Center"
-                                   Style="{StaticResource Title1}" />
                             <pageControls:PageMessages Margin="{StaticResource IconRowBodyContentMargin}"
                                                        MessageText="{Binding MessageText}"
                                                        StatusText="{Binding StatusText}" />
@@ -81,8 +77,7 @@
                                     <Grid ColumnDefinitions="Auto,*,Auto"
                                           ColumnSpacing="{StaticResource IconRowSpacing}">
                                         <ImageButton Grid.Column="0"
-                                                     Background="Transparent"
-                                                     Padding="8"
+                                                     Style="{StaticResource ActionRowIconButtonStyle}"
                                                      Command="{Binding RenameCommand}"
                                                      CommandParameter="{Binding Folder}">
                                             <ImageButton.Source>
@@ -93,13 +88,13 @@
                                             </ImageButton.Source>
                                         </ImageButton>
                                         <Button Grid.Column="1"
+                                                VerticalOptions="Center"
                                                 Text="{Binding ListDisplayName}"
                                                 LineBreakMode="MiddleTruncation"
                                                 Command="{Binding OpenCommand}"
                                                 CommandParameter="{Binding Folder}" />
                                         <ImageButton Grid.Column="2"
-                                                     Background="Transparent"
-                                                     Padding="8"
+                                                     Style="{StaticResource ActionRowIconButtonStyle}"
                                                      Command="{Binding RemoveCommand}"
                                                      CommandParameter="{Binding Folder}">
                                             <ImageButton.Source>
@@ -115,9 +110,12 @@
                             </VerticalStackLayout>
                             </VerticalStackLayout>
                         </Grid>
+                        <Label Grid.Row="0"
+                               Text="{x:Static modelUtilities:MobileTexts.WorkFoldersContentTitle}"
+                               Style="{StaticResource CardTitleStyle}" />
                         <ImageButton Grid.Row="0"
                                      HorizontalOptions="Start"
-                                     VerticalOptions="Start"
+                                     VerticalOptions="Center"
                                      Background="Transparent"
                                      Padding="8"
                                      Command="{Binding AddCommand}">

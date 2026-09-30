@@ -41,17 +41,15 @@
     <Grid>
         <ScrollView>
             <VerticalStackLayout x:Name="ContentRoot"
-                                 Padding="{StaticResource LayoutPadding}"
+                                 Padding="{StaticResource ContentTitleLayoutPadding}"
                                  Spacing="{StaticResource LayoutSpacing}">
+                <controls:PageBreadcrumb Text="{Binding Breadcrumb}" />
                 <Border x:Name="ContentColumn"
                         HorizontalOptions="Center"
                         Style="{StaticResource PageInformationCardStyle}">
-                    <Grid RowDefinitions="Auto,Auto">
+                    <Grid RowDefinitions="Auto,Auto" RowSpacing="{StaticResource CardTitleSpacing}">
                         <Grid x:Name="ContentBody" Grid.Row="1" Padding="{StaticResource PageInformationBodyPadding}">
                             <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
-                                <Label Text="{x:Static modelUtilities:MobileTexts.HomeContentTitle}"
-                                       HorizontalOptions="Center"
-                                       Style="{StaticResource Title1}" />
                                 <controls:PageMessages MessageText="{Binding MessageText}"
                                                        StatusText="{Binding StatusText}" />
                                 <VerticalStackLayout x:Name="ActionButtonStack"
@@ -61,29 +59,23 @@
                                             Command="{Binding MyFoldersCommand}" />
                                     <Button Text="{x:Static modelUtilities:MobileTexts.RecentFilesContentTitle}"
                                             Command="{Binding RecentFilesCommand}" />
-                                    <BoxView HeightRequest="1"
-                                             HorizontalOptions="Fill"
-                                             Margin="0,8"
-                                             Opacity="0.35" />
+                                    <BoxView Style="{StaticResource ActionDividerStyle}" />
                                     <Button Text="{x:Static modelUtilities:MobileTexts.ButtonDecryptAs}"
                                             Command="{Binding DecryptAsCommand}" />
                                     <Button Text="{x:Static modelUtilities:MobileTexts.ButtonEncryptAs}"
                                             Command="{Binding EncryptAsCommand}" />
-                                    <BoxView HeightRequest="1"
-                                             HorizontalOptions="Fill"
-                                             Margin="0,8"
-                                             Opacity="0.35" />
+                                    <BoxView Style="{StaticResource ActionDividerStyle}" />
                                     <Button Text="{x:Static modelUtilities:MobileTexts.ButtonEncryptToShare}"
                                             Command="{Binding EncryptToShareCommand}" />
-                                    <BoxView HeightRequest="1"
-                                             HorizontalOptions="Fill"
-                                             Margin="0,8"
-                                             Opacity="0.35" />
+                                    <BoxView Style="{StaticResource ActionDividerStyle}" />
                                     <Button Text="{x:Static modelUtilities:MobileTexts.ButtonWipe}"
                                             Command="{Binding WipeCommand}" />
                                 </VerticalStackLayout>
                             </VerticalStackLayout>
                         </Grid>
+                        <Label Grid.Row="0"
+                               Text="{x:Static modelUtilities:MobileTexts.HomeContentTitle}"
+                               Style="{StaticResource CardTitleStyle}" />
                         <controls:PageInformationButton Grid.Row="0"
                                                         Style="{StaticResource PageInformationButtonCorner}"
                                                         Title="{x:Static modelUtilities:MobileTexts.HomeContentTitle}"

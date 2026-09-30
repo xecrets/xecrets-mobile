@@ -45,7 +45,7 @@ public static class LayoutMetrics
         double pageWidth,
         Layout contentRoot,
         Border contentColumn,
-        VisualElement actionButtonStack,
+        View actionButtonStack,
         Thickness? contentPadding = null,
         double actionButtonStackMaximumWidth = _actionButtonStackMaximumWidth)
     {
@@ -64,7 +64,8 @@ public static class LayoutMetrics
         // iOS hides by clipping to the border and Android shows as buttons running off the screen edge.
         double cardContentWidth = contentColumnWidth
             - (contentPadding ?? contentColumn.Padding).HorizontalThickness
-            - (2 * contentColumn.StrokeThickness);
+            - (2 * contentColumn.StrokeThickness)
+            - actionButtonStack.Margin.HorizontalThickness;
         UpdateActionButtonStackWidth(cardContentWidth, actionButtonStack, actionButtonStackMaximumWidth);
     }
 

@@ -47,7 +47,7 @@ public partial class EncryptToSharePageModel(
     IFlowContext flowContext,
     ICoreServices coreServices,
     IUserInterfaceService userInterfaceService)
-    : PageModelBase(userInterfaceService), IStatusTextPageModel
+    : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
 {
     public string Breadcrumb =>
         BreadcrumbFormatter.Format(flowContext.Origin, flowContext.Operation, MobileTexts.BreadcrumbCopyToShare);
