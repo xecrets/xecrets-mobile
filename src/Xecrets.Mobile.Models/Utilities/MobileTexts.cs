@@ -146,6 +146,8 @@ public static class MobileTexts
     // "Recent files"
     public static string MenuRecentFiles => RecentFilesContentTitle;
 
+    public static string MenuSupport => "Support";
+
     public static string MenuXecretsDesktop => "Xecrets desktop";
 
     public static string RecentFilesContentTitle => "Recent files";
@@ -324,6 +326,8 @@ public static class MobileTexts
     public static string WatermarkPasswordShare => AppTexts.WatermarkPasswordShare;
 
     public static string XecretsHelpUrl => AppTexts.XecretsHelpUrl();
+
+    public static string XecretsSupportUrl => AppTexts.XecretsSupportUrl;
 
     #endregion Translated texts
 }

@@ -49,6 +49,7 @@ public sealed class PageHeaderService(
     public void ApplyStandardHeader(ContentPage page)
     {
         page.ToolbarItems.Add(CreateOverflowItem(MobileTexts.MenuHelp, HeaderCommand.Help));
+        page.ToolbarItems.Add(CreateOverflowItem(MobileTexts.MenuSupport, HeaderCommand.Support));
         page.ToolbarItems.Add(CreateOverflowItem(MobileTexts.MenuWelcome, HeaderCommand.Welcome));
         page.ToolbarItems.Add(CreateOverflowItem(MobileTexts.MenuInfo, HeaderCommand.XecretsHome));
         page.ToolbarItems.Add(CreateOverflowItem(MobileTexts.MenuXecretsDesktop, HeaderCommand.XecretsDesktop));
@@ -143,6 +144,9 @@ public sealed class PageHeaderService(
             case HeaderCommand.Help:
                 item.SetBinding(MenuItem.CommandProperty, static (PageModelBase pageModel) => pageModel.OpenHelpCommand);
                 break;
+            case HeaderCommand.Support:
+                item.SetBinding(MenuItem.CommandProperty, static (PageModelBase pageModel) => pageModel.OpenSupportCommand);
+                break;
             case HeaderCommand.Welcome:
                 item.SetBinding(MenuItem.CommandProperty, static (PageModelBase pageModel) => pageModel.OpenWelcomeCommand);
                 break;
@@ -165,6 +169,7 @@ public sealed class PageHeaderService(
     private enum HeaderCommand
     {
         Help,
+        Support,
         Welcome,
         XecretsHome,
         XecretsDesktop,

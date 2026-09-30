@@ -43,7 +43,6 @@ namespace Xecrets.Mobile.Pages;
 
 public partial class CrashPage
 {
-    private const string _supportUrl = "https://www.axantum.com/support";
     private readonly StartupPageModel _startupPageModel;
     private readonly IUserInterfaceService _userInterfaceService;
     private readonly ICrashLogService _crashLogService;
@@ -81,7 +80,7 @@ public partial class CrashPage
     }
 
     [RelayCommand]
-    private Task Report() => _userInterfaceService.OpenBrowserAsync(_supportUrl);
+    private Task Report() => _userInterfaceService.OpenBrowserAsync(MobileTexts.XecretsSupportUrl);
 
     [RelayCommand]
     private Task Help() => _userInterfaceService.OpenBrowserAsync(MobileTexts.XecretsHelpUrl);

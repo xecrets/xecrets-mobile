@@ -45,6 +45,9 @@ public abstract partial class PageModelBase(IUserInterfaceService userInterfaceS
     private Task OpenHelp() => userInterfaceService.OpenBrowserAsync(MobileTexts.MobileHelpUrl);
 
     [RelayCommand]
+    private Task OpenSupport() => userInterfaceService.OpenBrowserAsync(MobileTexts.XecretsSupportUrl);
+
+    [RelayCommand]
     private Task OpenXecretsHome() => userInterfaceService.OpenBrowserAsync(MobileTexts.SiteUrl);
 
     [RelayCommand]
