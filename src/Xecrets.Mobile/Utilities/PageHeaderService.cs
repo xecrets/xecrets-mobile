@@ -48,11 +48,12 @@ public sealed class PageHeaderService(
 {
     public void ApplyStandardHeader(ContentPage page)
     {
+        page.ToolbarItems.Add(CreateOverflowItem(MobileTexts.MenuWelcome, HeaderCommand.Welcome));
         page.ToolbarItems.Add(CreateOverflowItem(MobileTexts.MenuHelp, HeaderCommand.Help));
         page.ToolbarItems.Add(CreateOverflowItem(MobileTexts.MenuSupport, HeaderCommand.Support));
-        page.ToolbarItems.Add(CreateOverflowItem(MobileTexts.MenuWelcome, HeaderCommand.Welcome));
         page.ToolbarItems.Add(CreateOverflowItem(MobileTexts.MenuInfo, HeaderCommand.XecretsHome));
         page.ToolbarItems.Add(CreateOverflowItem(MobileTexts.MenuXecretsDesktop, HeaderCommand.XecretsDesktop));
+        page.ToolbarItems.Add(CreateOverflowItem(MobileTexts.MenuGitHub, HeaderCommand.GitHub));
         page.ToolbarItems.Add(CreateOverflowItem(MobileTexts.MenuThirdPartyLicenses, HeaderCommand.ThirdPartyLicenses));
 
         ApplyStandardHeaderTitle(page, profileService.IsAuthenticated ? profileService.CurrentEmail : string.Empty);
@@ -156,6 +157,9 @@ public sealed class PageHeaderService(
             case HeaderCommand.XecretsDesktop:
                 item.SetBinding(MenuItem.CommandProperty, static (PageModelBase pageModel) => pageModel.OpenXecretsDesktopCommand);
                 break;
+            case HeaderCommand.GitHub:
+                item.SetBinding(MenuItem.CommandProperty, static (PageModelBase pageModel) => pageModel.OpenGitHubCommand);
+                break;
             case HeaderCommand.ThirdPartyLicenses:
                 item.SetBinding(MenuItem.CommandProperty, static (PageModelBase pageModel) => pageModel.OpenThirdPartyLicensesCommand);
                 break;
@@ -173,6 +177,7 @@ public sealed class PageHeaderService(
         Welcome,
         XecretsHome,
         XecretsDesktop,
+        GitHub,
         ThirdPartyLicenses,
     }
 }

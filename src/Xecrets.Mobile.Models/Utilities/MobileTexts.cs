@@ -88,9 +88,9 @@ public static class MobileTexts
 
     public static string CrashPageTitle => "Sorry, we crashed!";
 
-    public static string WorkFolderDescription => "Select or add a folder, then the file to encrypt or decrypt.";
+    public static string WorkFolderDescription => "Allow access to named folders. Click to select a file to encrypt or decrypt.";
 
-    public static string DialogTextAddUnknownWorkFolder => "Do you want to add this folder?";
+    public static string DialogTextAddUnknownWorkFolder => "Do you want to add and allow access for this folder?";
 
     public static string DialogTextFolderNoAccess => "The selected folder could not be accessed. Please select another folder.";
 
@@ -98,7 +98,7 @@ public static class MobileTexts
 
     public static string DialogTextAlreadyEncrypted => "This file is already encrypted.";
 
-    public static string DialogTextIncomingFileAccessDenied => "The app that sent this file did not grant access to it.";
+    public static string DialogTextIncomingFileAccessDenied => "The app that sent this file did not allow access to it.";
 
     public static string DialogTextConfirmOverwrite => "The file \"{0}\" already exists. Overwrite it?";
 
@@ -114,7 +114,7 @@ public static class MobileTexts
 
     public static string DialogTextNoAppToOpenFile => "There is no app on this device that can open this file.";
 
-    public static string DialogTextRecentFileNoAccess => "Access to the folder of this file has been lost. Add the folder again in \"my folders\".";
+    public static string DialogTextRecentFileNoAccess => "Access to the folder of this file has been lost. Add the folder again in \"My folders\".";
 
     public static string DialogTextCopiedToClipboard => "Copied to the clipboard.";
 
@@ -136,9 +136,11 @@ public static class MobileTexts
 
     public static string HomeContentTitle => "Actions";
 
-    public static string HomeDescription => "Choose an action. Work with files where they are stored in \"my folders\". Work with copies in the app and select what to do next. Encrypt a copy with a separate password.";
+    public static string HomeDescription => "Choose an action. Work with files where they are stored in \"My folders\". Work with copies in the app and select what to do next. Encrypt a copy with a separate password.";
 
-    public static string MenuInfo => "Xecrets home";
+    public static string MenuGitHub => "View source";
+
+    public static string MenuInfo => "Xecrets home page";
 
     // "Third-Party Licenses"
     public static string MenuThirdPartyLicenses => ThirdPartyLicensesPageTitle;
@@ -148,7 +150,7 @@ public static class MobileTexts
 
     public static string MenuSupport => "Support";
 
-    public static string MenuXecretsDesktop => "Xecrets desktop";
+    public static string MenuXecretsDesktop => "Xecrets desktop page";
 
     public static string RecentFilesContentTitle => "Recent files";
 
@@ -162,6 +164,8 @@ public static class MobileTexts
     public static string ThirdPartyLicensesPageTitle => "Third-party Licenses";
 
     public static string WorkFoldersContentTitle => "My folders";
+
+    public static string GitHubUrl => "https://github.com/xecrets/xecrets-mobile";
 
     public static string MobileHelpUrl => "https://www.axantum.com/help/mobile";
 
@@ -178,7 +182,7 @@ public static class MobileTexts
 
         (c) Create an entirely local profile.
         (e) Encrypt and decrypt files in place.
-        (f) Work with favorite folders.
+        (f) Allow access to favorite folders.
         (v) Decrypt and share, view or edit files.
         (s) Encrypt and send or share files.
         (p) Suggest strong pronounceable passwords.
