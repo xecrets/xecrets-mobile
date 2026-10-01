@@ -50,7 +50,6 @@ public partial class HomePageModel(
     ICrashTestService crashTestService,
     SessionExitService sessionExitService,
     IFlowContext flowContext,
-    IRecentFilesService recentFilesService,
     ICoreServices coreServices,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
@@ -76,27 +75,10 @@ public partial class HomePageModel(
     [NotifyCanExecuteChangedFor(nameof(SignOutCommand))]
     public partial bool IsBusy { get; set; }
 
-    [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(RecentFilesCommand))]
-    public partial bool HasRecentFiles { get; set; }
-
-    public async Task LoadAsync()
-    {
-        try
-        {
-            HasRecentFiles = (await recentFilesService.GetFilesAsync()).Count > 0;
-        }
-        catch (Exception ex)
-        {
-            HasRecentFiles = false;
-            StatusText = ex.FormatException();
-        }
-    }
-
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private Task MyFoldersAsync() => UserInterfaceService.NavigateToAsync(AppDestination.WorkFolders);
 
-    [RelayCommand(CanExecute = nameof(CanUseRecentFilesCommand))]
+    [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private Task RecentFilesAsync() => UserInterfaceService.NavigateToAsync(AppDestination.RecentFiles);
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
@@ -228,9 +210,6 @@ public partial class HomePageModel(
 
     private bool CanUseCommand()
         => !IsBusy;
-
-    private bool CanUseRecentFilesCommand()
-        => CanUseCommand() && HasRecentFiles;
 
     private async Task<bool> PickAndPrepareAsync(bool enableTextEditing)
     {
