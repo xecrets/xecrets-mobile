@@ -150,6 +150,65 @@ public sealed class WorkFolderWorkflowTests
         Assert.That(page.StatusText, Is.Empty);
     }
 
+    [TestCase(WorkFolderPickAction.Encrypt, false, FilePickerKind.Any, WorkFolderOperation.Encrypt)]
+    [TestCase(WorkFolderPickAction.Encrypt, true, FilePickerKind.Any, null)]
+    [TestCase(WorkFolderPickAction.Decrypt, true, FilePickerKind.Encrypted, WorkFolderOperation.Decrypt)]
+    [TestCase(WorkFolderPickAction.Decrypt, false, FilePickerKind.Encrypted, null)]
+    public async Task ExplicitActionOnlyAppliesToMatchingFiles(
+        WorkFolderPickAction action, bool isEncrypted, FilePickerKind expectedKind, WorkFolderOperation? expected)
+    {
+        TestWorkFolderService folders = new();
+        WorkFolderFile file = CreateFile("input.axx", "known", true);
+        folders.Files.Enqueue(file);
+        TestFileOperations fileOperations = new();
+        if (isEncrypted)
+        {
+            fileOperations.Encrypted.Add(file.Id);
+        }
+        TestOperationService operations = new();
+        TestUserInterfaceService userInterface = new();
+        FileDetectionCoreServices coreServices = new();
+        WorkFolderWorkflow workflow = new(folders, operations, fileOperations, new FlowContext(), coreServices, userInterface);
+        WorkFoldersPageModel page = new(
+            folders, workflow, coreServices, new TestRecentFilesService(), fileOperations, userInterface)
+        {
+            PickAction = action,
+        };
+
+        await page.OpenCommand.ExecuteAsync(folders.Folders[0]);
+
+        Assert.That(operations.Operation, Is.EqualTo(expected));
+        Assert.That(folders.PickerKinds, Is.EqualTo([expectedKind]));
+        Assert.That(page.StatusText, Is.Empty);
+    }
+
+    [TestCase(WorkFolderPickAction.Transform, false)]
+    [TestCase(WorkFolderPickAction.Encrypt, false)]
+    [TestCase(WorkFolderPickAction.Decrypt, false)]
+    [TestCase(WorkFolderPickAction.AddToRecentFiles, true)]
+    public async Task AddingFolderPicksFileOnlyForRecentFiles(WorkFolderPickAction action, bool expectPicker)
+    {
+        TestWorkFolderService folders = new();
+        folders.Files.Enqueue(CreateFile("input.txt", "added", true));
+        TestRecentFilesService recentFiles = new();
+        TestUserInterfaceService userInterface = new();
+        FileDetectionCoreServices coreServices = new();
+        TestFileOperations fileOperations = new();
+        WorkFolderWorkflow workflow = new(
+            folders, new TestOperationService(), fileOperations, new FlowContext(), coreServices, userInterface);
+        WorkFoldersPageModel page = new(folders, workflow, coreServices, recentFiles, fileOperations, userInterface)
+        {
+            PickAction = action,
+        };
+
+        await page.AddCommand.ExecuteAsync(null);
+
+        Assert.That(folders.AddLocations, Has.Count.EqualTo(1));
+        Assert.That(folders.PickerKinds, Has.Count.EqualTo(expectPicker ? 1 : 0));
+        Assert.That(recentFiles.Files, Has.Count.EqualTo(expectPicker ? 1 : 0));
+        Assert.That(page.StatusText, Is.Empty);
+    }
+
     [Test]
     public async Task WrongPasswordNavigatesToExistingPasswordPage()
     {

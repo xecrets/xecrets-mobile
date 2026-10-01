@@ -88,7 +88,7 @@ public static class MobileTexts
 
     public static string CrashPageTitle => "Sorry, we crashed!";
 
-    public static string WorkFolderDescription => "Allow access to named folders. Click to select a file to encrypt or decrypt.";
+    public static string WorkFolderDescription => "Xecrets Ez needs access to a folder before it can encrypt or decrypt files in it. Click a folder to select a file.";
 
     public static string DialogTextAddUnknownWorkFolder => "Do you want to add and allow access for this folder?";
 
@@ -97,6 +97,8 @@ public static class MobileTexts
     public static string DialogTextSelectFolderFirst => "You selected a file in the folder. Select and add the folder first.";
 
     public static string DialogTextAlreadyEncrypted => "This file is already encrypted.";
+
+    public static string DialogTextNotEncrypted => "This file is not encrypted.";
 
     public static string DialogTextIncomingFileAccessDenied => "The app that sent this file did not allow access to it.";
 
@@ -136,7 +138,7 @@ public static class MobileTexts
 
     public static string HomeContentTitle => "Actions";
 
-    public static string HomeDescription => "Choose an action. Work with files where they are stored in \"My folders\". Work with copies in the app and select what to do next. Encrypt a copy with a separate password.";
+    public static string HomeDescription => "Choose an action. Work with files where they are stored in \"My folders\", or encrypt or decrypt one directly. Work with copies in the app and select what to do next. Encrypt a copy with a separate password.";
 
     public static string MenuGitHub => "View source";
 
@@ -219,6 +221,10 @@ public static class MobileTexts
     public static string BreadcrumbDecrypt => AppTexts.ButtonDecrypt;
 
     public static string BreadcrumbEncrypt => AppTexts.ButtonEncrypt;
+
+    public static string ButtonDecrypt => AppTexts.ButtonDecrypt;
+
+    public static string ButtonEncrypt => AppTexts.ButtonEncrypt;
 
     // "Password"
     public static string BreadcrumbPassword => WatermarkPassword;

@@ -34,4 +34,6 @@ public enum WorkFolderPickAction
 {
     Transform,
     AddToRecentFiles,
+    Encrypt,
+    Decrypt,
 }

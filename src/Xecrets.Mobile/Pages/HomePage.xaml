@@ -59,6 +59,10 @@
                                             Command="{Binding MyFoldersCommand}" />
                                     <Button Text="{x:Static modelUtilities:MobileTexts.RecentFilesContentTitle}"
                                             Command="{Binding RecentFilesCommand}" />
+                                    <Button Text="{x:Static modelUtilities:MobileTexts.ButtonEncrypt}"
+                                            Command="{Binding EncryptCommand}" />
+                                    <Button Text="{x:Static modelUtilities:MobileTexts.ButtonDecrypt}"
+                                            Command="{Binding DecryptCommand}" />
                                     <BoxView Style="{StaticResource ActionDividerStyle}" />
                                     <Button Text="{x:Static modelUtilities:MobileTexts.ButtonDecryptAs}"
                                             Command="{Binding DecryptAsCommand}" />

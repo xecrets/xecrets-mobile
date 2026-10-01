@@ -68,6 +68,8 @@ public partial class HomePageModel(
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(MyFoldersCommand))]
     [NotifyCanExecuteChangedFor(nameof(RecentFilesCommand))]
+    [NotifyCanExecuteChangedFor(nameof(EncryptCommand))]
+    [NotifyCanExecuteChangedFor(nameof(DecryptCommand))]
     [NotifyCanExecuteChangedFor(nameof(EncryptAsCommand))]
     [NotifyCanExecuteChangedFor(nameof(EncryptToShareCommand))]
     [NotifyCanExecuteChangedFor(nameof(DecryptAsCommand))]
@@ -80,6 +82,12 @@ public partial class HomePageModel(
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private Task RecentFilesAsync() => UserInterfaceService.NavigateToAsync(AppDestination.RecentFiles);
+
+    [RelayCommand(CanExecute = nameof(CanUseCommand))]
+    private Task Encrypt() => UserInterfaceService.NavigateToAsync(AppDestination.WorkFolders, WorkFolderPickAction.Encrypt);
+
+    [RelayCommand(CanExecute = nameof(CanUseCommand))]
+    private Task Decrypt() => UserInterfaceService.NavigateToAsync(AppDestination.WorkFolders, WorkFolderPickAction.Decrypt);
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private async Task EncryptAs()

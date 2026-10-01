@@ -73,13 +73,13 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel,
 
     public ObservableCollection<WorkFolderEntry> Folders { get; }
 
-    public string Breadcrumb => PickAction == WorkFolderPickAction.AddToRecentFiles
-        ? string.Join(
-            MobileTexts.BreadcrumbSeparator,
-            MobileTexts.BreadcrumbHome,
-            MobileTexts.BreadcrumbRecentFiles,
-            MobileTexts.BreadcrumbMyFolders)
-        : string.Join(MobileTexts.BreadcrumbSeparator, MobileTexts.BreadcrumbHome, MobileTexts.BreadcrumbMyFolders);
+    public string Breadcrumb => PickAction switch
+    {
+        WorkFolderPickAction.AddToRecentFiles => BuildBreadcrumb(MobileTexts.BreadcrumbRecentFiles),
+        WorkFolderPickAction.Encrypt => BuildBreadcrumb(MobileTexts.BreadcrumbEncrypt),
+        WorkFolderPickAction.Decrypt => BuildBreadcrumb(MobileTexts.BreadcrumbDecrypt),
+        _ => string.Join(MobileTexts.BreadcrumbSeparator, MobileTexts.BreadcrumbHome, MobileTexts.BreadcrumbMyFolders),
+    };
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Breadcrumb))]
@@ -130,7 +130,11 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel,
 
             await Load();
 
-            await PickAndUseFileAsync(folder);
+            // Adding a folder only grants access to it, except when the purpose is to pick a recent file.
+            if (PickAction == WorkFolderPickAction.AddToRecentFiles)
+            {
+                await PickAndUseFileAsync(folder);
+            }
         }
         catch (OperationCanceledException)
         {
@@ -223,7 +227,8 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel,
 
     private async Task PickAndUseFileAsync(WorkFolder initialFolder)
     {
-        WorkFolderFile? file = await _workflow.PickFileAsync(FilePickerKind.Any, initialFolder);
+        FilePickerKind pickerKind = PickAction == WorkFolderPickAction.Decrypt ? FilePickerKind.Encrypted : FilePickerKind.Any;
+        WorkFolderFile? file = await _workflow.PickFileAsync(pickerKind, initialFolder);
         await Load();
         if (file is null)
         {
@@ -238,11 +243,24 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel,
             return;
         }
 
-        WorkFolderOperation operation = await _coreServices.IsEncryptedAsync(() => _fileOperations.OpenReadAsync(file))
-            ? WorkFolderOperation.Decrypt
-            : WorkFolderOperation.Encrypt;
-        await _workflow.TransformAsync(file, operation);
+        if (PickAction == WorkFolderPickAction.Encrypt)
+        {
+            await _workflow.TransformAsync(file, WorkFolderOperation.Encrypt);
+            return;
+        }
+
+        bool isEncrypted = await _coreServices.IsEncryptedAsync(() => _fileOperations.OpenReadAsync(file));
+        if (PickAction == WorkFolderPickAction.Decrypt && !isEncrypted)
+        {
+            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextNotEncrypted);
+            return;
+        }
+
+        await _workflow.TransformAsync(file, isEncrypted ? WorkFolderOperation.Decrypt : WorkFolderOperation.Encrypt);
     }
+
+    private static string BuildBreadcrumb(string origin) =>
+        string.Join(MobileTexts.BreadcrumbSeparator, MobileTexts.BreadcrumbHome, origin, MobileTexts.BreadcrumbMyFolders);
 
     private bool CanUseCommand() => !IsBusy;
 
