@@ -99,7 +99,7 @@ public sealed partial class PasswordEntry
         _isPasswordVisible = !_isPasswordVisible;
         PasswordTextEntry.IsPassword = !_isPasswordVisible;
         VisibilityButton.Source = CreateVisibilityIcon(_isPasswordVisible
-            ? FluentUI.eye_24_regular
-            : FluentUI.eye_off_24_regular);
+            ? FluentUI.eye_off_24_regular
+            : FluentUI.eye_24_regular);
     }
 }
