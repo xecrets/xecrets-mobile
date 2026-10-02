@@ -35,8 +35,8 @@ using Xecrets.Mobile.Models.Models;
 namespace Xecrets.Mobile.Controls;
 
 /// <summary>
-/// Selects between encrypted and decrypted files, shown as the native segmented control of each platform through
-/// a platform specific handler.
+/// Selects which recent files to show, such as encrypted or decrypted ones, shown as the native segmented control of
+/// each platform through a platform specific handler.
 /// </summary>
 public partial class FileStateSelector : View
 {

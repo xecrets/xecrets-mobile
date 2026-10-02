@@ -43,5 +43,15 @@ public interface IFlowContext
 
     WorkFolderOperation Operation { get; }
 
-    void Begin(FlowOrigin origin, WorkFolderOperation operation);
+    /// <summary>
+    /// The file in a known folder that the flow works on, or null for a file received from another app.
+    /// </summary>
+    WorkFolderFile? Source { get; }
+
+    void Begin(FlowOrigin origin, WorkFolderOperation operation, WorkFolderFile? source = null);
+
+    /// <summary>
+    /// Makes a file saved during the flow the one it works on from then on.
+    /// </summary>
+    void UpdateSource(WorkFolderFile source);
 }

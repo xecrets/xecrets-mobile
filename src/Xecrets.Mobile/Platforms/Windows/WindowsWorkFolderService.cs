@@ -61,12 +61,6 @@ public sealed class WindowsWorkFolderService(
     WorkFolderStorage storage,
     IPickedWritableFileFactory pickedWritableFileFactory) : IWorkFolderService
 {
-    public IReadOnlyList<string> GetPathSegments(WorkFolder folder) => WorkFolderStorage.BuildPathSegments(
-        folder.Id,
-        folder,
-        Path.DirectorySeparatorChar,
-        Path.AltDirectorySeparatorChar);
-
     public async Task<IReadOnlyList<WorkFolder>> GetFoldersAsync() => await storage.LoadFoldersAsync();
 
     public async Task<WorkFolderResult> AddFolderAsync(string? initialLocationId = null)
@@ -129,6 +123,32 @@ public sealed class WindowsWorkFolderService(
         return await CreateFileAsync(file);
     }
 
+    public async Task<WorkFolderFile?> SaveFileAsync(WorkFolder? folder, string fileName, Stream content)
+    {
+        // The picker requires a file type, and "." stands for a name without an extension.
+        string extension = Path.GetExtension(fileName);
+        FileSavePicker picker = new()
+        {
+            SettingsIdentifier = folder is null ? string.Empty : CreateSettingsIdentifier(folder.Id),
+            SuggestedFileName = Path.GetFileNameWithoutExtension(fileName),
+        };
+        picker.FileTypeChoices.Add(extension.Length > 0 ? extension : ".", [extension.Length > 0 ? extension : "."]);
+        InitializeWithWindow.Initialize(picker, GetWindowHandle());
+        StorageFile? file = await picker.PickSaveFileAsync();
+        if (file is null)
+        {
+            return null;
+        }
+
+        await using (Stream output = await file.OpenStreamForWriteAsync())
+        {
+            output.SetLength(0);
+            await content.CopyToAsync(output);
+        }
+
+        return await CreateFileAsync(file);
+    }
+
     public async Task<WorkFolderFileResult> OpenFileAsync(string fileId)
     {
         if (await FindAccessFolderAsync(fileId) is null)
@@ -153,10 +173,18 @@ public sealed class WindowsWorkFolderService(
         return WorkFolderFileResult.Valid(await CreateFileAsync(file));
     }
 
-    public IReadOnlyList<string> GetFilePathSegments(string fileId) =>
-        fileId.Split(
+    public IReadOnlyList<string> GetFilePathSegments(string id, string? displayName = null)
+    {
+        string[] segments = id.Split(
             [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar],
             StringSplitOptions.RemoveEmptyEntries);
+        return displayName is null ||
+            (segments.Length > 0 && string.Equals(segments[^1], displayName, StringComparison.OrdinalIgnoreCase))
+            ? segments
+            : [.. segments, displayName];
+    }
+
+    public string? GetFileLocationId(string fileId) => Path.GetDirectoryName(fileId);
 
     private async Task<WorkFolderFile> CreateFileAsync(StorageFile file)
     {

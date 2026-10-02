@@ -138,6 +138,7 @@ public sealed class TransientFileService(IFileService fileService, IFileWiper fi
     {
         try
         {
+            File.SetAttributes(path, FileAttributes.Normal);
             await using FileStream stream = new(path, FileMode.Open, FileAccess.Write, FileShare.None);
             await fileWiper.OverwriteAsync(stream, stream.Length);
         }
@@ -151,15 +152,6 @@ public sealed class TransientFileService(IFileService fileService, IFileWiper fi
 
     private static void SafeDelete(string path)
     {
-        try
-        {
-            File.SetAttributes(path, FileAttributes.Normal);
-        }
-        catch
-        {
-            // Best effort.
-        }
-
         try
         {
             string renamedPath = Path.Combine(Path.GetDirectoryName(path)!, Path.GetRandomFileName());

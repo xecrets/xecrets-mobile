@@ -183,7 +183,7 @@ public sealed class PendingFileTests
         string path = transient.CreateEncryptedInputPath("input.axx");
         await File.WriteAllTextAsync(path, "input");
         DecryptionPasswordRequestState request = new();
-        request.Set(path, "original", true);
+        request.Set(path, true);
         if (deleteDirectory)
         {
             await transient.MaybeWipeTrackedFilesAsync();
@@ -202,7 +202,6 @@ public sealed class PendingFileTests
         await page.SubmitCommand.ExecuteAsync(null);
 
         Assert.That(request.HasPendingRequest, Is.False);
-        Assert.That(request.SourcePath, Is.Empty);
         Assert.That(page.Password, Is.Empty);
         Assert.That(page.ErrorText, Is.Empty);
         Assert.That(page.IsBusy, Is.False);
@@ -249,7 +248,7 @@ public sealed class PendingFileTests
     {
         TestProfileService profile = new();
         DecryptionPasswordRequestState request = new();
-        request.Set("old", "old", true);
+        request.Set("old", true);
         PreviewService preview = new(null!, profile, null!, new PreviewState(), request);
 
         Assert.That(await preview.PrepareImportedAsync(Path.Combine(_directory, "missing.axx")),
@@ -274,7 +273,7 @@ public sealed class PendingFileTests
         string path = transient.CreateEncryptedInputPath("input.axx");
         await File.WriteAllTextAsync(path, "input");
         DecryptionPasswordRequestState request = new();
-        request.Set(path, string.Empty, false);
+        request.Set(path, false);
         PreviewService preview = new(new TestCoreServices(new DirectoryNotFoundException("output failed")),
             new TestProfileService(), transient, new PreviewState(), request);
 
@@ -292,7 +291,7 @@ public sealed class PendingFileTests
             new TestFileWiper(() => pendingWhenWiped = request.HasPendingRequest));
         string path = transient.CreateEncryptedInputPath("input.axx");
         await File.WriteAllTextAsync(path, "input");
-        request.Set(path, "original", true);
+        request.Set(path, true);
         TestProfileService profile = new() { IsAuthenticated = true };
         PreviewService preview = new(null!, profile, transient, new PreviewState(), request);
         TestUserInterfaceService userInterface = new();
@@ -435,11 +434,9 @@ public sealed class PendingFileTests
         public string CacheDirectory => directory;
         public string AppDataDirectory => throw new NotSupportedException();
         public string PlatformId => throw new NotSupportedException();
-        public Task<PickedFile?> PickFileAsync(string pickerTitle, FilePickerKind pickerKind) => throw new NotSupportedException();
         public Task<IPickedWritableFile?> PickWritableFileAsync(string pickerTitle, FilePickerKind pickerKind) => throw new NotSupportedException();
         public Task<bool> OpenInAsync(string filePath, string displayName) => throw new NotSupportedException();
         public Task SendToAsync(string filePath, string displayName, string contentType) => throw new NotSupportedException();
-        public Task<SaveFileResult> SaveAsAsync(Stream stream, string displayName, string originalSourcePath) => throw new NotSupportedException();
         public Task<bool> CanViewFileAsync(DecryptedFileInfo file) => throw new NotSupportedException();
         public Task ViewFileAsync(DecryptedFileInfo file) => throw new NotSupportedException();
         public bool IsSelfHandoffReference(string reference) => throw new NotSupportedException();

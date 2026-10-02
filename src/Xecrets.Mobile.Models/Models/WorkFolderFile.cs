@@ -33,6 +33,9 @@ using Xecrets.Mobile.Models.Abstractions;
 namespace Xecrets.Mobile.Models.Models;
 
 /// <param name="Id">The platform reference to the file itself, used to open it again later.</param>
+/// <param name="LocationId">The platform reference to the folder of the file, empty when it cannot be determined, as
+/// with some cloud providers. Such a file can be read, but its folder cannot be added, so it is never
+/// <paramref name="IsInKnownWorkFolder"/>.</param>
 public sealed record WorkFolderFile(
     string Id,
     string FileName,
@@ -40,4 +43,7 @@ public sealed record WorkFolderFile(
     string LocationDisplayName,
     string LocationGrantId,
     bool IsInKnownWorkFolder,
-    IPickedWritableFile WritableFile);
+    IPickedWritableFile WritableFile)
+{
+    public bool IsLocationKnown => LocationId.Length > 0;
+}

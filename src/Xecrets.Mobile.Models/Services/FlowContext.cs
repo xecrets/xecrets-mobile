@@ -40,9 +40,14 @@ public sealed class FlowContext : IFlowContext
 
     public WorkFolderOperation Operation { get; private set; } = WorkFolderOperation.Encrypt;
 
-    public void Begin(FlowOrigin origin, WorkFolderOperation operation)
+    public WorkFolderFile? Source { get; private set; }
+
+    public void Begin(FlowOrigin origin, WorkFolderOperation operation, WorkFolderFile? source = null)
     {
         Origin = origin;
         Operation = operation;
+        Source = source;
     }
+
+    public void UpdateSource(WorkFolderFile source) => Source = source;
 }

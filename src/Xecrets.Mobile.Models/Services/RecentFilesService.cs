@@ -32,33 +32,45 @@ using Xecrets.Common.Abstractions;
 using Xecrets.Common.Models;
 
 using Xecrets.Mobile.Models.Abstractions;
+using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Services;
 
-public sealed class RecentFilesService(ProfileSession profileSession) : IRecentFilesService
+public sealed class RecentFilesService(ProfileSession profileSession, IFlowContext flowContext) : IRecentFilesService
 {
-    private const int _maxRecentListLength = 25;
+    private const int _maxRecentListLength = 50;
 
-    public async Task<IReadOnlyList<string>> GetFilesAsync() =>
-        [.. (await profileSession.UserStore!.LoadRecentFilesAsync()).Value.Files];
+    public async Task<IReadOnlyList<RecentFile>> GetFilesAsync() =>
+        [.. (await profileSession.UserStore!.LoadRecentFileOperationsAsync()).Value.Files];
 
-    public async Task AddAsync(string fileId)
+    public async Task AddAsync(string fileId, RecentFileOperation operation)
     {
-        await using IEditScope<RecentFiles> scope =
-            (await profileSession.UserStore!.LoadRecentFilesAsync()).BeginEdit();
+        await using IEditScope<RecentFileOperations> scope =
+            (await profileSession.UserStore!.LoadRecentFileOperationsAsync()).BeginEdit();
         scope.Value.Files =
         [
-            fileId,
+            new RecentFile { Id = fileId, Operation = operation },
             .. scope.Value.Files
-                .Where(file => file != fileId)
+                .Where(file => file.Id != fileId)
                 .Take(_maxRecentListLength - 1),
         ];
     }
 
-    public async Task RemoveAsync(string fileId)
+    // A source outside the known folders cannot be opened again, so it is not listed.
+    public Task AddFlowSourceAsync(RecentFileOperation operation) =>
+        flowContext.Source is { IsInKnownWorkFolder: true } source
+            ? AddAsync(source.Id, operation)
+            : Task.CompletedTask;
+
+    public Task AddSavedCopyAsync(WorkFolderFile savedCopy, RecentFileOperation operation) =>
+        flowContext.Source is not null ? AddFlowSourceAsync(operation)
+        : savedCopy.IsInKnownWorkFolder ? AddAsync(savedCopy.Id, RecentFileOperation.InPlace)
+        : Task.CompletedTask;
+
+    public async Task RemoveAsync(IReadOnlyCollection<string> fileIds)
     {
-        await using IEditScope<RecentFiles> scope =
-            (await profileSession.UserStore!.LoadRecentFilesAsync()).BeginEdit();
-        scope.Value.Files = [.. scope.Value.Files.Where(file => file != fileId)];
+        await using IEditScope<RecentFileOperations> scope =
+            (await profileSession.UserStore!.LoadRecentFileOperationsAsync()).BeginEdit();
+        scope.Value.Files = [.. scope.Value.Files.Where(file => !fileIds.Contains(file.Id))];
     }
 }

@@ -29,20 +29,15 @@
 #endregion Copyright and GPL License
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 
-using CommunityToolkit.Maui.Storage;
-
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.ApplicationModel.DataTransfer;
-using Microsoft.Maui.Devices;
 using Microsoft.Maui.Storage;
 
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
-using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Services;
 
@@ -55,35 +50,6 @@ public abstract class FileServiceBase : IFileService
     public string AppDataDirectory => FileSystem.AppDataDirectory;
 
     public string CacheDirectory => FileSystem.CacheDirectory;
-
-    public async Task<PickedFile?> PickFileAsync(string pickerTitle, FilePickerKind pickerKind)
-    {
-        FileResult? file = await FilePicker.Default.PickAsync(
-            new PickOptions
-            {
-                PickerTitle = pickerTitle,
-                FileTypes = CreateFileTypes(pickerKind),
-            });
-
-        return file is null
-            ? null
-            : new PickedFile(file.FileName, file.FullPath, file.OpenReadAsync);
-    }
-
-    private static FilePickerFileType? CreateFileTypes(FilePickerKind pickerKind)
-        => pickerKind switch
-        {
-            FilePickerKind.Any => null,
-            FilePickerKind.Encrypted => new FilePickerFileType(
-                new Dictionary<DevicePlatform, IEnumerable<string>>
-                {
-                    { DevicePlatform.Android, [EncryptedFileType.ContentType, "application/octet-stream"] },
-                    { DevicePlatform.iOS, [EncryptedFileType.UniformTypeIdentifier] },
-                    { DevicePlatform.MacCatalyst, [EncryptedFileType.UniformTypeIdentifier] },
-                    { DevicePlatform.WinUI, [Texts.Extensions.EncryptedExtension] },
-                }),
-            _ => throw new ArgumentOutOfRangeException(nameof(pickerKind)),
-        };
 
     public virtual async Task<bool> OpenInAsync(string filePath, string displayName)
     {
@@ -108,35 +74,6 @@ public abstract class FileServiceBase : IFileService
             });
     }
 
-    public async Task<SaveFileResult> SaveAsAsync(Stream stream, string displayName, string originalSourcePath)
-    {
-        string initialDirectory = ResolveDefaultSaveLocation(originalSourcePath);
-        FileSaverResult result = await FileSaver.Default.SaveAsync(initialDirectory, displayName, stream);
-
-        if (result.IsCancelled)
-        {
-            return new SaveFileResult(true, result.FilePath);
-        }
-
-        result.EnsureSuccess();
-
-        return new SaveFileResult(false, result.FilePath);
-    }
-
-    protected virtual string ResolveDefaultSaveLocation(string? originalFilePath)
-    {
-        if (!string.IsNullOrWhiteSpace(originalFilePath))
-        {
-            string? directory = Path.GetDirectoryName(originalFilePath);
-            if (!string.IsNullOrWhiteSpace(directory) && !IsInternalTemporaryLocation(directory))
-            {
-                return directory;
-            }
-        }
-
-        return Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-    }
-
     public virtual Task<bool> CanViewFileAsync(DecryptedFileInfo file) => Task.FromResult(false);
 
     public virtual async Task ViewFileAsync(DecryptedFileInfo file) => await OpenInAsync(file.FilePath, file.DisplayName);
@@ -155,7 +92,4 @@ public abstract class FileServiceBase : IFileService
             throw new FileNotFoundException(@"The file was not found.", filePath);
         }
     }
-
-    private bool IsInternalTemporaryLocation(string directory)
-        => directory.StartsWith(CacheDirectory, StringComparison.OrdinalIgnoreCase);
 }

@@ -34,23 +34,19 @@ public sealed class DecryptionPasswordRequestState
 {
     public string EncryptedPath { get; private set; } = string.Empty;
 
-    public string SourcePath { get; private set; } = string.Empty;
-
     public bool EnableTextEditing { get; private set; }
 
     public bool HasPendingRequest => EncryptedPath.Length > 0;
 
-    public void Set(string encryptedPath, string sourcePath, bool enableTextEditing)
+    public void Set(string encryptedPath, bool enableTextEditing)
     {
         EncryptedPath = encryptedPath;
-        SourcePath = sourcePath;
         EnableTextEditing = enableTextEditing;
     }
 
     public void Clear()
     {
         EncryptedPath = string.Empty;
-        SourcePath = string.Empty;
         EnableTextEditing = false;
     }
 }

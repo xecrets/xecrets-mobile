@@ -46,23 +46,6 @@ namespace Xecrets.Mobile.Services;
 /// </summary>
 public sealed class WorkFolderStorage(ProfileSession profileSession)
 {
-    /// <summary>
-    /// Splits a folder path or document id into path segments, appending the display name unless the split
-    /// already ends with it. The result is non-empty and its final segment is the display name.
-    /// </summary>
-    public static IReadOnlyList<string> BuildPathSegments(string path, WorkFolder folder, params char[] separators)
-    {
-        string[] segments = path.Split(
-            separators,
-            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        return segments.Length > 0 && string.Equals(
-            segments[^1],
-            folder.DisplayName,
-            StringComparison.OrdinalIgnoreCase)
-            ? segments
-            : [.. segments, folder.DisplayName];
-    }
-
     public async Task<List<WorkFolder>> LoadFoldersAsync() =>
         (await RequireUserStore().LoadWorkFoldersAsync()).Value.Folders;
 

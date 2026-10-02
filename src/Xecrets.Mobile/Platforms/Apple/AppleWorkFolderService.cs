@@ -56,9 +56,6 @@ public sealed class AppleWorkFolderService(
 
     public async Task<IReadOnlyList<WorkFolder>> GetFoldersAsync() => await storage.LoadFoldersAsync();
 
-    public IReadOnlyList<string> GetPathSegments(WorkFolder folder) =>
-        WorkFolderStorage.BuildPathSegments(NSUrl.FromString(folder.Id)?.Path ?? folder.Id, folder, '/');
-
     public async Task<WorkFolderResult> AddFolderAsync(string? initialLocationId = null)
     {
         NSUrl? initialUrl = initialLocationId is null ? null : NSUrl.FromString(initialLocationId);
@@ -168,6 +165,42 @@ public sealed class AppleWorkFolderService(
         return CreateFile(fileUrl, await storage.FindKnownGrantAsync(fileUrl));
     }
 
+    // The picker exports a copy of an existing file, so the content is first written to a temporary file.
+    public async Task<WorkFolderFile?> SaveFileAsync(WorkFolder? folder, string fileName, Stream content)
+    {
+        string directory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        NSUrl? folderUrl = folder is null ? null : AppleExtensions.ResolveGrant(folder.GrantId);
+        bool isAccessing = folderUrl?.StartAccessingSecurityScopedResource() == true;
+        NSUrl? fileUrl;
+        try
+        {
+            string temporaryPath = Path.Combine(directory, fileName);
+            await using (FileStream output = File.Create(temporaryPath))
+            {
+                await content.CopyToAsync(output);
+            }
+
+            fileUrl = await NSUrl.FromFilename(temporaryPath).SaveUrlAsync(folderUrl);
+        }
+        finally
+        {
+            if (isAccessing)
+            {
+                folderUrl!.StopAccessingSecurityScopedResource();
+            }
+
+            Directory.Delete(directory, true);
+        }
+
+        if (fileUrl is null)
+        {
+            return null;
+        }
+
+        return CreateFile(fileUrl, await storage.FindKnownGrantAsync(fileUrl));
+    }
+
     public async Task<WorkFolderFileResult> OpenFileAsync(string fileId)
     {
         NSUrl fileUrl = NSUrl.FromString(fileId)!;
@@ -191,8 +224,17 @@ public sealed class AppleWorkFolderService(
         };
     }
 
-    public IReadOnlyList<string> GetFilePathSegments(string fileId) =>
-        NSUrl.FromString(fileId)!.Path!.Split('/', StringSplitOptions.RemoveEmptyEntries);
+    public IReadOnlyList<string> GetFilePathSegments(string id, string? displayName = null)
+    {
+        string[] segments = (NSUrl.FromString(id)?.Path ?? id).Split('/', StringSplitOptions.RemoveEmptyEntries);
+        return displayName is null ||
+            (segments.Length > 0 && string.Equals(segments[^1], displayName, StringComparison.OrdinalIgnoreCase))
+            ? segments
+            : [.. segments, displayName];
+    }
+
+    public string? GetFileLocationId(string fileId) =>
+        NSUrl.FromString(fileId)?.RemoveLastPathComponent().AbsoluteString;
 
     private WorkFolderFile CreateFile(NSUrl fileUrl, NSUrl? knownGrant)
     {

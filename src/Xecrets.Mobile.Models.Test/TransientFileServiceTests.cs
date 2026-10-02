@@ -292,11 +292,9 @@ public sealed class TransientFileServiceTests
         public string CacheDirectory => cacheDirectory;
         public string AppDataDirectory => throw new NotSupportedException();
         public string PlatformId => throw new NotSupportedException();
-        public Task<PickedFile?> PickFileAsync(string pickerTitle, FilePickerKind pickerKind) => throw new NotSupportedException();
         public Task<IPickedWritableFile?> PickWritableFileAsync(string pickerTitle, FilePickerKind pickerKind) => throw new NotSupportedException();
         public Task<bool> OpenInAsync(string filePath, string displayName) => throw new NotSupportedException();
         public Task SendToAsync(string filePath, string displayName, string contentType) => throw new NotSupportedException();
-        public Task<SaveFileResult> SaveAsAsync(Stream stream, string displayName, string originalSourcePath) => throw new NotSupportedException();
         public Task<bool> CanViewFileAsync(DecryptedFileInfo file) => throw new NotSupportedException();
         public Task ViewFileAsync(DecryptedFileInfo file) => throw new NotSupportedException();
         public bool IsSelfHandoffReference(string reference) => throw new NotSupportedException();

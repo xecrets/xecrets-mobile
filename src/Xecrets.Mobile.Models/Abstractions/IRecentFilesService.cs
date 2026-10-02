@@ -28,24 +28,41 @@
 
 #endregion Copyright and GPL License
 
+using Xecrets.Common.Models;
+
+using Xecrets.Mobile.Models.Models;
+
 namespace Xecrets.Mobile.Models.Abstractions;
 
 /// <summary>
-/// The files most recently encrypted or decrypted in place, or added, in a known folder, identified by
-/// <see cref="Models.WorkFolderFile.Id"/> and ordered most recent first.
+/// The files in a known folder most recently used, identified by <see cref="Models.WorkFolderFile.Id"/> together with
+/// the operation that put them on the list, and ordered most recent first.
 /// </summary>
 public interface IRecentFilesService
 {
-    Task<IReadOnlyList<string>> GetFilesAsync();
+    Task<IReadOnlyList<RecentFile>> GetFilesAsync();
 
     /// <summary>
-    /// Puts a file, such as the result of an encryption or decryption, at the top of the list. The source of an
-    /// encryption or decryption is kept, so that it is listed again if it reappears.
+    /// Puts a file, such as the result of an encryption or decryption, at the top of the list, replacing any earlier
+    /// entry for it. The source of an encryption or decryption in place is kept until it is found missing.
     /// </summary>
-    Task AddAsync(string fileId);
+    Task AddAsync(string fileId, RecentFileOperation operation);
 
     /// <summary>
-    /// Removes a file from the list. The file itself is not affected.
+    /// Adds the source of the current flow, if it has one in a known folder, after the user acted on it with the
+    /// operation.
     /// </summary>
-    Task RemoveAsync(string fileId);
+    Task AddFlowSourceAsync(RecentFileOperation operation);
+
+    /// <summary>
+    /// Adds the source of the current flow after the user saved a copy of it with the operation. For a file received
+    /// from another app, which has no source, the saved copy is added instead, as if encrypted or decrypted in place,
+    /// if it can be opened again.
+    /// </summary>
+    Task AddSavedCopyAsync(WorkFolderFile savedCopy, RecentFileOperation operation);
+
+    /// <summary>
+    /// Removes one or more files from the list, such as those found missing. The files themselves are not affected.
+    /// </summary>
+    Task RemoveAsync(IReadOnlyCollection<string> fileIds);
 }

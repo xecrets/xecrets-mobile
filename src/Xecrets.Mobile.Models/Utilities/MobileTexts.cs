@@ -90,7 +90,9 @@ public static class MobileTexts
 
     public static string WorkFolderDescription => "Xecrets Ez needs access to a folder before it can encrypt or decrypt files in it. Click a folder to select a file.";
 
-    public static string DialogTextAddUnknownWorkFolder => "Do you want to add and allow access for this folder?";
+    public static string DialogTextAddUnknownWorkFolderFormat => "Do you want to add and allow access for the folder \"{0}\"?";
+
+    public static string DialogTextLocationNotSupported => "This location is not currently supported.";
 
     public static string DialogTextFolderNoAccess => "The selected folder could not be accessed. Please select another folder.";
 
@@ -134,6 +136,11 @@ public static class MobileTexts
 
     public static string FileStateEncrypted => "Encrypted";
 
+    public static string FileStateViewed => "Viewed";
+
+    // An ellipsis rather than a word, to save space in the segmented control.
+    public static string FileStateOther => "…";
+
     public static string EncryptToShareDescription => "Enter a separate password for the encrypted copy. Share the password through a different channel.";
 
     public static string HomeContentTitle => "Actions";
@@ -156,7 +163,7 @@ public static class MobileTexts
 
     public static string RecentFilesContentTitle => "Recent files";
 
-    public static string RecentFilesDescription => "Files recently encrypted or decrypted in \"my folders\", most recent first. Choose to show decrypted or encrypted files, and use the lock button to encrypt or decrypt a file. Tap a decrypted file to open it in another app, or an encrypted file to share or send it. Use the add button to add a file from \"my folders\".";
+    public static string RecentFilesDescription => "Files recently used in \"my folders\", most recent first. Choose to show files decrypted or encrypted where they are, files viewed or edited, or other files, such as those copied. Use the lock button to encrypt or decrypt a file where it is. Select a decrypted file to open it in another app, an encrypted file to share or send it, or a viewed or edited file to see it again. The button next to each file does the same for files not encrypted or decrypted where they are. Use the add button to add a file from \"my folders\".";
 
     public static string SuggestPasswordDescription => "Suggested passwords that are strong, and easy to type and remember. Use » for a new suggestion, and the copy button to copy it to the clipboard.";
 
@@ -264,11 +271,7 @@ public static class MobileTexts
     // "Encrypt copy to share"
     public static string DialogTitleEncryptCopyFor => AppTexts.DialogTitleEncryptCopyFor;
 
-    public static string DialogTitleSelectFilesToEncrypt => AppTexts.DialogTitleSelectFilesToEncrypt;
-
     public static string DialogTitleSelectFilesToWipe => AppTexts.DialogTitleSelectFilesToWipe;
-
-    public static string DialogTitleSelectFileToOpen => AppTexts.DialogTitleSelectFileToOpen;
 
     public static string DialogValidationAlreadySignedIn => AppTexts.DialogValidationAlreadySignedIn;
 

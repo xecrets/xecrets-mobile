@@ -35,13 +35,11 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 using Xecrets.Common.Models;
-using Xecrets.Core.Abstractions;
 
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
 using Xecrets.Mobile.Models.Utilities;
-using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
@@ -49,41 +47,23 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel,
 {
     private readonly IWorkFolderService _workFolderService;
     private readonly WorkFolderWorkflow _workflow;
-    private readonly ICoreServices _coreServices;
-    private readonly IRecentFilesService _recentFilesService;
-    private readonly IWorkFolderFileOperations _fileOperations;
     private bool _refreshingListDisplayNames;
 
     public WorkFoldersPageModel(
         IWorkFolderService workFolderService,
         WorkFolderWorkflow workflow,
-        ICoreServices coreServices,
-        IRecentFilesService recentFilesService,
-        IWorkFolderFileOperations fileOperations,
         IUserInterfaceService userInterfaceService)
         : base(userInterfaceService)
     {
         _workFolderService = workFolderService;
         _workflow = workflow;
-        _coreServices = coreServices;
-        _recentFilesService = recentFilesService;
-        _fileOperations = fileOperations;
         Folders = new WorkFolderCollection(RefreshListDisplayNames);
     }
 
     public ObservableCollection<WorkFolderEntry> Folders { get; }
 
-    public string Breadcrumb => PickAction switch
-    {
-        WorkFolderPickAction.AddToRecentFiles => BuildBreadcrumb(MobileTexts.BreadcrumbRecentFiles),
-        WorkFolderPickAction.Encrypt => BuildBreadcrumb(MobileTexts.BreadcrumbEncrypt),
-        WorkFolderPickAction.Decrypt => BuildBreadcrumb(MobileTexts.BreadcrumbDecrypt),
-        _ => string.Join(MobileTexts.BreadcrumbSeparator, MobileTexts.BreadcrumbHome, MobileTexts.BreadcrumbMyFolders),
-    };
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Breadcrumb))]
-    public partial WorkFolderPickAction PickAction { get; set; }
+    public string Breadcrumb =>
+        string.Join(MobileTexts.BreadcrumbSeparator, MobileTexts.BreadcrumbHome, MobileTexts.BreadcrumbMyFolders);
 
     [ObservableProperty] public partial string MessageText { get; set; } = string.Empty;
 
@@ -122,23 +102,10 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel,
         {
             IsBusy = true;
             StatusText = string.Empty;
-            WorkFolder? folder = await _workflow.AddFolderAsync();
-            if (folder is null)
+            if (await _workflow.AddFolderAsync() is not null)
             {
-                return;
+                await Load();
             }
-
-            await Load();
-
-            // Adding a folder only grants access to it, except when the purpose is to pick a recent file.
-            if (PickAction == WorkFolderPickAction.AddToRecentFiles)
-            {
-                await PickAndUseFileAsync(folder);
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextOperationNotCompleted);
         }
         catch (Exception ex)
         {
@@ -157,7 +124,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel,
         {
             IsBusy = true;
             StatusText = string.Empty;
-            await PickAndUseFileAsync(folder);
+            await _workflow.PickAndTransformAsync(null, folder);
         }
         catch (OperationCanceledException)
         {
@@ -169,6 +136,8 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel,
         }
         finally
         {
+            // Picking may have added a folder or moved one to the top, even if the operation did not complete.
+            await Load();
             IsBusy = false;
         }
     }
@@ -225,43 +194,6 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel,
         }
     }
 
-    private async Task PickAndUseFileAsync(WorkFolder initialFolder)
-    {
-        FilePickerKind pickerKind = PickAction == WorkFolderPickAction.Decrypt ? FilePickerKind.Encrypted : FilePickerKind.Any;
-        WorkFolderFile? file = await _workflow.PickFileAsync(pickerKind, initialFolder);
-        await Load();
-        if (file is null)
-        {
-            return;
-        }
-
-        if (PickAction == WorkFolderPickAction.AddToRecentFiles)
-        {
-            await _recentFilesService.AddAsync(file.Id);
-            await UserInterfaceService.GoBackAsync(file.FileName.IsEncrypted() ? SelectedFileState.Encrypted : SelectedFileState.Decrypted);
-
-            return;
-        }
-
-        if (PickAction == WorkFolderPickAction.Encrypt)
-        {
-            await _workflow.TransformAsync(file, WorkFolderOperation.Encrypt);
-            return;
-        }
-
-        bool isEncrypted = await _coreServices.IsEncryptedAsync(() => _fileOperations.OpenReadAsync(file));
-        if (PickAction == WorkFolderPickAction.Decrypt && !isEncrypted)
-        {
-            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextNotEncrypted);
-            return;
-        }
-
-        await _workflow.TransformAsync(file, isEncrypted ? WorkFolderOperation.Decrypt : WorkFolderOperation.Encrypt);
-    }
-
-    private static string BuildBreadcrumb(string origin) =>
-        string.Join(MobileTexts.BreadcrumbSeparator, MobileTexts.BreadcrumbHome, origin, MobileTexts.BreadcrumbMyFolders);
-
     private bool CanUseCommand() => !IsBusy;
 
     private void RefreshListDisplayNames()
@@ -299,11 +231,10 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel,
                 string[][] reversedPathSegments = new string[duplicateIndexes.Length][];
                 for (int duplicateIndex = 0; duplicateIndex < duplicateIndexes.Length; duplicateIndex++)
                 {
+                    WorkFolder folder = folders[duplicateIndexes[duplicateIndex]];
                     reversedPathSegments[duplicateIndex] =
                     [
-                        .. _workFolderService
-                            .GetPathSegments(folders[duplicateIndexes[duplicateIndex]])
-                            .Reverse(),
+                        .. _workFolderService.GetFilePathSegments(folder.Id, folder.DisplayName).Reverse(),
                     ];
                 }
 

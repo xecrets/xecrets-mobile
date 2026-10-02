@@ -31,6 +31,8 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
+using Xecrets.Common.Models;
+
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
@@ -40,6 +42,8 @@ namespace Xecrets.Mobile.Models.PageModels;
 
 public partial class EncryptResultPageModel(
     IFileService fileService,
+    WorkFolderWorkflow workFolderWorkflow,
+    IRecentFilesService recentFilesService,
     IFlowContext flowContext,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
@@ -88,13 +92,16 @@ public partial class EncryptResultPageModel(
             IsBusy = true;
             StatusText = string.Empty;
             EncryptionPreparationResult encryptionResult = Result;
-            SaveFileResult saveResult = await fileService.SaveAsAsync(
-                encryptionResult.FilePath,
-                encryptionResult.DisplayName,
-                encryptionResult.OriginalSourcePath);
-            if (!saveResult.IsCancelled)
+            await using FileStream content = File.OpenRead(encryptionResult.FilePath);
+            WorkFolderFile? savedCopy =
+                await workFolderWorkflow.SaveFileAsync(encryptionResult.DisplayName, content, flowContext.Source);
+            if (savedCopy is not null)
             {
-                await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextFileSaved);
+                await recentFilesService.AddSavedCopyAsync(
+                    savedCopy,
+                    encryptionResult.IsForPassword
+                        ? RecentFileOperation.EncryptWithSaveAs
+                        : RecentFileOperation.EncryptCopySaveAs);
             }
         }
         catch (OperationCanceledException)
@@ -123,6 +130,9 @@ public partial class EncryptResultPageModel(
                 result.FilePath,
                 result.DisplayName,
                 result.ContentType);
+            await recentFilesService.AddFlowSourceAsync(result.IsForPassword
+                ? RecentFileOperation.EncryptWithSendTo
+                : RecentFileOperation.EncryptCopySendTo);
         }
         catch (OperationCanceledException)
         {

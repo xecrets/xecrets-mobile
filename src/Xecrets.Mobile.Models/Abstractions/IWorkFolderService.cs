@@ -38,12 +38,6 @@ public interface IWorkFolderService
 {
     Task<IReadOnlyList<WorkFolder>> GetFoldersAsync();
 
-    /// <summary>
-    /// Gets the folder path segments. The result is non-empty and its final segment is the folder's
-    /// user-facing display name.
-    /// </summary>
-    IReadOnlyList<string> GetPathSegments(WorkFolder folder);
-
     Task<WorkFolderResult> AddFolderAsync(string? initialLocationId = null);
 
     Task<WorkFolder> AddDiscoveredFolderAsync(WorkFolderFile file);
@@ -61,6 +55,12 @@ public interface IWorkFolderService
     Task<WorkFolderFile?> PickFileAsync(WorkFolder? folder, FilePickerKind pickerKind);
 
     /// <summary>
+    /// Lets the user choose where to save a new file, starting in the folder if given, and writes the content to it.
+    /// The result is null when the user cancels.
+    /// </summary>
+    Task<WorkFolderFile?> SaveFileAsync(WorkFolder? folder, string fileName, Stream content);
+
+    /// <summary>
     /// Opens a file again from its <see cref="WorkFolderFile.Id"/>, through the persisted access grant of the
     /// known folder that contains it. The result is <see cref="WorkFolderFileResultStatus.NoAccess"/> when no
     /// such grant is available or it is denied.
@@ -68,8 +68,16 @@ public interface IWorkFolderService
     Task<WorkFolderFileResult> OpenFileAsync(string fileId);
 
     /// <summary>
-    /// Gets the path segments of a file from its <see cref="WorkFolderFile.Id"/> alone, without accessing it.
-    /// The result is non-empty and its final segment is the file name.
+    /// Gets the path segments of a file or folder from its id alone, without accessing it. The result is non-empty
+    /// and its final segment is the name. When a display name is given, it is the final segment, appended unless
+    /// the id already ends with it, and it is used instead of asking the provider for the name.
     /// </summary>
-    IReadOnlyList<string> GetFilePathSegments(string fileId);
+    IReadOnlyList<string> GetFilePathSegments(string id, string? displayName = null);
+
+    /// <summary>
+    /// Gets the platform reference to the folder of a file from its <see cref="WorkFolderFile.Id"/> alone, without
+    /// accessing it, for use as the initial location when adding the folder. The result is null when it cannot be
+    /// worked out.
+    /// </summary>
+    string? GetFileLocationId(string fileId);
 }

@@ -152,11 +152,9 @@ public sealed class IncomingFileService(
                 }
             }
 
-            PickedFile pickedFile = new(
+            EncryptionPreparationResult result = await encryptionPreparationService.EncryptForCurrentProfileAsync(
                 file.DisplayName,
-                file.FilePath,
                 () => Task.FromResult<Stream>(File.OpenRead(file.FilePath)));
-            EncryptionPreparationResult result = await encryptionPreparationService.EncryptForCurrentProfileAsync(pickedFile);
             await userInterfaceService.NavigateToAsync(AppDestination.EncryptResult, result);
         }
         catch (Exception ex)

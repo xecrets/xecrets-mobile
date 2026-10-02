@@ -28,7 +28,6 @@
 
 #endregion Copyright and GPL License
 
-using System;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
@@ -42,9 +41,6 @@ namespace Xecrets.Mobile.Platforms.MacCatalyst;
 public class MacCatalystFileService(IPickedWritableFileFactory pickedWritableFileFactory) : AppleFileServiceBase(pickedWritableFileFactory)
 {
     public override string PlatformId => "maccatalyst";
-
-    protected override string ResolveDefaultSaveLocation(string? originalFilePath) =>
-        new Uri(base.ResolveDefaultSaveLocation(originalFilePath)).AbsoluteUri;
 
     public override Task<bool> CanViewFileAsync(DecryptedFileInfo file) =>
         QuickLookFileViewer.CanViewAsync(file);

@@ -53,37 +53,110 @@ public sealed class RecentFilesTests
     [Test]
     public async Task RecordTransformPutsResultAtTopAndKeepsSource()
     {
-        TestUserDataStore store = new() { Files = ["a.axx", "b.txt", "c.txt"] };
-        RecentFilesService service = new(SignedIn(store));
+        TestUserDataStore store = new() { Files = InPlace("a.axx", "b.txt", "c.txt") };
+        RecentFilesService service = new(SignedIn(store), new FlowContext());
 
-        await service.AddAsync("b-txt.axx");
+        await service.AddAsync("b-txt.axx", RecentFileOperation.InPlace);
 
-        Assert.That(await service.GetFilesAsync(), Is.EqualTo(["b-txt.axx", "a.axx", "b.txt", "c.txt"]));
+        Assert.That(Ids(await service.GetFilesAsync()), Is.EqualTo(["b-txt.axx", "a.axx", "b.txt", "c.txt"]));
     }
 
     [Test]
-    public async Task RecordTransformMovesExistingResultToTop()
+    public async Task RecordReplacesAnEarlierEntryForTheSameFileWithTheNewOperation()
     {
-        TestUserDataStore store = new() { Files = ["a.axx", "b-txt.axx", "b.txt"] };
-        RecentFilesService service = new(SignedIn(store));
+        TestUserDataStore store = new() { Files = InPlace("a.axx", "b-txt.axx", "b.txt") };
+        RecentFilesService service = new(SignedIn(store), new FlowContext());
 
-        await service.AddAsync("b-txt.axx");
+        await service.AddAsync("b-txt.axx", RecentFileOperation.View);
 
-        Assert.That(await service.GetFilesAsync(), Is.EqualTo(["b-txt.axx", "a.axx", "b.txt"]));
+        Assert.That(
+            (await service.GetFilesAsync()).Select(file => (file.Id, file.Operation)),
+            Is.EqualTo([
+                ("b-txt.axx", RecentFileOperation.View),
+                ("a.axx", RecentFileOperation.InPlace),
+                ("b.txt", RecentFileOperation.InPlace),
+            ]));
     }
 
     [Test]
     public async Task RecordTransformCapsTheList()
     {
-        TestUserDataStore store = new() { Files = [.. Enumerable.Range(0, 25).Select(i => $"{i}.txt")] };
-        RecentFilesService service = new(SignedIn(store));
+        TestUserDataStore store = new() { Files = InPlace([.. Enumerable.Range(0, 50).Select(i => $"{i}.txt")]) };
+        RecentFilesService service = new(SignedIn(store), new FlowContext());
 
-        await service.AddAsync("result.axx");
+        await service.AddAsync("result.axx", RecentFileOperation.InPlace);
 
-        IReadOnlyList<string> files = await service.GetFilesAsync();
-        Assert.That(files, Has.Count.EqualTo(25));
+        IReadOnlyList<string> files = Ids(await service.GetFilesAsync());
+        Assert.That(files, Has.Count.EqualTo(50));
         Assert.That(files[0], Is.EqualTo("result.axx"));
-        Assert.That(files[^1], Is.EqualTo("23.txt"));
+        Assert.That(files[^1], Is.EqualTo("48.txt"));
+    }
+
+    [Test]
+    public async Task FlowSourceIsRecordedOnlyWhenThereIsOne()
+    {
+        TestUserDataStore store = new();
+        FlowContext flow = new();
+        RecentFilesService service = new(SignedIn(store), flow);
+
+        flow.Begin(FlowOrigin.ReceivedFile, WorkFolderOperation.Decrypt);
+        await service.AddFlowSourceAsync(RecentFileOperation.View);
+        flow.Begin(FlowOrigin.Navigated, WorkFolderOperation.Decrypt, CreateFile("folder/secret.axx"));
+        await service.AddFlowSourceAsync(RecentFileOperation.Edit);
+
+        Assert.That(
+            store.Files.Select(file => (file.Id, file.Operation)),
+            Is.EqualTo([("folder/secret.axx", RecentFileOperation.Edit)]));
+    }
+
+    [Test]
+    public async Task FlowSourceOutsideTheKnownFoldersIsNotRecorded()
+    {
+        TestUserDataStore store = new();
+        FlowContext flow = new();
+        flow.Begin(
+            FlowOrigin.Navigated,
+            WorkFolderOperation.Decrypt,
+            CreateFile("cloud/secret.axx") with { IsInKnownWorkFolder = false });
+        RecentFilesService service = new(SignedIn(store), flow);
+
+        await service.AddFlowSourceAsync(RecentFileOperation.View);
+        await service.AddSavedCopyAsync(CreateFile("folder/secret.txt"), RecentFileOperation.DecryptCopySaveAs);
+
+        Assert.That(store.Files, Is.Empty);
+    }
+
+    [Test]
+    public async Task SavedCopyRecordsTheSourceWithTheOperation()
+    {
+        TestUserDataStore store = new();
+        FlowContext flow = new();
+        flow.Begin(FlowOrigin.Navigated, WorkFolderOperation.Encrypt, CreateFile("folder/plain.txt"));
+        RecentFilesService service = new(SignedIn(store), flow);
+
+        await service.AddSavedCopyAsync(CreateFile("other/plain-txt.axx"), RecentFileOperation.EncryptCopySaveAs);
+
+        Assert.That(
+            store.Files.Select(file => (file.Id, file.Operation)),
+            Is.EqualTo([("folder/plain.txt", RecentFileOperation.EncryptCopySaveAs)]));
+    }
+
+    [TestCase(true, new[] { "other/received-txt.axx" })]
+    [TestCase(false, new string[0])]
+    public async Task SavedCopyOfAReceivedFileIsRecordedInPlaceIfItCanBeOpenedAgain(bool isInKnownFolder, string[] expected)
+    {
+        TestUserDataStore store = new();
+        FlowContext flow = new();
+        flow.Begin(FlowOrigin.ReceivedFile, WorkFolderOperation.Encrypt);
+        RecentFilesService service = new(SignedIn(store), flow);
+
+        await service.AddSavedCopyAsync(
+            CreateFile("other/received-txt.axx") with { IsInKnownWorkFolder = isInKnownFolder },
+            RecentFileOperation.EncryptCopySaveAs);
+
+        Assert.That(
+            store.Files.Select(file => (file.Id, file.Operation)),
+            Is.EqualTo(expected.Select(id => (id, RecentFileOperation.InPlace))));
     }
 
     [Test]
@@ -133,18 +206,35 @@ public sealed class RecentFilesTests
     }
 
     [Test]
-    public async Task MissingFilesAreSkippedAndInaccessibleFilesAreListed()
+    public async Task MissingFilesAreRemovedAndInaccessibleFilesAreListed()
     {
         TestWorkFolderService folders = new();
         folders.Missing.Add("folder/gone.txt");
         folders.Inaccessible.Add("folder/locked.txt");
-        RecentFilesPageModel page = CreatePage(
-            new TestRecentFilesService { Files = ["folder/gone.txt", "folder/locked.txt", "folder/open.txt"] },
-            folders);
+        TestRecentFilesService recentFiles = new() { Files = ["folder/gone.txt", "folder/locked.txt", "folder/open.txt"] };
+        RecentFilesPageModel page = CreatePage(recentFiles, folders);
 
         await page.LoadCommand.ExecuteAsync(null);
 
         Assert.That(page.Files.Select(file => file.Id), Is.EqualTo(["folder/locked.txt", "folder/open.txt"]));
+        Assert.That(recentFiles.Files, Is.EqualTo(["folder/locked.txt", "folder/open.txt"]));
+    }
+
+    [Test]
+    public async Task MissingFileDoesNotReappearWhenItsFolderIsNoLongerKnown()
+    {
+        TestWorkFolderService folders = new();
+        folders.Missing.Add("folder/gone.txt");
+        TestRecentFilesService recentFiles = new() { Files = ["folder/gone.txt", "folder/open.txt"] };
+        RecentFilesPageModel page = CreatePage(recentFiles, folders);
+        await page.LoadCommand.ExecuteAsync(null);
+
+        // With the folder removed from the known folders, the file can no longer be found to be missing.
+        folders.Missing.Remove("folder/gone.txt");
+        folders.Inaccessible.Add("folder/gone.txt");
+        await page.ReloadCommand.ExecuteAsync(null);
+
+        Assert.That(page.Files.Select(file => file.Id), Is.EqualTo(["folder/open.txt"]));
     }
 
     [Test]
@@ -157,7 +247,8 @@ public sealed class RecentFilesTests
 
         await page.ReverseCommand.ExecuteAsync(page.Files[1]);
 
-        Assert.That(recentFiles.Files, Is.EqualTo(["folder/two-txt.axx", "folder/one.txt", "folder/two.txt", "folder/old.axx"]));
+        // The source of the operation is gone, so it is removed when the list is loaded again.
+        Assert.That(recentFiles.Files, Is.EqualTo(["folder/two-txt.axx", "folder/one.txt", "folder/old.axx"]));
         Assert.That(page.SelectedState, Is.EqualTo(SelectedFileState.Decrypted));
         Assert.That(
             page.Files.Select(file => (file.Id, file.IsCompleted)),
@@ -183,6 +274,110 @@ public sealed class RecentFilesTests
 
         Assert.That(launcher.Opened, Is.EqualTo(["folder/one.txt"]));
         Assert.That(launcher.Shared, Is.EqualTo(["folder/old.axx"]));
+    }
+
+    [TestCase(RecentFileOperation.View)]
+    [TestCase(RecentFileOperation.Edit)]
+    public async Task OpenShowsAViewedFileAgainLikeADecryptedCopy(RecentFileOperation operation)
+    {
+        TestRecentFilesService recentFiles = new()
+        {
+            Entries = [new RecentFile { Id = "folder/secret.axx", Operation = operation }],
+        };
+        TestFileLauncher launcher = new();
+        TestUserInterfaceService userInterface = new();
+        TestPreviewService preview = new();
+        FlowContext flow = new();
+        RecentFilesPageModel page = CreatePage(
+            recentFiles,
+            new TestWorkFolderService(),
+            userInterface,
+            launcher,
+            preview: preview,
+            flowContext: flow);
+        await page.LoadCommand.ExecuteAsync(null);
+
+        await page.OpenCommand.ExecuteAsync(page.Files[0]);
+
+        Assert.That(preview.Prepared, Is.EqualTo(["secret.axx"]));
+        Assert.That(flow.Source?.Id, Is.EqualTo("folder/secret.axx"));
+        Assert.That(userInterface.Destinations, Is.EqualTo([AppDestination.Preview]));
+        Assert.That(launcher.Shared, Is.Empty);
+    }
+
+    [Test]
+    public async Task OpenOfAViewedFileThatNeedsAPasswordAsksForIt()
+    {
+        TestRecentFilesService recentFiles = new()
+        {
+            Entries = [new RecentFile { Id = "folder/secret.axx", Operation = RecentFileOperation.View }],
+        };
+        TestUserInterfaceService userInterface = new();
+        RecentFilesPageModel page = CreatePage(
+            recentFiles,
+            new TestWorkFolderService(),
+            userInterface,
+            preview: new TestPreviewService { NeedsPassword = true });
+        await page.LoadCommand.ExecuteAsync(null);
+
+        await page.OpenCommand.ExecuteAsync(page.Files[0]);
+
+        Assert.That(userInterface.Destinations, Is.EqualTo([AppDestination.EnterPassword]));
+    }
+
+    [Test]
+    public async Task OpenActsOnOtherFilesByTheirState()
+    {
+        TestRecentFilesService recentFiles = new()
+        {
+            Entries =
+            [
+                new RecentFile { Id = "folder/one.txt", Operation = RecentFileOperation.EncryptCopySaveAs },
+                new RecentFile { Id = "folder/old.axx", Operation = RecentFileOperation.DecryptCopySendTo },
+            ],
+        };
+        TestFileLauncher launcher = new();
+        RecentFilesPageModel page = CreatePage(recentFiles, new TestWorkFolderService(), fileLauncher: launcher);
+        await page.LoadCommand.ExecuteAsync(null);
+
+        await page.OpenCommand.ExecuteAsync(page.Files[0]);
+        await page.OpenCommand.ExecuteAsync(page.Files[1]);
+
+        Assert.That(launcher.Opened, Is.EqualTo(["folder/one.txt"]));
+        Assert.That(launcher.Shared, Is.EqualTo(["folder/old.axx"]));
+    }
+
+    [TestCase(
+        SelectedFileState.All,
+        new[]
+        {
+            "folder/one.txt", "folder/old.axx", "folder/viewed.axx", "folder/edited.axx", "folder/copied.txt",
+            "folder/shared.axx",
+        })]
+    [TestCase(SelectedFileState.Decrypted, new[] { "folder/one.txt" })]
+    [TestCase(SelectedFileState.Encrypted, new[] { "folder/old.axx" })]
+    [TestCase(SelectedFileState.Viewed, new[] { "folder/viewed.axx", "folder/edited.axx" })]
+    [TestCase(SelectedFileState.Other, new[] { "folder/copied.txt", "folder/shared.axx" })]
+    public async Task FilterShowsTheFilesOfItsOperations(SelectedFileState state, string[] expected)
+    {
+        TestRecentFilesService recentFiles = new()
+        {
+            Entries =
+            [
+                new RecentFile { Id = "folder/one.txt", Operation = RecentFileOperation.InPlace },
+                new RecentFile { Id = "folder/old.axx", Operation = RecentFileOperation.InPlace },
+                new RecentFile { Id = "folder/viewed.axx", Operation = RecentFileOperation.View },
+                new RecentFile { Id = "folder/edited.axx", Operation = RecentFileOperation.Edit },
+                new RecentFile { Id = "folder/copied.txt", Operation = RecentFileOperation.EncryptCopySaveAs },
+                new RecentFile { Id = "folder/shared.axx", Operation = RecentFileOperation.DecryptCopySendTo },
+            ],
+        };
+        RecentFilesPageModel page = CreatePage(recentFiles, new TestWorkFolderService());
+        await page.LoadCommand.ExecuteAsync(null);
+
+        page.SelectedState = state;
+
+        Assert.That(page.Files.Select(file => file.Id), Is.EqualTo(expected));
     }
 
     [Test]
@@ -262,7 +457,7 @@ public sealed class RecentFilesTests
         await page.LoadCommand.ExecuteAsync(null);
         page.SelectedState = SelectedFileState.Decrypted;
         await page.ReverseCommand.ExecuteAsync(page.Files[1]);
-        recentFiles.Files.Add("folder/three.txt");
+        recentFiles.Entries.Add(new RecentFile { Id = "folder/three.txt", Operation = RecentFileOperation.InPlace });
 
         await page.ReloadCommand.ExecuteAsync(null);
 
@@ -272,20 +467,40 @@ public sealed class RecentFilesTests
             Is.EqualTo([("folder/one.txt", false), ("folder/three.txt", false)]));
     }
 
-    [TestCase(SelectedFileState.Decrypted)]
-    [TestCase(SelectedFileState.All)]
-    public async Task ShowAddedSelectsTheStateAndListsTheAddedFileFirst(SelectedFileState initialState)
+    [TestCase(SelectedFileState.Decrypted, "folder/new.txt", SelectedFileState.Decrypted, new[] { "folder/new.txt", "folder/one.txt" })]
+    [TestCase(SelectedFileState.All, "folder/new.txt", SelectedFileState.Decrypted, new[] { "folder/new.txt", "folder/one.txt" })]
+    [TestCase(SelectedFileState.Decrypted, "folder/new.axx", SelectedFileState.Encrypted, new[] { "folder/new.axx", "folder/old.axx" })]
+    public async Task AddPicksAFileAndListsItFirstAmongFilesInItsState(
+        SelectedFileState initialState, string picked, SelectedFileState expectedState, string[] expected)
     {
         TestRecentFilesService recentFiles = new() { Files = ["folder/one.txt", "folder/old.axx"] };
-        RecentFilesPageModel page = CreatePage(recentFiles, new TestWorkFolderService());
+        TestWorkFolderService folders = new();
+        folders.Picked.Enqueue(CreateFile(picked));
+        RecentFilesPageModel page = CreatePage(recentFiles, folders);
         await page.LoadCommand.ExecuteAsync(null);
         page.SelectedState = initialState;
-        await recentFiles.AddAsync("folder/new.txt");
 
-        await page.ShowAddedCommand.ExecuteAsync(SelectedFileState.Decrypted);
+        await page.AddCommand.ExecuteAsync(null);
 
-        Assert.That(page.SelectedState, Is.EqualTo(SelectedFileState.Decrypted));
-        Assert.That(page.Files.Select(file => file.Id), Is.EqualTo(["folder/new.txt", "folder/one.txt"]));
+        Assert.That(page.SelectedState, Is.EqualTo(expectedState));
+        Assert.That(page.Files.Select(file => file.Id), Is.EqualTo(expected));
+        Assert.That(recentFiles.Entries[0].Operation, Is.EqualTo(RecentFileOperation.InPlace));
+    }
+
+    [Test]
+    public async Task CancelledAddChangesNothing()
+    {
+        TestRecentFilesService recentFiles = new() { Files = ["folder/one.txt", "folder/old.axx"] };
+        TestWorkFolderService folders = new();
+        folders.Picked.Enqueue(null);
+        RecentFilesPageModel page = CreatePage(recentFiles, folders);
+        await page.LoadCommand.ExecuteAsync(null);
+
+        await page.AddCommand.ExecuteAsync(null);
+
+        Assert.That(recentFiles.Files, Is.EqualTo(["folder/one.txt", "folder/old.axx"]));
+        Assert.That(page.SelectedState, Is.EqualTo(SelectedFileState.All));
+        Assert.That(page.StatusText, Is.Empty);
     }
 
     [Test]
@@ -360,7 +575,7 @@ public sealed class RecentFilesTests
     }
 
     [Test]
-    public async Task InaccessibleFileIsReportedAndNotTransformed()
+    public async Task InaccessibleFileIsNotTransformedWhenTheUserDeclinesToAddItsFolder()
     {
         TestWorkFolderService folders = new();
         folders.Inaccessible.Add("folder/locked.txt");
@@ -370,6 +585,41 @@ public sealed class RecentFilesTests
         await page.LoadCommand.ExecuteAsync(null);
 
         await page.ReverseCommand.ExecuteAsync(page.Files[0]);
+
+        Assert.That(userInterface.Confirmations, Has.Count.EqualTo(1));
+        Assert.That(folders.AddLocations, Is.Empty);
+        Assert.That(userInterface.Messages, Is.Empty);
+        Assert.That(recentFiles.Files, Is.EqualTo(["folder/locked.txt"]));
+    }
+
+    [Test]
+    public async Task InaccessibleFileIsTransformedAfterItsFolderIsAdded()
+    {
+        TestWorkFolderService folders = new();
+        folders.Inaccessible.Add("folder/locked.txt");
+        TestRecentFilesService recentFiles = new() { Files = ["folder/locked.txt"] };
+        TestUserInterfaceService userInterface = new() { Confirmation = true };
+        RecentFilesPageModel page = CreatePage(recentFiles, folders, userInterface);
+        await page.LoadCommand.ExecuteAsync(null);
+
+        await page.ReverseCommand.ExecuteAsync(page.Files[0]);
+
+        Assert.That(folders.AddLocations, Is.EqualTo(["folder"]));
+        Assert.That(userInterface.Messages, Is.Empty);
+        Assert.That(recentFiles.Files[0], Is.EqualTo("folder/locked-txt.axx"));
+    }
+
+    [Test]
+    public async Task InaccessibleFileIsReportedWhenTheFolderAddedDoesNotContainIt()
+    {
+        TestWorkFolderService folders = new() { ChosenFolderId = "other" };
+        folders.Inaccessible.Add("folder/locked.txt");
+        TestRecentFilesService recentFiles = new() { Files = ["folder/locked.txt"] };
+        TestUserInterfaceService userInterface = new() { Confirmation = true };
+        RecentFilesPageModel page = CreatePage(recentFiles, folders, userInterface);
+        await page.LoadCommand.ExecuteAsync(null);
+
+        await page.OpenCommand.ExecuteAsync(page.Files[0]);
 
         Assert.That(userInterface.Messages, Is.EqualTo([MobileTexts.DialogTextRecentFileNoAccess]));
         Assert.That(recentFiles.Files, Is.EqualTo(["folder/locked.txt"]));
@@ -414,6 +664,8 @@ public sealed class RecentFilesTests
     [TestCase(SelectedFileState.All, false, false)]
     [TestCase(SelectedFileState.Decrypted, true, true)]
     [TestCase(SelectedFileState.Encrypted, true, false)]
+    [TestCase(SelectedFileState.Viewed, false, false)]
+    [TestCase(SelectedFileState.Other, false, false)]
     public void ReverseAllIsShownForOneStateOnly(SelectedFileState state, bool visible, bool encrypts)
     {
         RecentFilesPageModel page = CreatePage(new TestRecentFilesService(), new TestWorkFolderService());
@@ -429,7 +681,9 @@ public sealed class RecentFilesTests
         TestWorkFolderService folders,
         TestUserInterfaceService? userInterface = null,
         TestFileLauncher? fileLauncher = null,
-        TimeProvider? timeProvider = null)
+        TimeProvider? timeProvider = null,
+        TestPreviewService? preview = null,
+        FlowContext? flowContext = null)
     {
         userInterface ??= new TestUserInterfaceService();
         fileLauncher ??= new TestFileLauncher();
@@ -437,7 +691,8 @@ public sealed class RecentFilesTests
             folders,
             new TestOperationService(recentFiles, folders),
             new TestFileOperations(),
-            new FlowContext(),
+            preview ?? new TestPreviewService(),
+            flowContext ?? new FlowContext(),
             new TestCoreServices(),
             userInterface);
         return new RecentFilesPageModel(
@@ -456,6 +711,10 @@ public sealed class RecentFilesTests
         return session;
     }
 
+    private static List<RecentFile> InPlace(params string[] ids) => [.. ids.Select(id => new RecentFile { Id = id, Operation = RecentFileOperation.InPlace })];
+
+    private static List<string> Ids(IEnumerable<RecentFile> files) => [.. files.Select(file => file.Id)];
+
     private static WorkFolderFile CreateFile(string id)
     {
         string location = Path.GetDirectoryName(id)!.Replace('\\', '/');
@@ -464,11 +723,12 @@ public sealed class RecentFilesTests
 
     private sealed class TestUserDataStore : IUserDataStore
     {
-        public List<string> Files { get; set; } = [];
+        public List<RecentFile> Files { get; set; } = [];
         public UserId Id => throw new NotSupportedException();
-        public Task<IPersistentData<RecentFiles>> LoadRecentFilesAsync() =>
-            Task.FromResult<IPersistentData<RecentFiles>>(new PersistentData<RecentFiles>(
-                new RecentFiles { Files = [.. Files] },
+        public Task<IPersistentData<RecentFiles>> LoadRecentFilesAsync() => throw new NotSupportedException();
+        public Task<IPersistentData<RecentFileOperations>> LoadRecentFileOperationsAsync() =>
+            Task.FromResult<IPersistentData<RecentFileOperations>>(new PersistentData<RecentFileOperations>(
+                new RecentFileOperations { Files = [.. Files] },
                 value =>
                 {
                     Files = [.. value.Files];
@@ -487,18 +747,47 @@ public sealed class RecentFilesTests
 
     private sealed class TestRecentFilesService : IRecentFilesService
     {
-        public List<string> Files { get; set; } = [];
-        public Task<IReadOnlyList<string>> GetFilesAsync() => Task.FromResult<IReadOnlyList<string>>([.. Files]);
-        public Task AddAsync(string fileId)
+        public List<RecentFile> Entries { get; set; } = [];
+
+        // The ids in order, set as files encrypted or decrypted in place.
+        public List<string> Files
         {
-            Files = [fileId, .. Files.Where(file => file != fileId)];
+            get => Ids(Entries);
+            init => Entries = InPlace([.. value]);
+        }
+
+        public Task<IReadOnlyList<RecentFile>> GetFilesAsync() => Task.FromResult<IReadOnlyList<RecentFile>>([.. Entries]);
+        public Task AddAsync(string fileId, RecentFileOperation operation)
+        {
+            Entries = [new RecentFile { Id = fileId, Operation = operation }, .. Entries.Where(file => file.Id != fileId)];
             return Task.CompletedTask;
         }
-        public Task RemoveAsync(string fileId)
+        public Task AddFlowSourceAsync(RecentFileOperation operation) => throw new NotSupportedException();
+        public Task AddSavedCopyAsync(WorkFolderFile savedCopy, RecentFileOperation operation) =>
+            throw new NotSupportedException();
+        public Task RemoveAsync(IReadOnlyCollection<string> fileIds)
         {
-            Files = [.. Files.Where(file => file != fileId)];
+            Entries = [.. Entries.Where(file => !fileIds.Contains(file.Id))];
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class TestPreviewService : IPreviewService
+    {
+        public bool NeedsPassword { get; init; }
+        public List<string> Prepared { get; } = [];
+        public IPreviewState Current => throw new NotSupportedException();
+        public bool HasPendingPasswordRequest => NeedsPassword;
+        public Task PrepareTextAsync(DecryptedFileInfo file, bool enableTextEditing) => throw new NotSupportedException();
+        public Task<bool> PrepareAsync(DocumentPreviewFile encryptedFile, bool enableTextEditing)
+        {
+            Prepared.Add(encryptedFile.FileName);
+            return Task.FromResult(!NeedsPassword);
+        }
+        public Task<PreviewPreparationStatus> PrepareImportedAsync(string encryptedFilePath) =>
+            throw new NotSupportedException();
+        public Task<PreviewPreparationStatus> PrepareWithPasswordAsync(string password) =>
+            throw new NotSupportedException();
     }
 
     private sealed class TestWorkFolderService : IWorkFolderService
@@ -510,15 +799,36 @@ public sealed class RecentFilesTests
             Missing.Contains(fileId) ? WorkFolderFileResult.NotFound
             : Inaccessible.Contains(fileId) ? WorkFolderFileResult.NoAccess
             : WorkFolderFileResult.Valid(CreateFile(fileId)));
-        public IReadOnlyList<string> GetFilePathSegments(string fileId) => fileId.Split('/');
-        public Task<IReadOnlyList<WorkFolder>> GetFoldersAsync() => throw new NotSupportedException();
-        public IReadOnlyList<string> GetPathSegments(WorkFolder folder) => throw new NotSupportedException();
-        public Task<WorkFolderResult> AddFolderAsync(string? initialLocationId = null) => throw new NotSupportedException();
+        public IReadOnlyList<string> GetFilePathSegments(string id, string? displayName = null) => id.Split('/');
+        public Queue<WorkFolderFile?> Picked { get; } = new();
+        public Task<IReadOnlyList<WorkFolder>> GetFoldersAsync() =>
+            Task.FromResult<IReadOnlyList<WorkFolder>>([new WorkFolder("folder", "Folder", "grant")]);
+        public string? GetFileLocationId(string fileId) =>
+            fileId.Contains('/') ? fileId[..fileId.LastIndexOf('/')] : null;
+
+        // The folder the user chooses when adding one, instead of the initial location, or null to cancel.
+        public string? ChosenFolderId { get; set; } = string.Empty;
+        public List<string?> AddLocations { get; } = [];
+        public Task<WorkFolderResult> AddFolderAsync(string? initialLocationId = null)
+        {
+            AddLocations.Add(initialLocationId);
+            if (ChosenFolderId is null)
+            {
+                return Task.FromResult(WorkFolderResult.Canceled);
+            }
+
+            string folderId = ChosenFolderId.Length > 0 ? ChosenFolderId : initialLocationId!;
+            Inaccessible.RemoveWhere(fileId => GetFileLocationId(fileId) == folderId);
+            return Task.FromResult(WorkFolderResult.Valid(new WorkFolder(folderId, "Added", "grant")));
+        }
         public Task<WorkFolder> AddDiscoveredFolderAsync(WorkFolderFile file) => throw new NotSupportedException();
         public Task RemoveFolderAsync(WorkFolder folder) => throw new NotSupportedException();
         public Task RenameFolderAsync(WorkFolder folder, string displayName) => throw new NotSupportedException();
-        public Task SaveFoldersAsync(IReadOnlyList<WorkFolder> folders) => throw new NotSupportedException();
-        public Task<WorkFolderFile?> PickFileAsync(WorkFolder? folder, FilePickerKind pickerKind) => throw new NotSupportedException();
+        public Task SaveFoldersAsync(IReadOnlyList<WorkFolder> folders) => Task.CompletedTask;
+        public Task<WorkFolderFile?> PickFileAsync(WorkFolder? folder, FilePickerKind pickerKind) =>
+            Task.FromResult(Picked.Dequeue());
+        public Task<WorkFolderFile?> SaveFileAsync(WorkFolder? folder, string fileName, Stream content) =>
+            throw new NotSupportedException();
     }
 
     private sealed class TestFileOperations : IWorkFolderFileOperations
@@ -539,7 +849,9 @@ public sealed class RecentFilesTests
         public Task EncryptAsync(WorkFolderFile file)
         {
             folders.Missing.Add(file.Id);
-            return recentFiles.AddAsync($"{file.LocationId}/{Path.GetFileNameWithoutExtension(file.FileName)}-txt.axx");
+            return recentFiles.AddAsync(
+                $"{file.LocationId}/{Path.GetFileNameWithoutExtension(file.FileName)}-txt.axx",
+                RecentFileOperation.InPlace);
         }
         public async Task<bool> DecryptWithKnownPasswordsAsync(WorkFolderFile file)
         {
@@ -549,7 +861,7 @@ public sealed class RecentFilesTests
             }
 
             folders.Missing.Add(file.Id);
-            await recentFiles.AddAsync($"{file.LocationId}/decrypted.txt");
+            await recentFiles.AddAsync($"{file.LocationId}/decrypted.txt", RecentFileOperation.InPlace);
             return true;
         }
         public Task<bool> DecryptWithPasswordAsync(string password) => throw new NotSupportedException();
@@ -624,7 +936,12 @@ public sealed class RecentFilesTests
             Messages.Add(message);
             return Task.CompletedTask;
         }
-        public Task<bool> DisplayConfirmationAsync(string message) => Task.FromResult(Confirmation);
+        public List<string> Confirmations { get; } = [];
+        public Task<bool> DisplayConfirmationAsync(string message)
+        {
+            Confirmations.Add(message);
+            return Task.FromResult(Confirmation);
+        }
         public Task<string?> DisplayPromptAsync(string message, string initialValue) => throw new NotSupportedException();
         public Task DisplayTransientMessageAsync(string message) => Task.CompletedTask;
         public Task NavigateToAsync(AppDestination destination)

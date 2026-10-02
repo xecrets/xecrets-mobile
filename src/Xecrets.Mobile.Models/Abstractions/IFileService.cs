@@ -42,15 +42,11 @@ public interface IFileService
 
     string CacheDirectory { get; }
 
-    Task<PickedFile?> PickFileAsync(string pickerTitle, FilePickerKind pickerKind);
-
     Task<IPickedWritableFile?> PickWritableFileAsync(string pickerTitle, FilePickerKind pickerKind);
 
     Task<bool> OpenInAsync(string filePath, string displayName);
 
     Task SendToAsync(string filePath, string displayName, string contentType);
-
-    Task<SaveFileResult> SaveAsAsync(Stream stream, string displayName, string originalSourcePath);
 
     Task<bool> CanViewFileAsync(DecryptedFileInfo file);
 

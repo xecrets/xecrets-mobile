@@ -31,8 +31,11 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
+using Xecrets.Common.Models;
+
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
+using Xecrets.Mobile.Models.Services;
 using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models.PageModels;
@@ -41,6 +44,8 @@ public partial class PreviewPageModel(
     IPreviewService previewService,
     IDecryptedFileViewer decryptedFileViewer,
     IFileService fileService,
+    WorkFolderWorkflow workFolderWorkflow,
+    IRecentFilesService recentFilesService,
     ICrashTestService crashTestService,
     IFlowContext flowContext,
     IUserInterfaceService userInterfaceService)
@@ -113,6 +118,7 @@ public partial class PreviewPageModel(
 
         if (ViewMode == FileViewMode.Internal)
         {
+            await recentFilesService.AddFlowSourceAsync(RecentFileOperation.View);
             await UserInterfaceService.NavigateToAsync(AppDestination.View);
             return;
         }
@@ -123,6 +129,7 @@ public partial class PreviewPageModel(
             StatusText = string.Empty;
 
             await decryptedFileViewer.ViewAsync(file);
+            await recentFilesService.AddFlowSourceAsync(RecentFileOperation.View);
         }
         catch (OperationCanceledException)
         {
@@ -144,6 +151,7 @@ public partial class PreviewPageModel(
         IPreviewState state = previewService.Current;
         StatusText = string.Empty;
         state.EnableTextEditing();
+        await recentFilesService.AddFlowSourceAsync(RecentFileOperation.Edit);
         await UserInterfaceService.NavigateToAsync(AppDestination.Edit);
     }
 
@@ -162,7 +170,10 @@ public partial class PreviewPageModel(
         {
             IsBusy = true;
             StatusText = string.Empty;
-            await fileService.OpenInAsync(file.FilePath, file.DisplayName);
+            if (await fileService.OpenInAsync(file.FilePath, file.DisplayName))
+            {
+                await recentFilesService.AddFlowSourceAsync(RecentFileOperation.DecryptCopyOpenIn);
+            }
         }
         catch (OperationCanceledException)
         {
@@ -193,13 +204,12 @@ public partial class PreviewPageModel(
         {
             IsBusy = true;
             StatusText = string.Empty;
-            SaveFileResult result = await fileService.SaveAsAsync(
-                file.FilePath,
-                file.DisplayName,
-                state.SourcePath);
-            if (!result.IsCancelled)
+            await using FileStream content = File.OpenRead(file.FilePath);
+            WorkFolderFile? savedCopy =
+                await workFolderWorkflow.SaveFileAsync(file.DisplayName, content, flowContext.Source);
+            if (savedCopy is not null)
             {
-                await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextFileSaved);
+                await recentFilesService.AddSavedCopyAsync(savedCopy, RecentFileOperation.DecryptCopySaveAs);
             }
         }
         catch (OperationCanceledException)
@@ -235,6 +245,7 @@ public partial class PreviewPageModel(
                 file.FilePath,
                 file.DisplayName,
                 string.Empty);
+            await recentFilesService.AddFlowSourceAsync(RecentFileOperation.DecryptCopySendTo);
         }
         catch (OperationCanceledException)
         {

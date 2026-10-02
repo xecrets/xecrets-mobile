@@ -212,7 +212,7 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
     }
 
     private async Task<ApplicationData> LoadAsync() =>
-        Validate(await JsonFile.LoadAsync<ApplicationData>(DataPath, OnInvalidJson));
+        MigrateRecentFiles(Validate(await JsonFile.LoadAsync<ApplicationData>(DataPath, OnInvalidJson)));
 
     private void OnInvalidJson(Exception exception) =>
         crashLogService.WriteCrashLog("Mobile data was invalid JSON; resetting to a new document.", exception);
@@ -226,6 +226,28 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
                 $"Version {document.Version} is not supported.",
                 ApplicationData.SupportedVersion,
                 document.Version);
+        }
+
+        return document;
+    }
+
+    // The legacy 'recentFiles' only holds plain strings, which is all that earlier versions can read. Recent files are
+    // now kept in 'recentFileOperations', and the legacy list is merged into it and then cleared, so that it is no
+    // longer written. Earlier versions then just see an empty list of recent files.
+    private static ApplicationData MigrateRecentFiles(ApplicationData document)
+    {
+        foreach (LocalProfileData user in document.Users)
+        {
+            if (user.RecentFiles is null)
+            {
+                continue;
+            }
+
+            HashSet<string> ids = [.. user.RecentFileOperations.Select(file => file.Id)];
+            user.RecentFileOperations.AddRange(user.RecentFiles
+                .Where(ids.Add)
+                .Select(id => new RecentFile { Id = id, Operation = RecentFileOperation.InPlace }));
+            user.RecentFiles = null!;
         }
 
         return document;

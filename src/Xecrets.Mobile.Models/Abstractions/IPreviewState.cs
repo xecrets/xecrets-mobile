@@ -38,8 +38,6 @@ public interface IPreviewState
 
     string OriginalFileName { get; }
 
-    string SourcePath { get; }
-
     string DecryptedPath { get; }
 
     string ContentType { get; }
@@ -59,8 +57,6 @@ public interface IPreviewState
     void UpdateText(string text);
 
     void UpdateFileSize(long fileSize);
-
-    void UpdateSourcePath(string sourcePath);
 
     void Clear();
 }

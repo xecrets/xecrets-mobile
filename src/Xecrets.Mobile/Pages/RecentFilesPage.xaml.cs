@@ -28,8 +28,6 @@
 
 #endregion Copyright and GPL License
 
-using System.Collections.Generic;
-
 using CommunityToolkit.Mvvm.Input;
 
 using Microsoft.Maui.Controls;
@@ -41,7 +39,7 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
-public partial class RecentFilesPage : IQueryAttributable
+public partial class RecentFilesPage
 {
     private readonly RecentFilesPageModel _model;
 
@@ -60,14 +58,6 @@ public partial class RecentFilesPage : IQueryAttributable
         InitializeComponent();
         BindingContext = model;
         pageHeaderService.ApplyStandardHeader(this);
-    }
-
-    public void ApplyQueryAttributes(IDictionary<string, object> query)
-    {
-        if (query.TryGetValue(nameof(NavigationParameter.Payload), out object? payload))
-        {
-            _model.ShowAddedCommand.Execute(payload);
-        }
     }
 
     protected override void OnAppearing()

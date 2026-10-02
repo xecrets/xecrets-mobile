@@ -45,8 +45,10 @@ using Xecrets.Common.Models;
 
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
+using Xecrets.Mobile.Models.Services;
 using Xecrets.Mobile.Models.Utilities;
 using Xecrets.Mobile.Services;
+using Xecrets.Texts;
 
 using AndroidUri = Android.Net.Uri;
 
@@ -61,18 +63,6 @@ public sealed class AndroidWorkFolderService(
     private static ContentResolver ContentResolver => Platform.CurrentActivity!.ContentResolver!;
 
     public async Task<IReadOnlyList<WorkFolder>> GetFoldersAsync() => await storage.LoadFoldersAsync();
-
-    public IReadOnlyList<string> GetPathSegments(WorkFolder folder)
-    {
-        AndroidUri uri = AndroidUri.Parse(folder.Id)!;
-        if (uri.Authority != _externalStorageAuthority)
-        {
-            return [folder.DisplayName];
-        }
-
-        string documentId = DocumentsContract.GetDocumentId(uri)!;
-        return WorkFolderStorage.BuildPathSegments(documentId, folder, ':', '/');
-    }
 
     public async Task<WorkFolderResult> AddFolderAsync(string? initialLocationId = null)
     {
@@ -171,18 +161,48 @@ public sealed class AndroidWorkFolderService(
             return null;
         }
 
-        WorkFolder? accessFolder = (await storage.LoadFoldersAsync())
-            .Where(item => IsDescendant(item, fileUri))
-            .OrderByDescending(GetDocumentDepth)
-            .FirstOrDefault();
-        return CreateFile(fileUri, accessFolder);
+        return CreateFile(fileUri, await FindAccessFolderAsync(fileUri));
     }
 
+    public async Task<WorkFolderFile?> SaveFileAsync(WorkFolder? folder, string fileName, Stream content)
+    {
+        Intent intent = new(Intent.ActionCreateDocument);
+        intent.AddCategory(Intent.CategoryOpenable);
+        intent.SetType(fileName.IsEncrypted()
+            ? EncryptedFileType.ContentType
+            : ContentTypeDetector.DetectContentType(fileName));
+        intent.PutExtra(Intent.ExtraTitle, fileName);
+        if (folder is not null)
+        {
+            intent.PutExtra(DocumentsContract.ExtraInitialUri, AndroidUri.Parse(folder.Id));
+        }
+        intent.AddFlags(ActivityFlags.GrantReadUriPermission | ActivityFlags.GrantWriteUriPermission);
+
+        Intent? result = await ((MainActivity)Platform.CurrentActivity!).StartDocumentPickerAsync(intent);
+        AndroidUri? fileUri = result?.Data;
+        if (fileUri is null)
+        {
+            return null;
+        }
+
+        await using (Stream output = ContentResolver.OpenOutputStream(fileUri, "w")!)
+        {
+            await content.CopyToAsync(output);
+        }
+
+        return CreateFile(fileUri, await FindAccessFolderAsync(fileUri));
+    }
+
+    /// <summary>
+    /// The id of a file in a known folder is built on the tree grant of the folder, while a file in an unknown
+    /// folder has the plain document uri the picker returned. The latter can be opened once its folder is added.
+    /// </summary>
     public async Task<WorkFolderFileResult> OpenFileAsync(string fileId)
     {
         AndroidUri fileUri = AndroidUri.Parse(fileId)!;
-        WorkFolder? accessFolder = (await storage.LoadFoldersAsync())
-            .FirstOrDefault(folder => IsGrantedThrough(folder, fileUri));
+        WorkFolder? accessFolder = DocumentsContract.IsTreeUri(fileUri)
+            ? (await storage.LoadFoldersAsync()).FirstOrDefault(folder => IsGrantedThrough(folder, fileUri))
+            : await FindAccessFolderAsync(fileUri);
         if (accessFolder is null || !HasPersistedGrant(accessFolder))
         {
             return WorkFolderFileResult.NoAccess;
@@ -191,7 +211,7 @@ public sealed class AndroidWorkFolderService(
         try
         {
             using ICursor? cursor = ContentResolver.Query(
-                fileUri,
+                GetAccessFileUri(fileUri, accessFolder),
                 [DocumentsContract.Document.ColumnDocumentId],
                 null, null, null);
 
@@ -214,13 +234,22 @@ public sealed class AndroidWorkFolderService(
         return WorkFolderFileResult.Valid(CreateFile(fileUri, accessFolder));
     }
 
-    public IReadOnlyList<string> GetFilePathSegments(string fileId)
+    public IReadOnlyList<string> GetFilePathSegments(string id, string? displayName = null)
     {
-        AndroidUri uri = AndroidUri.Parse(fileId)!;
+        AndroidUri uri = AndroidUri.Parse(id)!;
+        if (uri.Authority != _externalStorageAuthority && displayName is not null)
+        {
+            return [displayName];
+        }
+
         string documentId = DocumentsContract.GetDocumentId(uri)!;
         if (uri.Authority == _externalStorageAuthority)
         {
-            return documentId.Split([':', '/'], StringSplitOptions.RemoveEmptyEntries);
+            string[] segments = documentId.Split([':', '/'], StringSplitOptions.RemoveEmptyEntries);
+            return displayName is null ||
+                (segments.Length > 0 && string.Equals(segments[^1], displayName, StringComparison.OrdinalIgnoreCase))
+                ? segments
+                : [.. segments, displayName];
         }
 
         // Other providers have opaque document ids, so the name can only be had from the provider itself.
@@ -238,14 +267,50 @@ public sealed class AndroidWorkFolderService(
         }
     }
 
-    private WorkFolderFile CreateFile(AndroidUri fileUri, WorkFolder? accessFolder)
+    // Only the document ids of local storage are paths, from which the folder can be worked out without access.
+    public string? GetFileLocationId(string fileId)
     {
-        AndroidUri accessFileUri = accessFolder is null
+        AndroidUri uri = AndroidUri.Parse(fileId)!;
+        return uri.Authority == _externalStorageAuthority
+            ? DocumentsContract.BuildDocumentUri(
+                uri.Authority,
+                GetExternalStorageParentDocumentId(DocumentsContract.GetDocumentId(uri)!))!.ToString()
+            : null;
+    }
+
+    /// <summary>
+    /// Finds the innermost known folder that contains a file.
+    /// </summary>
+    private async Task<WorkFolder?> FindAccessFolderAsync(AndroidUri fileUri) =>
+        (await storage.LoadFoldersAsync())
+            .Where(item => IsDescendant(item, fileUri))
+            .OrderByDescending(GetDocumentDepth)
+            .FirstOrDefault();
+
+    private static AndroidUri GetAccessFileUri(AndroidUri fileUri, WorkFolder? accessFolder) =>
+        accessFolder is null
             ? fileUri
             : DocumentsContract.BuildDocumentUriUsingTree(
                 AndroidUri.Parse(accessFolder.GrantId)!,
                 DocumentsContract.GetDocumentId(fileUri)!)!;
-        string parentDocumentId = ResolveParentDocumentId(accessFileUri);
+
+    private WorkFolderFile CreateFile(AndroidUri fileUri, WorkFolder? accessFolder)
+    {
+        AndroidUri accessFileUri = GetAccessFileUri(fileUri, accessFolder);
+        string? parentDocumentId = ResolveParentDocumentId(accessFileUri);
+        if (parentDocumentId is null)
+        {
+            // The file can still be read, but without its folder it cannot be used through a known folder.
+            return new WorkFolderFile(
+                fileUri.ToString()!,
+                fileUri.GetDisplayName(),
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                false,
+                pickedWritableFileFactory.Create(fileUri));
+        }
+
         AndroidUri locationUri = accessFolder is null
             ? DocumentsContract.BuildDocumentUri(accessFileUri.Authority!, parentDocumentId)!
             : DocumentsContract.BuildDocumentUriUsingTree(
@@ -397,7 +462,9 @@ public sealed class AndroidWorkFolderService(
     private static AndroidUri GetTreeDocumentUri(AndroidUri treeUri) =>
         DocumentsContract.BuildDocumentUriUsingTree(treeUri, DocumentsContract.GetTreeDocumentId(treeUri)!)!;
 
-    private static string ResolveParentDocumentId(AndroidUri fileUri)
+    // Returns null for providers whose document ids are not paths and that cannot find the path of a document,
+    // such as some cloud providers.
+    private static string? ResolveParentDocumentId(AndroidUri fileUri)
     {
         IList<string>? documentIds = TryFindDocumentPath(fileUri);
         if (documentIds is { Count: >= 2 })
@@ -405,12 +472,9 @@ public sealed class AndroidWorkFolderService(
             return documentIds[documentIds.Count - 2];
         }
 
-        if (fileUri.Authority == _externalStorageAuthority)
-        {
-            return GetExternalStorageParentDocumentId(DocumentsContract.GetDocumentId(fileUri)!);
-        }
-
-        throw new IOException("This location is not currently supported.");
+        return fileUri.Authority == _externalStorageAuthority
+            ? GetExternalStorageParentDocumentId(DocumentsContract.GetDocumentId(fileUri)!)
+            : null;
     }
 
     private int GetDocumentDepth(WorkFolder folder)

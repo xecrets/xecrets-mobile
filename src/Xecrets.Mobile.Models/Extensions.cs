@@ -114,16 +114,6 @@ public static class Extensions
         return flags;
     }
 
-    public static async Task<SaveFileResult> SaveAsAsync(
-        this IFileService fileService,
-        string filePath,
-        string displayName,
-        string originalSourcePath)
-    {
-        await using FileStream stream = File.OpenRead(filePath);
-        return await fileService.SaveAsAsync(stream, displayName, originalSourcePath);
-    }
-
     /// <summary>
     /// Combines a user-facing message with the exception detail, for display as status text.
     /// </summary>

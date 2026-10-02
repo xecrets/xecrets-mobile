@@ -32,7 +32,6 @@ using Xecrets.Core.Abstractions;
 using Xecrets.Core.Models;
 
 using Xecrets.Mobile.Models.Abstractions;
-using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Utilities;
 using Xecrets.Texts;
 
@@ -44,31 +43,28 @@ public sealed class EncryptionPreparationService(
     ICoreServices coreServices)
     : IEncryptionPreparationService
 {
-    public async Task<EncryptionPreparationResult> EncryptForCurrentProfileAsync(PickedFile file)
+    public async Task<EncryptionPreparationResult> EncryptForCurrentProfileAsync(
+        string fileName,
+        Func<Task<Stream>> openReadAsync)
     {
-        await using Stream cleartext = await file.OpenReadAsync();
-        return await EncryptAsync(
-            cleartext,
-            file.FileName,
-            file.SourcePath,
-            CreateCurrentProfileEncryptRequest(file.FileName));
+        await using Stream cleartext = await openReadAsync();
+        return await EncryptAsync(cleartext, fileName, CreateCurrentProfileEncryptRequest(fileName), false);
     }
 
-    public async Task<EncryptionPreparationResult> EncryptForPasswordAsync(PickedFile file, string password)
+    public async Task<EncryptionPreparationResult> EncryptForPasswordAsync(
+        string fileName,
+        Func<Task<Stream>> openReadAsync,
+        string password)
     {
-        await using Stream cleartext = await file.OpenReadAsync();
-        return await EncryptAsync(
-            cleartext,
-            file.FileName,
-            file.SourcePath,
-            CreatePasswordEncryptRequest(file.FileName, password));
+        await using Stream cleartext = await openReadAsync();
+        return await EncryptAsync(cleartext, fileName, CreatePasswordEncryptRequest(fileName, password), true);
     }
 
     private async Task<EncryptionPreparationResult> EncryptAsync(
         Stream cleartext,
         string originalFileName,
-        string originalSourcePath,
-        EncryptRequest request)
+        EncryptRequest request,
+        bool isForPassword)
     {
         string fileName = originalFileName.ToEncryptedName(string.Empty);
         string temporaryPath = transientFileService.CreateEncryptedOutputPath(fileName);
@@ -79,9 +75,9 @@ public sealed class EncryptionPreparationService(
         return new EncryptionPreparationResult(
             temporaryPath,
             fileName,
-            originalSourcePath,
             EncryptedFileType.ContentType,
-            fileSize);
+            fileSize,
+            isForPassword);
     }
 
     private EncryptRequest CreateCurrentProfileEncryptRequest(string originalFileName)

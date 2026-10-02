@@ -85,6 +85,8 @@ and action SHAs in `.github/workflows/ci.yml`. Do not introduce dependencies on
 - Prefer collection expressions such as `[a, b]` over array creation expressions such as `new[] { a, b }` or `new T[] { a, b }`.
 - Prefer small, focused classes and methods. Keep code-behind thin and move behavior into page models, services, utilities, or repositories.
 - An interface implementation must not expose functionality beyond the members defined by the interface. Move supporting operations to separate collaborators.
+  This is design guidance, not something to verify with unit tests, for example by inspecting types with reflection. Unit tests should test behavior, not design.
+- Do not declare overloads in interfaces. Express convenience variants as extension methods if needed, or have callers call the single member explicitly, e.g. pass `[id]` to a collection parameter.
 - Follow the existing `async` naming pattern: methods that return `Task` or `Task<T>` should use an `Async` suffix.
 - Use `await using` for disposable async resources, especially database connections and readers.
 - Prefer `try/finally` when cleanup must always occur, and use the existing error-handling pattern rather than inventing a new one.

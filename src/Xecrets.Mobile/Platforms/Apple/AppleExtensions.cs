@@ -70,6 +70,22 @@ public static class AppleExtensions
         return await pickerDelegate.Completion.Task;
     }
 
+    /// <summary>
+    /// Exports a copy of the file to where the user chooses, and returns the url of the copy, or null if the user
+    /// cancels.
+    /// </summary>
+    public static async Task<NSUrl?> SaveUrlAsync(this NSUrl fileUrl, NSUrl? initialUrl)
+    {
+        UIDocumentPickerViewController picker = new([fileUrl], true)
+        {
+            DirectoryUrl = initialUrl,
+        };
+        PickerDelegate pickerDelegate = new();
+        picker.Delegate = pickerDelegate;
+        await Platform.GetCurrentUIViewController()!.PresentViewControllerAsync(picker, true);
+        return await pickerDelegate.Completion.Task;
+    }
+
     public static (double Left, double Right) GetWindowGaps(this VisualElement view)
     {
         UIView platformView = (UIView)view.Handler!.PlatformView!;

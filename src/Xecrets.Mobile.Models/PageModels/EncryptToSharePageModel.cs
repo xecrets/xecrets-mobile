@@ -42,7 +42,8 @@ namespace Xecrets.Mobile.Models.PageModels;
 
 public partial class EncryptToSharePageModel(
     IProfileService profileService,
-    IFileService fileService,
+    WorkFolderWorkflow workFolderWorkflow,
+    IWorkFolderFileOperations fileOperations,
     IEncryptionPreparationService encryptionPreparationService,
     IFlowContext flowContext,
     ICoreServices coreServices,
@@ -80,21 +81,23 @@ public partial class EncryptToSharePageModel(
             StatusText = string.Empty;
 
             string password = Password;
-            PickedFile? file = await fileService.PickFileAsync(
-                MobileTexts.DialogTitleSelectFilesToEncrypt,
-                FilePickerKind.Any);
+            WorkFolderFile? file = await workFolderWorkflow.PickFileForCopyAsync(FilePickerKind.Any);
             if (file is null)
             {
                 return;
             }
 
-            if (await coreServices.IsEncryptedAsync(file.OpenReadAsync))
+            if (await coreServices.IsEncryptedAsync(() => fileOperations.OpenReadAsync(file)))
             {
                 await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextAlreadyEncrypted);
                 return;
             }
 
-            EncryptionPreparationResult result = await encryptionPreparationService.EncryptForPasswordAsync(file, password);
+            flowContext.UpdateSource(file);
+            EncryptionPreparationResult result = await encryptionPreparationService.EncryptForPasswordAsync(
+                file.FileName,
+                () => fileOperations.OpenReadAsync(file),
+                password);
             await profileService.RecordExtraPasswordUseAsync(password);
 
             Password = string.Empty;

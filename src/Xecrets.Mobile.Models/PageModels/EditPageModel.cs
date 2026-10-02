@@ -31,11 +31,13 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
+using Xecrets.Common.Models;
 using Xecrets.Core.Abstractions;
 using Xecrets.Core.Models;
 
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
+using Xecrets.Mobile.Models.Services;
 using Xecrets.Mobile.Models.Utilities;
 using Xecrets.Texts;
 
@@ -45,7 +47,10 @@ public partial class EditPageModel(
     IPreviewService previewService,
     IProfileService profileService,
     ICoreServices coreServices,
-    IFileService fileService,
+    WorkFolderWorkflow workFolderWorkflow,
+    IWorkFolderFileOperations fileOperations,
+    IRecentFilesService recentFilesService,
+    IFlowContext flowContext,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel
 {
@@ -88,8 +93,7 @@ public partial class EditPageModel(
             ? MobileTexts.DisplayNameProgram
             : state.OriginalFileName;
         Text = state.Text;
-        IsSaveVisible = CanOverwriteSourcePath(state.SourcePath);
-        IsSaveToLocationVisible = !IsSaveVisible;
+        ShowSaveCommands();
         StatusText = string.Empty;
     }
 
@@ -110,9 +114,13 @@ public partial class EditPageModel(
             await PrepareTemporaryTextFileAsync(state);
             EncryptRequest request = CreateEncryptRequest(state.OriginalFileName);
 
+            WorkFolderFile source = flowContext.Source!;
             await using FileStream cleartext = File.OpenRead(state.DecryptedPath);
-            await using FileStream encrypted = File.Open(state.SourcePath, FileMode.Create, FileAccess.Write, FileShare.Read);
-            await coreServices.EncryptAsync(cleartext, encrypted, request);
+            await fileOperations.WriteDestinationAsync(
+                source,
+                source.FileName,
+                overwrite: true,
+                encrypted => coreServices.EncryptAsync(cleartext, encrypted, request));
 
             await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextFileEncrypted);
         }
@@ -151,23 +159,16 @@ public partial class EditPageModel(
             encrypted.Position = 0;
 
             string fileName = state.OriginalFileName.ToEncryptedName(string.Empty);
-            SaveFileResult result = await fileService.SaveAsAsync(
-                encrypted,
-                fileName,
-                state.SourcePath);
-            if (result.IsCancelled)
+            WorkFolderFile? savedCopy = await workFolderWorkflow.SaveFileAsync(fileName, encrypted, flowContext.Source);
+            if (savedCopy is not { IsInKnownWorkFolder: true })
             {
                 return;
             }
 
-            if (!string.IsNullOrWhiteSpace(result.FilePath))
-            {
-                state.UpdateSourcePath(result.FilePath);
-                IsSaveVisible = CanOverwriteSourcePath(state.SourcePath);
-                IsSaveToLocationVisible = !IsSaveVisible;
-            }
-
-            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextFileSaved);
+            // The saved copy holds the edits, so it is the one saved over and listed from then on.
+            flowContext.UpdateSource(savedCopy);
+            ShowSaveCommands();
+            await recentFilesService.AddFlowSourceAsync(RecentFileOperation.Edit);
         }
         catch (OperationCanceledException)
         {
@@ -208,22 +209,14 @@ public partial class EditPageModel(
             new Progress<Progress>(_ => { }));
     }
 
-    private static bool CanOverwriteSourcePath(string sourcePath)
+    /// <summary>
+    /// Offers to save over the source when it is in a known folder, through which it is written, and otherwise only to
+    /// save a copy.
+    /// </summary>
+    private void ShowSaveCommands()
     {
-        if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath))
-        {
-            return false;
-        }
-
-        try
-        {
-            using FileStream _ = File.Open(sourcePath, FileMode.Open, FileAccess.Write, FileShare.Read);
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
+        IsSaveVisible = flowContext.Source is { IsInKnownWorkFolder: true };
+        IsSaveToLocationVisible = !IsSaveVisible;
     }
     private async Task PrepareTemporaryTextFileAsync(IPreviewState state)
     {
