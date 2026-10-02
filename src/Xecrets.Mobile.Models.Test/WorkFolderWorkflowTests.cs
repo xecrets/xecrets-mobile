@@ -56,7 +56,7 @@ public sealed class WorkFolderWorkflowTests
         folders.Files.Enqueue(first);
         folders.Files.Enqueue(second);
         TestUserInterfaceService userInterface = new() { Confirmation = true };
-        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, null!, userInterface);
+        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, null!, null!, userInterface);
 
         WorkFolderFile? selected = await workflow.PickFileAsync(FilePickerKind.Any);
 
@@ -73,7 +73,7 @@ public sealed class WorkFolderWorkflowTests
         TestWorkFolderService folders = new();
         folders.Files.Enqueue(CreateFile("input.txt", "unknown", false));
         TestUserInterfaceService userInterface = new();
-        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, null!, userInterface);
+        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, null!, null!, userInterface);
 
         Assert.That(await workflow.PickFileAsync(FilePickerKind.Any), Is.Null);
         Assert.That(folders.AddLocations, Is.Empty);
@@ -87,7 +87,7 @@ public sealed class WorkFolderWorkflowTests
         TestWorkFolderService folders = new();
         folders.Files.Enqueue(CreateFile("input.txt", "unknown", false) with { LocationDisplayName = locationDisplayName });
         TestUserInterfaceService userInterface = new();
-        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, null!, userInterface);
+        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, null!, null!, userInterface);
 
         await workflow.PickFileAsync(FilePickerKind.Any);
 
@@ -103,7 +103,7 @@ public sealed class WorkFolderWorkflowTests
     {
         TestWorkFolderService folders = new();
         TestUserInterfaceService userInterface = new() { Confirmation = true };
-        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, null!, userInterface);
+        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, null!, null!, userInterface);
 
         bool added = await workflow.AddFolderForFileAsync(fileId);
 
@@ -118,7 +118,7 @@ public sealed class WorkFolderWorkflowTests
     public async Task DecliningToAddTheFolderOfAnInaccessibleFileAddsNothing()
     {
         TestWorkFolderService folders = new();
-        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, null!, new TestUserInterfaceService());
+        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, null!, null!, new TestUserInterfaceService());
 
         Assert.That(await workflow.AddFolderForFileAsync("removed/file.txt"), Is.False);
         Assert.That(folders.AddLocations, Is.Empty);
@@ -131,7 +131,7 @@ public sealed class WorkFolderWorkflowTests
         WorkFolderFile file = CreateFile("input.txt", "known/child", true);
         folders.Files.Enqueue(file);
         TestUserInterfaceService userInterface = new();
-        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, null!, userInterface);
+        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, null!, null!, userInterface);
 
         Assert.That(await workflow.PickFileAsync(FilePickerKind.Any), Is.SameAs(file));
         Assert.That(userInterface.ConfirmationCount, Is.Zero);
@@ -157,7 +157,8 @@ public sealed class WorkFolderWorkflowTests
         TestUserInterfaceService userInterface = new();
         FlowContext flow = new();
         FileDetectionCoreServices coreServices = new();
-        WorkFolderWorkflow workflow = new(folders, operations, fileOperations, null!, flow, coreServices, userInterface);
+        WorkFolderWorkflow workflow = new(
+            folders, operations, fileOperations, null!, flow, coreServices, new TestFileWiper(), userInterface);
         WorkFoldersPageModel page = new(folders, workflow, userInterface);
 
         await page.OpenCommand.ExecuteAsync(folders.Folders[0]);
@@ -186,7 +187,7 @@ public sealed class WorkFolderWorkflowTests
         TestOperationService operations = new();
         WorkFolderWorkflow workflow = new(
             folders, operations, fileOperations, null!, new FlowContext(), new FileDetectionCoreServices(),
-            new TestUserInterfaceService());
+            new TestFileWiper(), new TestUserInterfaceService());
 
         await workflow.PickAndTransformAsync(operation);
 
@@ -202,7 +203,7 @@ public sealed class WorkFolderWorkflowTests
         TestUserInterfaceService userInterface = new();
         WorkFolderWorkflow workflow = new(
             folders, new TestOperationService(), new TestFileOperations(), null!, new FlowContext(),
-            new FileDetectionCoreServices(), userInterface);
+            new FileDetectionCoreServices(), new TestFileWiper(), userInterface);
         WorkFoldersPageModel page = new(folders, workflow, userInterface);
 
         await page.AddCommand.ExecuteAsync(null);
@@ -217,11 +218,30 @@ public sealed class WorkFolderWorkflowTests
     {
         TestOperationService operations = new() { CanDecrypt = false };
         TestUserInterfaceService userInterface = new();
-        WorkFolderWorkflow workflow = new(null!, operations, null!, null!, new FlowContext(), null!, userInterface);
+        WorkFolderWorkflow workflow = new(
+            null!, operations, null!, null!, new FlowContext(), null!, new TestFileWiper(), userInterface);
 
         await workflow.TransformAsync(CreateFile("input.axx", "known", true), WorkFolderOperation.Decrypt);
 
         Assert.That(userInterface.Destinations, Is.EqualTo([AppDestination.EnterPassword]));
+    }
+
+    [TestCase(WorkFolderOperation.Encrypt)]
+    [TestCase(WorkFolderOperation.Decrypt)]
+    public async Task FileThatCannotBeWipedIsNotTransformed(WorkFolderOperation operation)
+    {
+        TestOperationService operations = new();
+        TestUserInterfaceService userInterface = new();
+        WorkFolderWorkflow workflow = new(
+            null!, operations, null!, null!, new FlowContext(), null!, new TestFileWiper { CanWipe = false },
+            userInterface);
+
+        bool completed = await workflow.TransformAsync(CreateFile("input.axx", "known", true), operation);
+
+        Assert.That(completed, Is.True);
+        Assert.That(operations.Operation, Is.Null);
+        Assert.That(userInterface.Messages, Is.EqualTo([MobileTexts.DialogTextInsufficientRights]));
+        Assert.That(userInterface.Destinations, Is.Empty);
     }
 
     [Test]
@@ -232,7 +252,7 @@ public sealed class WorkFolderWorkflowTests
         WorkFolderFile saved = CreateFile("copy.axx", "other", true);
         folders.Files.Enqueue(saved);
         TestUserInterfaceService userInterface = new();
-        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, null!, userInterface);
+        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, null!, null!, userInterface);
 
         WorkFolderFile? result = await workflow.SaveFileAsync(
             "copy.axx",
@@ -251,7 +271,7 @@ public sealed class WorkFolderWorkflowTests
     {
         TestWorkFolderService folders = new();
         folders.Files.Enqueue(null);
-        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, null!, new TestUserInterfaceService());
+        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, null!, null!, new TestUserInterfaceService());
 
         Assert.That(await workflow.SaveFileAsync("copy.axx", new MemoryStream(), null), Is.Null);
         Assert.That(folders.SavedFolders, Is.EqualTo(new WorkFolder?[] { null }));
@@ -264,7 +284,7 @@ public sealed class WorkFolderWorkflowTests
         WorkFolderFile saved = CreateFile("copy.axx", "known/child", true);
         folders.Files.Enqueue(saved);
         TestUserInterfaceService userInterface = new();
-        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, null!, userInterface);
+        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, null!, null!, userInterface);
 
         Assert.That(await workflow.SaveFileAsync("copy.axx", new MemoryStream(), null), Is.SameAs(saved));
         Assert.That(folders.Folders[0].Id, Is.EqualTo("known/child"));
@@ -279,7 +299,7 @@ public sealed class WorkFolderWorkflowTests
         WorkFolderFile reopened = CreateFile("input.txt", "unknown", true);
         folders.Reopened["unknown/input.txt"] = reopened;
         TestUserInterfaceService userInterface = new() { Confirmation = true };
-        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, null!, userInterface);
+        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, null!, null!, userInterface);
 
         Assert.That(await workflow.PickFileAsync(FilePickerKind.Any), Is.SameAs(reopened));
         Assert.That(folders.PickedFolders, Has.Count.EqualTo(1));
@@ -294,7 +314,7 @@ public sealed class WorkFolderWorkflowTests
         folders.Files.Enqueue(CreateFile("input.txt", "parent/child", false));
         folders.Reopened["parent/child/input.txt"] = CreateFile("input.txt", "parent/child", true);
         WorkFolderWorkflow workflow = new(
-            folders, null!, null!, null!, null!, null!, new TestUserInterfaceService { Confirmation = true });
+            folders, null!, null!, null!, null!, null!, null!, new TestUserInterfaceService { Confirmation = true });
 
         WorkFolderFile? result = await workflow.PickFileAsync(FilePickerKind.Any);
 
@@ -310,7 +330,7 @@ public sealed class WorkFolderWorkflowTests
         WorkFolderFile saved = CreateFile("copy.axx", "unknown", false);
         folders.Files.Enqueue(saved);
         TestUserInterfaceService userInterface = new() { Confirmation = true };
-        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, null!, userInterface);
+        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, null!, null!, userInterface);
 
         WorkFolderFile? result = await workflow.SaveFileAsync("copy.axx", new MemoryStream(), null);
 
@@ -328,7 +348,7 @@ public sealed class WorkFolderWorkflowTests
         WorkFolderFile picked = CreateFile("input.txt", location, false);
         folders.Files.Enqueue(picked);
         TestUserInterfaceService userInterface = new() { Confirmation = true };
-        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, null!, userInterface);
+        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, null!, null!, userInterface);
 
         Assert.That(await workflow.PickFileForCopyAsync(FilePickerKind.Any), Is.SameAs(picked));
         Assert.That(userInterface.ConfirmationCount, Is.Zero);
@@ -343,7 +363,7 @@ public sealed class WorkFolderWorkflowTests
         TestWorkFolderService folders = new();
         WorkFolderFile picked = CreateFile("input.txt", "known/child", true);
         folders.Files.Enqueue(picked);
-        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, null!, new TestUserInterfaceService());
+        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, null!, null!, new TestUserInterfaceService());
 
         Assert.That(await workflow.PickFileForCopyAsync(FilePickerKind.Any), Is.SameAs(picked));
         Assert.That(folders.Folders[0].Id, Is.EqualTo("known/child"));
@@ -355,7 +375,7 @@ public sealed class WorkFolderWorkflowTests
         TestWorkFolderService folders = new();
         folders.Files.Enqueue(CreateFile("input.txt", "", false));
         TestUserInterfaceService userInterface = new() { Confirmation = true };
-        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, null!, userInterface);
+        WorkFolderWorkflow workflow = new(folders, null!, null!, null!, null!, null!, null!, userInterface);
 
         Assert.That(await workflow.PickFileAsync(FilePickerKind.Any), Is.Null);
         Assert.That(userInterface.Messages, Is.EqualTo([MobileTexts.DialogTextLocationNotSupported]));
@@ -436,7 +456,6 @@ public sealed class WorkFolderWorkflowTests
         public Task<bool> DestinationExistsAsync(WorkFolderFile file, string name) => throw new NotSupportedException();
         public Task<string> WriteDestinationAsync(WorkFolderFile file, string name, bool overwrite, Func<Stream, Task> writer) =>
             throw new NotSupportedException();
-        public Task DeleteAsync(WorkFolderFile file) => throw new NotSupportedException();
     }
 
     private sealed class TestOperationService : IWorkFolderOperationService
@@ -456,6 +475,13 @@ public sealed class WorkFolderWorkflowTests
         }
         public Task<bool> DecryptWithPasswordAsync(string password) => throw new NotSupportedException();
         public void CancelPasswordRequest() => throw new NotSupportedException();
+    }
+
+    private sealed class TestFileWiper : IFileWiper
+    {
+        public bool CanWipe { get; init; } = true;
+        public Task<bool> CanWipeAsync(IPickedWritableFile file) => Task.FromResult(CanWipe);
+        public Task<FileWipeStatus> WipeAsync(IPickedWritableFile file) => throw new NotSupportedException();
     }
 
     private sealed class FileDetectionCoreServices : ICoreServices

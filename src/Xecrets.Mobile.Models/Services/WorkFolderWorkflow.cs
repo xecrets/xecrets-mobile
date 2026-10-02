@@ -44,6 +44,7 @@ public sealed class WorkFolderWorkflow(
     IPreviewService previewService,
     IFlowContext flowContext,
     ICoreServices coreServices,
+    IFileWiper fileWiper,
     IUserInterfaceService userInterfaceService)
 {
     /// <summary>
@@ -200,10 +201,17 @@ public sealed class WorkFolderWorkflow(
     }
 
     /// <summary>
-    /// Encrypts or decrypts a file, returning false when the user was sent on to enter a password for it.
+    /// Encrypts or decrypts a file, returning false when the user was sent on to enter a password for it. The file is
+    /// replaced by the result, so nothing is done unless the file can be wiped afterwards.
     /// </summary>
     public async Task<bool> TransformAsync(WorkFolderFile file, WorkFolderOperation operation)
     {
+        if (!await fileWiper.CanWipeAsync(file.WritableFile))
+        {
+            await userInterfaceService.DisplayMessageAsync(MobileTexts.DialogTextInsufficientRights);
+            return true;
+        }
+
         flowContext.Begin(FlowOrigin.Navigated, operation);
         if (operation == WorkFolderOperation.Encrypt)
         {

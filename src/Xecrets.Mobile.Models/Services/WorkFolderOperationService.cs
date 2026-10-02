@@ -44,6 +44,7 @@ public sealed class WorkFolderOperationService(
     IProfileService profileService,
     IRecentFilesService recentFilesService,
     IWorkFolderFileOperations fileOperations,
+    IFileWiper fileWiper,
     IUserInterfaceService userInterfaceService)
     : IWorkFolderOperationService
 {
@@ -57,14 +58,17 @@ public sealed class WorkFolderOperationService(
         bool overwrite = await ConfirmOverwriteAsync(file, destinationName);
         EncryptRequest request = CreateEncryptRequest(file.FileName);
 
-        await using Stream cleartext = await fileOperations.OpenReadAsync(file);
-        string resultId = await fileOperations.WriteDestinationAsync(
-            file,
-            destinationName,
-            overwrite,
-            encrypted => coreServices.EncryptAsync(cleartext, encrypted, request));
-        await fileOperations.DeleteAsync(file);
-        await recentFilesService.AddAsync(resultId, RecentFileOperation.InPlace);
+        string resultId;
+        await using (Stream cleartext = await fileOperations.OpenReadAsync(file))
+        {
+            resultId = await fileOperations.WriteDestinationAsync(
+                file,
+                destinationName,
+                overwrite,
+                encrypted => coreServices.EncryptAsync(cleartext, encrypted, request));
+        }
+
+        await CompleteAsync(file, resultId);
     }
 
     public async Task<bool> DecryptWithKnownPasswordsAsync(WorkFolderFile file)
@@ -107,24 +111,52 @@ public sealed class WorkFolderOperationService(
 
     private async Task<bool> TryDecryptAsync(WorkFolderFile file, Identity identity)
     {
-        await using Stream encrypted = await fileOperations.OpenReadAsync(file);
-        using IDecryptionSession session = await coreServices.OpenDecryptionAsync(
-            encrypted,
-            new DecryptRequest([identity], new Progress<Progress>(_ => { })));
-        if (!session.IsDecryptable)
+        string resultId;
+        await using (Stream encrypted = await fileOperations.OpenReadAsync(file))
         {
-            return false;
+            using IDecryptionSession session = await coreServices.OpenDecryptionAsync(
+                encrypted,
+                new DecryptRequest([identity], new Progress<Progress>(_ => { })));
+            if (!session.IsDecryptable)
+            {
+                return false;
+            }
+
+            bool overwrite = await ConfirmOverwriteAsync(file, session.OriginalFileName);
+            resultId = await fileOperations.WriteDestinationAsync(
+                file,
+                session.OriginalFileName,
+                overwrite,
+                session.DecryptAsync);
         }
 
-        bool overwrite = await ConfirmOverwriteAsync(file, session.OriginalFileName);
-        string resultId = await fileOperations.WriteDestinationAsync(
-            file,
-            session.OriginalFileName,
-            overwrite,
-            session.DecryptAsync);
-        await fileOperations.DeleteAsync(file);
-        await recentFilesService.AddAsync(resultId, RecentFileOperation.InPlace);
+        await CompleteAsync(file, resultId);
         return true;
+    }
+
+    /// <summary>
+    /// Wipes the source, since storage such as Google Drive only moves a deleted file to its trash, and replaces it with
+    /// the result in the recent files. The source is removed explicitly, since a file in a trash may still be reported
+    /// as existing. The source must no longer be open, since the wipe renames and rewrites it.
+    /// <para>
+    /// The rights to wipe the source are checked before the operation, so a failure to wipe it is unexpected. The
+    /// operation itself has succeeded by then, so the recent files are updated anyway.
+    /// </para>
+    /// </summary>
+    private async Task CompleteAsync(WorkFolderFile source, string resultId)
+    {
+        try
+        {
+            if (await fileWiper.WipeAsync(source.WritableFile) != FileWipeStatus.Succeeded)
+            {
+                throw new IOException("The source file could not be deleted.");
+            }
+        }
+        finally
+        {
+            await recentFilesService.RemoveAsync([source.Id]);
+            await recentFilesService.AddAsync(resultId, RecentFileOperation.InPlace);
+        }
     }
 
     private async Task<bool> ConfirmOverwriteAsync(WorkFolderFile file, string destinationName)

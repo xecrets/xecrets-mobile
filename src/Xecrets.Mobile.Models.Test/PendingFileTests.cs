@@ -421,11 +421,11 @@ public sealed class PendingFileTests
 
     private sealed class TestFileWiper(Action? onWipe = null) : IFileWiper
     {
-        public Task<FileWipeStatus> WipeAsync(IPickedWritableFile file) => throw new NotSupportedException();
-        public Task OverwriteAsync(Stream stream, long length)
+        public Task<bool> CanWipeAsync(IPickedWritableFile file) => throw new NotSupportedException();
+        public Task<FileWipeStatus> WipeAsync(IPickedWritableFile file)
         {
             onWipe?.Invoke();
-            return Task.CompletedTask;
+            return new FileWiper().WipeAsync(file);
         }
     }
 

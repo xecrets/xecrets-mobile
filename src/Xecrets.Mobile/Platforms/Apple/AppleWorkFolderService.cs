@@ -48,9 +48,7 @@ using Xecrets.Mobile.Services;
 
 namespace Xecrets.Mobile.Platforms.Apple;
 
-public sealed class AppleWorkFolderService(
-    WorkFolderStorage storage,
-    IPickedWritableFileFactory pickedWritableFileFactory) : IWorkFolderService
+public sealed class AppleWorkFolderService(WorkFolderStorage storage) : IWorkFolderService
 {
     private readonly Dictionary<string, (NSUrl Location, NSUrl AccessRoot)> _discoveredLocations = [];
 
@@ -251,7 +249,7 @@ public sealed class AppleWorkFolderService(
             GetDisplayName(locationUrl),
             accessUrl.AbsoluteString!,
             isInKnownFolder,
-            pickedWritableFileFactory.Create(fileUrl));
+            new ApplePickedWritableFile(fileUrl, knownGrant));
     }
 
     /// <summary>

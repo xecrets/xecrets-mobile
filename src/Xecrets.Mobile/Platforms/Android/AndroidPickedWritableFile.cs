@@ -79,6 +79,12 @@ internal sealed class AndroidPickedWritableFile(AndroidUri uri) : IPickedWritabl
         return Task.CompletedTask;
     }
 
+    public Task TruncateAsync()
+    {
+        Platform.AppContext.ContentResolver!.OpenOutputStream(_fileUri, "wt")!.Dispose();
+        return Task.CompletedTask;
+    }
+
     public Task DeleteAsync() =>
         DocumentsContract.DeleteDocument(Platform.AppContext.ContentResolver!, _fileUri)
             ? Task.CompletedTask

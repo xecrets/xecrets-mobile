@@ -51,6 +51,8 @@ public sealed class FileWiperTests
 
         public Func<string, Task<bool>> RenameIfPossible { get; init; } = _ => throw new AssertionException("The file should not be renamed.");
 
+        public Func<Task> Truncate { get; init; } = () => throw new AssertionException("The file should not be truncated.");
+
         public Func<Task> Delete { get; init; } = () => throw new AssertionException("The file should not be deleted.");
 
         public Task<T> WithAccessAsync<T>(Func<Task<T>> action) => action();
@@ -64,6 +66,8 @@ public sealed class FileWiperTests
         public Task<Stream> OpenWriteAsync() => OpenWrite();
 
         public Task RenameIfPossibleAsync(string newFileName) => RenameIfPossible(newFileName);
+
+        public Task TruncateAsync() => Truncate();
 
         public Task DeleteAsync() => Delete();
     }
@@ -105,6 +109,7 @@ public sealed class FileWiperTests
             GetLength = () => Task.FromResult((long)contents.Length),
             OpenWrite = () => Task.FromResult<Stream>(new MemoryStream(contents, writable: true)),
             RenameIfPossible = _ => Task.FromResult(false),
+            Truncate = () => Task.CompletedTask,
             Delete = () =>
             {
                 wasDeleted = true;
@@ -117,5 +122,85 @@ public sealed class FileWiperTests
         Assert.That(status, Is.EqualTo(FileWipeStatus.Succeeded));
         Assert.That(wasDeleted, Is.True);
         Assert.That(contents, Is.Not.All.EqualTo((byte)0));
+    }
+
+    /// <summary>
+    /// Storage that moves a deleted file to a trash then keeps an empty file named as wiped, not the original.
+    /// </summary>
+    [Test]
+    public async Task WipeAsyncRenamesOverwritesAndTruncatesBeforeDeleting()
+    {
+        List<string> steps = [];
+        MemoryStream written = new();
+        string? newName = null;
+        IPickedWritableFile file = new FakePickedWritableFile
+        {
+            GetLength = () => Task.FromResult(4096L),
+            OpenWrite = () =>
+            {
+                steps.Add("write");
+                return Task.FromResult<Stream>(written);
+            },
+            RenameIfPossible = name =>
+            {
+                steps.Add("rename");
+                newName = name;
+                return Task.FromResult(true);
+            },
+            Truncate = () =>
+            {
+                steps.Add("truncate");
+                return Task.CompletedTask;
+            },
+            Delete = () =>
+            {
+                steps.Add("delete");
+                return Task.CompletedTask;
+            },
+        };
+
+        FileWipeStatus status = await new FileWiper().WipeAsync(file);
+
+        Assert.That(status, Is.EqualTo(FileWipeStatus.Succeeded));
+        Assert.That(steps, Is.EqualTo(new[] { "rename", "write", "truncate", "delete" }));
+        Assert.That(newName, Does.Match("^\\.xecrets-wiped-[0-9a-f]{32}$"));
+        Assert.That(written.ToArray(), Has.Length.EqualTo(4096));
+        Assert.That(written.ToArray(), Is.Not.All.EqualTo((byte)0));
+    }
+
+    [Test]
+    public void WipeAsyncDeletesFileAndReportsFailureWhenOverwriteFails()
+    {
+        bool wasDeleted = false;
+        IPickedWritableFile file = new FakePickedWritableFile
+        {
+            GetLength = () => Task.FromResult(1024L),
+            OpenWrite = () => throw new IOException("Overwrite failed."),
+            RenameIfPossible = _ => Task.FromResult(true),
+            Delete = () =>
+            {
+                wasDeleted = true;
+                return Task.CompletedTask;
+            },
+        };
+
+        Assert.That(async () => await new FileWiper().WipeAsync(file),
+            Throws.TypeOf<IOException>().With.Message.EqualTo("Overwrite failed."));
+        Assert.That(wasDeleted, Is.True);
+    }
+
+    [Test]
+    public void WipeAsyncReportsOriginalFailureWhenDeleteAlsoFails()
+    {
+        IPickedWritableFile file = new FakePickedWritableFile
+        {
+            GetLength = () => Task.FromResult(1024L),
+            OpenWrite = () => throw new IOException("Overwrite failed."),
+            RenameIfPossible = _ => Task.FromResult(true),
+            Delete = () => throw new IOException("Delete failed."),
+        };
+
+        Assert.That(async () => await new FileWiper().WipeAsync(file),
+            Throws.TypeOf<IOException>().With.Message.EqualTo("Overwrite failed."));
     }
 }

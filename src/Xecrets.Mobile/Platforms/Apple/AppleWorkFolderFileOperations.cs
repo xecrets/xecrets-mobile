@@ -68,16 +68,4 @@ public sealed class AppleWorkFolderFileOperations(WorkFolderStorage storage) : I
             await AppleExtensions.WriteFileAsync(locationUrl.Path!, name, overwrite, writer);
             return locationUrl.Append(name, false).AbsoluteString!;
         });
-
-    public Task DeleteAsync(WorkFolderFile file) =>
-        storage.WithFileAccessAsync(file, fileUrl =>
-        {
-            File.Delete(fileUrl.Path!);
-            if (File.Exists(fileUrl.Path!))
-            {
-                throw new IOException("The source file could not be deleted.");
-            }
-
-            return Task.CompletedTask;
-        });
 }

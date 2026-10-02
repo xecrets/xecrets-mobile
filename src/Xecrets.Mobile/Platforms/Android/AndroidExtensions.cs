@@ -139,14 +139,6 @@ internal static class AndroidExtensions
 
         public Stream OpenInputStream() => ContentResolver.OpenInputStream(uri)!;
 
-        public void DeleteDocument()
-        {
-            if (!DocumentsContract.DeleteDocument(ContentResolver, uri))
-            {
-                throw new IOException("The source file could not be deleted.");
-            }
-        }
-
         public AndroidUri RenameDocument(string name) =>
             DocumentsContract.RenameDocument(ContentResolver, uri, name) ??
             throw new IOException("The document could not be renamed.");

@@ -28,47 +28,56 @@
 
 #endregion Copyright and GPL License
 
-using System;
-using System.IO;
-using System.Runtime.Versioning;
-using System.Threading.Tasks;
-
-using Windows.Storage;
-
 using Xecrets.Mobile.Models.Abstractions;
 
-namespace Xecrets.Mobile.Platforms.Windows;
+namespace Xecrets.Mobile.Models.Services;
 
-[SupportedOSPlatform("windows10.0.19041")]
-internal sealed class WindowsPickedWritableFile(StorageFile file) : IPickedWritableFile
+/// <summary>
+/// A file the app itself owns in its local storage, such as in the cache, accessed by its path.
+/// </summary>
+public sealed class LocalWritableFile(string path) : IPickedWritableFile
 {
+    // A rename moves the file to a new path, so the target of subsequent calls has to track it.
+    private string _path = path;
+
     public Task<T> WithAccessAsync<T>(Func<Task<T>> action) => action();
 
-    public Task<bool> CanWriteAsync() => Task.FromResult((file.Attributes & global::Windows.Storage.FileAttributes.ReadOnly) == 0);
+    public Task<bool> CanWriteAsync() => Task.FromResult(IsWritable());
 
-    public Task<bool> CanDeleteAsync() => Task.FromResult((file.Attributes & global::Windows.Storage.FileAttributes.ReadOnly) == 0);
+    public Task<bool> CanDeleteAsync() => Task.FromResult(IsWritable());
 
-    public async Task<long> GetLengthAsync() => (long)(await file.GetBasicPropertiesAsync()).Size;
+    public Task<long> GetLengthAsync() => Task.FromResult(new FileInfo(_path).Length);
 
-    public Task<Stream> OpenWriteAsync() => file.OpenStreamForWriteAsync();
+    public Task<Stream> OpenWriteAsync() =>
+        Task.FromResult<Stream>(new FileStream(_path, FileMode.Open, FileAccess.Write, FileShare.None));
 
-    public async Task RenameIfPossibleAsync(string newFileName)
+    public Task RenameIfPossibleAsync(string newFileName)
     {
         try
         {
-            await file.RenameAsync(newFileName, NameCollisionOption.FailIfExists);
+            string renamedPath = Path.Combine(Path.GetDirectoryName(_path)!, newFileName);
+            File.Move(_path, renamedPath);
+            _path = renamedPath;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            // This is just a best effort
+            // Best effort - the file is wiped under its original name.
         }
+
+        return Task.CompletedTask;
     }
 
-    public async Task TruncateAsync()
+    public Task TruncateAsync()
     {
-        await using Stream stream = await file.OpenStreamForWriteAsync();
-        stream.SetLength(0);
+        using FileStream stream = new(_path, FileMode.Truncate, FileAccess.Write, FileShare.None);
+        return Task.CompletedTask;
     }
 
-    public async Task DeleteAsync() => await file.DeleteAsync(StorageDeleteOption.PermanentDelete);
+    public Task DeleteAsync()
+    {
+        File.Delete(_path);
+        return Task.CompletedTask;
+    }
+
+    private bool IsWritable() => (File.GetAttributes(_path) & FileAttributes.ReadOnly) == 0;
 }

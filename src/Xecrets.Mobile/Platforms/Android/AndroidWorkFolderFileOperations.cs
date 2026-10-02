@@ -59,10 +59,4 @@ public sealed class AndroidWorkFolderFileOperations : IWorkFolderFileOperations
         bool overwrite,
         Func<Stream, Task> writer) =>
         AndroidUri.Parse(file.LocationId)!.WriteDocumentAsync(name, overwrite, writer);
-
-    public Task DeleteAsync(WorkFolderFile file)
-    {
-        AndroidUri.Parse(file.Id)!.DeleteDocument();
-        return Task.CompletedTask;
-    }
 }

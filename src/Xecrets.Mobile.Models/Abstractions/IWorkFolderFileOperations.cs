@@ -33,7 +33,7 @@ using Xecrets.Mobile.Models.Models;
 namespace Xecrets.Mobile.Models.Abstractions;
 
 /// <summary>
-/// Reads, writes and deletes files in known folders, rebuilding platform access from the file's references.
+/// Reads and writes files in known folders, rebuilding platform access from the file's references.
 /// </summary>
 public interface IWorkFolderFileOperations
 {
@@ -48,6 +48,4 @@ public interface IWorkFolderFileOperations
     /// Writes a file with the given name next to the file, and returns the platform reference to the written file.
     /// </summary>
     Task<string> WriteDestinationAsync(WorkFolderFile file, string name, bool overwrite, Func<Stream, Task> writer);
-
-    Task DeleteAsync(WorkFolderFile file);
 }

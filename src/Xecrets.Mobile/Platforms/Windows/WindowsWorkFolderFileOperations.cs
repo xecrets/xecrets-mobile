@@ -58,7 +58,4 @@ public sealed class WindowsWorkFolderFileOperations : IWorkFolderFileOperations
         bool overwrite,
         Func<Stream, Task> writer) =>
         await (await StorageFolder.GetFolderFromPathAsync(file.LocationId)).WriteFileAsync(name, overwrite, writer);
-
-    public async Task DeleteAsync(WorkFolderFile file) =>
-        await (await StorageFile.GetFileFromPathAsync(file.Id)).DeleteAsync(StorageDeleteOption.PermanentDelete);
 }

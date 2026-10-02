@@ -139,33 +139,9 @@ public sealed class TransientFileService(IFileService fileService, IFileWiper fi
         try
         {
             File.SetAttributes(path, FileAttributes.Normal);
-            await using FileStream stream = new(path, FileMode.Open, FileAccess.Write, FileShare.None);
-            await fileWiper.OverwriteAsync(stream, stream.Length);
-        }
-        catch
-        {
-            // Best effort - still try to remove the file below even if the overwriting itself failed.
-        }
 
-        SafeDelete(path);
-    }
-
-    private static void SafeDelete(string path)
-    {
-        try
-        {
-            string renamedPath = Path.Combine(Path.GetDirectoryName(path)!, Path.GetRandomFileName());
-            File.Move(path, renamedPath, true);
-            path = renamedPath;
-        }
-        catch
-        {
-            // Best effort - fall back to deleting under the original name.
-        }
-
-        try
-        {
-            File.Delete(path);
+            // Should the wipe fail, the wiper still deletes the file if possible.
+            await fileWiper.WipeAsync(new LocalWritableFile(path));
         }
         catch
         {

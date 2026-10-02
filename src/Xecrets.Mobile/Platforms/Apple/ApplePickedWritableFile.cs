@@ -38,7 +38,10 @@ using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Platforms.Apple;
 
-internal sealed class ApplePickedWritableFile(NSUrl url) : IPickedWritableFile
+/// <summary>
+/// A file reached through the grant of a known folder has no access of its own, and is accessed through that grant.
+/// </summary>
+internal sealed class ApplePickedWritableFile(NSUrl url, NSUrl? folderGrant = null) : IPickedWritableFile
 {
     // A rename gives the file a new NSUrl (a new path in the same directory), so the target of
     // subsequent access/write/delete calls has to track it - hence a mutable field.
@@ -46,6 +49,11 @@ internal sealed class ApplePickedWritableFile(NSUrl url) : IPickedWritableFile
 
     public async Task<T> WithAccessAsync<T>(Func<Task<T>> action)
     {
+        if (folderGrant is not null)
+        {
+            return await folderGrant.WithAccessAsync(action);
+        }
+
         bool isAccessing = _fileUrl.StartAccessingSecurityScopedResource();
         if (!isAccessing)
         {
@@ -90,9 +98,20 @@ internal sealed class ApplePickedWritableFile(NSUrl url) : IPickedWritableFile
         }
     }
 
+    public Task TruncateAsync()
+    {
+        using FileStream stream = new(_fileUrl.Path!, FileMode.Truncate, FileAccess.Write, FileShare.None);
+        return Task.CompletedTask;
+    }
+
     public Task DeleteAsync()
     {
         File.Delete(_fileUrl.Path!);
+        if (File.Exists(_fileUrl.Path!))
+        {
+            throw new IOException("The file could not be deleted.");
+        }
+
         return Task.CompletedTask;
     }
 

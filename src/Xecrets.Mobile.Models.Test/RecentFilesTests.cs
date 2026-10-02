@@ -168,6 +168,7 @@ public sealed class RecentFilesTests
             new TestProfileService(),
             recentFiles,
             new TestFileOperations(),
+            new TestFileWiper(),
             new TestUserInterfaceService());
 
         await operations.EncryptAsync(CreateFile("folder/plain.txt"));
@@ -184,6 +185,7 @@ public sealed class RecentFilesTests
             new TestProfileService(),
             recentFiles,
             new TestFileOperations { DestinationExists = true },
+            new TestFileWiper(),
             new TestUserInterfaceService { Confirmation = false });
 
         Assert.That(
@@ -694,6 +696,7 @@ public sealed class RecentFilesTests
             preview ?? new TestPreviewService(),
             flowContext ?? new FlowContext(),
             new TestCoreServices(),
+            new TestFileWiper(),
             userInterface);
         return new RecentFilesPageModel(
             recentFiles,
@@ -839,7 +842,12 @@ public sealed class RecentFilesTests
         public Task<bool> DestinationExistsAsync(WorkFolderFile file, string name) => Task.FromResult(DestinationExists);
         public Task<string> WriteDestinationAsync(WorkFolderFile file, string name, bool overwrite, Func<Stream, Task> writer) =>
             Task.FromResult($"{file.LocationId}/{name}");
-        public Task DeleteAsync(WorkFolderFile file) => Task.CompletedTask;
+    }
+
+    private sealed class TestFileWiper : IFileWiper
+    {
+        public Task<bool> CanWipeAsync(IPickedWritableFile file) => Task.FromResult(true);
+        public Task<FileWipeStatus> WipeAsync(IPickedWritableFile file) => Task.FromResult(FileWipeStatus.Succeeded);
     }
 
     private sealed class TestOperationService(IRecentFilesService recentFiles, TestWorkFolderService folders)

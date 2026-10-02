@@ -47,5 +47,7 @@ public interface IPickedWritableFile
 
     Task RenameIfPossibleAsync(string newFileName);
 
+    Task TruncateAsync();
+
     Task DeleteAsync();
 }
