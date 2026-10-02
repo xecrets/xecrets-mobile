@@ -124,12 +124,24 @@ public sealed class AndroidWorkFolderService(
         return folder;
     }
 
+    /// <summary>
+    /// Removes the folder, releasing its grant unless another folder still uses it, as folders discovered below a
+    /// granted folder share the grant of that folder. The grant may also already be gone, such as when the user
+    /// revoked it outside the app.
+    /// </summary>
     public async Task RemoveFolderAsync(WorkFolder folder)
     {
+        List<WorkFolder> remaining = [.. (await storage.LoadFoldersAsync()).Where(item => item.Id != folder.Id)];
+        await storage.SaveFoldersAsync(remaining);
+        if (remaining.Any(item => item.GrantId == folder.GrantId) ||
+            !ContentResolver.PersistedUriPermissions.Any(permission => permission.Uri?.ToString() == folder.GrantId))
+        {
+            return;
+        }
+
         ContentResolver.ReleasePersistableUriPermission(
             AndroidUri.Parse(folder.GrantId)!,
             ActivityFlags.GrantReadUriPermission | ActivityFlags.GrantWriteUriPermission);
-        await storage.SaveFoldersAsync((await storage.LoadFoldersAsync()).Where(item => item.Id != folder.Id));
     }
 
     public Task RenameFolderAsync(WorkFolder folder, string displayName) =>
@@ -500,6 +512,12 @@ public sealed class AndroidWorkFolderService(
         try
         {
             return DocumentsContract.FindDocumentPath(ContentResolver, uri)?.GetPath();
+        }
+        catch (Java.Lang.SecurityException)
+        {
+            // Finding the path of a document that is not under a tree grant, such as a file picked outside the known
+            // folders, requires MANAGE_DOCUMENTS, which only the system has.
+            return null;
         }
         catch (Exception ex) when (IsUnsupportedDocumentProviderOperation(ex))
         {
