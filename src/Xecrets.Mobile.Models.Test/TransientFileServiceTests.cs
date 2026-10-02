@@ -54,7 +54,7 @@ public sealed class TransientFileServiceTests
     {
         TaskCompletionSource releaseWipe = new();
         int wipeCount = 0;
-        TransientFileService transient = CreateService(async (_, _) =>
+        TransientFileService transient = CreateService(async _ =>
         {
             wipeCount++;
             await releaseWipe.Task.WaitAsync(TimeSpan.FromSeconds(5));
@@ -92,7 +92,7 @@ public sealed class TransientFileServiceTests
     {
         TaskCompletionSource releaseCopy = new();
         bool wiped = false;
-        TransientFileService transient = CreateService((_, _) =>
+        TransientFileService transient = CreateService(_ =>
         {
             wiped = true;
             return Task.CompletedTask;
@@ -124,7 +124,7 @@ public sealed class TransientFileServiceTests
     [Test]
     public async Task IncomingFailureReleasesGate()
     {
-        TransientFileService transient = CreateService((_, _) => Task.CompletedTask);
+        TransientFileService transient = CreateService(_ => Task.CompletedTask);
         IncomingFileService incoming = CreateIncomingService(transient);
         await Assert.ThatAsync(async () => await incoming.ReceiveAsync(async () =>
         {
@@ -138,7 +138,7 @@ public sealed class TransientFileServiceTests
     public async Task WipeFailureContinuesAndReleasesGate()
     {
         int wipeCount = 0;
-        TransientFileService transient = CreateService(async (_, _) =>
+        TransientFileService transient = CreateService(async _ =>
         {
             wipeCount++;
             await Task.Yield();
@@ -149,8 +149,8 @@ public sealed class TransientFileServiceTests
         await transient.MaybeWipeTrackedFilesAsync().WaitAsync(TimeSpan.FromSeconds(5));
         Assert.That(wipeCount, Is.EqualTo(2));
 
-        // Even though the overwrite itself failed for both files, they must still have been removed -
-        // cleanup always tries to delete, not just when the overwrite succeeded.
+        // Even though the overwrite itself failed for both files, they must still have been removed - the wipe
+        // always tries to delete, not just when the overwrite succeeded.
         Assert.That(Directory.Exists(Path.Combine(_cacheDirectory, "XecretsHandoff")), Is.False);
 
         await transient.RunExclusiveAsync(() => Task.CompletedTask).WaitAsync(TimeSpan.FromSeconds(5));
@@ -169,7 +169,7 @@ public sealed class TransientFileServiceTests
         await File.WriteAllTextAsync(Path.Combine(unprotectedDirectory, "legacy-file"), "legacy");
         await File.WriteAllTextAsync(Path.Combine(crashLogDirectory, "crashlog.txt"), "crash");
         await File.WriteAllTextAsync(Path.Combine(oatDirectory, "base.art"), "runtime");
-        TransientFileService transient = CreateService((_, _) => Task.CompletedTask);
+        TransientFileService transient = CreateService(_ => Task.CompletedTask);
 
         await transient.MaybeWipeTrackedFilesAsync();
 
@@ -177,6 +177,19 @@ public sealed class TransientFileServiceTests
         Assert.That(Directory.Exists(unprotectedDirectory), Is.False);
         Assert.That(File.Exists(Path.Combine(crashLogDirectory, "crashlog.txt")), Is.True);
         Assert.That(File.Exists(Path.Combine(oatDirectory, "base.art")), Is.True);
+    }
+
+    [Test]
+    public async Task WipeRemovesReadOnlyFiles()
+    {
+        TransientFileService transient = CreateService(_ => Task.CompletedTask);
+        string path = transient.CreateHandoffPath("opened.txt");
+        await File.WriteAllTextAsync(path, "decrypted");
+        File.SetAttributes(path, FileAttributes.ReadOnly);
+
+        await transient.MaybeWipeTrackedFilesAsync();
+
+        Assert.That(Directory.GetFiles(_cacheDirectory, "*", SearchOption.AllDirectories), Is.Empty);
     }
 
     [TestCase(false, false)]
@@ -187,7 +200,7 @@ public sealed class TransientFileServiceTests
     {
         TaskCompletionSource releaseNavigation = new();
         TaskCompletionSource navigationStarted = new();
-        TransientFileService transient = CreateService((_, _) => Task.CompletedTask);
+        TransientFileService transient = CreateService(_ => Task.CompletedTask);
         TestUserInterfaceService userInterface = new()
         {
             CanProcessIncomingFiles = !pending,
@@ -238,16 +251,39 @@ public sealed class TransientFileServiceTests
         Assert.That(Directory.Exists(Path.Combine(_cacheDirectory, "XecretsHandoff")), Is.False);
     }
 
-    private TransientFileService CreateService(Func<Stream, long, Task> overwriteAsync)
-        => new(new TestFileService(_cacheDirectory), new TestFileWiper(overwriteAsync));
+    private TransientFileService CreateService(Func<IWritableFile, Task> onOverwriteAsync)
+        => new(new TestFileService(_cacheDirectory), new TestFileWiper(onOverwriteAsync));
 
     private static IncomingFileService CreateIncomingService(ITransientFileService transient)
         => new(null!, transient, null!, null!, null!, null!, new TestUserInterfaceService { CanReceiveIncomingFiles = true });
 
-    private sealed class TestFileWiper(Func<Stream, long, Task> overwriteAsync) : IFileWiper
+    // The real wiper, calling the action when a file is opened to be overwritten, so that a failure of the action is
+    // a failure during the wipe.
+    private sealed class TestFileWiper(Func<IWritableFile, Task> onOverwriteAsync) : IFileWiper
     {
-        public Task<FileWipeStatus> WipeAsync(IPickedWritableFile file) => throw new NotSupportedException();
-        public Task OverwriteAsync(Stream stream, long length) => overwriteAsync(stream, length);
+        private readonly FileWiper _wiper = new();
+
+        public Task<bool> CanWipeAsync(IWritableFile file) => _wiper.CanWipeAsync(file);
+
+        public Task<FileWipeStatus> WipeAsync(IWritableFile file) =>
+            _wiper.WipeAsync(new OverwriteHookFile(file, onOverwriteAsync));
+    }
+
+    private sealed class OverwriteHookFile(IWritableFile file, Func<IWritableFile, Task> onOverwriteAsync)
+        : IWritableFile
+    {
+        public string Id => file.Id;
+        public Task<T> WithAccessAsync<T>(Func<Task<T>> action) => file.WithAccessAsync(action);
+        public Task<bool> CanWriteAsync() => file.CanWriteAsync();
+        public Task<bool> CanDeleteAsync() => file.CanDeleteAsync();
+        public Task<long> GetLengthAsync() => file.GetLengthAsync();
+        public async Task<Stream> OpenWriteAsync()
+        {
+            await onOverwriteAsync(file);
+            return await file.OpenWriteAsync();
+        }
+        public Task<bool> RenameIfPossibleAsync(string newFileName) => file.RenameIfPossibleAsync(newFileName);
+        public Task DeleteAsync() => file.DeleteAsync();
     }
 
     private sealed class TestUserInterfaceService : IUserInterfaceService
@@ -292,11 +328,8 @@ public sealed class TransientFileServiceTests
         public string CacheDirectory => cacheDirectory;
         public string AppDataDirectory => throw new NotSupportedException();
         public string PlatformId => throw new NotSupportedException();
-        public Task<PickedFile?> PickFileAsync(string pickerTitle, FilePickerKind pickerKind) => throw new NotSupportedException();
-        public Task<IPickedWritableFile?> PickWritableFileAsync(string pickerTitle, FilePickerKind pickerKind) => throw new NotSupportedException();
         public Task<bool> OpenInAsync(string filePath, string displayName) => throw new NotSupportedException();
         public Task SendToAsync(string filePath, string displayName, string contentType) => throw new NotSupportedException();
-        public Task<SaveFileResult> SaveAsAsync(Stream stream, string displayName, string originalSourcePath) => throw new NotSupportedException();
         public Task<bool> CanViewFileAsync(DecryptedFileInfo file) => throw new NotSupportedException();
         public Task ViewFileAsync(DecryptedFileInfo file) => throw new NotSupportedException();
         public bool IsSelfHandoffReference(string reference) => throw new NotSupportedException();

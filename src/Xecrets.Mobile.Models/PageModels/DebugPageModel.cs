@@ -53,7 +53,7 @@ public partial class DebugPageModel(
             MobileDataStore.DataFileName,
             "text/plain",
             file.Length,
-            PreviewKind.Text), enableTextEditing: false);
+            PreviewKind.Text));
         await UserInterfaceService.NavigateToAsync(AppDestination.View);
     }
 

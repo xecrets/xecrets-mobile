@@ -33,18 +33,19 @@ using Xecrets.Mobile.Models.Models;
 namespace Xecrets.Mobile.Models.Abstractions;
 
 /// <summary>
-/// Hands a file in a known folder, where it is stored, to other apps on the device.
+/// Hands a file, where it is stored, to other apps on the device.
 /// </summary>
 public interface IWorkFolderFileLauncher
 {
     /// <summary>
     /// Opens the file for viewing or editing in the way customary on the platform, as tapping it in a file manager
-    /// would. Returns false when no app can open the file.
+    /// would. The app is also allowed to save its changes when <paramref name="allowWrite"/> is true, which requires
+    /// the file to be reached through one of My folders. Returns false when no app can open the file.
     /// </summary>
-    Task<bool> OpenAsync(WorkFolderFile file);
+    Task<bool> OpenAsync(FileReference file, bool allowWrite);
 
     /// <summary>
     /// Lets the user choose an app to share the file with or send it to.
     /// </summary>
-    Task ShareAsync(WorkFolderFile file);
+    Task ShareAsync(FileReference file);
 }

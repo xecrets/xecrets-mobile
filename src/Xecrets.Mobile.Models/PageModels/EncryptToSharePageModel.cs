@@ -31,8 +31,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-using Xecrets.Core.Abstractions;
-
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
@@ -42,10 +40,10 @@ namespace Xecrets.Mobile.Models.PageModels;
 
 public partial class EncryptToSharePageModel(
     IProfileService profileService,
-    IFileService fileService,
+    IFileAccess fileAccess,
+    FileOperationWorkflow fileOperationWorkflow,
     IEncryptionPreparationService encryptionPreparationService,
     IFlowContext flowContext,
-    ICoreServices coreServices,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
 {
@@ -80,21 +78,23 @@ public partial class EncryptToSharePageModel(
             StatusText = string.Empty;
 
             string password = Password;
-            PickedFile? file = await fileService.PickFileAsync(
-                MobileTexts.DialogTitleSelectFilesToEncrypt,
-                FilePickerKind.Any);
+            FileReference? file = await fileAccess.PickFileAsync(string.Empty, FilePickerKind.Any);
             if (file is null)
             {
                 return;
             }
 
-            if (await coreServices.IsEncryptedAsync(file.OpenReadAsync))
+            if (await fileOperationWorkflow.IsEncryptedAsync(file))
             {
                 await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextAlreadyEncrypted);
                 return;
             }
 
-            EncryptionPreparationResult result = await encryptionPreparationService.EncryptForPasswordAsync(file, password);
+            flowContext.UpdateSource(file);
+            EncryptionPreparationResult result = await encryptionPreparationService.EncryptForPasswordAsync(
+                file.Name,
+                () => fileAccess.OpenReadAsync(file.Id),
+                password);
             await profileService.RecordExtraPasswordUseAsync(password);
 
             Password = string.Empty;

@@ -93,6 +93,7 @@ public partial class App
     private async void InitializeWindowAsync(object? sender, EventArgs e)
     {
         await _transientFileService.MaybeWipeTrackedFilesAsync();
+        await _services.GetRequiredService<GrantCleanupService>().RunAsync();
         await _cultureCoordinator.ApplySavedAsync();
 
         Window window = (Window)sender!;

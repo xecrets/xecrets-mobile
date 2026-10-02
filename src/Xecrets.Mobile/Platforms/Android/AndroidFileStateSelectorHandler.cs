@@ -60,6 +60,8 @@ public sealed class AndroidFileStateSelectorHandler()
     private int _encryptedButtonId;
     private int _decryptedButtonId;
     private int _allButtonId;
+    private int _viewedButtonId;
+    private int _otherButtonId;
 
     protected override MaterialButtonToggleGroup CreatePlatformView()
     {
@@ -72,12 +74,18 @@ public sealed class AndroidFileStateSelectorHandler()
         MaterialButton encrypted = CreateButton(Context, MobileTexts.FileStateEncrypted);
         MaterialButton decrypted = CreateButton(Context, MobileTexts.FileStateDecrypted);
         MaterialButton all = CreateButton(Context, MobileTexts.FileStateAll);
+        MaterialButton viewed = CreateButton(Context, MobileTexts.FileStateViewed);
+        MaterialButton other = CreateButton(Context, MobileTexts.FileStateOther);
         _encryptedButtonId = encrypted.Id;
         _decryptedButtonId = decrypted.Id;
         _allButtonId = all.Id;
+        _viewedButtonId = viewed.Id;
+        _otherButtonId = other.Id;
         group.AddView(all);
         group.AddView(decrypted);
         group.AddView(encrypted);
+        group.AddView(viewed);
+        group.AddView(other);
         return group;
     }
 
@@ -115,6 +123,8 @@ public sealed class AndroidFileStateSelectorHandler()
             SelectedFileState.Encrypted => handler._encryptedButtonId,
             SelectedFileState.Decrypted => handler._decryptedButtonId,
             SelectedFileState.All => handler._allButtonId,
+            SelectedFileState.Viewed => handler._viewedButtonId,
+            SelectedFileState.Other => handler._otherButtonId,
             _ => throw new InvalidOperationException($"Unknown file state {selector.SelectedState}."),
         });
 
@@ -126,8 +136,11 @@ public sealed class AndroidFileStateSelectorHandler()
             return;
         }
 
-        VirtualView.SelectedState = e.P1 == _encryptedButtonId
-            ? SelectedFileState.Encrypted
-            : e.P1 == _decryptedButtonId ? SelectedFileState.Decrypted : SelectedFileState.All;
+        VirtualView.SelectedState =
+            e.P1 == _encryptedButtonId ? SelectedFileState.Encrypted
+            : e.P1 == _decryptedButtonId ? SelectedFileState.Decrypted
+            : e.P1 == _viewedButtonId ? SelectedFileState.Viewed
+            : e.P1 == _otherButtonId ? SelectedFileState.Other
+            : SelectedFileState.All;
     }
 }

@@ -28,24 +28,40 @@
 
 #endregion Copyright and GPL License
 
+using Xecrets.Common.Models;
+using Xecrets.Mobile.Models.Models;
+
 namespace Xecrets.Mobile.Models.Abstractions;
 
 /// <summary>
-/// The files most recently encrypted or decrypted in place, or added, in a known folder, identified by
-/// <see cref="Models.WorkFolderFile.Id"/> and ordered most recent first.
+/// The list of recently used files, each with the operation that put it there. Files that are changed are listed as
+/// reached through one of My folders, while files that are only read are listed with a grant to the file itself. The
+/// list is not checked against the files, which is only done when a file on it is used.
 /// </summary>
 public interface IRecentFilesService
 {
-    Task<IReadOnlyList<string>> GetFilesAsync();
+    Task<IReadOnlyList<RecentFile>> GetFilesAsync();
 
     /// <summary>
-    /// Puts a file, such as the result of an encryption or decryption, at the top of the list. The source of an
-    /// encryption or decryption is kept, so that it is listed again if it reappears.
+    /// Lists the file first, in place of any entry for the same id. Returns false, and lists nothing, when the access
+    /// to a file that is only read cannot be kept.
     /// </summary>
-    Task AddAsync(string fileId);
+    Task<bool> AddAsync(FileReference file, RecentFileOperation operation);
 
     /// <summary>
-    /// Removes a file from the list. The file itself is not affected.
+    /// Lists the file the current flow works on, if any.
     /// </summary>
+    Task AddFlowSourceAsync(RecentFileOperation operation);
+
     Task RemoveAsync(string fileId);
+
+    /// <summary>
+    /// Removes every entry for the file, under any id, such as when the file is replaced or deleted.
+    /// </summary>
+    Task RemoveFileAsync(string fileId);
+
+    /// <summary>
+    /// Refers to a listed file by a new id, such as when it is now reached through another of My folders.
+    /// </summary>
+    Task ReplaceIdAsync(string fileId, string newFileId);
 }

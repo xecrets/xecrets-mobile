@@ -64,12 +64,11 @@ internal static class QuickLookFileViewer
         SingleItemQuickLookController previewController = new(item);
         TaskCompletionSource dismissed = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        EventHandler? didDismissHandler = null;
-        didDismissHandler = (_, _) =>
+        void didDismissHandler(object? _1, EventArgs _2)
         {
             previewController.DidDismiss -= didDismissHandler;
             dismissed.TrySetResult();
-        };
+        }
 
         previewController.DidDismiss += didDismissHandler;
         presentingController.PresentViewController(previewController, true, null);

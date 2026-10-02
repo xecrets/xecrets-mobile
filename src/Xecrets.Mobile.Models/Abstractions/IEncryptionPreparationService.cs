@@ -28,14 +28,16 @@
 
 #endregion Copyright and GPL License
 
-using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
 
 namespace Xecrets.Mobile.Models.Abstractions;
 
 public interface IEncryptionPreparationService
 {
-    Task<EncryptionPreparationResult> EncryptForCurrentProfileAsync(PickedFile file);
+    Task<EncryptionPreparationResult> EncryptForCurrentProfileAsync(string fileName, Func<Task<Stream>> openReadAsync);
 
-    Task<EncryptionPreparationResult> EncryptForPasswordAsync(PickedFile file, string password);
+    Task<EncryptionPreparationResult> EncryptForPasswordAsync(
+        string fileName,
+        Func<Task<Stream>> openReadAsync,
+        string password);
 }

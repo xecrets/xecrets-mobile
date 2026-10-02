@@ -38,9 +38,9 @@ public interface IPreviewService
 
     bool HasPendingPasswordRequest { get; }
 
-    Task PrepareTextAsync(DecryptedFileInfo file, bool enableTextEditing);
+    Task PrepareTextAsync(DecryptedFileInfo file);
 
-    Task<bool> PrepareAsync(DocumentPreviewFile encryptedFile, bool enableTextEditing);
+    Task<bool> PrepareAsync(DocumentPreviewFile encryptedFile);
 
     Task<PreviewPreparationStatus> PrepareImportedAsync(string encryptedFilePath);
 

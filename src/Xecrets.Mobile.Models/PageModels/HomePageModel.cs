@@ -30,9 +30,6 @@
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-
-using Xecrets.Core.Abstractions;
-
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
@@ -42,15 +39,12 @@ namespace Xecrets.Mobile.Models.PageModels;
 
 public partial class HomePageModel(
     IProfileService profileService,
-    IFileService fileService,
-    IFileWiper fileWiper,
-    WorkFolderWorkflow workFolderWorkflow,
-    IPreviewService previewService,
+    IFileAccess fileAccess,
+    FileOperationWorkflow fileOperationWorkflow,
     IEncryptionPreparationService encryptionPreparationService,
     ICrashTestService crashTestService,
     SessionExitService sessionExitService,
     IFlowContext flowContext,
-    ICoreServices coreServices,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
 {
@@ -83,38 +77,41 @@ public partial class HomePageModel(
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private Task RecentFilesAsync() => UserInterfaceService.NavigateToAsync(AppDestination.RecentFiles);
 
+    // Files are changed where they are, so they are picked from one of My folders.
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private Task Encrypt() => UserInterfaceService.NavigateToAsync(AppDestination.WorkFolders, WorkFolderPickAction.Encrypt);
+    private Task Encrypt() => UserInterfaceService.NavigateToAsync(AppDestination.WorkFolders, WorkFolderIntent.Encrypt);
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private Task Decrypt() => UserInterfaceService.NavigateToAsync(AppDestination.WorkFolders, WorkFolderPickAction.Decrypt);
+    private Task Decrypt() => UserInterfaceService.NavigateToAsync(AppDestination.WorkFolders, WorkFolderIntent.Decrypt);
+
+    [RelayCommand(CanExecute = nameof(CanUseCommand))]
+    private Task Wipe() => UserInterfaceService.NavigateToAsync(AppDestination.WorkFolders, WorkFolderIntent.Delete);
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private async Task EncryptAs()
     {
         flowContext.Begin(FlowOrigin.Navigated, WorkFolderOperation.Encrypt);
         crashTestService.CrashIfArmed(CrashTestOperation.Encrypt);
-
         try
         {
             IsBusy = true;
             StatusText = string.Empty;
-
-            PickedFile? file = await fileService.PickFileAsync(
-                MobileTexts.DialogTitleSelectFilesToEncrypt,
-                FilePickerKind.Any);
+            FileReference? file = await fileAccess.PickFileAsync(string.Empty, FilePickerKind.Any);
             if (file is null)
             {
                 return;
             }
 
-            if (await coreServices.IsEncryptedAsync(file.OpenReadAsync))
+            if (await fileOperationWorkflow.IsEncryptedAsync(file))
             {
                 await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextAlreadyEncrypted);
                 return;
             }
 
-            EncryptionPreparationResult result = await encryptionPreparationService.EncryptForCurrentProfileAsync(file);
+            flowContext.UpdateSource(file);
+            EncryptionPreparationResult result = await encryptionPreparationService.EncryptForCurrentProfileAsync(
+                file.Name,
+                () => fileAccess.OpenReadAsync(file.Id));
             await UserInterfaceService.NavigateToAsync(AppDestination.EncryptResult, result);
         }
         catch (OperationCanceledException)
@@ -143,24 +140,27 @@ public partial class HomePageModel(
     {
         flowContext.Begin(FlowOrigin.Navigated, WorkFolderOperation.Decrypt);
         crashTestService.CrashIfArmed(CrashTestOperation.Decrypt);
-
         try
         {
             IsBusy = true;
             StatusText = string.Empty;
-
-            bool isPrepared = await PickAndPrepareAsync(enableTextEditing: false);
-            if (!isPrepared)
+            FileReference? file = await fileAccess.PickFileAsync(string.Empty, FilePickerKind.Encrypted);
+            if (file is null)
             {
-                if (previewService.HasPendingPasswordRequest)
-                {
-                    await UserInterfaceService.NavigateToAsync(AppDestination.EnterPassword);
-                }
-
                 return;
             }
 
-            await UserInterfaceService.NavigateToAsync(AppDestination.Preview);
+            // The picker may offer any file, since not all storage tells which files are encrypted.
+            if (!await fileOperationWorkflow.IsEncryptedAsync(file))
+            {
+                await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextNotEncrypted);
+                return;
+            }
+
+            if (!await fileOperationWorkflow.PreviewAsync(file))
+            {
+                StatusText = MobileTexts.DialogTextWrongPasswordOpen;
+            }
         }
         catch (OperationCanceledException)
         {
@@ -179,62 +179,6 @@ public partial class HomePageModel(
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private Task SignOut() => sessionExitService.ExitAsync();
 
-    [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private async Task Wipe()
-    {
-        try
-        {
-            IsBusy = true;
-            StatusText = string.Empty;
-
-            WorkFolderFile? file = await workFolderWorkflow.PickFileAsync(FilePickerKind.Any);
-            if (file is null || !await UserInterfaceService.DisplayConfirmationAsync(MobileTexts.MessageTextConfirmWipe))
-            {
-                return;
-            }
-
-            FileWipeStatus status = await fileWiper.WipeAsync(file.WritableFile);
-            if (status == FileWipeStatus.InsufficientRights)
-            {
-                await UserInterfaceService.DisplayMessageAsync(MobileTexts.DialogTextInsufficientRights);
-                return;
-            }
-
-            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextFileDeleted);
-        }
-        catch (OperationCanceledException)
-        {
-            StatusText = string.Empty;
-        }
-        catch (Exception ex)
-        {
-            StatusText = ex.FormatException();
-        }
-        finally
-        {
-            IsBusy = false;
-        }
-    }
-
     private bool CanUseCommand()
         => !IsBusy;
-
-    private async Task<bool> PickAndPrepareAsync(bool enableTextEditing)
-    {
-        PickedFile? file = await fileService.PickFileAsync(
-            MobileTexts.DialogTitleSelectFileToOpen,
-            FilePickerKind.Encrypted);
-        if (file is null)
-        {
-            return false;
-        }
-
-        DocumentPreviewFile previewFile = new(file.FileName, file.SourcePath, file.OpenReadAsync);
-        bool isPrepared = await previewService.PrepareAsync(previewFile, enableTextEditing);
-        if (!isPrepared && !previewService.HasPendingPasswordRequest)
-        {
-            StatusText = MobileTexts.DialogTextWrongPasswordOpen;
-        }
-
-        return isPrepared;
-    }}
+}

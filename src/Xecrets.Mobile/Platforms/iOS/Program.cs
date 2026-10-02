@@ -32,8 +32,6 @@ using System;
 
 using UIKit;
 
-using Xecrets.Mobile;
-
 namespace Xecrets.Mobile.Platforms.iOS;
 
 public class Program

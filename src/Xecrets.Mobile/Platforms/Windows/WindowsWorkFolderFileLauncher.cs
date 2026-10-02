@@ -30,25 +30,23 @@
 
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
-
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.ApplicationModel.DataTransfer;
 using Microsoft.Maui.Storage;
-
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Platforms.Windows;
 
 /// <summary>
-/// Opens or shares the file itself, whose <see cref="WorkFolderFile.Id"/> is its path.
+/// Opens or shares the file itself, whose <see cref="FileReference.Id"/> is its path.
 /// </summary>
 [SupportedOSPlatform("windows10.0.19041")]
 public class WindowsWorkFolderFileLauncher : IWorkFolderFileLauncher
 {
-    public Task<bool> OpenAsync(WorkFolderFile file) =>
-        Launcher.Default.OpenAsync(new OpenFileRequest(file.FileName, new ReadOnlyFile(file.Id)));
+    public Task<bool> OpenAsync(FileReference file, bool allowWrite) =>
+        Launcher.Default.OpenAsync(new OpenFileRequest(file.Name, new ReadOnlyFile(file.Id)));
 
-    public Task ShareAsync(WorkFolderFile file) =>
-        Share.Default.RequestAsync(new ShareFileRequest { Title = file.FileName, File = new ShareFile(file.Id) });
+    public Task ShareAsync(FileReference file) =>
+        Share.Default.RequestAsync(new ShareFileRequest { Title = file.Name, File = new ShareFile(file.Id) });
 }

@@ -57,7 +57,7 @@ public sealed partial class ReleaseRemovedCommandsBehavior : Behavior<Layout>
     // MAUI has no public way to enumerate the bindings of an element, so the command properties of the controls and
     // gesture recognizers are listed here. Every property can be tried on every object, since RemoveBinding does
     // nothing without a binding, and IsSet is false for a property the object does not have.
-    private static readonly BindableProperty[] CommandProperties =
+    private static readonly BindableProperty[] _commandProperties =
     [
         Button.CommandProperty,
         ImageButton.CommandProperty,
@@ -111,7 +111,7 @@ public sealed partial class ReleaseRemovedCommandsBehavior : Behavior<Layout>
     // null to end the subscription. Setting it only when set avoids adding empty entries to the property store.
     private static void Clear(BindableObject bindable)
     {
-        foreach (BindableProperty commandProperty in CommandProperties)
+        foreach (BindableProperty commandProperty in _commandProperties)
         {
             bindable.RemoveBinding(commandProperty);
             if (bindable.IsSet(commandProperty))

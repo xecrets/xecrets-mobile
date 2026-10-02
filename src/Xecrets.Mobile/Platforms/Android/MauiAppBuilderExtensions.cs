@@ -41,10 +41,8 @@ internal static class MauiAppBuilderExtensions
 {
     internal static MauiAppBuilder ConfigurePlatform(this MauiAppBuilder builder)
     {
-        builder.Services.AddSingleton<IPickedWritableFileFactory, AndroidPickedWritableFileFactory>();
         builder.Services.AddSingleton<IFileService, AndroidFileService>();
-        builder.Services.AddSingleton<IWorkFolderService, AndroidWorkFolderService>();
-        builder.Services.AddSingleton<IWorkFolderFileOperations, AndroidWorkFolderFileOperations>();
+        builder.Services.AddSingleton<IFileAccess, AndroidFileAccess>();
         builder.Services.AddSingleton<IWorkFolderFileLauncher, AndroidWorkFolderFileLauncher>();
         builder.Services.AddSingleton<IUserInterfaceService, AndroidUserInterfaceService>();
         builder.Services.AddSingleton<IPlatformServices, AndroidServices>();

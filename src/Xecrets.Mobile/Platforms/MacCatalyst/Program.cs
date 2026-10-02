@@ -32,8 +32,6 @@ using UIKit;
 
 using System;
 
-using Xecrets.Mobile;
-
 namespace Xecrets.Mobile.Platforms.MacCatalyst;
 
 public class Program

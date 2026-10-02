@@ -32,5 +32,4 @@ namespace Xecrets.Mobile.Models.Models;
 
 public sealed record DocumentPreviewFile(
     string FileName,
-    string SourcePath,
     Func<Task<Stream>> OpenReadAsync);

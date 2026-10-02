@@ -35,4 +35,6 @@ public enum SelectedFileState
     Encrypted,
     Decrypted,
     All,
+    Viewed,
+    Other,
 }

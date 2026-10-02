@@ -74,7 +74,7 @@ public partial class EnterPasswordPageModel(
 
             bool isWorkFolderRequest = workFolderOperationService.HasPendingPasswordRequest;
             PreviewPreparationStatus status = isWorkFolderRequest
-                ? await workFolderOperationService.DecryptWithPasswordAsync(Password)
+                ? await workFolderOperationService.DecryptWithPasswordAsync(Password) is not null
                     ? PreviewPreparationStatus.Prepared
                     : PreviewPreparationStatus.WrongPassword
                 : await previewService.PrepareWithPasswordAsync(Password);

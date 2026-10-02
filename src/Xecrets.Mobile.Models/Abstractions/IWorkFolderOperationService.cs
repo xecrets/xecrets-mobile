@@ -32,15 +32,29 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Abstractions;
 
+/// <summary>
+/// Encrypts and decrypts files where they are, in one of My folders, replacing the file with the result.
+/// </summary>
 public interface IWorkFolderOperationService
 {
     bool HasPendingPasswordRequest { get; }
 
-    Task EncryptAsync(WorkFolderFile file);
+    /// <summary>
+    /// Encrypts the file, returning the file it is replaced by.
+    /// </summary>
+    Task<FileReference> EncryptAsync(FileReference file);
 
-    Task<bool> DecryptWithKnownPasswordsAsync(WorkFolderFile file);
+    /// <summary>
+    /// Decrypts the file with the passwords known, returning the file it is replaced by, or returns null and keeps the
+    /// file for <see cref="DecryptWithPasswordAsync"/>.
+    /// </summary>
+    Task<FileReference?> DecryptWithKnownPasswordsAsync(FileReference file);
 
-    Task<bool> DecryptWithPasswordAsync(string password);
+    /// <summary>
+    /// Decrypts the pending file with the password, returning the file it is replaced by, or null when the password is
+    /// wrong.
+    /// </summary>
+    Task<FileReference?> DecryptWithPasswordAsync(string password);
 
     void CancelPasswordRequest();
 }

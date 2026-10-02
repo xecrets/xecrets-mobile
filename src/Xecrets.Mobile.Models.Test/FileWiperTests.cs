@@ -28,6 +28,8 @@
 
 #endregion Copyright and GPL License
 
+using System.Text;
+
 using NUnit.Framework;
 
 using Xecrets.Mobile.Models.Abstractions;
@@ -39,7 +41,7 @@ namespace Xecrets.Mobile.Models.Test;
 [TestFixture]
 public sealed class FileWiperTests
 {
-    private sealed class FakePickedWritableFile : IPickedWritableFile
+    private sealed class FakeWritableFile : IWritableFile
     {
         public Func<Task<bool>> CanWrite { get; init; } = () => Task.FromResult(true);
 
@@ -53,6 +55,8 @@ public sealed class FileWiperTests
 
         public Func<Task> Delete { get; init; } = () => throw new AssertionException("The file should not be deleted.");
 
+        public string Id => "file";
+
         public Task<T> WithAccessAsync<T>(Func<Task<T>> action) => action();
 
         public Task<bool> CanWriteAsync() => CanWrite();
@@ -63,7 +67,7 @@ public sealed class FileWiperTests
 
         public Task<Stream> OpenWriteAsync() => OpenWrite();
 
-        public Task RenameIfPossibleAsync(string newFileName) => RenameIfPossible(newFileName);
+        public Task<bool> RenameIfPossibleAsync(string newFileName) => RenameIfPossible(newFileName);
 
         public Task DeleteAsync() => Delete();
     }
@@ -73,7 +77,7 @@ public sealed class FileWiperTests
     {
         bool wasOpened = false;
         bool wasDeleted = false;
-        IPickedWritableFile file = new FakePickedWritableFile
+        IWritableFile file = new FakeWritableFile
         {
             CanWrite = () => Task.FromResult(false),
             OpenWrite = () =>
@@ -100,7 +104,7 @@ public sealed class FileWiperTests
     {
         byte[] contents = new byte[1024];
         bool wasDeleted = false;
-        IPickedWritableFile file = new FakePickedWritableFile
+        IWritableFile file = new FakeWritableFile
         {
             GetLength = () => Task.FromResult((long)contents.Length),
             OpenWrite = () => Task.FromResult<Stream>(new MemoryStream(contents, writable: true)),
@@ -117,5 +121,136 @@ public sealed class FileWiperTests
         Assert.That(status, Is.EqualTo(FileWipeStatus.Succeeded));
         Assert.That(wasDeleted, Is.True);
         Assert.That(contents, Is.Not.All.EqualTo((byte)0));
+    }
+
+    /// <summary>
+    /// Storage that keeps versions, or moves a deleted file to a trash, then keeps only the notice, named as wiped,
+    /// rather than the original.
+    /// </summary>
+    [Test]
+    public async Task WipeAsyncRenamesOverwritesAndLeavesOnlyNoticeBeforeDeleting()
+    {
+        List<string> steps = [];
+        MemoryStream written = new();
+        string? newName = null;
+        IWritableFile file = new FakeWritableFile
+        {
+            GetLength = () => Task.FromResult(4096L),
+            OpenWrite = () =>
+            {
+                steps.Add("write");
+                return Task.FromResult<Stream>(new UnclosedStream(written));
+            },
+            RenameIfPossible = name =>
+            {
+                steps.Add("rename");
+                newName = name;
+                return Task.FromResult(true);
+            },
+            Delete = () =>
+            {
+                steps.Add("delete");
+                return Task.CompletedTask;
+            },
+        };
+
+        FileWipeStatus status = await new FileWiper().WipeAsync(file);
+
+        byte[] notice = Encoding.UTF8.GetBytes(FileWiper.DeletedNotice);
+        Assert.That(status, Is.EqualTo(FileWipeStatus.Succeeded));
+        Assert.That(steps, Is.EqualTo(["rename", "write", "delete"]));
+        Assert.That(newName, Does.Match("^\\.xecrets-wiped-[0-9a-f]{32}\\.txt$"));
+        Assert.That(written.ToArray(), Is.EqualTo(notice));
+    }
+
+    /// <summary>
+    /// Some storage only gives streams that cannot seek, which are not overwritten, but only given the notice.
+    /// </summary>
+    [Test]
+    public async Task WipeAsyncOnlyWritesNoticeWhenStreamCannotSeek()
+    {
+        List<MemoryStream> opened = [];
+        IWritableFile file = new FakeWritableFile
+        {
+            GetLength = () => Task.FromResult(4096L),
+            OpenWrite = () =>
+            {
+                MemoryStream stream = new();
+                opened.Add(stream);
+                return Task.FromResult<Stream>(new UnseekableStream(stream));
+            },
+            RenameIfPossible = _ => Task.FromResult(true),
+            Delete = () => Task.CompletedTask,
+        };
+
+        await new FileWiper().WipeAsync(file);
+
+        Assert.That(opened, Has.Count.EqualTo(1));
+        Assert.That(Encoding.UTF8.GetString(opened[0].ToArray()), Is.EqualTo(FileWiper.DeletedNotice));
+    }
+
+    [Test]
+    public void WipeAsyncDeletesFileAndReportsFailureWhenOverwriteFails()
+    {
+        bool wasDeleted = false;
+        IWritableFile file = new FakeWritableFile
+        {
+            GetLength = () => Task.FromResult(1024L),
+            OpenWrite = () => throw new IOException("Overwrite failed."),
+            RenameIfPossible = _ => Task.FromResult(true),
+            Delete = () =>
+            {
+                wasDeleted = true;
+                return Task.CompletedTask;
+            },
+        };
+
+        Assert.That(async () => await new FileWiper().WipeAsync(file),
+            Throws.TypeOf<IOException>().With.Message.EqualTo("Overwrite failed."));
+        Assert.That(wasDeleted, Is.True);
+    }
+
+    [Test]
+    public void WipeAsyncReportsOriginalFailureWhenDeleteAlsoFails()
+    {
+        IWritableFile file = new FakeWritableFile
+        {
+            GetLength = () => Task.FromResult(1024L),
+            OpenWrite = () => throw new IOException("Overwrite failed."),
+            RenameIfPossible = _ => Task.FromResult(true),
+            Delete = () => throw new IOException("Delete failed."),
+        };
+
+        Assert.That(async () => await new FileWiper().WipeAsync(file),
+            Throws.TypeOf<IOException>().With.Message.EqualTo("Overwrite failed."));
+    }
+
+    // Keeps the contents readable after the wiper has disposed the stream.
+    private sealed class UnclosedStream(MemoryStream stream) : Stream
+    {
+        public override bool CanRead => stream.CanRead;
+        public override bool CanSeek => stream.CanSeek;
+        public override bool CanWrite => stream.CanWrite;
+        public override long Length => stream.Length;
+        public override long Position { get => stream.Position; set => stream.Position = value; }
+        public override void Flush() => stream.Flush();
+        public override int Read(byte[] buffer, int offset, int count) => stream.Read(buffer, offset, count);
+        public override long Seek(long offset, SeekOrigin origin) => stream.Seek(offset, origin);
+        public override void SetLength(long value) => stream.SetLength(value);
+        public override void Write(byte[] buffer, int offset, int count) => stream.Write(buffer, offset, count);
+    }
+
+    private sealed class UnseekableStream(MemoryStream stream) : Stream
+    {
+        public override bool CanRead => false;
+        public override bool CanSeek => false;
+        public override bool CanWrite => true;
+        public override long Length => throw new NotSupportedException();
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+        public override void Flush() => stream.Flush();
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => stream.Write(buffer, offset, count);
     }
 }

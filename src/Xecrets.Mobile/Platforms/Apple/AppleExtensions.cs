@@ -29,6 +29,7 @@
 #endregion Copyright and GPL License
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -47,11 +48,6 @@ using UniformTypeIdentifiers;
 
 using UIKit;
 
-using Xecrets.Common.Models;
-
-using Xecrets.Mobile.Models.Models;
-using Xecrets.Mobile.Services;
-
 namespace Xecrets.Mobile.Platforms.Apple;
 
 public static class AppleExtensions
@@ -61,6 +57,22 @@ public static class AppleExtensions
     public static async Task<NSUrl?> PickUrlAsync(this UTType contentType, NSUrl? initialUrl)
     {
         UIDocumentPickerViewController picker = new([contentType], false)
+        {
+            DirectoryUrl = initialUrl,
+        };
+        PickerDelegate pickerDelegate = new();
+        picker.Delegate = pickerDelegate;
+        await Platform.GetCurrentUIViewController()!.PresentViewControllerAsync(picker, true);
+        return await pickerDelegate.Completion.Task;
+    }
+
+    /// <summary>
+    /// Moves the file to where the user chooses, and returns the url it was moved to, which gives access to it, or null
+    /// if the user cancels.
+    /// </summary>
+    public static async Task<NSUrl?> SaveUrlAsync(this NSUrl fileUrl, NSUrl? initialUrl)
+    {
+        UIDocumentPickerViewController picker = new([fileUrl], false)
         {
             DirectoryUrl = initialUrl,
         };
@@ -112,14 +124,14 @@ public static class AppleExtensions
         }
 
         /// <summary>
-        /// Opens the file at the path for reading, holding the access to this url until the stream is disposed.
+        /// Opens the file for reading, holding the access to this url until the stream is disposed.
         /// </summary>
-        public Stream OpenScopedRead(string path)
+        public async Task<Stream> OpenScopedReadAsync(NSUrl fileUrl)
         {
             bool isAccessing = url.StartAccessingSecurityScopedResource();
             try
             {
-                return new SecurityScopedStream(File.OpenRead(path), url, isAccessing);
+                return new SecurityScopedStream(await OpenCoordinatedReadAsync(fileUrl), url, isAccessing);
             }
             catch
             {
@@ -154,71 +166,9 @@ public static class AppleExtensions
                 throw new NSErrorException(error);
             }
 
-            File.WriteAllBytes(GetGrantPath(id), bookmark.ToArray());
+            File.WriteAllBytes(GetGrantPath(id), [.. bookmark]);
         }
 
-        private bool IsDescendantOf(NSUrl folder) =>
-            url.Path!.StartsWith(folder.Path!.TrimEnd('/') + "/", StringComparison.Ordinal);
-    }
-
-    extension(WorkFolderStorage storage)
-    {
-        public async Task<NSUrl?> FindKnownGrantAsync(NSUrl file)
-        {
-            foreach (WorkFolder folder in (await storage.LoadFoldersAsync()).OrderByDescending(item => item.Id.Length))
-            {
-                NSUrl grant = ResolveGrant(folder.GrantId);
-                if (file.IsDescendantOf(grant))
-                {
-                    return grant;
-                }
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Finds the grant of the known folder containing the file, skipping grants that can no longer be resolved,
-        /// such as when the bookmark is missing or the location it refers to is gone.
-        /// </summary>
-        public async Task<NSUrl?> FindResolvableGrantAsync(NSUrl file)
-        {
-            foreach (WorkFolder folder in (await storage.LoadFoldersAsync()).OrderByDescending(item => item.Id.Length))
-            {
-                NSUrl? grant = TryResolveGrant(folder.GrantId);
-                if (grant is not null && file.IsDescendantOf(grant))
-                {
-                    return grant;
-                }
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Gets the grant of the known folder containing the file. The access belongs to the URL resolved from the
-        /// grant, not to a URL created from the same string, so it must be resolved again for each use.
-        /// </summary>
-        public async Task<NSUrl> GetFileGrantAsync(NSUrl file) =>
-            await storage.FindResolvableGrantAsync(file)
-            ?? throw new IOException("Access to the folder of the file has been lost.");
-
-        /// <summary>
-        /// Runs the action with the file's URL while the access granted to its known folder is held.
-        /// </summary>
-        public async Task<T> WithFileAccessAsync<T>(WorkFolderFile file, Func<NSUrl, Task<T>> action)
-        {
-            NSUrl fileUrl = NSUrl.FromString(file.Id)!;
-            NSUrl grant = await storage.GetFileGrantAsync(fileUrl);
-            return await grant.WithAccessAsync(() => action(fileUrl));
-        }
-
-        public async Task WithFileAccessAsync(WorkFolderFile file, Func<NSUrl, Task> action)
-        {
-            NSUrl fileUrl = NSUrl.FromString(file.Id)!;
-            NSUrl grant = await storage.GetFileGrantAsync(fileUrl);
-            await grant.WithAccessAsync(() => action(fileUrl));
-        }
     }
 
     internal static NSUrl ResolveGrant(string id)
@@ -250,6 +200,23 @@ public static class AppleExtensions
         return url;
     }
 
+    /// <summary>
+    /// Deletes the bookmarks kept for any ids other than those given.
+    /// </summary>
+    internal static void ReleaseGrantsExcept(IEnumerable<string> ids)
+    {
+        if (!Directory.Exists(GrantDirectory))
+        {
+            return;
+        }
+
+        HashSet<string> kept = [.. ids.Select(GetGrantPath)];
+        foreach (string path in Directory.EnumerateFiles(GrantDirectory).Where(path => !kept.Contains(path)))
+        {
+            File.Delete(path);
+        }
+    }
+
     internal static string GetGrantPath(string id)
     {
         string key = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(id)));
@@ -257,35 +224,43 @@ public static class AppleExtensions
     }
 
     /// <summary>
-    /// Writes the file through a temporary file in the same folder.
+    /// Opens the file for reading through a file coordinator, which has the file provider make it available first.
+    /// Some providers, such as Google Drive, do not keep a file at its path until it is asked for this way. The wait,
+    /// which may include a download, is asynchronous, and the accessor runs on a background queue with the url the
+    /// file is at then. An open stream remains valid after the coordinated read has ended. An exception may not pass
+    /// through the native coordinator, so it is caught in the accessor and set as the result instead.
     /// </summary>
-    internal static async Task WriteFileAsync(
-        string folderPath,
-        string name,
-        bool overwrite,
-        Func<Stream, Task> writer)
+    private static Task<Stream> OpenCoordinatedReadAsync(NSUrl fileUrl)
     {
-        string destinationPath = Path.Combine(folderPath, name);
-        string temporaryPath = Path.Combine(folderPath, $".xecrets-{Guid.NewGuid():N}.tmp");
-        try
+        TaskCompletionSource<Stream> opened = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        NSFileAccessIntent intent = NSFileAccessIntent.CreateReadingIntent(fileUrl, default);
+        NSFileCoordinator coordinator = new();
+        coordinator.CoordinateAccess([intent], new NSOperationQueue(), error =>
         {
-            await using (FileStream output = File.Create(temporaryPath))
+            try
             {
-                await writer(output);
-            }
+                if (error is not null)
+                {
+                    opened.SetException(new NSErrorException(error));
+                    return;
+                }
 
-            File.Move(temporaryPath, destinationPath, overwrite);
-        }
-        finally
-        {
-            if (File.Exists(temporaryPath))
-            {
-                File.Delete(temporaryPath);
+                opened.SetResult(File.OpenRead(intent.Url.Path!));
             }
-        }
+            catch (Exception ex)
+            {
+                opened.SetException(ex);
+            }
+            finally
+            {
+                // The coordinator is kept until the access it coordinates is done.
+                GC.KeepAlive(coordinator);
+            }
+        });
+        return opened.Task;
     }
 
-    private static NSUrl? TryResolveGrant(string id)
+    internal static NSUrl? TryResolveGrant(string id)
     {
         try
         {

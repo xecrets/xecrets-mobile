@@ -29,67 +29,59 @@
 #endregion Copyright and GPL License
 
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-
 using Xecrets.Common.Models;
-using Xecrets.Core.Abstractions;
-
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
 using Xecrets.Mobile.Models.Utilities;
-using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
+/// <summary>
+/// My folders, the folders the user has given the app access to. Files are changed where they are by picking them in
+/// one of these, for the operation the page was opened for, or by default to encrypt or decrypt them as they are.
+/// </summary>
 public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel, IBreadcrumbPageModel
 {
-    private readonly IWorkFolderService _workFolderService;
-    private readonly WorkFolderWorkflow _workflow;
-    private readonly ICoreServices _coreServices;
-    private readonly IRecentFilesService _recentFilesService;
-    private readonly IWorkFolderFileOperations _fileOperations;
-    private bool _refreshingListDisplayNames;
+    private readonly WorkFolderStorage _storage;
+    private readonly IFileAccess _fileAccess;
+    private readonly FolderAccessWorkflow _folderAccess;
+    private readonly FileOperationWorkflow _fileOperations;
+
+    // The hint for the operation the page was opened for, shown once when the page has been shown.
+    private string _pendingIntentHint = string.Empty;
 
     public WorkFoldersPageModel(
-        IWorkFolderService workFolderService,
-        WorkFolderWorkflow workflow,
-        ICoreServices coreServices,
-        IRecentFilesService recentFilesService,
-        IWorkFolderFileOperations fileOperations,
+        WorkFolderStorage storage,
+        IFileAccess fileAccess,
+        FolderAccessWorkflow folderAccess,
+        FileOperationWorkflow fileOperations,
         IUserInterfaceService userInterfaceService)
         : base(userInterfaceService)
     {
-        _workFolderService = workFolderService;
-        _workflow = workflow;
-        _coreServices = coreServices;
-        _recentFilesService = recentFilesService;
+        _storage = storage;
+        _fileAccess = fileAccess;
+        _folderAccess = folderAccess;
         _fileOperations = fileOperations;
-        Folders = new WorkFolderCollection(RefreshListDisplayNames);
     }
 
-    public ObservableCollection<WorkFolderEntry> Folders { get; }
+    public ObservableCollection<WorkFolderEntry> Folders { get; } = [];
 
-    public string Breadcrumb => PickAction switch
-    {
-        WorkFolderPickAction.AddToRecentFiles => BuildBreadcrumb(MobileTexts.BreadcrumbRecentFiles),
-        WorkFolderPickAction.Encrypt => BuildBreadcrumb(MobileTexts.BreadcrumbEncrypt),
-        WorkFolderPickAction.Decrypt => BuildBreadcrumb(MobileTexts.BreadcrumbDecrypt),
-        _ => string.Join(MobileTexts.BreadcrumbSeparator, MobileTexts.BreadcrumbHome, MobileTexts.BreadcrumbMyFolders),
-    };
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Breadcrumb))]
-    public partial WorkFolderPickAction PickAction { get; set; }
+    public string Breadcrumb =>
+        string.Join(MobileTexts.BreadcrumbSeparator, MobileTexts.BreadcrumbHome, MobileTexts.BreadcrumbMyFolders);
 
     [ObservableProperty] public partial string MessageText { get; set; } = string.Empty;
 
     [ObservableProperty] public partial string StatusText { get; set; } = string.Empty;
 
     public string Description => MobileTexts.WorkFolderDescription;
+
+    /// <summary>
+    /// What is done with a file picked in a folder.
+    /// </summary>
+    public WorkFolderIntent Intent { get; private set; } = WorkFolderIntent.Auto;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(AddCommand))]
@@ -98,15 +90,38 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel,
     [NotifyCanExecuteChangedFor(nameof(RenameCommand))]
     public partial bool IsBusy { get; set; }
 
+    public void Initialize(WorkFolderIntent intent)
+    {
+        Intent = intent;
+        _pendingIntentHint = intent switch
+        {
+            WorkFolderIntent.Encrypt => MobileTexts.WorkFolderIntentEncrypt,
+            WorkFolderIntent.Decrypt => MobileTexts.WorkFolderIntentDecrypt,
+            WorkFolderIntent.Delete => MobileTexts.WorkFolderIntentDelete,
+            _ => string.Empty,
+        };
+    }
+
     [RelayCommand]
-    private async Task Load()
+    private async Task LoadAsync()
     {
         try
         {
+            WorkFolder[] folders = WithListDisplayNames(
+                [.. await _storage.LoadFoldersAsync()],
+                folder => _fileAccess.GetPathSegments(folder.Id, folder.DisplayName));
+
             Folders.Clear();
-            foreach (WorkFolder folder in await _workFolderService.GetFoldersAsync())
+            foreach (WorkFolder folder in folders)
             {
                 Folders.Add(CreateEntry(folder));
+            }
+
+            if (_pendingIntentHint.Length > 0)
+            {
+                string hint = _pendingIntentHint;
+                _pendingIntentHint = string.Empty;
+                await UserInterfaceService.DisplayTransientMessageAsync(hint);
             }
         }
         catch (Exception ex)
@@ -116,30 +131,26 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel,
     }
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private async Task Add()
+    private async Task AddAsync()
     {
         try
         {
             IsBusy = true;
             StatusText = string.Empty;
-            WorkFolder? folder = await _workflow.AddFolderAsync();
+            WorkFolder? folder = await _folderAccess.AddFolderAsync();
             if (folder is null)
             {
                 return;
             }
 
-            await Load();
+            await LoadAsync();
 
-            // Adding a folder only grants access to it, except when the purpose is to pick a recent file.
-            if (PickAction == WorkFolderPickAction.AddToRecentFiles)
+            // Opened for an operation, the folder is added to pick the file in, so the file is picked right away.
+            if (Intent != WorkFolderIntent.Auto)
             {
-                await PickAndUseFileAsync(folder);
+                await PickAndRunAsync(folder);
             }
         }
-        catch (OperationCanceledException)
-        {
-            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextOperationNotCompleted);
-        }
         catch (Exception ex)
         {
             StatusText = ex.FormatException();
@@ -151,13 +162,25 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel,
     }
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private async Task Open(WorkFolder folder)
+    private async Task OpenAsync(WorkFolder folder)
     {
         try
         {
             IsBusy = true;
             StatusText = string.Empty;
-            await PickAndUseFileAsync(folder);
+            await PickAndRunAsync(folder);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private async Task PickAndRunAsync(WorkFolder folder)
+    {
+        try
+        {
+            await _fileOperations.PickAndRunAsync(Intent, folder);
         }
         catch (OperationCanceledException)
         {
@@ -169,20 +192,24 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel,
         }
         finally
         {
-            IsBusy = false;
+            // Picking may have added a folder or moved one to the top, even if the operation did not complete.
+            await LoadAsync();
         }
     }
 
+    /// <summary>
+    /// Removes the folder from My folders. Its grant is released when the app starts or the user signs out next time,
+    /// unless it has been added again by then.
+    /// </summary>
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private async Task Remove(WorkFolder folder)
+    private async Task RemoveAsync(WorkFolder folder)
     {
         try
         {
             IsBusy = true;
             StatusText = string.Empty;
-            await _workFolderService.RemoveFolderAsync(folder);
+            await _storage.RemoveFolderAsync(folder);
             Folders.Remove(Folders.Single(entry => entry.Folder == folder));
-            await _workFolderService.SaveFoldersAsync([.. Folders.Select(entry => entry.Folder)]);
         }
         catch (Exception ex)
         {
@@ -195,7 +222,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel,
     }
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private async Task Rename(WorkFolder folder)
+    private async Task RenameAsync(WorkFolder folder)
     {
         try
         {
@@ -209,11 +236,11 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel,
                 return;
             }
 
-            await _workFolderService.RenameFolderAsync(folder, displayName.Trim());
+            await _storage.RenameFolderAsync(folder, displayName.Trim());
 
             // Reload rather than replace the one item, so that the names of any folders it used to share a
             // name with are disambiguated again from the new set of names.
-            await Load();
+            await LoadAsync();
         }
         catch (Exception ex)
         {
@@ -225,125 +252,63 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel,
         }
     }
 
-    private async Task PickAndUseFileAsync(WorkFolder initialFolder)
-    {
-        FilePickerKind pickerKind = PickAction == WorkFolderPickAction.Decrypt ? FilePickerKind.Encrypted : FilePickerKind.Any;
-        WorkFolderFile? file = await _workflow.PickFileAsync(pickerKind, initialFolder);
-        await Load();
-        if (file is null)
-        {
-            return;
-        }
-
-        if (PickAction == WorkFolderPickAction.AddToRecentFiles)
-        {
-            await _recentFilesService.AddAsync(file.Id);
-            await UserInterfaceService.GoBackAsync(file.FileName.IsEncrypted() ? SelectedFileState.Encrypted : SelectedFileState.Decrypted);
-
-            return;
-        }
-
-        if (PickAction == WorkFolderPickAction.Encrypt)
-        {
-            await _workflow.TransformAsync(file, WorkFolderOperation.Encrypt);
-            return;
-        }
-
-        bool isEncrypted = await _coreServices.IsEncryptedAsync(() => _fileOperations.OpenReadAsync(file));
-        if (PickAction == WorkFolderPickAction.Decrypt && !isEncrypted)
-        {
-            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextNotEncrypted);
-            return;
-        }
-
-        await _workflow.TransformAsync(file, isEncrypted ? WorkFolderOperation.Decrypt : WorkFolderOperation.Encrypt);
-    }
-
-    private static string BuildBreadcrumb(string origin) =>
-        string.Join(MobileTexts.BreadcrumbSeparator, MobileTexts.BreadcrumbHome, origin, MobileTexts.BreadcrumbMyFolders);
-
     private bool CanUseCommand() => !IsBusy;
 
-    private void RefreshListDisplayNames()
+    /// <summary>
+    /// Gives folders that share a display name as much of their path as it takes to tell them apart in the list. The
+    /// other folders are returned as they are, all in the same order.
+    /// </summary>
+    private static WorkFolder[] WithListDisplayNames(
+        IReadOnlyList<WorkFolder> folders,
+        Func<WorkFolder, IReadOnlyList<string>> getPathSegments)
     {
-        if (_refreshingListDisplayNames)
-        {
-            return;
-        }
+        WorkFolder[] result = [.. folders];
+        IEnumerable<int[]> duplicateGroups = Enumerable.Range(0, result.Length)
+            .GroupBy(index => result[index].DisplayName, StringComparer.OrdinalIgnoreCase)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.ToArray());
 
-        _refreshingListDisplayNames = true;
-        try
+        foreach (int[] duplicateIndexes in duplicateGroups)
         {
-            WorkFolder[] folders = [.. Folders.Select(entry => entry.Folder)];
-            string[] duplicateDisplayNames =
+            string[][] reversedPathSegments =
             [
-                .. folders
-                    .GroupBy(folder => folder.DisplayName, StringComparer.OrdinalIgnoreCase)
-                    .Where(group => group.Count() > 1)
-                    .Select(group => group.Key),
+                .. duplicateIndexes.Select(index => getPathSegments(result[index]).Reverse().ToArray()),
             ];
 
-            foreach (string duplicateDisplayName in duplicateDisplayNames)
+            int pathDepth = 1;
+            string[] proposedDisplayNames;
+            while (true)
             {
-                int[] duplicateIndexes =
+                int depth = pathDepth;
+                proposedDisplayNames =
                 [
-                    .. folders
-                        .Select((folder, index) => (Folder: folder, Index: index))
-                        .Where(item => string.Equals(
-                            item.Folder.DisplayName,
-                            duplicateDisplayName,
-                            StringComparison.OrdinalIgnoreCase))
-                        .Select(item => item.Index),
+                    .. reversedPathSegments.Select(segments => BuildListDisplayName(segments, depth)),
                 ];
 
-                string[][] reversedPathSegments = new string[duplicateIndexes.Length][];
-                for (int duplicateIndex = 0; duplicateIndex < duplicateIndexes.Length; duplicateIndex++)
+                bool displayNamesAreUnique = proposedDisplayNames
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .Count() == proposedDisplayNames.Length;
+
+                if (displayNamesAreUnique ||
+                    reversedPathSegments.All(segments => pathDepth >= segments.Length))
                 {
-                    reversedPathSegments[duplicateIndex] =
-                    [
-                        .. _workFolderService
-                            .GetPathSegments(folders[duplicateIndexes[duplicateIndex]])
-                            .Reverse(),
-                    ];
+                    break;
                 }
 
-                int pathDepth = 1;
-                string[] proposedDisplayNames;
-                while (true)
+                pathDepth++;
+            }
+
+            for (int duplicateIndex = 0; duplicateIndex < duplicateIndexes.Length; duplicateIndex++)
+            {
+                int folderIndex = duplicateIndexes[duplicateIndex];
+                result[folderIndex] = result[folderIndex] with
                 {
-                    int depth = pathDepth;
-                    proposedDisplayNames =
-                    [
-                        .. reversedPathSegments.Select(segments => BuildListDisplayName(segments, depth)),
-                    ];
-
-                    bool displayNamesAreUnique = proposedDisplayNames
-                        .Distinct(StringComparer.OrdinalIgnoreCase)
-                        .Count() == proposedDisplayNames.Length;
-
-                    if (displayNamesAreUnique ||
-                        reversedPathSegments.All(segments => pathDepth >= segments.Length))
-                    {
-                        break;
-                    }
-
-                    pathDepth++;
-                }
-
-                for (int duplicateIndex = 0; duplicateIndex < duplicateIndexes.Length; duplicateIndex++)
-                {
-                    int folderIndex = duplicateIndexes[duplicateIndex];
-                    Folders[folderIndex] = CreateEntry(folders[folderIndex] with
-                    {
-                        ListDisplayName = proposedDisplayNames[duplicateIndex],
-                    });
-                }
+                    ListDisplayName = proposedDisplayNames[duplicateIndex],
+                };
             }
         }
-        finally
-        {
-            _refreshingListDisplayNames = false;
-        }
+
+        return result;
     }
 
     private static string BuildListDisplayName(string[] reversedPathSegments, int pathDepth) =>
@@ -351,13 +316,4 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel,
 
     private WorkFolderEntry CreateEntry(WorkFolder folder) =>
         new(folder, RenameCommand, OpenCommand, RemoveCommand);
-
-    private sealed class WorkFolderCollection(Action changed) : ObservableCollection<WorkFolderEntry>
-    {
-        protected override void OnCollectionChanged(NotifyCollectionChangedEventArgs e)
-        {
-            base.OnCollectionChanged(e);
-            changed();
-        }
-    }
 }

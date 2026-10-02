@@ -56,6 +56,8 @@ public sealed class WindowsFileStateSelectorHandler() : ViewHandler<FileStateSel
     private readonly ToggleButton _encrypted = new() { Content = MobileTexts.FileStateEncrypted };
     private readonly ToggleButton _decrypted = new() { Content = MobileTexts.FileStateDecrypted };
     private readonly ToggleButton _all = new() { Content = MobileTexts.FileStateAll };
+    private readonly ToggleButton _viewed = new() { Content = MobileTexts.FileStateViewed };
+    private readonly ToggleButton _other = new() { Content = MobileTexts.FileStateOther };
 
     protected override StackPanel CreatePlatformView()
     {
@@ -63,6 +65,8 @@ public sealed class WindowsFileStateSelectorHandler() : ViewHandler<FileStateSel
         panel.Children.Add(_all);
         panel.Children.Add(_decrypted);
         panel.Children.Add(_encrypted);
+        panel.Children.Add(_viewed);
+        panel.Children.Add(_other);
         return panel;
     }
 
@@ -72,6 +76,8 @@ public sealed class WindowsFileStateSelectorHandler() : ViewHandler<FileStateSel
         _encrypted.Click += OnEncryptedClick;
         _decrypted.Click += OnDecryptedClick;
         _all.Click += OnAllClick;
+        _viewed.Click += OnViewedClick;
+        _other.Click += OnOtherClick;
     }
 
     protected override void DisconnectHandler(StackPanel platformView)
@@ -79,6 +85,8 @@ public sealed class WindowsFileStateSelectorHandler() : ViewHandler<FileStateSel
         _encrypted.Click -= OnEncryptedClick;
         _decrypted.Click -= OnDecryptedClick;
         _all.Click -= OnAllClick;
+        _viewed.Click -= OnViewedClick;
+        _other.Click -= OnOtherClick;
         base.DisconnectHandler(platformView);
     }
 
@@ -90,6 +98,10 @@ public sealed class WindowsFileStateSelectorHandler() : ViewHandler<FileStateSel
     private void OnDecryptedClick(object sender, RoutedEventArgs e) => Select(SelectedFileState.Decrypted);
 
     private void OnAllClick(object sender, RoutedEventArgs e) => Select(SelectedFileState.All);
+
+    private void OnViewedClick(object sender, RoutedEventArgs e) => Select(SelectedFileState.Viewed);
+
+    private void OnOtherClick(object sender, RoutedEventArgs e) => Select(SelectedFileState.Other);
 
     // Clicking the button that is already checked unchecks it without changing the state, so the buttons are
     // always updated from the state after a click.
@@ -104,5 +116,7 @@ public sealed class WindowsFileStateSelectorHandler() : ViewHandler<FileStateSel
         _encrypted.IsChecked = VirtualView.SelectedState == SelectedFileState.Encrypted;
         _decrypted.IsChecked = VirtualView.SelectedState == SelectedFileState.Decrypted;
         _all.IsChecked = VirtualView.SelectedState == SelectedFileState.All;
+        _viewed.IsChecked = VirtualView.SelectedState == SelectedFileState.Viewed;
+        _other.IsChecked = VirtualView.SelectedState == SelectedFileState.Other;
     }
 }

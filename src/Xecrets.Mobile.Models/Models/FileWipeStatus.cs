@@ -33,5 +33,7 @@ namespace Xecrets.Mobile.Models.Models;
 public enum FileWipeStatus
 {
     Succeeded,
+
+    OnlyDelete,
     InsufficientRights,
 }

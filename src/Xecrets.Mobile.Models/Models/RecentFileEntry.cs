@@ -28,12 +28,22 @@
 
 #endregion Copyright and GPL License
 
+using Xecrets.Common.Models;
+
 namespace Xecrets.Mobile.Models.Models;
 
-/// <param name="IsCompleted">The file is the result of an encryption or decryption just made from the list, shown in
-/// place of its source as the indication that the operation succeeded.</param>
+/// <param name="FileName">The name of the file, or empty when it is not known.</param>
+/// <param name="Operation">The operation that put the file on the list.</param>
 public sealed record RecentFileEntry(
     string Id,
     string DisplayPath,
+    string FileName,
     bool IsEncrypted,
-    bool IsCompleted);
+    RecentFileOperation Operation)
+{
+    public bool IsInPlace => Operation == RecentFileOperation.InPlace;
+
+    public bool IsViewed => Operation is RecentFileOperation.View or RecentFileOperation.Edit;
+
+    public bool IsOther => !IsInPlace && !IsViewed;
+}

@@ -31,7 +31,6 @@
 using Xecrets.Core.Abstractions;
 using Xecrets.Core.Models;
 using Xecrets.Common.Models;
-
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Utilities;
@@ -42,94 +41,132 @@ namespace Xecrets.Mobile.Models.Services;
 public sealed class WorkFolderOperationService(
     ICoreServices coreServices,
     IProfileService profileService,
+    EncryptRequestFactory encryptRequestFactory,
     IRecentFilesService recentFilesService,
-    IWorkFolderFileOperations fileOperations,
+    IFileAccess fileAccess,
+    IFileWiper fileWiper,
     IUserInterfaceService userInterfaceService)
     : IWorkFolderOperationService
 {
-    private WorkFolderFile? _pendingFile;
+    private FileReference? _pendingFile;
 
     public bool HasPendingPasswordRequest => _pendingFile is not null;
 
-    public async Task EncryptAsync(WorkFolderFile file)
+    public async Task<FileReference> EncryptAsync(FileReference file)
     {
-        string destinationName = file.FileName.ToEncryptedName(string.Empty);
-        bool overwrite = await ConfirmOverwriteAsync(file, destinationName);
-        EncryptRequest request = CreateEncryptRequest(file.FileName);
+        string destinationName = file.Name.ToEncryptedName(string.Empty);
+        string folderId = await fileAccess.GetFolderOfFileAsync(file.Id);
+        bool overwrite = await ConfirmOverwriteAsync(folderId, destinationName);
+        EncryptRequest request = encryptRequestFactory.ForCurrentProfile(file.Name);
+        string resultId;
+        await using (Stream cleartext = await fileAccess.OpenReadAsync(file.Id))
+        {
+            resultId = await fileAccess.WriteFileInFolderAsync(
+                folderId,
+                destinationName,
+                overwrite,
+                encrypted => coreServices.EncryptAsync(cleartext, encrypted, request));
+        }
 
-        await using Stream cleartext = await fileOperations.OpenReadAsync(file);
-        string resultId = await fileOperations.WriteDestinationAsync(
-            file,
-            destinationName,
-            overwrite,
-            encrypted => coreServices.EncryptAsync(cleartext, encrypted, request));
-        await fileOperations.DeleteAsync(file);
-        await recentFilesService.AddAsync(resultId);
+        FileReference result = new(resultId, destinationName);
+        await CompleteAsync(file, result);
+        return result;
     }
 
-    public async Task<bool> DecryptWithKnownPasswordsAsync(WorkFolderFile file)
+    public async Task<FileReference?> DecryptWithKnownPasswordsAsync(FileReference file)
     {
         _pendingFile = null;
-        if (await TryDecryptAsync(file, profileService.GetIdentity()))
+        if (await TryDecryptAsync(file, profileService.GetIdentity()) is { } result)
         {
-            return true;
+            return result;
         }
 
         foreach (PasswordUsage extraPassword in profileService.GetExtraPasswords())
         {
-            if (!await TryDecryptAsync(file, new Identity(extraPassword.Password, [])))
+            result = await TryDecryptAsync(file, new Identity(extraPassword.Password, []));
+            if (result is null)
             {
                 continue;
             }
 
             await profileService.RecordExtraPasswordUseAsync(extraPassword.Password);
-            return true;
+            return result;
         }
 
         _pendingFile = file;
-        return false;
+        return null;
     }
 
-    public async Task<bool> DecryptWithPasswordAsync(string password)
+    public async Task<FileReference?> DecryptWithPasswordAsync(string password)
     {
-        WorkFolderFile? file = _pendingFile;
-        if (file is null || !await TryDecryptAsync(file, new Identity(password, [])))
+        FileReference? file = _pendingFile;
+        if (file is null || await TryDecryptAsync(file, new Identity(password, [])) is not { } result)
         {
-            return false;
+            return null;
         }
 
         _pendingFile = null;
         await profileService.RecordExtraPasswordUseAsync(password);
-        return true;
+        return result;
     }
 
     public void CancelPasswordRequest() => _pendingFile = null;
 
-    private async Task<bool> TryDecryptAsync(WorkFolderFile file, Identity identity)
+    private async Task<FileReference?> TryDecryptAsync(FileReference file, Identity identity)
     {
-        await using Stream encrypted = await fileOperations.OpenReadAsync(file);
-        using IDecryptionSession session = await coreServices.OpenDecryptionAsync(
-            encrypted,
-            new DecryptRequest([identity], new Progress<Progress>(_ => { })));
-        if (!session.IsDecryptable)
+        FileReference result;
+        await using (Stream encrypted = await fileAccess.OpenReadAsync(file.Id))
         {
-            return false;
+            using IDecryptionSession session = await coreServices.OpenDecryptionAsync(
+                encrypted,
+                new DecryptRequest([identity], new Progress<Progress>(_ => { })));
+            if (!session.IsDecryptable)
+            {
+                return null;
+            }
+
+            string folderId = await fileAccess.GetFolderOfFileAsync(file.Id);
+            bool overwrite = await ConfirmOverwriteAsync(folderId, session.OriginalFileName);
+            string resultId = await fileAccess.WriteFileInFolderAsync(
+                folderId,
+                session.OriginalFileName,
+                overwrite,
+                session.DecryptAsync);
+            result = new FileReference(resultId, session.OriginalFileName);
         }
 
-        bool overwrite = await ConfirmOverwriteAsync(file, session.OriginalFileName);
-        string resultId = await fileOperations.WriteDestinationAsync(
-            file,
-            session.OriginalFileName,
-            overwrite,
-            session.DecryptAsync);
-        await fileOperations.DeleteAsync(file);
-        await recentFilesService.AddAsync(resultId);
-        return true;
+        await CompleteAsync(file, result);
+        return result;
     }
 
-    private async Task<bool> ConfirmOverwriteAsync(WorkFolderFile file, string destinationName)
+    /// <summary>
+    /// Wipes the source, since storage such as Google Drive only moves a deleted file to its trash, and replaces it with
+    /// the result in the recent files, under whatever ids it is listed. The source is removed explicitly, since a file in a trash may still be reported
+    /// as existing. The source must no longer be open, since the wipe renames and rewrites it.
+    /// <para>
+    /// The rights to wipe the source are checked before the operation, so a failure to wipe it is unexpected. The
+    /// operation itself has succeeded by then, so the recent files are updated anyway.
+    /// </para>
+    /// </summary>
+    private async Task CompleteAsync(FileReference source, FileReference result)
     {
-        if (!await fileOperations.DestinationExistsAsync(file, destinationName))
+        try
+        {
+            if (await fileWiper.WipeAsync(await fileAccess.OpenWritableAsync(source.Id)) == FileWipeStatus.InsufficientRights)
+            {
+                throw new IOException("The source file could not be deleted.");
+            }
+        }
+        finally
+        {
+            await recentFilesService.RemoveFileAsync(source.Id);
+            await recentFilesService.AddAsync(result, RecentFileOperation.InPlace);
+        }
+    }
+
+    private async Task<bool> ConfirmOverwriteAsync(string folderId, string destinationName)
+    {
+        if (!await fileAccess.FileExistsInFolderAsync(folderId, destinationName))
         {
             return false;
         }
@@ -142,21 +179,5 @@ public sealed class WorkFolderOperationService(
         }
 
         return true;
-    }
-
-    private EncryptRequest CreateEncryptRequest(string originalFileName)
-    {
-        DateTime utcNow = DateTime.UtcNow;
-        Identity identity = profileService.GetIdentity();
-        return new EncryptRequest(
-            identity.Passphrase,
-            [profileService.GetPublicKey()],
-            [],
-            originalFileName,
-            utcNow,
-            utcNow,
-            utcNow,
-            true,
-            new Progress<Progress>(_ => { }));
     }
 }

@@ -50,6 +50,23 @@
                              FontFamily="{x:Static f:FluentUI.FontFamily}"
                              Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
                              Size="28" />
+            <FontImageSource x:Key="IconViewFile"
+                             Glyph="{x:Static f:FluentUI.eye_28_regular}"
+                             FontFamily="{x:Static f:FluentUI.FontFamily}"
+                             Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                             Size="28" />
+            <FontImageSource x:Key="IconOpenFile"
+                             Glyph="{x:Static f:FluentUI.open_28_regular}"
+                             FontFamily="{x:Static f:FluentUI.FontFamily}"
+                             Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                             Size="28" />
+            <FontImageSource x:Key="IconShareFile"
+                             Glyph="{OnPlatform Default={x:Static f:FluentUI.share_28_regular},
+                                                iOS={x:Static f:FluentUI.share_ios_28_regular},
+                                                MacCatalyst={x:Static f:FluentUI.share_ios_28_regular}}"
+                             FontFamily="{x:Static f:FluentUI.FontFamily}"
+                             Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                             Size="28" />
             <FontImageSource x:Key="IconRemoveFile"
                              Glyph="{x:Static f:FluentUI.delete_28_regular}"
                              FontFamily="{x:Static f:FluentUI.FontFamily}"
@@ -115,10 +132,6 @@
                                                 </DataTrigger>
                                             </ImageButton.Triggers>
                                         </ImageButton>
-                                        <pageControls:FileStateSelector Margin="48,0"
-                                                                        SelectedState="{Binding SelectedState}"
-                                                                        HorizontalOptions="Center"
-                                                                        VerticalOptions="Center" />
                                         <ImageButton HorizontalOptions="End"
                                                      VerticalOptions="Center"
                                                      Background="Transparent"
@@ -126,6 +139,11 @@
                                                      Source="{StaticResource IconReload}"
                                                      Command="{Binding ReloadCommand}" />
                                     </Grid>
+                                    <ScrollView Orientation="Horizontal"
+                                                HorizontalOptions="Center">
+                                        <pageControls:FileStateSelector SelectedState="{Binding SelectedState}"
+                                                                        VerticalOptions="Center" />
+                                    </ScrollView>
                                     <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}"
                                                          BindableLayout.ItemsSource="{Binding Files}">
                                         <VerticalStackLayout.Behaviors>
@@ -135,14 +153,6 @@
                                             <DataTemplate x:DataType="mobileModels:RecentFileEntry">
                                                 <Grid ColumnDefinitions="Auto,*,Auto"
                                                       ColumnSpacing="{StaticResource IconRowSpacing}">
-                                                    <Grid.Triggers>
-                                                        <DataTrigger TargetType="Grid"
-                                                                     Binding="{Binding IsCompleted}"
-                                                                     Value="True">
-                                                            <Setter Property="Opacity"
-                                                                    Value="0.5" />
-                                                        </DataTrigger>
-                                                    </Grid.Triggers>
                                                     <ImageButton Grid.Column="0"
                                                                  Background="Transparent"
                                                                  Padding="8"
@@ -159,10 +169,41 @@
                                                                         Value="{StaticResource IconDecryptFile}" />
                                                             </DataTrigger>
                                                             <DataTrigger TargetType="ImageButton"
-                                                                         Binding="{Binding IsCompleted}"
-                                                                         Value="True">
-                                                                <Setter Property="IsEnabled"
+                                                                         Binding="{Binding IsInPlace}"
+                                                                         Value="False">
+                                                                <Setter Property="Opacity"
+                                                                        Value="0" />
+                                                                <Setter Property="InputTransparent"
+                                                                        Value="True" />
+                                                                <Setter Property="AutomationProperties.IsInAccessibleTree"
                                                                         Value="False" />
+                                                            </DataTrigger>
+                                                        </ImageButton.Triggers>
+                                                    </ImageButton>
+                                                    <ImageButton Grid.Column="0"
+                                                                 Background="Transparent"
+                                                                 Padding="8"
+                                                                 Source="{StaticResource IconViewFile}"
+                                                                 IsVisible="{Binding IsViewed}"
+                                                                 Command="{Binding OpenCommand,
+                                                                       Source={x:Reference PageRoot},
+                                                                       x:DataType=pages:RecentFilesPage}"
+                                                                 CommandParameter="{Binding .}" />
+                                                    <ImageButton Grid.Column="0"
+                                                                 Background="Transparent"
+                                                                 Padding="8"
+                                                                 Source="{StaticResource IconOpenFile}"
+                                                                 IsVisible="{Binding IsOther}"
+                                                                 Command="{Binding OpenCommand,
+                                                                       Source={x:Reference PageRoot},
+                                                                       x:DataType=pages:RecentFilesPage}"
+                                                                 CommandParameter="{Binding .}">
+                                                        <ImageButton.Triggers>
+                                                            <DataTrigger TargetType="ImageButton"
+                                                                         Binding="{Binding IsEncrypted}"
+                                                                         Value="True">
+                                                                <Setter Property="Source"
+                                                                        Value="{StaticResource IconShareFile}" />
                                                             </DataTrigger>
                                                         </ImageButton.Triggers>
                                                     </ImageButton>
@@ -177,14 +218,6 @@
                                                                                         x:DataType=pages:RecentFilesPage}"
                                                                                   CommandParameter="{Binding .}" />
                                                         </Border.GestureRecognizers>
-                                                        <Border.Triggers>
-                                                            <DataTrigger TargetType="Border"
-                                                                         Binding="{Binding IsCompleted}"
-                                                                         Value="True">
-                                                                <Setter Property="IsEnabled"
-                                                                        Value="False" />
-                                                            </DataTrigger>
-                                                        </Border.Triggers>
                                                         <!-- WinUI can only trim the end, so on Windows the path is shortened to
                                                              about what fits the width of the label instead. -->
                                                         <Label x:Name="PathLabel"
@@ -213,14 +246,6 @@
                                                                        Source={x:Reference PageRoot},
                                                                        x:DataType=pages:RecentFilesPage}"
                                                                  CommandParameter="{Binding .}">
-                                                        <ImageButton.Triggers>
-                                                            <DataTrigger TargetType="ImageButton"
-                                                                         Binding="{Binding IsCompleted}"
-                                                                         Value="True">
-                                                                <Setter Property="IsEnabled"
-                                                                        Value="False" />
-                                                            </DataTrigger>
-                                                        </ImageButton.Triggers>
                                                     </ImageButton>
                                                 </Grid>
                                             </DataTemplate>

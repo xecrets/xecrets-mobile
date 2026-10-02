@@ -37,6 +37,7 @@ public sealed class SessionExitService(
     IPreviewService previewService,
     DecryptionPasswordRequestState passwordRequestState,
     ITransientFileService transientFileService,
+    GrantCleanupService grantCleanupService,
     IProfileService profileService,
     IUserInterfaceService userInterfaceService)
 {
@@ -45,6 +46,7 @@ public sealed class SessionExitService(
         previewService.Current.Clear();
         passwordRequestState.Clear();
         await transientFileService.MaybeWipeTrackedFilesAsync();
+        await grantCleanupService.RunAsync();
         profileService.SignOut();
 
         AppDestination destination = await profileService.HasProfileAsync()

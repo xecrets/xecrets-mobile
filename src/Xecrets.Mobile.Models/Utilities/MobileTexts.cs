@@ -90,7 +90,7 @@ public static class MobileTexts
 
     public static string WorkFolderDescription => "Xecrets Ez needs access to a folder before it can encrypt or decrypt files in it. Click a folder to select a file.";
 
-    public static string DialogTextAddUnknownWorkFolder => "Do you want to add and allow access for this folder?";
+    public static string DialogTextAllowFolderAccessFormat => "To change \"{0}\", Xecrets Ez needs access to the folder it is in. Do you want to choose that folder and add it to \"My folders\"?";
 
     public static string DialogTextFolderNoAccess => "The selected folder could not be accessed. Please select another folder.";
 
@@ -110,19 +110,27 @@ public static class MobileTexts
 
     public static string DialogTextFileSaved => "The file was saved.";
 
-    public static string DialogTextFileDeleted => "The file was deleted.";
+    public static string DialogTextFileOverwritten => "The file was overwritten and deleted.";
 
-    public static string DialogTextRecentFileNotFound => "The file no longer exists.";
+    public static string DialogTextFileDeleted => "The file was only deleted, and may still be recoverable.";
+
+    public static string DialogTextRecentFileNotAccessible => "The file was not found, or is not available right now. Do you want to remove it from the list?";
 
     public static string DialogTextNoAppToOpenFile => "There is no app on this device that can open this file.";
 
-    public static string DialogTextRecentFileNoAccess => "Access to the folder of this file has been lost. Add the folder again in \"My folders\".";
+    public static string RecentFileNameUnknown => "Unknown file";
 
     public static string DialogTextCopiedToClipboard => "Copied to the clipboard.";
 
     public static string DialogTextExceptionFormat => "An unexpected error \"{0}\" occurred.";
 
     public static string DialogTextFolderName => "Enter a label for this folder";
+
+    public static string WorkFolderIntentEncrypt => "Choose the folder of the file to encrypt.";
+
+    public static string WorkFolderIntentDecrypt => "Choose the folder of the file to decrypt.";
+
+    public static string WorkFolderIntentDelete => "Choose the folder of the file to securely delete.";
 
     public static string DialogTextResult => "The file is only saved locally in the app. Choose an action for what to do with it next.";
 
@@ -133,6 +141,11 @@ public static class MobileTexts
     public static string FileStateDecrypted => "Decrypted";
 
     public static string FileStateEncrypted => "Encrypted";
+
+    public static string FileStateViewed => "Viewed";
+
+    // An ellipsis rather than a word, to save space in the segmented control.
+    public static string FileStateOther => "…";
 
     public static string EncryptToShareDescription => "Enter a separate password for the encrypted copy. Share the password through a different channel.";
 
@@ -156,7 +169,7 @@ public static class MobileTexts
 
     public static string RecentFilesContentTitle => "Recent files";
 
-    public static string RecentFilesDescription => "Files recently encrypted or decrypted in \"my folders\", most recent first. Choose to show decrypted or encrypted files, and use the lock button to encrypt or decrypt a file. Tap a decrypted file to open it in another app, or an encrypted file to share or send it. Use the add button to add a file from \"my folders\".";
+    public static string RecentFilesDescription => "Files recently used, most recent first. Choose to show files decrypted or encrypted where they are, files viewed or edited, or other files, such as those copied. Use the lock button to encrypt or decrypt a file where it is. Select a decrypted file to open it in another app, an encrypted file to share or send it, or a viewed or edited file to see it again. The button next to each file does the same for files not encrypted or decrypted where they are. Use the add button to add a file from \"My folders\".";
 
     public static string SuggestPasswordDescription => "Suggested passwords that are strong, and easy to type and remember. Use » for a new suggestion, and the copy button to copy it to the clipboard.";
 
@@ -180,7 +193,7 @@ public static class MobileTexts
         """
         Welcome to Xecrets Ez
 
-        Encrypt and decrypt your files on Windows, Linux, macOS, Android and iOS. On your phone you can:
+        Encrypt and decrypt your files on Windows, Linux, macOS, Android and iOS.
 
         (c) Create an entirely local profile.
         (e) Encrypt and decrypt files in place.
@@ -188,10 +201,12 @@ public static class MobileTexts
         (v) Decrypt and share, view or edit files.
         (s) Encrypt and send or share files.
         (p) Suggest strong pronounceable passwords.
-        (w) Securely overwrite and delete files.
+        (w) Overwrite and delete files when supported.
         (o) Always work offline.
 
-        ...and more! Get the desktop app to work with encrypted files there too.
+        ...and more! Get the desktop app too.
+
+        Note: Check the trash or recovery options when deleting files!
         """;
 
     #endregion Untranslated texts
@@ -264,11 +279,7 @@ public static class MobileTexts
     // "Encrypt copy to share"
     public static string DialogTitleEncryptCopyFor => AppTexts.DialogTitleEncryptCopyFor;
 
-    public static string DialogTitleSelectFilesToEncrypt => AppTexts.DialogTitleSelectFilesToEncrypt;
-
     public static string DialogTitleSelectFilesToWipe => AppTexts.DialogTitleSelectFilesToWipe;
-
-    public static string DialogTitleSelectFileToOpen => AppTexts.DialogTitleSelectFileToOpen;
 
     public static string DialogValidationAlreadySignedIn => AppTexts.DialogValidationAlreadySignedIn;
 

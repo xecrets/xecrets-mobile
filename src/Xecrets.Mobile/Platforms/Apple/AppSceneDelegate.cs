@@ -47,7 +47,7 @@ public class AppSceneDelegate : MauiUISceneDelegate
     }
 
     [Export("scene:openURLContexts:")]
-    public void OpenUrlContexts(UIScene scene, NSSet<UIOpenUrlContext> urlContexts)
+    public void OpenUrlContexts(UIScene _, NSSet<UIOpenUrlContext> urlContexts)
     {
         HandleUrlContexts(urlContexts);
     }

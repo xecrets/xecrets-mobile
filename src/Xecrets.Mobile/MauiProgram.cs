@@ -100,13 +100,17 @@ public static class MauiProgram
         builder.Services.AddSingleton<IFlowContext, FlowContext>();
         builder.Services.AddSingleton<IProfileService, ProfileService>();
         builder.Services.AddSingleton<IDecryptedFileViewer, DecryptedFileViewer>();
+        builder.Services.AddSingleton<EncryptRequestFactory>();
         builder.Services.AddSingleton<IEncryptionPreparationService, EncryptionPreparationService>();
         builder.Services.AddSingleton<IPreviewService, PreviewService>();
         builder.Services.AddSingleton<IIncomingFileService, IncomingFileService>();
         builder.Services.AddSingleton<SessionExitService>();
         builder.Services.AddSingleton<ICrashTestService, CrashTestService>();
         builder.Services.AddSingleton<IWorkFolderOperationService, WorkFolderOperationService>();
-        builder.Services.AddSingleton<WorkFolderWorkflow>();
+        builder.Services.AddSingleton<IEditSaveService, EditSaveService>();
+        builder.Services.AddSingleton<FolderAccessWorkflow>();
+        builder.Services.AddSingleton<FileOperationWorkflow>();
+        builder.Services.AddSingleton<GrantCleanupService>();
         builder.Services.AddSingleton<IRecentFilesService, RecentFilesService>();
         builder.Services.AddSingleton<WorkFolderStorage>();
         builder.Services.AddSingleton(CrashLog);

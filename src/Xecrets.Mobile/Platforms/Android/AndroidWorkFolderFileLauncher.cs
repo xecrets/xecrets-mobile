@@ -45,19 +45,21 @@ using Platform = Microsoft.Maui.ApplicationModel.Platform;
 namespace Xecrets.Mobile.Platforms.Android;
 
 /// <summary>
-/// Hands the document itself to other apps, rather than a copy, through the access granted to its known folder.
+/// Hands the document itself to other apps, rather than a copy, through the access granted to its folder or to the
+/// document by itself.
 /// </summary>
 [SupportedOSPlatform("android26.0")]
 public class AndroidWorkFolderFileLauncher : IWorkFolderFileLauncher
 {
     /// <summary>
     /// As a file manager does, views content the system Quick Viewer handles in it, and opens anything else in the
-    /// app of the user's choice. That app is also allowed to write, so that an edited file is saved in place.
+    /// app of the user's choice. That app is also allowed to write when the file is reached through one of My folders,
+    /// so that an edited file is saved in place.
     /// </summary>
-    public Task<bool> OpenAsync(WorkFolderFile file)
+    public Task<bool> OpenAsync(FileReference file, bool allowWrite)
     {
         AndroidUri uri = AndroidUri.Parse(file.Id)!;
-        string contentType = GetContentType(uri, file.FileName);
+        string contentType = GetContentType(uri, file.Name);
 
         if (contentType.IsQuickViewContentType())
         {
@@ -73,19 +75,20 @@ public class AndroidWorkFolderFileLauncher : IWorkFolderFileLauncher
 
         using Intent viewIntent = new(Intent.ActionView);
         viewIntent.SetDataAndType(uri, contentType);
-        viewIntent.AddFlags(ActivityFlags.GrantReadUriPermission | ActivityFlags.GrantWriteUriPermission);
+        viewIntent.AddFlags(ActivityFlags.GrantReadUriPermission |
+                            (allowWrite ? ActivityFlags.GrantWriteUriPermission : 0));
 
-        return Task.FromResult(viewIntent.TryStartPreferredOrChooser(file.FileName));
+        return Task.FromResult(viewIntent.TryStartPreferredOrChooser(file.Name));
     }
 
-    public Task ShareAsync(WorkFolderFile file)
+    public Task ShareAsync(FileReference file)
     {
         using Intent sendIntent = new(Intent.ActionSend);
         sendIntent.SetType(EncryptedFileType.ContentType);
         sendIntent.PutExtra(Intent.ExtraStream, AndroidUri.Parse(file.Id));
         sendIntent.AddFlags(ActivityFlags.GrantReadUriPermission);
 
-        sendIntent.TryStartExternalChooser(file.FileName);
+        sendIntent.TryStartExternalChooser(file.Name);
         return Task.CompletedTask;
     }
 

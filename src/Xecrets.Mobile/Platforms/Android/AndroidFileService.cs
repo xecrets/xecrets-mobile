@@ -36,10 +36,8 @@ using Android.Content;
 
 using AndroidX.Core.Content;
 
-using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
-using Xecrets.Mobile.Models.Utilities;
 using Xecrets.Mobile.Services;
 
 using AndroidFile = Java.IO.File;
@@ -50,30 +48,9 @@ using Platform = Microsoft.Maui.ApplicationModel.Platform;
 namespace Xecrets.Mobile.Platforms.Android;
 
 [SupportedOSPlatform("android26.0")]
-public class AndroidFileService(IPickedWritableFileFactory pickedWritableFileFactory) : FileServiceBase
+public class AndroidFileService : FileServiceBase
 {
     public override string PlatformId => "android";
-
-    public override async Task<IPickedWritableFile?> PickWritableFileAsync(string pickerTitle, FilePickerKind pickerKind)
-    {
-        Intent intent = new(Intent.ActionOpenDocument);
-        intent.AddCategory(Intent.CategoryOpenable);
-        intent.SetType("*/*");
-        if (pickerKind == FilePickerKind.Encrypted)
-        {
-            intent.PutExtra(Intent.ExtraMimeTypes, [EncryptedFileType.ContentType, "application/octet-stream"]);
-        }
-        intent.AddFlags(ActivityFlags.GrantReadUriPermission | ActivityFlags.GrantWriteUriPermission);
-
-        Intent? result = await ((MainActivity)Platform.CurrentActivity!).StartDocumentPickerAsync(intent);
-        AndroidUri? selectedUri = result?.Data;
-        if (selectedUri is null)
-        {
-            return null;
-        }
-
-        return pickedWritableFileFactory.Create(selectedUri);
-    }
 
     // View is only ever the on-device Quick Viewer - handing a file to a real installed app is what
     // OpenInAsync/the "Open In..." button already does, so View must not overlap with it.

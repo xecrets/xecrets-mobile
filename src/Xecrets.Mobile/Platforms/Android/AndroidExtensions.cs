@@ -77,9 +77,14 @@ internal static class AndroidExtensions
     {
         /// <summary>
         /// Writes a document with the given name in the folder through a temporary document, and returns the uri of the
-        /// written document.
+        /// written document. A document overwritten is kept aside until the new one is in place, and then removed by
+        /// the given function, since it holds the previous contents.
         /// </summary>
-        public async Task<string> WriteDocumentAsync(string name, bool overwrite, Func<Stream, Task> writer)
+        public async Task<string> WriteDocumentAsync(
+            string name,
+            bool overwrite,
+            Func<Stream, Task> writer,
+            Func<AndroidUri, Task> removeReplaced)
         {
             string temporaryName = $".xecrets-{Guid.NewGuid():N}.tmp";
             AndroidUri temporaryUri = DocumentsContract.CreateDocument(
@@ -119,9 +124,9 @@ internal static class AndroidExtensions
                     throw;
                 }
 
-                if (backupUri is not null && !DocumentsContract.DeleteDocument(ContentResolver, backupUri))
+                if (backupUri is not null)
                 {
-                    throw new IOException("The replaced destination file could not be removed.");
+                    await removeReplaced(backupUri);
                 }
 
                 return renamedUri.ToString()!;
@@ -138,14 +143,6 @@ internal static class AndroidExtensions
         }
 
         public Stream OpenInputStream() => ContentResolver.OpenInputStream(uri)!;
-
-        public void DeleteDocument()
-        {
-            if (!DocumentsContract.DeleteDocument(ContentResolver, uri))
-            {
-                throw new IOException("The source file could not be deleted.");
-            }
-        }
 
         public AndroidUri RenameDocument(string name) =>
             DocumentsContract.RenameDocument(ContentResolver, uri, name) ??

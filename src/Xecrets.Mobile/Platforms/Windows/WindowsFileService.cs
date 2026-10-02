@@ -33,12 +33,8 @@ using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
 using Windows.Storage;
-using Windows.Storage.Pickers;
 using Windows.System;
 
-using WinRT.Interop;
-
-using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 
 using Xecrets.Mobile.Services;
@@ -46,23 +42,9 @@ using Xecrets.Mobile.Services;
 namespace Xecrets.Mobile.Platforms.Windows;
 
 [SupportedOSPlatform("windows10.0.19041")]
-public class WindowsFileService(IPickedWritableFileFactory pickedWritableFileFactory) : FileServiceBase
+public class WindowsFileService : FileServiceBase
 {
     public override string PlatformId => "windows";
-
-    public override async Task<IPickedWritableFile?> PickWritableFileAsync(string pickerTitle, FilePickerKind pickerKind)
-    {
-        FileOpenPicker picker = new();
-        picker.FileTypeFilter.Add(pickerKind == FilePickerKind.Encrypted ? Texts.Extensions.EncryptedExtension : "*");
-        InitializeWithWindow.Initialize(picker, GetWindowHandle());
-        StorageFile? selectedFile = await picker.PickSingleFileAsync();
-        if (selectedFile is null)
-        {
-            return null;
-        }
-
-        return pickedWritableFileFactory.Create(selectedFile);
-    }
 
     public override async Task<bool> CanViewFileAsync(DecryptedFileInfo file)
     {
@@ -75,12 +57,5 @@ public class WindowsFileService(IPickedWritableFileFactory pickedWritableFileFac
         LaunchQuerySupportStatus status = await Launcher.QueryFileSupportAsync(storageFile);
 
         return status == LaunchQuerySupportStatus.Available;
-    }
-
-    private static IntPtr GetWindowHandle()
-    {
-        Microsoft.UI.Xaml.Window window = (Microsoft.UI.Xaml.Window)
-            Microsoft.Maui.Controls.Application.Current!.Windows[0].Handler!.PlatformView!;
-        return WindowNative.GetWindowHandle(window);
     }
 }

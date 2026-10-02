@@ -31,8 +31,9 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
+using Xecrets.Common.Models;
+
 using Xecrets.Mobile.Models.Abstractions;
-using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
 using Xecrets.Mobile.Models.Utilities;
 
@@ -40,6 +41,8 @@ namespace Xecrets.Mobile.Models.PageModels;
 
 public partial class EncryptResultPageModel(
     IFileService fileService,
+    FileOperationWorkflow fileOperationWorkflow,
+    IRecentFilesService recentFilesService,
     IFlowContext flowContext,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
@@ -88,13 +91,13 @@ public partial class EncryptResultPageModel(
             IsBusy = true;
             StatusText = string.Empty;
             EncryptionPreparationResult encryptionResult = Result;
-            SaveFileResult saveResult = await fileService.SaveAsAsync(
-                encryptionResult.FilePath,
-                encryptionResult.DisplayName,
-                encryptionResult.OriginalSourcePath);
-            if (!saveResult.IsCancelled)
+            await using FileStream content = File.OpenRead(encryptionResult.FilePath);
+            if (await fileOperationWorkflow.SaveAsAsync(encryptionResult.DisplayName, content) is not null)
             {
-                await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextFileSaved);
+                await recentFilesService.AddFlowSourceAsync(
+                    encryptionResult.IsForPassword
+                        ? RecentFileOperation.EncryptWithSaveAs
+                        : RecentFileOperation.EncryptCopySaveAs);
             }
         }
         catch (OperationCanceledException)
@@ -123,6 +126,9 @@ public partial class EncryptResultPageModel(
                 result.FilePath,
                 result.DisplayName,
                 result.ContentType);
+            await recentFilesService.AddFlowSourceAsync(result.IsForPassword
+                ? RecentFileOperation.EncryptWithSendTo
+                : RecentFileOperation.EncryptCopySendTo);
         }
         catch (OperationCanceledException)
         {

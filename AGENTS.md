@@ -22,7 +22,7 @@ decide, rather than doing it and offering to undo it.
 - Solution files (`.slnx`) are normally stored in the `src` folder under the repository root. Run solution builds from there.
 - Build with `dotnet build` from this project's directory, with no `-f`/`--framework` flag.
 - Do not pass `-f`/`--framework` to `dotnet build` here: it sets `TargetFramework` as a global MSBuild property that leaks into the cross-repo `ProjectReference`s (Xecrets.Core, AxCrypt.*, Xecrets.Texts, Xecrets.Localization, etc.), which are not multi-targeted, causing a spurious `NETSDK1005` "Assets file doesn't have a target for ..." error even right after a clean restore.
-- Plain `dotnet build` builds all configured `TargetFrameworks` (currently `net10.0-android` and `net10.0-windows10.0.19041.0` on Windows) and succeeds.
+- Plain `dotnet build` builds all configured `TargetFrameworks` (currently `net10.0-android`, `net10.0-ios`, `net10.0-maccatalyst` and `net10.0-windows10.0.19041.0` on Windows) and succeeds. On Windows the iOS and Mac Catalyst targets only compile, which needs the `ios` and `maccatalyst` workloads; linking, signing and publishing them needs a Mac.
 
 ## License headers
 
@@ -85,6 +85,9 @@ and action SHAs in `.github/workflows/ci.yml`. Do not introduce dependencies on
 - Prefer collection expressions such as `[a, b]` over array creation expressions such as `new[] { a, b }` or `new T[] { a, b }`.
 - Prefer small, focused classes and methods. Keep code-behind thin and move behavior into page models, services, utilities, or repositories.
 - An interface implementation must not expose functionality beyond the members defined by the interface. Move supporting operations to separate collaborators.
+  This is design guidance, not something to verify with unit tests, for example by inspecting types with reflection. Unit tests should test behavior, not design.
+- Unless there is a very specific reason, always prefer extension methods over static utility classes.
+- Do not declare overloads in interfaces. Express convenience variants as extension methods if needed, or have callers call the single member explicitly, e.g. pass `[id]` to a collection parameter.
 - Follow the existing `async` naming pattern: methods that return `Task` or `Task<T>` should use an `Async` suffix.
 - Use `await using` for disposable async resources, especially database connections and readers.
 - Prefer `try/finally` when cleanup must always occur, and use the existing error-handling pattern rather than inventing a new one.

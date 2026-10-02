@@ -79,13 +79,16 @@ internal sealed class MobileUserDataStore(MobileDataStore store, UserId id, Time
     public Task<IPersistentData<OpenFiles>> LoadOpenFilesAsync()
         => throw new NotSupportedException();
 
-    public async Task<IPersistentData<RecentFiles>> LoadRecentFilesAsync()
+    public Task<IPersistentData<RecentFiles>> LoadRecentFilesAsync()
+        => throw new NotSupportedException();
+
+    public async Task<IPersistentData<RecentFileOperations>> LoadRecentFileOperationsAsync()
     {
-        RecentFiles recentFiles = new() { Files = [.. (await store.ReadUserAsync(Id)).RecentFiles] };
-        return new PersistentData<RecentFiles>(recentFiles,
+        RecentFileOperations recentFiles = new() { Files = [.. (await store.ReadUserAsync(Id)).RecentFileOperations] };
+        return new PersistentData<RecentFileOperations>(recentFiles,
             async value =>
             {
-                await store.UpdateUserAsync(Id, user => user.RecentFiles = [.. value.Files]);
+                await store.UpdateUserAsync(Id, user => user.RecentFileOperations = [.. value.Files]);
                 return JsonFile.Serialize(value);
             });
     }

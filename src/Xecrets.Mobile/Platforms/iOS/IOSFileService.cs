@@ -28,23 +28,19 @@
 
 #endregion Copyright and GPL License
 
-using System;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
-using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Platforms.Apple;
+using Xecrets.Mobile.Services;
 
 namespace Xecrets.Mobile.Platforms.iOS;
 
 [SupportedOSPlatform("ios")]
-public class IOSFileService(IPickedWritableFileFactory pickedWritableFileFactory) : AppleFileServiceBase(pickedWritableFileFactory)
+public class IOSFileService : FileServiceBase
 {
     public override string PlatformId => "ios";
-
-    protected override string ResolveDefaultSaveLocation(string? originalFilePath) =>
-        new Uri(base.ResolveDefaultSaveLocation(originalFilePath)).AbsoluteUri;
 
     public override Task<bool> CanViewFileAsync(DecryptedFileInfo file) =>
         QuickLookFileViewer.CanViewAsync(file);

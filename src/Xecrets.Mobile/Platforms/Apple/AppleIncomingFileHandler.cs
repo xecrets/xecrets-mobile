@@ -36,7 +36,6 @@ using Foundation;
 
 using Microsoft.Extensions.DependencyInjection;
 
-using Xecrets.Mobile.Models;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;

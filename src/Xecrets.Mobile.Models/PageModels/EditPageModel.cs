@@ -31,21 +31,16 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-using Xecrets.Core.Abstractions;
-using Xecrets.Core.Models;
-
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Utilities;
-using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
 public partial class EditPageModel(
     IPreviewService previewService,
-    IProfileService profileService,
-    ICoreServices coreServices,
-    IFileService fileService,
+    IEditSaveService editSaveService,
+    IFlowContext flowContext,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel
 {
@@ -83,13 +78,11 @@ public partial class EditPageModel(
             return;
         }
 
-        state.EnableTextEditing();
         FileNameText = string.IsNullOrWhiteSpace(state.OriginalFileName)
             ? MobileTexts.DisplayNameProgram
             : state.OriginalFileName;
         Text = state.Text;
-        IsSaveVisible = CanOverwriteSourcePath(state.SourcePath);
-        IsSaveToLocationVisible = !IsSaveVisible;
+        ShowSaveCommands();
         StatusText = string.Empty;
     }
 
@@ -107,13 +100,7 @@ public partial class EditPageModel(
             IsBusy = true;
             StatusText = string.Empty;
 
-            await PrepareTemporaryTextFileAsync(state);
-            EncryptRequest request = CreateEncryptRequest(state.OriginalFileName);
-
-            await using FileStream cleartext = File.OpenRead(state.DecryptedPath);
-            await using FileStream encrypted = File.Open(state.SourcePath, FileMode.Create, FileAccess.Write, FileShare.Read);
-            await coreServices.EncryptAsync(cleartext, encrypted, request);
-
+            await editSaveService.SaveAsync(Text);
             await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextFileEncrypted);
         }
         catch (Exception ex)
@@ -140,34 +127,8 @@ public partial class EditPageModel(
             IsBusy = true;
             StatusText = string.Empty;
 
-            await PrepareTemporaryTextFileAsync(state);
-            EncryptRequest request = CreateEncryptRequest(state.OriginalFileName);
-            await using MemoryStream encrypted = new();
-            await using (FileStream cleartext = File.OpenRead(state.DecryptedPath))
-            {
-                await coreServices.EncryptAsync(cleartext, encrypted, request);
-            }
-
-            encrypted.Position = 0;
-
-            string fileName = state.OriginalFileName.ToEncryptedName(string.Empty);
-            SaveFileResult result = await fileService.SaveAsAsync(
-                encrypted,
-                fileName,
-                state.SourcePath);
-            if (result.IsCancelled)
-            {
-                return;
-            }
-
-            if (!string.IsNullOrWhiteSpace(result.FilePath))
-            {
-                state.UpdateSourcePath(result.FilePath);
-                IsSaveVisible = CanOverwriteSourcePath(state.SourcePath);
-                IsSaveToLocationVisible = !IsSaveVisible;
-            }
-
-            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextFileSaved);
+            await editSaveService.SaveCopyAsync(Text);
+            ShowSaveCommands();
         }
         catch (OperationCanceledException)
         {
@@ -192,75 +153,13 @@ public partial class EditPageModel(
     private bool CanUseCommand()
         => !IsBusy;
 
-    private EncryptRequest CreateEncryptRequest(string originalFileName)
+    /// <summary>
+    /// Offers to save over the source, which is reached through one of My folders when there is one, and otherwise, for
+    /// a file received from another app, only to save a copy.
+    /// </summary>
+    private void ShowSaveCommands()
     {
-        DateTime utcNow = DateTime.UtcNow;
-        Identity identity = profileService.GetIdentity();
-        return new EncryptRequest(
-            identity.Passphrase,
-            [profileService.GetPublicKey()],
-            [],
-            originalFileName,
-            utcNow,
-            utcNow,
-            utcNow,
-            true,
-            new Progress<Progress>(_ => { }));
-    }
-
-    private static bool CanOverwriteSourcePath(string sourcePath)
-    {
-        if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath))
-        {
-            return false;
-        }
-
-        try
-        {
-            using FileStream _ = File.Open(sourcePath, FileMode.Open, FileAccess.Write, FileShare.Read);
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-    private async Task PrepareTemporaryTextFileAsync(IPreviewState state)
-    {
-        if (state.Kind != PreviewKind.Text || state.File is null)
-        {
-            return;
-        }
-
-        TryClearReadOnly(state.File.FilePath);
-        await File.WriteAllTextAsync(state.File.FilePath, Text);
-        TryMakeReadOnly(state.File.FilePath);
-
-        state.UpdateText(Text);
-        state.UpdateFileSize(new FileInfo(state.File.FilePath).Length);
-    }
-
-    private static void TryClearReadOnly(string filePath)
-    {
-        try
-        {
-            File.SetAttributes(filePath, File.GetAttributes(filePath) & ~FileAttributes.ReadOnly);
-        }
-        catch
-        {
-            // Best effort. The file write will report the real failure if this matters.
-        }
-    }
-
-    private static void TryMakeReadOnly(string filePath)
-    {
-        try
-        {
-            File.SetAttributes(filePath, File.GetAttributes(filePath) | FileAttributes.ReadOnly);
-        }
-        catch
-        {
-            // Best effort. Some mobile filesystems do not support this attribute.
-        }
+        IsSaveVisible = flowContext.Source is not null;
+        IsSaveToLocationVisible = !IsSaveVisible;
     }
 }

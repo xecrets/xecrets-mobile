@@ -57,6 +57,43 @@ public static class Extensions
                 return null;
             }
         }
+
+        /// <summary>
+        /// Writes the file in this folder through a temporary file in the same folder, and returns the path to the
+        /// written file.
+        /// </summary>
+        public async Task<string> WriteFileInFolderAsync(string name, bool overwrite, Func<Stream, Task> writer)
+        {
+            string destinationPath = Path.Combine(value, name);
+            string temporaryPath = Path.Combine(value, $".xecrets-{Guid.NewGuid():N}.tmp");
+            try
+            {
+                await using (FileStream output = File.Create(temporaryPath))
+                {
+                    await writer(output);
+                }
+
+                File.Move(temporaryPath, destinationPath, overwrite);
+            }
+            finally
+            {
+                if (File.Exists(temporaryPath))
+                {
+                    File.Delete(temporaryPath);
+                }
+            }
+
+            return destinationPath;
+        }
+    }
+
+    extension(RecentFileOperation operation)
+    {
+        /// <summary>
+        /// Tells if the operation changes the file, which is then listed as reached through one of My folders. Other
+        /// files are only read, and are listed with a grant to the file itself.
+        /// </summary>
+        public bool IsWriteClass() => operation is RecentFileOperation.InPlace or RecentFileOperation.Edit;
     }
 
     extension(DontShowAgain dontShowAgain)
@@ -112,16 +149,6 @@ public static class Extensions
         }
 
         return flags;
-    }
-
-    public static async Task<SaveFileResult> SaveAsAsync(
-        this IFileService fileService,
-        string filePath,
-        string displayName,
-        string originalSourcePath)
-    {
-        await using FileStream stream = File.OpenRead(filePath);
-        return await fileService.SaveAsAsync(stream, displayName, originalSourcePath);
     }
 
     /// <summary>

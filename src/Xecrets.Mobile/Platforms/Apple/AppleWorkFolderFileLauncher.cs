@@ -30,42 +30,46 @@
 
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
-
 using CoreGraphics;
-
 using Foundation;
-
 using UIKit;
-
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
-using Xecrets.Mobile.Services;
-
 using Platform = Microsoft.Maui.ApplicationModel.Platform;
 
 namespace Xecrets.Mobile.Platforms.Apple;
 
 /// <summary>
-/// Hands the file itself to QuickLook or the share sheet, rather than a copy, keeping the access granted to its known
-/// folder until they are dismissed.
+/// Hands the file itself to QuickLook or the share sheet, rather than a copy, keeping the access to it until they are
+/// dismissed.
 /// </summary>
 [SupportedOSPlatform("ios")]
 [SupportedOSPlatform("maccatalyst")]
-public class AppleWorkFolderFileLauncher(WorkFolderStorage storage) : IWorkFolderFileLauncher
+public class AppleWorkFolderFileLauncher(AppleFileGrants grants) : IWorkFolderFileLauncher
 {
     /// <summary>
     /// As the Files app does, previews the file with QuickLook, whose share button offers the apps it can be opened
-    /// in. The share sheet offers them directly for files QuickLook cannot preview.
+    /// in. The share sheet offers them directly for files QuickLook cannot preview. Whether the app chosen can save
+    /// its changes is decided by the platform.
     /// </summary>
-    public async Task<bool> OpenAsync(WorkFolderFile file)
+    public async Task<bool> OpenAsync(FileReference file, bool allowWrite)
     {
-        await storage.WithFileAccessAsync(file, fileUrl => QuickLookFileViewer.CanView(fileUrl)
-            ? QuickLookFileViewer.ViewAsync(fileUrl)
-            : PresentShareSheetAsync(fileUrl));
+        await grants.WithAccessAsync(file.Id, async fileUrl =>
+        {
+            await (QuickLookFileViewer.CanView(fileUrl)
+                ? QuickLookFileViewer.ViewAsync(fileUrl)
+                : PresentShareSheetAsync(fileUrl));
+            return true;
+        });
         return true;
     }
 
-    public Task ShareAsync(WorkFolderFile file) => storage.WithFileAccessAsync(file, PresentShareSheetAsync);
+    public Task ShareAsync(FileReference file) =>
+        grants.WithAccessAsync(file.Id, async fileUrl =>
+        {
+            await PresentShareSheetAsync(fileUrl);
+            return true;
+        });
 
     /// <summary>
     /// Presents the share sheet, completing when it is dismissed and any chosen activity has finished with the file.

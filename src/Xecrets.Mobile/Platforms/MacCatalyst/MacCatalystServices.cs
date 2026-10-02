@@ -31,6 +31,8 @@
 using System;
 using System.Runtime.Versioning;
 
+using Foundation;
+
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Handlers;
@@ -42,13 +44,15 @@ using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Utilities;
 using Xecrets.Mobile.Platforms.Apple;
 using Xecrets.Mobile.Services;
-using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Platforms.MacCatalyst;
 
 [SupportedOSPlatform("maccatalyst")]
 public class MacCatalystServices : PlatformServicesBase
 {
+    // The binding rejects null, but an empty content type means none and disables password suggestions.
+    private static readonly NSString _noTextContentType = new(string.Empty);
+
     public override string CrashPageAdditionalInformation => MobileTexts.CrashPageAppleAdditionalInformation;
 
     public override void RegisterCrashHandlers(ICrashLogService crashLogService)
@@ -73,7 +77,7 @@ public class MacCatalystServices : PlatformServicesBase
             {
                 PasswordEntryPurpose.NewPassword => UITextContentType.NewPassword,
                 PasswordEntryPurpose.ExistingPassword => UITextContentType.Password,
-                PasswordEntryPurpose.SharePassword => null!,
+                PasswordEntryPurpose.SharePassword => _noTextContentType,
                 _ => throw new InvalidOperationException($"Invalid password entry purpose '{purpose}'."),
             };
         });

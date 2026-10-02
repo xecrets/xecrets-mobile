@@ -39,8 +39,6 @@ public sealed class PreviewState : IPreviewState
 
     public string OriginalFileName { get; private set; } = string.Empty;
 
-    public string SourcePath { get; private set; } = string.Empty;
-
     public string DecryptedPath { get; private set; } = string.Empty;
 
     public string ContentType { get; private set; } = string.Empty;
@@ -51,40 +49,32 @@ public sealed class PreviewState : IPreviewState
 
     public DecryptedFileInfo? File { get; private set; }
 
-    public bool IsTextEditingEnabled { get; private set; }
-
     public bool IsReady => Kind != PreviewKind.Unknown && !string.IsNullOrWhiteSpace(DecryptedPath);
 
-    public void SetImage(DecryptedFileInfo file, string sourcePath)
+    public void SetImage(DecryptedFileInfo file)
     {
         Kind = PreviewKind.Image;
-        SetFile(file, sourcePath);
+        SetFile(file);
         Text = string.Empty;
     }
 
-    public void SetText(DecryptedFileInfo file, string sourcePath, string text, bool isTextEditingEnabled)
+    public void SetText(DecryptedFileInfo file, string text)
     {
         Kind = PreviewKind.Text;
-        SetFile(file, sourcePath);
+        SetFile(file);
         Text = text;
-        IsTextEditingEnabled = isTextEditingEnabled;
     }
 
-    public void SetExternal(DecryptedFileInfo file, string sourcePath)
+    public void SetExternal(DecryptedFileInfo file)
     {
         Kind = PreviewKind.External;
-        SetFile(file, sourcePath);
+        SetFile(file);
         Text = string.Empty;
     }
 
     public void UpdateText(string text)
     {
         Text = text;
-    }
-
-    public void EnableTextEditing()
-    {
-        IsTextEditingEnabled = true;
     }
 
     public void UpdateFileSize(long fileSize)
@@ -96,29 +86,20 @@ public sealed class PreviewState : IPreviewState
         }
     }
 
-    public void UpdateSourcePath(string sourcePath)
-    {
-        SourcePath = sourcePath;
-    }
-
     public void Clear()
     {
         Kind = PreviewKind.Unknown;
         OriginalFileName = string.Empty;
-        SourcePath = string.Empty;
         DecryptedPath = string.Empty;
         ContentType = string.Empty;
         FileSize = 0;
         Text = string.Empty;
         File = null;
-        IsTextEditingEnabled = false;
     }
 
-    private void SetFile(DecryptedFileInfo file, string sourcePath)
+    private void SetFile(DecryptedFileInfo file)
     {
         File = file;
-        IsTextEditingEnabled = false;
-        SourcePath = sourcePath;
         OriginalFileName = file.DisplayName;
         DecryptedPath = file.FilePath;
         ContentType = file.ContentType;

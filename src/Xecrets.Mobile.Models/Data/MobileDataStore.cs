@@ -33,6 +33,7 @@ using Xecrets.Common.Abstractions;
 using Xecrets.Common.Implementation;
 using Xecrets.Common.Models;
 using Xecrets.Mobile.Models.Abstractions;
+using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Data;
 
@@ -212,7 +213,7 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
     }
 
     private async Task<ApplicationData> LoadAsync() =>
-        Validate(await JsonFile.LoadAsync<ApplicationData>(DataPath, OnInvalidJson));
+        MigrateRecentFiles(Validate(await JsonFile.LoadAsync<ApplicationData>(DataPath, OnInvalidJson)));
 
     private void OnInvalidJson(Exception exception) =>
         crashLogService.WriteCrashLog("Mobile data was invalid JSON; resetting to a new document.", exception);
@@ -226,6 +227,28 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
                 $"Version {document.Version} is not supported.",
                 ApplicationData.SupportedVersion,
                 document.Version);
+        }
+
+        return document;
+    }
+
+    // The legacy 'recentFiles' only holds plain strings, which is all that earlier versions can read. Recent files are
+    // now kept in 'recentFileOperations', and the legacy list is merged into it and then cleared, so that it is no
+    // longer written. Earlier versions then just see an empty list of recent files.
+    private static ApplicationData MigrateRecentFiles(ApplicationData document)
+    {
+        foreach (LocalProfileData user in document.Users)
+        {
+            if (user.RecentFiles is null)
+            {
+                continue;
+            }
+
+            HashSet<string> ids = [.. user.RecentFileOperations.Select(file => file.Id)];
+            user.RecentFileOperations.AddRange(user.RecentFiles
+                .Where(ids.Add)
+                .Select(id => new RecentFile { Id = id, Operation = RecentFileOperation.InPlace }));
+            user.RecentFiles = null!;
         }
 
         return document;
@@ -250,6 +273,22 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
             }
         }
     }
+
+    /// <summary>
+    /// The grants referenced by My folders and the recent files of all profiles on the device, since the grants are
+    /// held by the app rather than by a profile.
+    /// </summary>
+    public Task<GrantReferences> GetGrantReferencesAsync() =>
+        ReadAsync(document => new GrantReferences(
+            document.Users
+                .SelectMany(user => user.WorkFolders.Folders)
+                .Select(folder => folder.GrantId)
+                .ToHashSet(),
+            document.Users
+                .SelectMany(user => user.RecentFileOperations)
+                .Where(file => !file.Operation.IsWriteClass())
+                .Select(file => file.Id)
+                .ToHashSet()));
 
     internal Task<LocalProfileData> ReadUserAsync(UserId userId) =>
         ReadAsync(document => FindUser(document, userId));

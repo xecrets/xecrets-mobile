@@ -29,7 +29,6 @@
 #endregion Copyright and GPL License
 
 using System.Collections.Generic;
-
 using CommunityToolkit.Mvvm.Input;
 
 using Microsoft.Maui.Controls;
@@ -55,10 +54,10 @@ public partial class WorkFoldersPage : IQueryAttributable
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
-        if (query.TryGetValue(nameof(NavigationParameter.Payload), out object? payload))
-        {
-            ((WorkFoldersPageModel)BindingContext).PickAction = (WorkFolderPickAction)payload;
-        }
+        ((WorkFoldersPageModel)BindingContext).Initialize(
+            query.TryGetValue(nameof(NavigationParameter.Payload), out object? intent)
+                ? (WorkFolderIntent)intent
+                : WorkFolderIntent.Auto);
     }
 
     protected override void OnSizeAllocated(double width, double height)

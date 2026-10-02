@@ -29,10 +29,9 @@
 #endregion Copyright and GPL License
 
 using System.Collections.ObjectModel;
-
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-
+using Xecrets.Common.Models;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
@@ -41,26 +40,23 @@ using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
+/// <summary>
+/// The recent files, shown as listed without checking the files. A file is only checked when it is used: first that
+/// there is access to it, and then that it can be reached. A file changed from the list is reached through one of My
+/// folders, and the user is asked to add its folder when there is none. A file that cannot be reached is offered to be
+/// removed, since it may be gone or only offline for now, which the user knows best.
+/// </summary>
 public partial class RecentFilesPageModel(
     IRecentFilesService recentFilesService,
-    IWorkFolderService workFolderService,
-    WorkFolderWorkflow workflow,
+    IFileAccess fileAccess,
+    WorkFolderStorage workFolderStorage,
+    FolderAccessWorkflow folderAccess,
+    FileOperationWorkflow fileOperations,
     IWorkFolderFileLauncher fileLauncher,
-    IUserInterfaceService userInterfaceService,
-    TimeProvider timeProvider)
+    IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
 {
-    // Source file id to result file id, for operations completed from the list in the current filter view.
-    private readonly Dictionary<string, string> _completed = [];
-
-    // The order of the rows in the current filter view, by source file id for completed rows.
-    private List<string> _rowOrder = [];
-
-    internal static readonly TimeSpan RefreshDelay = TimeSpan.FromSeconds(1);
-
     private List<RecentFileEntry> _available = [];
-
-    private string? _pendingSourceId;
 
     public ObservableCollection<RecentFileEntry> Files { get; } = [];
 
@@ -78,7 +74,7 @@ public partial class RecentFilesPageModel(
     [NotifyPropertyChangedFor(nameof(ReverseAllEncrypts))]
     public partial SelectedFileState SelectedState { get; set; } = SelectedFileState.All;
 
-    public bool IsReverseAllVisible => SelectedState != SelectedFileState.All;
+    public bool IsReverseAllVisible => SelectedState is SelectedFileState.Encrypted or SelectedFileState.Decrypted;
 
     public bool ReverseAllEncrypts => SelectedState == SelectedFileState.Decrypted;
 
@@ -92,33 +88,20 @@ public partial class RecentFilesPageModel(
     public partial bool IsBusy { get; set; }
 
     [RelayCommand]
-    private async Task Load()
+    private async Task LoadAsync()
     {
         try
         {
-            IReadOnlyList<string> fileIds = await recentFilesService.GetFilesAsync();
+            // A file listed by an operation this version does not know is not shown, since what to do with it is not
+            // known either.
+            List<RecentFile> recentFiles =
+            [
+                .. (await recentFilesService.GetFilesAsync())
+                    .Where(file => file.Operation != RecentFileOperation.Unknown)
+                    .DistinctBy(file => file.Id),
+            ];
 
-            List<RecentFileEntry> available = [];
-            foreach (string fileId in fileIds)
-            {
-                WorkFolderFileResult result = await workFolderService.OpenFileAsync(fileId);
-                if (result.Status == WorkFolderFileResultStatus.NotFound)
-                {
-                    continue;
-                }
-
-                available.Add(CreateEntry(fileId, result.File));
-            }
-
-            // A successful operation deletes its source and puts the result at the top of the list. The source still
-            // exists while a decryption waits for a password, or if the operation did not complete.
-            if (_pendingSourceId is not null && available.All(entry => entry.Id != _pendingSourceId))
-            {
-                _completed[_pendingSourceId] = fileIds[0];
-                _pendingSourceId = null;
-            }
-
-            _available = available;
+            _available = [.. recentFiles.Select(CreateEntry)];
             ShowRows();
         }
         catch (Exception ex)
@@ -128,59 +111,33 @@ public partial class RecentFilesPageModel(
     }
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private async Task Reload()
-    {
-        ResetView();
-        await Load();
-    }
+    private Task ReloadAsync() => LoadAsync();
 
     /// <summary>
-    /// Lets the user pick a file in a known folder, which is then added and shown with <see cref="ShowAdded"/>.
+    /// Lets the user pick a file in My folders, starting in the one first, and lists it as encrypted or decrypted where
+    /// it is, showing it first among the files in its state.
     /// </summary>
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private Task Add() =>
-        UserInterfaceService.NavigateToAsync(AppDestination.WorkFolders, WorkFolderPickAction.AddToRecentFiles);
-
-    // Reloads even if the filter is unchanged, since the rows otherwise keep their order and the added file would be
-    // shown last rather than first.
-    [RelayCommand]
-    private Task ShowAdded(SelectedFileState state)
+    private async Task AddAsync()
     {
-        SelectedState = state;
-        return Reload();
-    }
-
-    /// <summary>
-    /// Opens a decrypted file in another app, or shares an encrypted one, where it is stored.
-    /// </summary>
-    [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private async Task Open(RecentFileEntry entry)
-    {
-        if (entry.IsCompleted)
-        {
-            return;
-        }
-
         try
         {
             IsBusy = true;
             StatusText = string.Empty;
-            WorkFolderFile? file = await OpenFileAsync(entry);
+            WorkFolder? folder = (await workFolderStorage.LoadFoldersAsync()).FirstOrDefault();
+            FileReference? file = await folderAccess.PickWritableFileAsync(folder, FilePickerKind.Any);
             if (file is null)
             {
                 return;
             }
 
-            if (entry.IsEncrypted)
-            {
-                await fileLauncher.ShareAsync(file);
-                return;
-            }
-
-            if (!await fileLauncher.OpenAsync(file))
-            {
-                await UserInterfaceService.DisplayMessageAsync(MobileTexts.DialogTextNoAppToOpenFile);
-            }
+            await recentFilesService.AddAsync(file, RecentFileOperation.InPlace);
+            SelectedState = file.Name.IsEncrypted() ? SelectedFileState.Encrypted : SelectedFileState.Decrypted;
+            await LoadAsync();
+        }
+        catch (OperationCanceledException)
+        {
+            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextOperationNotCompleted);
         }
         catch (Exception ex)
         {
@@ -192,18 +149,65 @@ public partial class RecentFilesPageModel(
         }
     }
 
+    /// <summary>
+    /// Shows a viewed or edited file again, like when decrypting a copy. Other files are opened in another app when
+    /// decrypted, or shared when encrypted, where they are stored.
+    /// </summary>
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private Task Reverse(RecentFileEntry entry) => ReverseFilesAsync([entry]);
+    private async Task OpenAsync(RecentFileEntry entry)
+    {
+        try
+        {
+            IsBusy = true;
+            StatusText = string.Empty;
+            await RunOnFileAsync(entry, isChanged: false, file => OpenFileAsync(entry, file));
+        }
+        catch (Exception ex)
+        {
+            StatusText = ex.FormatException();
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private async Task OpenFileAsync(RecentFileEntry entry, FileReference file)
+    {
+        if (entry.IsViewed)
+        {
+            if (!await fileOperations.PreviewAsync(file))
+            {
+                StatusText = MobileTexts.DialogTextWrongPasswordOpen;
+            }
+
+            return;
+        }
+
+        if (entry.IsEncrypted)
+        {
+            await fileLauncher.ShareAsync(file);
+            return;
+        }
+
+        if (!await fileLauncher.OpenAsync(file, allowWrite: entry.Operation.IsWriteClass()))
+        {
+            await UserInterfaceService.DisplayMessageAsync(MobileTexts.DialogTextNoAppToOpenFile);
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanUseCommand))]
+    private Task ReverseAsync(RecentFileEntry entry) => ReverseFilesAsync([entry]);
 
     /// <summary>
     /// Reverses all files shown, which in the encrypted or decrypted view all have the same state.
     /// </summary>
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private Task ReverseAll() => ReverseFilesAsync([.. Files.Where(entry => !entry.IsCompleted)]);
+    private Task ReverseAllAsync() => ReverseFilesAsync([.. Files]);
 
     /// <summary>
-    /// Encrypts or decrypts the files in turn, stopping at the first one that does not complete, for example because
-    /// it needs a password.
+    /// Encrypts or decrypts the files in turn, stopping at the first one that cannot be reached or needs a password. A
+    /// file that nothing is done with, such as one already encrypted, does not stop the others.
     /// </summary>
     private async Task ReverseFilesAsync(IReadOnlyList<RecentFileEntry> entries)
     {
@@ -213,25 +217,17 @@ public partial class RecentFilesPageModel(
             StatusText = string.Empty;
             foreach (RecentFileEntry entry in entries)
             {
-                WorkFolderFile? file = await OpenFileAsync(entry);
-                if (file is null)
-                {
-                    break;
-                }
-
-                _pendingSourceId = entry.Id;
-                bool completed = await workflow.TransformAsync(
-                    file,
-                    entry.IsEncrypted ? WorkFolderOperation.Decrypt : WorkFolderOperation.Encrypt);
-                await Load();
-                if (!completed)
+                FileOperationOutcome? outcome = null;
+                WorkFolderOperation operation =
+                    entry.IsEncrypted ? WorkFolderOperation.Decrypt : WorkFolderOperation.Encrypt;
+                await RunOnFileAsync(entry, isChanged: true,
+                    async file => outcome = await fileOperations.TransformAsync(file, operation));
+                await LoadAsync();
+                if (outcome?.Status is not (FileOperationStatus.Completed or FileOperationStatus.NotDone))
                 {
                     break;
                 }
             }
-
-            // Executing a cancelable command cancels the token of a pending execution, so this restarts the wait.
-            RefreshAfterDelayCommand.Execute(null);
         }
         catch (OperationCanceledException)
         {
@@ -248,15 +244,13 @@ public partial class RecentFilesPageModel(
     }
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private async Task Remove(RecentFileEntry entry)
+    private async Task RemoveAsync(RecentFileEntry entry)
     {
         try
         {
             IsBusy = true;
             StatusText = string.Empty;
-            await recentFilesService.RemoveAsync(entry.Id);
-            _available.RemoveAll(available => available.Id == entry.Id);
-            ShowRows();
+            await RemoveEntryAsync(entry.Id);
         }
         catch (Exception ex)
         {
@@ -271,99 +265,103 @@ public partial class RecentFilesPageModel(
     private bool CanUseCommand() => !IsBusy;
 
     /// <summary>
-    /// Opens the file of a row, telling the user and returning null when it no longer exists or cannot be accessed.
+    /// Runs the action on the file of a row, once there is access to it and it can be reached.
     /// </summary>
-    private async Task<WorkFolderFile?> OpenFileAsync(RecentFileEntry entry)
+    private async Task RunOnFileAsync(RecentFileEntry entry, bool isChanged, Func<FileReference, Task> action)
     {
-        WorkFolderFileResult result = await workFolderService.OpenFileAsync(entry.Id);
-        if (result.Status == WorkFolderFileResultStatus.NotFound)
-        {
-            await UserInterfaceService.DisplayMessageAsync(MobileTexts.DialogTextRecentFileNotFound);
-            await Load();
-            return null;
-        }
-
-        if (result.Status == WorkFolderFileResultStatus.NoAccess)
-        {
-            await UserInterfaceService.DisplayMessageAsync(MobileTexts.DialogTextRecentFileNoAccess);
-            return null;
-        }
-
-        return result.File!;
-    }
-
-    /// <summary>
-    /// Stops a pending refresh, for example when the page is left.
-    /// </summary>
-    public void StopRefreshTimer() => RefreshAfterDelayCommand.Cancel();
-
-    // Refreshes the list a while after the last operation, so the rows of completed operations are replaced by the
-    // current list. Concurrent executions are allowed, since refresh calls may overlap.
-    [RelayCommand(AllowConcurrentExecutions = true)]
-    private async Task RefreshAfterDelay(CancellationToken cancellationToken)
-    {
-        try
-        {
-            await Task.Delay(RefreshDelay, timeProvider, cancellationToken);
-        }
-        catch (OperationCanceledException)
+        FileReference? file = await AccessAsync(entry, isChanged);
+        if (file is null)
         {
             return;
         }
 
-        if (!IsBusy)
+        try
         {
-            await Reload();
+            await action(file);
         }
+        catch (FileNotAccessibleException)
+        {
+            await OfferRemoveAsync(ListedId(entry, file));
+        }
+    }
+
+    /// <summary>
+    /// Gets access to the file of a row, and checks that it can be reached. A file that is changed, or was listed by
+    /// an operation that changes it, is reached through one of My folders, and the user is asked to add its folder
+    /// when there is none. Other files are reached through the access to them alone. Returns null when there is no
+    /// access, or the file cannot be reached, which the user is told.
+    /// </summary>
+    private async Task<FileReference?> AccessAsync(RecentFileEntry entry, bool isChanged)
+    {
+        FileReference file = new(entry.Id, entry.FileName);
+        if (isChanged || entry.Operation.IsWriteClass())
+        {
+            FileReference? reachable = await folderAccess.EnsureFolderAccessAsync(file);
+            if (reachable is null)
+            {
+                return null;
+            }
+
+            // A file listed as changed is listed as reached through the folder from now on.
+            if (entry.Operation.IsWriteClass() && reachable.Id != entry.Id)
+            {
+                await recentFilesService.ReplaceIdAsync(entry.Id, reachable.Id);
+                await LoadAsync();
+            }
+
+            file = reachable;
+        }
+        else if (!fileAccess.HasFileGrant(file.Id))
+        {
+            await OfferRemoveAsync(entry.Id);
+            return null;
+        }
+
+        try
+        {
+            await using (await fileAccess.OpenReadAsync(file.Id))
+            {
+            }
+        }
+        catch (FileNotAccessibleException)
+        {
+            await OfferRemoveAsync(ListedId(entry, file));
+            return null;
+        }
+
+        return file;
+    }
+
+    private static string ListedId(RecentFileEntry entry, FileReference file) =>
+        entry.Operation.IsWriteClass() ? file.Id : entry.Id;
+
+    /// <summary>
+    /// Asks the user whether to remove a file that cannot be reached, since it may be gone, or only not available right
+    /// now, such as when its storage is offline.
+    /// </summary>
+    private async Task OfferRemoveAsync(string fileId)
+    {
+        if (await UserInterfaceService.DisplayConfirmationAsync(MobileTexts.DialogTextRecentFileNotAccessible))
+        {
+            await RemoveEntryAsync(fileId);
+        }
+    }
+
+    private async Task RemoveEntryAsync(string fileId)
+    {
+        await recentFilesService.RemoveAsync(fileId);
+        _available.RemoveAll(available => available.Id == fileId);
+        ShowRows();
     }
 
     // Changing the filter only regroups the files already loaded.
     // ReSharper disable once UnusedParameterInPartialMethod
-    partial void OnSelectedStateChanged(SelectedFileState value)
-    {
-        ResetView();
-        ShowRows();
-    }
+    partial void OnSelectedStateChanged(SelectedFileState value) => ShowRows();
 
-    private void ResetView()
-    {
-        _completed.Clear();
-        _rowOrder = [];
-        _pendingSourceId = null;
-    }
-
-    /// <summary>
-    /// Shows the available files of the current filter, keeping the order of the rows already shown so that the
-    /// result of a completed operation takes the place of its source.
-    /// </summary>
     private void ShowRows()
     {
-        Dictionary<string, RecentFileEntry> entries = _available.ToDictionary(entry => entry.Id);
-        List<(string Key, RecentFileEntry Entry)> rows = [];
-        foreach (string key in _rowOrder)
-        {
-            if (_completed.TryGetValue(key, out string? resultId))
-            {
-                if (entries.TryGetValue(resultId, out RecentFileEntry? result))
-                {
-                    rows.Add((key, result with { IsCompleted = true }));
-                }
-            }
-            else if (entries.TryGetValue(key, out RecentFileEntry? entry) && IsShown(entry))
-            {
-                rows.Add((key, entry));
-            }
-        }
-
-        // Compared by entry rather than by key, since a completed result is also listed by itself when all files are
-        // shown.
-        rows.AddRange(_available
-            .Where(entry => IsShown(entry) && rows.All(row => row.Entry.Id != entry.Id))
-            .Select(entry => (entry.Id, entry)));
-
-        _rowOrder = [.. rows.Select(row => row.Key)];
         Files.Clear();
-        foreach ((string _, RecentFileEntry entry) in rows)
+        foreach (RecentFileEntry entry in _available.Where(IsShown))
         {
             Files.Add(entry);
         }
@@ -371,20 +369,39 @@ public partial class RecentFilesPageModel(
 
     private bool IsShown(RecentFileEntry entry) => SelectedState switch
     {
-        SelectedFileState.Encrypted => entry.IsEncrypted,
-        SelectedFileState.Decrypted => !entry.IsEncrypted,
+        SelectedFileState.Encrypted => entry.IsInPlace && entry.IsEncrypted,
+        SelectedFileState.Decrypted => entry.IsInPlace && !entry.IsEncrypted,
+        SelectedFileState.Viewed => entry.IsViewed,
+        SelectedFileState.Other => entry.IsOther,
         SelectedFileState.All => true,
         _ => throw new InvalidOperationException($"Unknown file state {SelectedState}."),
     };
 
-    private RecentFileEntry CreateEntry(string fileId, WorkFolderFile? file)
+    // The name of a file is the one remembered when its id does not tell it. An id that cannot be made sense of, such
+    // as from an earlier version, is shown by the name remembered, so that it can still be removed from the list.
+    private RecentFileEntry CreateEntry(RecentFile recentFile)
     {
-        IReadOnlyList<string> segments = workFolderService.GetFilePathSegments(fileId);
-        string fileName = file?.FileName ?? segments[^1];
+        IReadOnlyList<string> segments;
+        try
+        {
+            segments = fileAccess.GetPathSegments(recentFile.Id, recentFile.Name);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            segments = [recentFile.Name ?? string.Empty];
+        }
+
+        string fileName = segments.Count > 0 ? segments[^1] : string.Empty;
+        if (fileName.Length == 0)
+        {
+            segments = [.. segments.SkipLast(1), MobileTexts.RecentFileNameUnknown];
+        }
+
         return new RecentFileEntry(
-            fileId,
+            recentFile.Id,
             string.Join(Path.DirectorySeparatorChar, segments),
+            fileName,
             fileName.IsEncrypted(),
-            false);
+            recentFile.Operation);
     }
 }

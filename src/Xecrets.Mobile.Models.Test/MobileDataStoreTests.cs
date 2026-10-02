@@ -29,6 +29,7 @@
 #endregion Copyright and GPL License
 
 using System.Text;
+using System.Text.Json.Nodes;
 
 using NUnit.Framework;
 
@@ -260,18 +261,122 @@ public sealed class MobileDataStoreTests
     }
 
     [Test]
+    public async Task RecentFilesWithoutOperationsAreNotSupported()
+    {
+        IUserDataStore user = await _store.CreateUserAsync(NewUser("a@example.com", "A", 1));
+
+        Assert.That(async () => await user.LoadRecentFilesAsync(), Throws.TypeOf<NotSupportedException>());
+    }
+
+    [Test]
     public async Task RecentFilesRoundTrip()
     {
         IUserDataStore user = await _store.CreateUserAsync(NewUser("a@example.com", "A", 1));
-        await using (IEditScope<RecentFiles> recentFiles = (await user.LoadRecentFilesAsync()).BeginEdit())
+        await using (IEditScope<RecentFileOperations> recentFiles = (await user.LoadRecentFileOperationsAsync()).BeginEdit())
         {
-            recentFiles.Value.Files = ["second", "first"];
+            recentFiles.Value.Files =
+            [
+                new RecentFile { Id = "second", Operation = RecentFileOperation.View },
+                new RecentFile { Id = "first", Operation = RecentFileOperation.InPlace },
+            ];
         }
 
         ApplicationData stored = JsonFile.Deserialize<ApplicationData>(await File.ReadAllBytesAsync(DataPath), _ => { });
+        JsonObject storedUser = await ReadStoredUserAsync();
 
-        Assert.That((await user.LoadRecentFilesAsync()).Value.Files, Is.EqualTo(["second", "first"]));
-        Assert.That(stored.Users.Single().RecentFiles, Is.EqualTo(["second", "first"]));
+        (string, RecentFileOperation)[] expected =
+        [
+            ("second", RecentFileOperation.View),
+            ("first", RecentFileOperation.InPlace),
+        ];
+        Assert.That(
+            (await user.LoadRecentFileOperationsAsync()).Value.Files.Select(file => (file.Id, file.Operation)),
+            Is.EqualTo(expected));
+        Assert.That(
+            stored.Users.Single().RecentFileOperations.Select(file => (file.Id, file.Operation)),
+            Is.EqualTo(expected));
+        Assert.That(storedUser.ContainsKey("recentFiles"), Is.False);
+    }
+
+    [Test]
+    public async Task LegacyRecentFilesAreReadAsInPlace()
+    {
+        IUserDataStore user = await _store.CreateUserAsync(NewUser("a@example.com", "A", 1));
+        await RewriteStoredUserAsync(storedUser => storedUser["recentFiles"] = new JsonArray("second", "first"));
+
+        RecentFileOperations recentFiles = (await user.LoadRecentFileOperationsAsync()).Value;
+
+        Assert.That(recentFiles.Files.Select(file => (file.Id, file.Operation)), Is.EqualTo(
+        [
+            ("second", RecentFileOperation.InPlace),
+            ("first", RecentFileOperation.InPlace),
+        ]));
+    }
+
+    [Test]
+    public async Task LegacyRecentFilesAreMergedAfterCurrentWithoutDuplicates()
+    {
+        IUserDataStore user = await _store.CreateUserAsync(NewUser("a@example.com", "A", 1));
+        await RewriteStoredUserAsync(storedUser =>
+        {
+            storedUser["recentFiles"] = new JsonArray("legacy", "both");
+            storedUser["recentFileOperations"] = new JsonArray(
+                new JsonObject { ["id"] = "current", ["operation"] = "View" },
+                new JsonObject { ["id"] = "both", ["operation"] = "Edit" });
+        });
+
+        RecentFileOperations recentFiles = (await user.LoadRecentFileOperationsAsync()).Value;
+
+        Assert.That(recentFiles.Files.Select(file => (file.Id, file.Operation)), Is.EqualTo(
+        [
+            ("current", RecentFileOperation.View),
+            ("both", RecentFileOperation.Edit),
+            ("legacy", RecentFileOperation.InPlace),
+        ]));
+    }
+
+    [Test]
+    public async Task UnknownRecentFileOperationIsReadAsUnknownAndWrittenUnchanged()
+    {
+        IUserDataStore user = await _store.CreateUserAsync(NewUser("a@example.com", "A", 1));
+        await RewriteStoredUserAsync(storedUser => storedUser["recentFileOperations"] = new JsonArray(
+            new JsonObject { ["id"] = "future", ["operation"] = "SomethingNew" }));
+
+        await using (IEditScope<RecentFileOperations> recentFiles = (await user.LoadRecentFileOperationsAsync()).BeginEdit())
+        {
+            Assert.That(recentFiles.Value.Files.Single().Operation, Is.EqualTo(RecentFileOperation.Unknown));
+            recentFiles.Value.Files.Insert(0, new RecentFile { Id = "new", Operation = RecentFileOperation.InPlace });
+        }
+
+        JsonObject storedUser = await ReadStoredUserAsync();
+        Assert.That(storedUser["recentFileOperations"]![1]!["operation"]!.GetValue<string>(), Is.EqualTo("SomethingNew"));
+    }
+
+    [Test]
+    public async Task AnyUpdateMigratesAndRemovesLegacyRecentFiles()
+    {
+        IUserDataStore user = await _store.CreateUserAsync(NewUser("a@example.com", "A", 1));
+        await RewriteStoredUserAsync(storedUser => storedUser["recentFiles"] = new JsonArray("legacy"));
+
+        await using (IEditScope<UserSettings> settings = (await user.LoadSettingsAsync()).BeginEdit())
+        {
+            settings.Value.LocalUserId = 42;
+        }
+
+        JsonObject storedUser = await ReadStoredUserAsync();
+        Assert.That(storedUser.ContainsKey("recentFiles"), Is.False);
+        Assert.That(storedUser["recentFileOperations"]![0]!["id"]!.GetValue<string>(), Is.EqualTo("legacy"));
+        Assert.That(storedUser["recentFileOperations"]![0]!["operation"]!.GetValue<string>(), Is.EqualTo("InPlace"));
+    }
+
+    private async Task<JsonObject> ReadStoredUserAsync() =>
+        JsonNode.Parse(await File.ReadAllTextAsync(DataPath))!["users"]![0]!.AsObject();
+
+    private async Task RewriteStoredUserAsync(Action<JsonObject> rewrite)
+    {
+        JsonNode document = JsonNode.Parse(await File.ReadAllTextAsync(DataPath))!;
+        rewrite(document["users"]![0]!.AsObject());
+        await File.WriteAllTextAsync(DataPath, document.ToJsonString());
     }
 
     private string DataPath => Path.Combine(_directory, "xecrets-data.json");
@@ -308,12 +413,8 @@ public sealed class MobileDataStoreTests
         public string PlatformId => "test";
         public string AppDataDirectory => directory;
         public string CacheDirectory => directory;
-        public Task<PickedFile?> PickFileAsync(string pickerTitle, FilePickerKind pickerKind) => throw new NotSupportedException();
-
-        public Task<IPickedWritableFile?> PickWritableFileAsync(string pickerTitle, FilePickerKind pickerKind) => throw new NotSupportedException();
         public Task<bool> OpenInAsync(string filePath, string displayName) => throw new NotSupportedException();
         public Task SendToAsync(string filePath, string displayName, string contentType) => throw new NotSupportedException();
-        public Task<SaveFileResult> SaveAsAsync(Stream stream, string displayName, string originalSourcePath) => throw new NotSupportedException();
         public Task<bool> CanViewFileAsync(DecryptedFileInfo file) => throw new NotSupportedException();
         public Task ViewFileAsync(DecryptedFileInfo file) => throw new NotSupportedException();
         public bool IsSelfHandoffReference(string reference) => false;
