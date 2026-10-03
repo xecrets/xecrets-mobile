@@ -123,6 +123,15 @@ public sealed class WorkFolderWorkflow(
     }
 
     /// <summary>
+    /// Opens a file again by its id, such as one just written. Returns null when it cannot be opened.
+    /// </summary>
+    public async Task<WorkFolderFile?> OpenFileAsync(string fileId)
+    {
+        WorkFolderFileResult result = await workFolderService.OpenFileAsync(fileId);
+        return result.Status == WorkFolderFileResultStatus.IsValid ? result.File : null;
+    }
+
+    /// <summary>
     /// Decrypts a file temporarily to show it, or sends the user on to enter a password for it. Returns false when the
     /// file could not be decrypted.
     /// </summary>

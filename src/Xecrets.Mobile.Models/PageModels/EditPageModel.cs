@@ -115,12 +115,25 @@ public partial class EditPageModel(
             EncryptRequest request = CreateEncryptRequest(state.OriginalFileName);
 
             WorkFolderFile source = flowContext.Source!;
-            await using FileStream cleartext = File.OpenRead(state.DecryptedPath);
-            await fileOperations.WriteDestinationAsync(
-                source,
-                source.FileName,
-                overwrite: true,
-                encrypted => coreServices.EncryptAsync(cleartext, encrypted, request));
+            string savedId;
+            await using (FileStream cleartext = File.OpenRead(state.DecryptedPath))
+            {
+                savedId = await fileOperations.WriteDestinationAsync(
+                    source,
+                    source.FileName,
+                    overwrite: true,
+                    encrypted => coreServices.EncryptAsync(cleartext, encrypted, request));
+            }
+
+            // The file is replaced by a new one, which on some storage has a new id, while the old id refers to the
+            // replaced file. The saved file is the one saved over and listed from then on.
+            WorkFolderFile? saved = await workFolderWorkflow.OpenFileAsync(savedId);
+            await recentFilesService.RemoveAsync([source.Id]);
+            if (saved is not null)
+            {
+                flowContext.UpdateSource(saved);
+                await recentFilesService.AddFlowSourceAsync(RecentFileOperation.Edit);
+            }
 
             await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextFileEncrypted);
         }
