@@ -63,7 +63,7 @@ public partial class RecentFilesPage
     protected override void OnAppearing()
     {
         base.OnAppearing();
-        _model.LoadCommand.Execute(null);
+        _model.AppearCommand.Execute(null);
     }
 
     protected override void OnDisappearing()

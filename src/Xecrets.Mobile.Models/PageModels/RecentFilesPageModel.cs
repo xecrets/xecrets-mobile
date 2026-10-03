@@ -139,6 +139,22 @@ public partial class RecentFilesPageModel(
         }
     }
 
+    /// <summary>
+    /// Loads the list when the page is shown again. The list may have changed elsewhere meanwhile, such as by an edit
+    /// saved as a new file, so the rows are shown in the order of the list, unless a decryption from the list waits
+    /// for a password and its result is to be shown in place of its source.
+    /// </summary>
+    [RelayCommand]
+    private async Task Appear()
+    {
+        if (_pendingSourceId is null)
+        {
+            ResetView();
+        }
+
+        await Load();
+    }
+
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private async Task Reload()
     {

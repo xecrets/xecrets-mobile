@@ -469,6 +469,22 @@ public sealed class RecentFilesTests
             Is.EqualTo([("folder/one.txt", false), ("folder/three.txt", false)]));
     }
 
+    [Test]
+    public async Task AppearingAgainShowsAFileReplacedElsewhereFirst()
+    {
+        TestRecentFilesService recentFiles = new() { Files = ["folder/one.txt", "folder/two.txt", "folder/three.txt"] };
+        RecentFilesPageModel page = CreatePage(recentFiles, new TestWorkFolderService());
+        await page.AppearCommand.ExecuteAsync(null);
+        recentFiles.Entries.RemoveAt(1);
+        recentFiles.Entries.Insert(0, new RecentFile { Id = "folder/saved.txt", Operation = RecentFileOperation.Edit });
+
+        await page.AppearCommand.ExecuteAsync(null);
+
+        Assert.That(
+            page.Files.Select(file => file.Id),
+            Is.EqualTo(["folder/saved.txt", "folder/one.txt", "folder/three.txt"]));
+    }
+
     [TestCase(SelectedFileState.Decrypted, "folder/new.txt", SelectedFileState.Decrypted, new[] { "folder/new.txt", "folder/one.txt" })]
     [TestCase(SelectedFileState.All, "folder/new.txt", SelectedFileState.Decrypted, new[] { "folder/new.txt", "folder/one.txt" })]
     [TestCase(SelectedFileState.Decrypted, "folder/new.axx", SelectedFileState.Encrypted, new[] { "folder/new.axx", "folder/old.axx" })]
