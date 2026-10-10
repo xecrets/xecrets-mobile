@@ -112,6 +112,7 @@
                                                      Background="Transparent"
                                                      Padding="8"
                                                      Source="{StaticResource IconDecryptFile}"
+                                                     IsVisible="{Binding IsReverseAllVisible}"
                                                      Command="{Binding ReverseAllCommand}">
                                             <ImageButton.Triggers>
                                                 <DataTrigger TargetType="ImageButton"
@@ -119,16 +120,6 @@
                                                              Value="True">
                                                     <Setter Property="Source"
                                                             Value="{StaticResource IconEncryptFile}" />
-                                                </DataTrigger>
-                                                <DataTrigger TargetType="ImageButton"
-                                                             Binding="{Binding IsReverseAllVisible}"
-                                                             Value="False">
-                                                    <Setter Property="Opacity"
-                                                            Value="0" />
-                                                    <Setter Property="InputTransparent"
-                                                            Value="True" />
-                                                    <Setter Property="AutomationProperties.IsInAccessibleTree"
-                                                            Value="False" />
                                                 </DataTrigger>
                                             </ImageButton.Triggers>
                                         </ImageButton>
@@ -157,6 +148,7 @@
                                                                  Background="Transparent"
                                                                  Padding="8"
                                                                  Source="{StaticResource IconEncryptFile}"
+                                                                 IsVisible="{Binding IsInPlace}"
                                                                  Command="{Binding ReverseCommand,
                                                                        Source={x:Reference PageRoot},
                                                                        x:DataType=pages:RecentFilesPage}"
@@ -167,16 +159,6 @@
                                                                          Value="True">
                                                                 <Setter Property="Source"
                                                                         Value="{StaticResource IconDecryptFile}" />
-                                                            </DataTrigger>
-                                                            <DataTrigger TargetType="ImageButton"
-                                                                         Binding="{Binding IsInPlace}"
-                                                                         Value="False">
-                                                                <Setter Property="Opacity"
-                                                                        Value="0" />
-                                                                <Setter Property="InputTransparent"
-                                                                        Value="True" />
-                                                                <Setter Property="AutomationProperties.IsInAccessibleTree"
-                                                                        Value="False" />
                                                             </DataTrigger>
                                                         </ImageButton.Triggers>
                                                     </ImageButton>
