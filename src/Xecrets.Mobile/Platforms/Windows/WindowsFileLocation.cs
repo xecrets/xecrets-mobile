@@ -29,44 +29,40 @@
 #endregion Copyright and GPL License
 
 using System;
-using System.Globalization;
+using System.Collections.Generic;
+using System.IO;
+using System.Runtime.Versioning;
+using Windows.Storage;
+using Xecrets.Common.Models;
+using Xecrets.Mobile.Models.Models;
 
-using Microsoft.Maui.Controls;
+namespace Xecrets.Mobile.Platforms.Windows;
 
-using Xecrets.Texts;
-
-namespace Xecrets.Mobile.Utilities;
-
-// Shortens a path to about the number of characters that fit the given width at the given font size, keeping its
-// end. The values are the path, the available width and the font size. The converter parameter enables shortening, so
-// that platforms which can truncate at the head themselves get the path unchanged.
-public sealed class PathEllipsisConverter : IMultiValueConverter
+/// <summary>
+/// Tells where a file is stored from its path. A path has no provider, so the folder path starts with the drive, such
+/// as C:, or the share of a UNC path.
+/// </summary>
+[SupportedOSPlatform("windows10.0.19041")]
+internal static class WindowsFileLocation
 {
-    // A typical average character width of a proportional UI font, as a fraction of the font size.
-    private const double _averageCharacterWidthFactor = 0.50;
+    public static FileReference Locate(StorageFile file) => Locate(file.Path, file.Name);
 
-    public object? Convert(object?[] values, Type targetType, object? parameter, CultureInfo culture)
+    public static FileReference Locate(StorageFolder folder) => Locate(folder.Path, folder.DisplayName);
+
+    private static FileReference Locate(string path, string name)
     {
-        // Each value arrives through a proxy property that defaults to null. If so, return null.
-        string? path = (string?)values[0];
-        if (path is null)
+        string folder = Path.GetDirectoryName(path) ?? "";
+        string root = Path.GetPathRoot(folder) ?? "";
+
+        List<string> folderPath = [.. folder[root.Length..].Split(
+            Path.DirectorySeparatorChar,
+            StringSplitOptions.RemoveEmptyEntries)];
+
+        if (root.Length > 0)
         {
-            return null;
+            folderPath.Insert(0, root.TrimEnd(Path.DirectorySeparatorChar));
         }
 
-        bool shorten = bool.Parse((string)parameter!);
-        double width = (double)values[1]!;
-
-        // The width is -1 until the label has been laid out.
-        if (!shorten || width < 0)
-        {
-            return path;
-        }
-
-        double fontSize = (double)values[2]!;
-        return path.PathEllipsis((int)(width / (fontSize * _averageCharacterWidthFactor)));
+        return new FileReference(path, name) { Root = RootProvider.None, FolderPath = folderPath };
     }
-
-    public object?[] ConvertBack(object? value, Type[] targetTypes, object? parameter, CultureInfo culture)
-        => throw new NotSupportedException();
 }

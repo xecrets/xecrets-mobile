@@ -336,20 +336,15 @@ public sealed class MobileDataStoreTests
     }
 
     [Test]
-    public async Task UnknownRecentFileOperationIsReadAsUnknownAndWrittenUnchanged()
+    public async Task UnknownRecentFileOperationIsReadAsUnknown()
     {
         IUserDataStore user = await _store.CreateUserAsync(NewUser("a@example.com", "A", 1));
         await RewriteStoredUserAsync(storedUser => storedUser["recentFileOperations"] = new JsonArray(
             new JsonObject { ["id"] = "future", ["operation"] = "SomethingNew" }));
 
-        await using (IEditScope<RecentFileOperations> recentFiles = (await user.LoadRecentFileOperationsAsync()).BeginEdit())
-        {
-            Assert.That(recentFiles.Value.Files.Single().Operation, Is.EqualTo(RecentFileOperation.Unknown));
-            recentFiles.Value.Files.Insert(0, new RecentFile { Id = "new", Operation = RecentFileOperation.InPlace });
-        }
+        RecentFileOperations recentFiles = (await user.LoadRecentFileOperationsAsync()).Value;
 
-        JsonObject storedUser = await ReadStoredUserAsync();
-        Assert.That(storedUser["recentFileOperations"]![1]!["operation"]!.GetValue<string>(), Is.EqualTo("SomethingNew"));
+        Assert.That(recentFiles.Files.Single().Operation, Is.EqualTo(RecentFileOperation.Unknown));
     }
 
     [Test]

@@ -29,7 +29,6 @@
 #endregion Copyright and GPL License
 
 using Xecrets.Common.Models;
-using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Utilities;
 
@@ -87,40 +86,41 @@ public static class Extensions
         }
     }
 
-    extension(RecentFileOperation operation)
-    {
-        /// <summary>
-        /// Tells if the operation changes the file, which is then listed as reached through one of My folders. Other
-        /// files are only read, and are listed with a grant to the file itself.
-        /// </summary>
-        public bool IsWriteClass() => operation is RecentFileOperation.InPlace or RecentFileOperation.Edit;
-    }
+    /// <summary>
+    /// Tells if the operation changes the file, which is then listed as reached through one of My folders. Other files
+    /// are only read, and are listed with a grant to the file itself.
+    /// </summary>
+    public static bool IsWriteClass(this RecentFileOperation operation) =>
+        operation is RecentFileOperation.InPlace or RecentFileOperation.Edit;
 
-    extension(DontShowAgain dontShowAgain)
+    public static RecentFile ToRecentFile(this FileReference file, RecentFileOperation operation) =>
+        new() { Id = file.Id, Name = file.Name, Root = file.Root, FolderPath = file.FolderPath, Operation = operation };
+
+    public static FileReference ToFileReference(this RecentFile recentFile) =>
+        new(recentFile.Id, recentFile.Name) { Root = recentFile.Root, FolderPath = recentFile.FolderPath };
+
+    public static string? Stringify(this DontShowAgain dontShowAgain)
     {
-        public string? Stringify()
+        if (dontShowAgain == DontShowAgain.None)
         {
-            if (dontShowAgain == DontShowAgain.None)
-            {
-                return null;
-            }
-
-            List<string> values = [];
-            foreach (DontShowAgain value in Enum.GetValues<DontShowAgain>())
-            {
-                if (value == DontShowAgain.None)
-                {
-                    continue;
-                }
-
-                if (dontShowAgain.HasFlag(value))
-                {
-                    values.Add(value.ToString());
-                }
-            }
-
-            return string.Join(",", values);
+            return null;
         }
+
+        List<string> values = [];
+        foreach (DontShowAgain value in Enum.GetValues<DontShowAgain>())
+        {
+            if (value == DontShowAgain.None)
+            {
+                continue;
+            }
+
+            if (dontShowAgain.HasFlag(value))
+            {
+                values.Add(value.ToString());
+            }
+        }
+
+        return string.Join(",", values);
     }
 
     extension(UserSettings settings)
@@ -150,6 +150,42 @@ public static class Extensions
 
         return flags;
     }
+
+    /// <summary>
+    /// The root as the first segment of a path to show. There is none when the path starts at the top, or when nothing
+    /// is known of where the file or folder is stored.
+    /// </summary>
+    public static IReadOnlyList<string> ToPathSegments(this RootProvider root) =>
+        root.ToDisplay() is { Length: > 0 } display ? [display] : [];
+
+    /// <summary>
+    /// The root as a short text to show, or empty when there is nothing meaningful to show.
+    /// </summary>
+    public static string ToDisplay(this RootProvider root) => root switch
+    {
+        RootProvider.Unknown => "",
+        RootProvider.None => "",
+        RootProvider.Other => "",
+        RootProvider.AndroidPhone => "Phone",
+        RootProvider.AndroidTablet => "Tablet",
+        RootProvider.AndroidDevice => "Device",
+        RootProvider.IPhone => "On My iPhone",
+        RootProvider.IPad => "On My iPad",
+        RootProvider.Mac => "",
+        RootProvider.RemovableStorage => "Media",
+        RootProvider.ExternalDrive => "Media",
+        RootProvider.Downloads => "Downloads",
+        RootProvider.MediaImages => "Images",
+        RootProvider.MediaVideos => "Videos",
+        RootProvider.MediaAudio => "Audio",
+        RootProvider.MediaDocuments => "Documents",
+        RootProvider.ICloudDrive => "iCloud",
+        RootProvider.GoogleDrive => "Drive",
+        RootProvider.OneDrive => "OneDrive",
+        RootProvider.Dropbox => "Dropbox",
+        RootProvider.CloudStorage => "Cloud",
+        _ => throw new ArgumentOutOfRangeException(nameof(root), root, @"Unknown root provider."),
+    };
 
     /// <summary>
     /// Combines a user-facing message with the exception detail, for display as status text.

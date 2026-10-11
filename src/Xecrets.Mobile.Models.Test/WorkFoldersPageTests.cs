@@ -30,6 +30,8 @@
 
 using NUnit.Framework;
 
+using Xecrets.Common.Models;
+
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.PageModels;
 using Xecrets.Mobile.Models.Utilities;
@@ -101,6 +103,28 @@ public sealed class WorkFoldersPageTests
                 $"a{Path.DirectorySeparatorChar}docs",
                 $"b{Path.DirectorySeparatorChar}docs",
                 "notes",
+            ]));
+    }
+
+    [Test]
+    public async Task FoldersWithTheSameNameAreToldApartByWhereTheyAreStored()
+    {
+        TestApp app = new();
+        WorkFoldersPageModel page = app.CreateWorkFoldersPage();
+        (string Id, RootProvider Root)[] folders = [("x/Work", RootProvider.Dropbox), ("y/Work", RootProvider.ICloudDrive)];
+        foreach ((string id, RootProvider root) in folders)
+        {
+            app.Access.PickedFolders.Enqueue(
+                WorkFolderResult.Valid(new WorkFolder(id, "Work", $"grant:{id}") { Root = root }));
+            await page.AddCommand.ExecuteAsync(null);
+        }
+
+        Assert.That(
+            page.Folders.Select(entry => entry.ListDisplayName),
+            Is.EquivalentTo(
+            [
+                $"Dropbox{Path.DirectorySeparatorChar}Work",
+                $"iCloud{Path.DirectorySeparatorChar}Work",
             ]));
     }
 }

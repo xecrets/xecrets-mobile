@@ -80,13 +80,17 @@ and action SHAs in `.github/workflows/ci.yml`. Do not introduce dependencies on
 - Prefer explicit, descriptive names over abbreviations. Use private fields with the `_camelCase` convention.
 - Name base classes with `Base` as a suffix, not a prefix, e.g. `PageModelBase`, not `BasePageModel`.
 - Do not qualify member access with `this.` (e.g. call `Foo()`, not `this.Foo()`), except when calling an extension method, where `this.` is appropriate (e.g. `this.ApplyStandardHeader()`) — extension methods cannot be called unqualified.
-- Keep nullable annotations enabled and initialize nullable-friendly defaults where appropriate, such as `string.Empty` and empty collection literals.
+- Keep nullable annotations enabled and initialize nullable-friendly defaults where appropriate, such as `""` and empty collection literals.
+- Prefer `""` over `string.Empty`.
+- Properties should normally not be nullable. Make a property nullable only when "empty" really needs to be told apart from "not existing at all"; otherwise initialize strings to `""` and collections to `[]`. Do not make a property nullable to keep it out of serialized JSON; there is generally no need to optimize at that level, and if there is, it can be done in other ways.
 - Prefer collection expressions such as `[.. source]` over `source.ToArray()` when materializing a collection as an array.
 - Prefer collection expressions such as `[a, b]` over array creation expressions such as `new[] { a, b }` or `new T[] { a, b }`.
 - Prefer small, focused classes and methods. Keep code-behind thin and move behavior into page models, services, utilities, or repositories.
 - An interface implementation must not expose functionality beyond the members defined by the interface. Move supporting operations to separate collaborators.
   This is design guidance, not something to verify with unit tests, for example by inspecting types with reflection. Unit tests should test behavior, not design.
 - Unless there is a very specific reason, always prefer extension methods over static utility classes.
+- Use an `extension(...)` block only when it holds two or more members for the same receiver. A single extension method is declared with a `this` parameter.
+- Place extension methods only in classes that contain nothing but extension methods, such as `Extensions`, `AndroidExtensions` and `AppleExtensions`, and use them for miscellaneous utilities that have no better place. An operation with a natural owner belongs to that class as an ordinary method, e.g. `AndroidFileLocation.Locate(uri, name)` rather than an extension such as `uri.ToFileReference(name)`. In an extension class, every non-private method is an extension method.
 - Do not declare overloads in interfaces. Express convenience variants as extension methods if needed, or have callers call the single member explicitly, e.g. pass `[id]` to a collection parameter.
 - Follow the existing `async` naming pattern: methods that return `Task` or `Task<T>` should use an `Async` suffix.
 - Use `await using` for disposable async resources, especially database connections and readers.

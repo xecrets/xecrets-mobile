@@ -65,7 +65,7 @@ public sealed class WindowsFileAccess(WorkFolderStorage storage) : IFileAccess
         picker.FileTypeFilter.Add(kind == FilePickerKind.Encrypted ? Texts.Extensions.EncryptedExtension : "*");
         InitializeWithWindow.Initialize(picker, GetWindowHandle());
         StorageFile? file = await picker.PickSingleFileAsync();
-        return file is null ? null : new FileReference(file.Path, file.Name);
+        return file is null ? null : WindowsFileLocation.Locate(file);
     }
 
     public async Task<WorkFolderResult> PickFolderAsync(string initialFolder)
@@ -82,9 +82,17 @@ public sealed class WindowsFileAccess(WorkFolderStorage storage) : IFileAccess
             return WorkFolderResult.Canceled;
         }
 
-        return await CanAccessFolderAsync(folder)
-            ? WorkFolderResult.Valid(new WorkFolder(folder.Path, folder.DisplayName, folder.Path))
-            : WorkFolderResult.NoAccess;
+        if (!await CanAccessFolderAsync(folder))
+        {
+            return WorkFolderResult.NoAccess;
+        }
+
+        FileReference located = WindowsFileLocation.Locate(folder);
+        return WorkFolderResult.Valid(new WorkFolder(located.Id, located.Name, located.Id)
+        {
+            Root = located.Root,
+            FolderPath = located.FolderPath,
+        });
     }
 
     public async Task<WorkFolder?> FindFolderAsync(string fileId) =>
@@ -99,12 +107,12 @@ public sealed class WindowsFileAccess(WorkFolderStorage storage) : IFileAccess
 
     public string GetParentFolder(string fileId) => Path.GetDirectoryName(fileId) ?? string.Empty;
 
-    public IReadOnlyList<string> GetPathSegments(string id, string? rememberedName = null)
+    public IReadOnlyList<string> GetPathSegments(string id, string rememberedName)
     {
         string[] segments = id.Split(
             [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar],
             StringSplitOptions.RemoveEmptyEntries);
-        return rememberedName is null ||
+        return rememberedName.Length == 0 ||
             (segments.Length > 0 && string.Equals(segments[^1], rememberedName, StringComparison.OrdinalIgnoreCase))
             ? segments
             : [.. segments, rememberedName];
@@ -115,6 +123,9 @@ public sealed class WindowsFileAccess(WorkFolderStorage storage) : IFileAccess
 
     // The path is all that is needed to access the file again.
     public Task<bool> KeepFileGrantAsync(string fileId) => Task.FromResult(true);
+
+    // A path tells where the file is from the start.
+    public Task<FileReference> LocateAgainAsync(FileReference file) => Task.FromResult(file);
 
     public bool HasFileGrant(string fileId) => true;
 
@@ -169,7 +180,7 @@ public sealed class WindowsFileAccess(WorkFolderStorage storage) : IFileAccess
             await content.CopyToAsync(output);
         }
 
-        return new FileReference(file.Path, file.Name);
+        return WindowsFileLocation.Locate(file);
     }
 
     private static async Task ProbeAsync(StorageFolder folder)

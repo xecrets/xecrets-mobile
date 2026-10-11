@@ -50,8 +50,8 @@ public sealed class RecentFilesServiceTests
         Assert.That(app.Store.Files.Select(file => (file.Id, file.Operation, file.Name)),
             Is.EqualTo(
             [
-                ("b.txt", RecentFileOperation.Edit, (string?)"b.txt"),
-                ("a.txt", RecentFileOperation.InPlace, null),
+                ("b.txt", RecentFileOperation.Edit, "b.txt"),
+                ("a.txt", RecentFileOperation.InPlace, ""),
             ]));
     }
 
@@ -119,6 +119,42 @@ public sealed class RecentFilesServiceTests
     }
 
     [Test]
+    public async Task ChangedFileThenOnlyReadByItselfStaysListedOnceAsChanged()
+    {
+        TestApp app = new(usesFolderIds: true);
+        app.AddRecent("b.axx", RecentFileOperation.View, "b.axx");
+        app.AddRecent("grant:docs|docs/a.axx", RecentFileOperation.InPlace, "a.axx");
+
+        bool isAdded = await app.Recent.AddAsync(new FileReference("docs/a.axx", "a.axx"), RecentFileOperation.View);
+
+        Assert.That(isAdded, Is.True);
+        Assert.That(app.Store.Files.Select(file => (file.Id, file.Operation)),
+            Is.EqualTo(
+            [
+                ("grant:docs|docs/a.axx", RecentFileOperation.InPlace),
+                ("b.axx", RecentFileOperation.View),
+            ]));
+        Assert.That(app.Access.FileGrants, Is.Empty);
+    }
+
+    [Test]
+    public async Task FileOnlyReadThenChangedThroughAFolderIsListedOnceAsChanged()
+    {
+        TestApp app = new(usesFolderIds: true);
+        app.AddRecent("docs/a.axx", RecentFileOperation.View, "a.axx");
+        app.AddRecent("b.axx", RecentFileOperation.View, "b.axx");
+
+        await app.Recent.AddAsync(new FileReference("grant:docs|docs/a.axx", "a.axx"), RecentFileOperation.InPlace);
+
+        Assert.That(app.Store.Files.Select(file => (file.Id, file.Operation)),
+            Is.EqualTo(
+            [
+                ("grant:docs|docs/a.axx", RecentFileOperation.InPlace),
+                ("b.axx", RecentFileOperation.View),
+            ]));
+    }
+
+    [Test]
     public async Task FileReachedThroughAFolderIsNotListedAsOnlyRead()
     {
         TestApp app = new(usesFolderIds: true);
@@ -162,17 +198,94 @@ public sealed class RecentFilesServiceTests
         app.Store.Files =
         [
             new RecentFile { Id = "b.txt", Operation = RecentFileOperation.View },
-            new RecentFile { Id = "old/a.txt", OperationName = "FutureOperation", Name = "a.txt" },
+            new RecentFile { Id = "old/a.txt", Operation = RecentFileOperation.Edit, Name = "a.txt" },
             new RecentFile { Id = "new/a.txt", Operation = RecentFileOperation.InPlace },
         ];
 
         await app.Recent.ReplaceIdAsync("old/a.txt", "new/a.txt");
 
-        Assert.That(app.Store.Files.Select(file => (file.Id, file.OperationName, file.Name)),
+        Assert.That(app.Store.Files.Select(file => (file.Id, file.Operation, file.Name)),
             Is.EqualTo(
             [
-                ("b.txt", nameof(RecentFileOperation.View), (string?)null),
-                ("new/a.txt", "FutureOperation", "a.txt"),
+                ("b.txt", RecentFileOperation.View, ""),
+                ("new/a.txt", RecentFileOperation.Edit, "a.txt"),
             ]));
+    }
+
+    [Test]
+    public async Task AddedFileIsListedWithWhereItIsStored()
+    {
+        TestApp app = new();
+
+        await app.Recent.AddAsync(
+            new FileReference("a.txt", "a.txt") { Root = RootProvider.GoogleDrive, FolderPath = ["Work", "Secret"] },
+            RecentFileOperation.InPlace);
+
+        Assert.That(app.Store.Files.Select(file => (file.Root, file.FolderPath)),
+            Is.EqualTo([(RootProvider.GoogleDrive, new List<string> { "Work", "Secret" })]));
+    }
+
+    [Test]
+    public async Task FileAddedAgainIsListedWithWhereItIsStoredNow()
+    {
+        TestApp app = new();
+        app.Store.Files =
+        [
+            new RecentFile { Id = "a.txt", Operation = RecentFileOperation.InPlace, Root = RootProvider.Other },
+        ];
+
+        await app.Recent.AddAsync(
+            new FileReference("a.txt", "a.txt") { Root = RootProvider.AndroidPhone, FolderPath = ["Download"] },
+            RecentFileOperation.InPlace);
+
+        Assert.That(app.Store.Files.Select(file => (file.Root, file.FolderPath)),
+            Is.EqualTo([(RootProvider.AndroidPhone, new List<string> { "Download" })]));
+    }
+
+    [Test]
+    public async Task AddedFileIsListedWithWhereItIsStoredOnceUsed()
+    {
+        TestApp app = new();
+        app.Access.LocatedAgain["a.txt"] =
+            new FileReference("a.txt", "a.txt") { Root = RootProvider.OneDrive, FolderPath = ["Pictures"] };
+
+        await app.Recent.AddAsync(
+            new FileReference("a.txt", "a.txt") { Root = RootProvider.CloudStorage },
+            RecentFileOperation.View);
+
+        Assert.That(app.Store.Files.Select(file => (file.Root, file.FolderPath)),
+            Is.EqualTo([(RootProvider.OneDrive, new List<string> { "Pictures" })]));
+    }
+
+    [Test]
+    public async Task FileAddedWithoutKnowingWhereItIsStoredIsListedWithoutIt()
+    {
+        TestApp app = new();
+
+        await app.Recent.AddAsync(new FileReference("a.txt", "a.txt"), RecentFileOperation.InPlace);
+
+        Assert.That(app.Store.Files.Select(file => (file.Root, file.FolderPath)),
+            Is.EqualTo([(RootProvider.Unknown, Array.Empty<string>())]));
+    }
+
+    [Test]
+    public async Task ReplacedIdKeepsWhereTheFileIsStored()
+    {
+        TestApp app = new();
+        app.Store.Files =
+        [
+            new RecentFile
+            {
+                Id = "old/a.txt",
+                Operation = RecentFileOperation.InPlace,
+                Root = RootProvider.Dropbox,
+                FolderPath = ["Work"],
+            },
+        ];
+
+        await app.Recent.ReplaceIdAsync("old/a.txt", "new/a.txt");
+
+        Assert.That(app.Store.Files.Select(file => (file.Id, file.Root, file.FolderPath)),
+            Is.EqualTo([("new/a.txt", RootProvider.Dropbox, new List<string> { "Work" })]));
     }
 }

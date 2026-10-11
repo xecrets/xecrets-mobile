@@ -47,12 +47,15 @@ public partial class RecentFilesPage
 
     public IAsyncRelayCommand<RecentFileEntry> RemoveCommand { get; }
 
+    public IAsyncRelayCommand<RecentFileEntry> ShowFullPathCommand { get; }
+
     public RecentFilesPage(RecentFilesPageModel model, IPageHeaderService pageHeaderService)
     {
         _model = model;
         ReverseCommand = model.ReverseCommand;
         OpenCommand = model.OpenCommand;
         RemoveCommand = model.RemoveCommand;
+        ShowFullPathCommand = model.ShowFullPathCommand;
         InitializeComponent();
         BindingContext = model;
         pageHeaderService.ApplyStandardHeader(this);

@@ -29,18 +29,43 @@
 #endregion Copyright and GPL License
 
 using Xecrets.Common.Models;
+using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models.Models;
 
-/// <param name="FileName">The name of the file, or empty when it is not known.</param>
+/// <param name="File">The file, as listed.</param>
 /// <param name="Operation">The operation that put the file on the list.</param>
 public sealed record RecentFileEntry(
-    string Id,
-    string DisplayPath,
-    string FileName,
+    FileReference File,
     bool IsEncrypted,
     RecentFileOperation Operation)
 {
+    public string Id => File.Id;
+
+    public RootProvider Root => File.Root;
+
+    public IReadOnlyList<string> FolderPath => File.FolderPath;
+
+    /// <summary>
+    /// The name of the file, as far as it is known.
+    /// </summary>
+    public string DisplayName => File.Name.Length > 0 ? File.Name : MobileTexts.RecentFileNameUnknown;
+
+    /// <summary>
+    /// Where the file is stored, as far as it is known. There is no root to show when the folder path starts at the
+    /// top, and nothing at all when nothing is known of where the file is stored.
+    /// </summary>
+    public string DisplayLocation => string.Join(MobileTexts.BreadcrumbSeparator, [.. Root.ToPathSegments(), .. FolderPath]);
+
+    public bool HasLocation => DisplayLocation.Length > 0;
+
+    /// <summary>
+    /// Where the file is stored and its name, as far as they are known.
+    /// </summary>
+    public string DisplayPath => HasLocation
+        ? DisplayLocation + MobileTexts.BreadcrumbSeparator + DisplayName
+        : DisplayName;
+
     public bool IsInPlace => Operation == RecentFileOperation.InPlace;
 
     public bool IsViewed => Operation is RecentFileOperation.View or RecentFileOperation.Edit;

@@ -53,15 +53,19 @@ public sealed class RecentFilesService(
     /// A file listed as changed is reached through one of My folders, which may not give access to it alone, so it
     /// stays listed as changed when it is then only read, and is just moved first.
     /// </para>
+    /// <para>
+    /// The same file may be referred to by different ids, such as by itself or through one of My folders, and is only
+    /// listed once.
+    /// </para>
     /// </summary>
     public async Task<bool> AddAsync(FileReference file, RecentFileOperation operation)
     {
         if (!operation.IsWriteClass())
         {
-            RecentFile? listed = (await GetFilesAsync()).FirstOrDefault(item => item.Id == file.Id);
+            RecentFile? listed = (await GetFilesAsync()).FirstOrDefault(item => IsSameFile(item.Id, file.Id));
             if (listed is not null && listed.Operation.IsWriteClass())
             {
-                await EditFilesAsync(files => [listed, .. files.Where(item => item.Id != file.Id)]);
+                await EditFilesAsync(files => [listed, .. files.Where(item => !IsSameFile(item.Id, file.Id))]);
                 return true;
             }
 
@@ -71,16 +75,12 @@ public sealed class RecentFilesService(
             }
         }
 
+        FileReference located = await fileAccess.LocateAgainAsync(file);
         await EditFilesAsync(files =>
         [
-            new RecentFile
-            {
-                Id = file.Id,
-                Operation = operation,
-                Name = file.Name.Length > 0 ? file.Name : null,
-            },
+            located.ToRecentFile(operation),
             .. files
-                .Where(item => item.Id != file.Id)
+                .Where(item => !IsSameFile(item.Id, file.Id))
                 .Take(_maxRecentListLength - 1),
         ]);
         return true;
@@ -113,20 +113,13 @@ public sealed class RecentFilesService(
         }
     }
 
-    // The operation name is copied as persisted, so that a name not known by this version survives. The file may
-    // already be listed by the new id, and is then only kept where it is listed first.
+    // The file may already be listed by the new id, and is then only kept where it is listed first.
     public Task ReplaceIdAsync(string fileId, string newFileId) =>
         EditFilesAsync(files =>
         [
             .. files
                 .Select(file => file.Id == fileId
-                    ? new RecentFile
-                    {
-                        Id = newFileId,
-                        OperationName = file.OperationName,
-                        Name = file.Name,
-                        FolderName = file.FolderName,
-                    }
+                    ? file with { Id = newFileId }
                     : file)
                 .DistinctBy(file => file.Id),
         ]);

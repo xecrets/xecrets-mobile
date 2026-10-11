@@ -34,8 +34,11 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+
 using Foundation;
+
 using UniformTypeIdentifiers;
+
 using Xecrets.Common.Models;
 using Xecrets.Mobile.Models;
 using Xecrets.Mobile.Models.Abstractions;
@@ -64,7 +67,7 @@ public sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants g
         NSUrl? fileUrl = initialUrl is null
             ? await contentType.PickUrlAsync(null)
             : await initialUrl.WithAccessAsync(() => contentType.PickUrlAsync(initialUrl));
-        return fileUrl is null ? null : grants.Remember(fileUrl);
+        return fileUrl is null ? null : AppleFileLocation.Locate(grants.Add(fileUrl));
     }
 
     public async Task<WorkFolderResult> PickFolderAsync(string initialFolder)
@@ -94,7 +97,15 @@ public sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants g
             }
 
             url.SaveGrant();
-            return WorkFolderResult.Valid(new WorkFolder(url.AbsoluteString!, GetDisplayName(url), url.AbsoluteString!));
+
+            // The top of a storage is shown as where it is stored, since a Dropbox account, for one, is named by an id.
+            (FileReference folder, bool isTop) = AppleFileLocation.LocateFolder(url);
+            string displayName = isTop ? folder.Root.ToString() : GetDisplayName(url);
+            return WorkFolderResult.Valid(new WorkFolder(url.AbsoluteString!, displayName, url.AbsoluteString!)
+            {
+                Root = folder.Root,
+                FolderPath = folder.FolderPath,
+            });
         }
         finally
         {
@@ -117,10 +128,10 @@ public sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants g
     public string GetParentFolder(string fileId) =>
         NSUrl.FromString(fileId)?.RemoveLastPathComponent().AbsoluteString ?? string.Empty;
 
-    public IReadOnlyList<string> GetPathSegments(string id, string? rememberedName = null)
+    public IReadOnlyList<string> GetPathSegments(string id, string rememberedName)
     {
         string[] segments = (NSUrl.FromString(id)?.Path ?? id).Split('/', StringSplitOptions.RemoveEmptyEntries);
-        return rememberedName is null ||
+        return rememberedName.Length == 0 ||
             (segments.Length > 0 && string.Equals(segments[^1], rememberedName, StringComparison.OrdinalIgnoreCase))
             ? segments
             : [.. segments, rememberedName];
@@ -138,7 +149,7 @@ public sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants g
     /// </summary>
     public async Task<bool> KeepFileGrantAsync(string fileId)
     {
-        if (File.Exists(AppleExtensions.GetGrantPath(fileId)))
+        if (File.Exists(fileId.GetGrantPath()))
         {
             return true;
         }
@@ -157,12 +168,28 @@ public sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants g
         }
     }
 
+    /// <summary>
+    /// A file that could only be told to be in cloud storage may tell its provider once it is on the device, which it
+    /// is after it has been used.
+    /// </summary>
+    public async Task<FileReference> LocateAgainAsync(FileReference file)
+    {
+        if (file.Root != RootProvider.CloudStorage || await grants.ResolveAccessAsync(file.Id) is not { } access)
+        {
+            return file;
+        }
+
+        FileReference located = await access.Access.WithAccessAsync(() =>
+            Task.FromResult(AppleFileLocation.Locate(access.File)));
+        return file with { Root = located.Root, FolderPath = located.FolderPath };
+    }
+
     public bool HasFileGrant(string fileId) =>
-        grants.IsPicked(fileId) || AppleExtensions.TryResolveGrant(fileId) is not null;
+        grants.IsPicked(fileId) || fileId.TryResolveGrant() is not null;
 
     public Task ReleaseUnusedGrantsAsync(GrantReferences references)
     {
-        AppleExtensions.ReleaseGrantsExcept([.. references.FolderGrantIds, .. references.FileIds]);
+        references.FolderGrantIds.Concat(references.FileIds).ReleaseGrantsExcept();
         return Task.CompletedTask;
     }
 
@@ -210,7 +237,8 @@ public sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants g
 
     /// <summary>
     /// The picker moves a file to where the user chooses, so the content is first written to a temporary file. Moving
-    /// it, rather than exporting a copy, gives access to the saved file while the app runs.
+    /// it, rather than exporting a copy, gives access to the saved file while the app runs. Where the saved file is,
+    /// is only told by its path, since the provider may lose track of a file just saved when asked about it.
     /// </summary>
     public async Task<FileReference?> SaveAsAsync(string fileName, Stream content)
     {
@@ -232,7 +260,7 @@ public sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants g
             Directory.Delete(directory, true);
         }
 
-        return fileUrl is null ? null : grants.Remember(fileUrl);
+        return fileUrl is null ? null : AppleFileLocation.Locate(grants.Add(fileUrl), isProviderAsked: false);
     }
 
     // The initial folder is reached through the grant of one of My folders, when it is one of them.
@@ -244,8 +272,8 @@ public sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants g
         }
 
         WorkFolder? folder = (await storage.LoadFoldersAsync()).FirstOrDefault(item => item.Id == initialFolder);
-        return (folder is null ? null : AppleExtensions.TryResolveGrant(folder.GrantId)) ??
-            NSUrl.FromString(initialFolder);
+
+        return (folder?.GrantId.TryResolveGrant()) ?? NSUrl.FromString(initialFolder);
     }
 
     /// <summary>

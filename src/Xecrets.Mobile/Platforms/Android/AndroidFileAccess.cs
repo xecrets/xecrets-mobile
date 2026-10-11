@@ -55,8 +55,6 @@ namespace Xecrets.Mobile.Platforms.Android;
 /// </summary>
 public sealed class AndroidFileAccess(WorkFolderStorage storage, IFileWiper fileWiper) : IFileAccess
 {
-    private const string _externalStorageAuthority = "com.android.externalstorage.documents";
-
     private static ContentResolver ContentResolver => Platform.AppContext.ContentResolver!;
 
     /// <summary>
@@ -82,7 +80,7 @@ public sealed class AndroidFileAccess(WorkFolderStorage storage, IFileWiper file
         intent.AddFlags(ActivityFlags.GrantReadUriPermission | ActivityFlags.GrantPersistableUriPermission);
         Intent? result = await StartPickerAsync(intent);
         AndroidUri? fileUri = result?.Data;
-        return fileUri is null ? null : new FileReference(fileUri.ToString()!, GetName(fileUri));
+        return fileUri is null ? null : AndroidFileLocation.Locate(fileUri, GetName(fileUri, ""));
     }
 
     /// <summary>
@@ -125,7 +123,12 @@ public sealed class AndroidFileAccess(WorkFolderStorage storage, IFileWiper file
             return WorkFolderResult.NoAccess;
         }
 
-        return WorkFolderResult.Valid(new WorkFolder(folderUri.ToString()!, GetName(folderUri), treeUri.ToString()!));
+        FileReference folder = AndroidFileLocation.Locate(folderUri, GetName(folderUri, ""));
+        return WorkFolderResult.Valid(new WorkFolder(folder.Id, folder.Name, treeUri.ToString()!)
+        {
+            Root = folder.Root,
+            FolderPath = folder.FolderPath,
+        });
     }
 
     /// <summary>
@@ -149,13 +152,13 @@ public sealed class AndroidFileAccess(WorkFolderStorage storage, IFileWiper file
             .FirstOrDefault());
     }
 
+    // Through the grant of the folder, the provider may tell more of where the file is stored.
     public FileReference GetFileInFolder(WorkFolder folder, FileReference file) =>
-        file with
-        {
-            Id = DocumentsContract.BuildDocumentUriUsingTree(
+        AndroidFileLocation.Locate(
+            DocumentsContract.BuildDocumentUriUsingTree(
                 AndroidUri.Parse(folder.GrantId)!,
-                DocumentsContract.GetDocumentId(AndroidUri.Parse(file.Id)!)!)!.ToString()!,
-        };
+                DocumentsContract.GetDocumentId(AndroidUri.Parse(file.Id)!)!)!,
+            file.Name);
 
     /// <summary>
     /// The parent of a file in a folder is found through the grant of the folder, and that of a file on local storage
@@ -171,15 +174,15 @@ public sealed class AndroidFileAccess(WorkFolderStorage storage, IFileWiper file
                 return DocumentsContract.BuildDocumentUriUsingTree(fileUri, parentDocumentId)!.ToString()!;
             }
 
-            return fileUri.Authority == _externalStorageAuthority
+            return fileUri.Authority.IsExternalStorage()
                 ? DocumentsContract.BuildDocumentUri(
                     fileUri.Authority,
                     GetExternalStorageParentDocumentId(DocumentsContract.GetDocumentId(fileUri)!))!.ToString()!
-                : string.Empty;
+                : "";
         }
-        catch (Exception ex) when (ex is Java.Lang.SecurityException || IsUnsupportedDocumentProviderOperation(ex))
+        catch (Exception ex) when (ex.IsDocumentProviderFailure())
         {
-            return string.Empty;
+            return "";
         }
     }
 
@@ -187,16 +190,16 @@ public sealed class AndroidFileAccess(WorkFolderStorage storage, IFileWiper file
     /// Only the document ids of local storage are paths. Other providers have opaque document ids, so only the name
     /// remembered is known without asking the provider.
     /// </summary>
-    public IReadOnlyList<string> GetPathSegments(string id, string? rememberedName = null)
+    public IReadOnlyList<string> GetPathSegments(string id, string rememberedName)
     {
         AndroidUri uri = AndroidUri.Parse(id)!;
-        if (uri.Authority != _externalStorageAuthority)
+        if (!uri.Authority.IsExternalStorage())
         {
-            return [rememberedName ?? string.Empty];
+            return [rememberedName];
         }
 
         string[] segments = DocumentsContract.GetDocumentId(uri)!.Split([':', '/'], StringSplitOptions.RemoveEmptyEntries);
-        return rememberedName is null ||
+        return rememberedName.Length == 0 ||
             (segments.Length > 0 && string.Equals(segments[^1], rememberedName, StringComparison.OrdinalIgnoreCase))
             ? segments
             : [.. segments, rememberedName];
@@ -245,6 +248,9 @@ public sealed class AndroidFileAccess(WorkFolderStorage storage, IFileWiper file
             return Task.FromResult(HasFileGrant(fileId));
         }
     }
+
+    // The provider and document id tell where the file is from the start.
+    public Task<FileReference> LocateAgainAsync(FileReference file) => Task.FromResult(file);
 
     public bool HasFileGrant(string fileId)
     {
@@ -381,14 +387,14 @@ public sealed class AndroidFileAccess(WorkFolderStorage storage, IFileWiper file
             await content.CopyToAsync(output);
         }
 
-        return new FileReference(fileUri.ToString()!, GetName(fileUri, fileName));
+        return AndroidFileLocation.Locate(fileUri, GetName(fileUri, fileName));
     }
 
     private static Task<Intent?> StartPickerAsync(Intent intent) =>
         ((MainActivity)Platform.CurrentActivity!).StartDocumentPickerAsync(intent);
 
     // The name is asked from the provider, which may not tell it, such as when it cannot be reached now.
-    private static string GetName(AndroidUri uri, string fallback = "")
+    private static string GetName(AndroidUri uri, string fallback)
     {
         try
         {
@@ -535,7 +541,7 @@ public sealed class AndroidFileAccess(WorkFolderStorage storage, IFileWiper file
 
     private static async Task<string> ProbeAsync(AndroidUri folderUri)
     {
-        string status = string.Empty;
+        string status = "";
         string name = $".xecrets-probe-{Guid.NewGuid():N}";
         AndroidUri? createdUri = DocumentsContract.CreateDocument(
             ContentResolver,
@@ -602,8 +608,7 @@ public sealed class AndroidFileAccess(WorkFolderStorage storage, IFileWiper file
         {
             return string.IsNullOrEmpty(await ProbeAsync(folderUri));
         }
-        catch (Exception ex) when (ex is IOException or Java.Lang.SecurityException ||
-                                   IsUnsupportedDocumentProviderOperation(ex))
+        catch (Exception ex) when (ex is IOException || ex.IsDocumentProviderFailure())
         {
             return false;
         }
@@ -630,11 +635,11 @@ public sealed class AndroidFileAccess(WorkFolderStorage storage, IFileWiper file
                 return true;
             }
         }
-        catch (Exception ex) when (ex is Java.Lang.SecurityException || IsUnsupportedDocumentProviderOperation(ex))
+        catch (Exception ex) when (ex.IsDocumentProviderFailure())
         {
         }
 
-        if (fileUri.Authority != _externalStorageAuthority)
+        if (fileUri.Authority != AndroidFileLocation.ExternalStorageAuthority)
         {
             return false;
         }
@@ -668,15 +673,17 @@ public sealed class AndroidFileAccess(WorkFolderStorage storage, IFileWiper file
     // The path of a document ends with the document itself, after its folder. Returns null for providers that cannot
     // tell the path of a document, such as some with opaque document ids.
     private static string? FindParentInPath(AndroidUri fileUri) =>
-        TryFindDocumentPath(fileUri) is { Count: >= 2 } documentIds ? documentIds[documentIds.Count - 2] : null;
+        AndroidFileLocation.TryFindDocumentPath(fileUri) is { Count: >= 2 } documentIds
+            ? documentIds[documentIds.Count - 2]
+            : null;
 
     private static int GetDocumentDepth(WorkFolder folder)
     {
         AndroidUri folderUri = GetFolderDocumentUri(folder);
-        IList<string>? documentIds = TryFindDocumentPath(folderUri);
+        IList<string>? documentIds = AndroidFileLocation.TryFindDocumentPath(folderUri);
         return documentIds is not null
             ? documentIds.Count
-            : folderUri.Authority == _externalStorageAuthority
+            : folderUri.Authority.IsExternalStorage()
                 ? DocumentsContract.GetDocumentId(folderUri)!
                     .Split([':', '/'], StringSplitOptions.RemoveEmptyEntries)
                     .Length
@@ -688,24 +695,6 @@ public sealed class AndroidFileAccess(WorkFolderStorage storage, IFileWiper file
             AndroidUri.Parse(folder.GrantId)!,
             DocumentsContract.GetDocumentId(AndroidUri.Parse(folder.Id)!)!)!;
 
-    private static IList<string>? TryFindDocumentPath(AndroidUri uri)
-    {
-        try
-        {
-            return DocumentsContract.FindDocumentPath(ContentResolver, uri)?.GetPath();
-        }
-        catch (Java.Lang.SecurityException)
-        {
-            // Finding the path of a document that is not under a tree grant, such as a file picked by itself, requires
-            // MANAGE_DOCUMENTS, which only the system has.
-            return null;
-        }
-        catch (Exception ex) when (IsUnsupportedDocumentProviderOperation(ex))
-        {
-            return null;
-        }
-    }
-
     private static string GetExternalStorageParentDocumentId(string documentId)
     {
         int separatorIndex = documentId.LastIndexOf('/');
@@ -713,9 +702,4 @@ public sealed class AndroidFileAccess(WorkFolderStorage storage, IFileWiper file
             ? documentId[..separatorIndex]
             : documentId[..(documentId.IndexOf(':') + 1)];
     }
-
-    private static bool IsUnsupportedDocumentProviderOperation(Exception exception) =>
-        exception is Java.IO.FileNotFoundException or
-        Java.Lang.IllegalArgumentException or
-        Java.Lang.UnsupportedOperationException;
 }

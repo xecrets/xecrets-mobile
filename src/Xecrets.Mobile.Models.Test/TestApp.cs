@@ -120,7 +120,7 @@ internal sealed class TestApp
 
     public void AddFile(string path, string content = "text") => Access.Files[path] = Encoding.UTF8.GetBytes(content);
 
-    public void AddRecent(string id, RecentFileOperation operation, string? name = null) =>
+    public void AddRecent(string id, RecentFileOperation operation, string name = "") =>
         Store.Files.Add(new RecentFile { Id = id, Operation = operation, Name = name });
 
     public RecentFilesPageModel CreateRecentFilesPage() =>

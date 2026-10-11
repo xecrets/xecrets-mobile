@@ -30,6 +30,8 @@
 
 using System.Linq;
 
+using CommunityToolkit.Maui.Behaviors;
+
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 
@@ -54,8 +56,8 @@ public sealed partial class ReleaseRemovedCommandsBehavior : Behavior<Layout>
         base.OnDetachingFrom(bindable);
     }
 
-    // MAUI has no public way to enumerate the bindings of an element, so the command properties of the controls and
-    // gesture recognizers are listed here. Every property can be tried on every object, since RemoveBinding does
+    // MAUI has no public way to enumerate the bindings of an element, so the command properties of the controls,
+    // gesture recognizers and behaviors are listed here. Every property can be tried on every object, since RemoveBinding does
     // nothing without a binding, and IsSet is false for a property the object does not have.
     private static readonly BindableProperty[] _commandProperties =
     [
@@ -85,6 +87,8 @@ public sealed partial class ReleaseRemovedCommandsBehavior : Behavior<Layout>
         DropGestureRecognizer.DragOverCommandProperty,
         DropGestureRecognizer.DragLeaveCommandProperty,
         DropGestureRecognizer.DropCommandProperty,
+        TouchBehavior.CommandProperty,
+        TouchBehavior.LongPressCommandProperty,
     ];
 
     private static void OnChildRemoved(object? sender, ElementEventArgs e) => Release(e.Element);
@@ -98,6 +102,11 @@ public sealed partial class ReleaseRemovedCommandsBehavior : Behavior<Layout>
             foreach (BindableObject recognizer in view.GestureRecognizers.OfType<BindableObject>())
             {
                 Clear(recognizer);
+            }
+
+            foreach (Behavior behavior in view.Behaviors)
+            {
+                Clear(behavior);
             }
         }
 

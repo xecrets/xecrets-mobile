@@ -76,10 +76,10 @@ public interface IFileAccess
 
     /// <summary>
     /// The path of the file or folder as segments to show, the last being its name. Only what can be told from the id
-    /// is used, so that it works without access to the file. The remembered name is the last segment when the id does
-    /// not tell it.
+    /// is used, so that it works without access to the file. The remembered name, unless empty, is the last segment
+    /// when the id does not tell it.
     /// </summary>
-    IReadOnlyList<string> GetPathSegments(string id, string? rememberedName = null);
+    IReadOnlyList<string> GetPathSegments(string id, string rememberedName);
 
     /// <summary>
     /// Tells if two ids refer to the same file, such as one picked by itself and the same file reached through one of
@@ -91,6 +91,12 @@ public interface IFileAccess
     /// Keeps the access to a picked file for reading it again later. Returns false when it cannot be kept.
     /// </summary>
     Task<bool> KeepFileGrantAsync(string fileId);
+
+    /// <summary>
+    /// Tells again where the file is stored, after it has been used. Some storage only tells it once the file is on the
+    /// device, which it may not be when it is picked. Returns the file as it is when it cannot be told better.
+    /// </summary>
+    Task<FileReference> LocateAgainAsync(FileReference file);
 
     /// <summary>
     /// Tells if there is access to the file by itself, such as kept by <see cref="KeepFileGrantAsync"/>.

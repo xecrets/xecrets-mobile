@@ -59,6 +59,33 @@ public sealed class RecentFilesPageTests
     }
 
     [Test]
+    public async Task FilesAreShownWithWhereTheyAreStoredAsFarAsKnown()
+    {
+        TestApp app = new();
+        app.Store.Files =
+        [
+            new RecentFile
+            {
+                Id = "docs/a.txt",
+                Operation = RecentFileOperation.InPlace,
+                Root = RootProvider.ICloudDrive,
+                FolderPath = ["docs"],
+            },
+            new RecentFile { Id = "b.txt", Operation = RecentFileOperation.InPlace },
+        ];
+        RecentFilesPageModel page = app.CreateRecentFilesPage();
+
+        await page.LoadCommand.ExecuteAsync(null);
+
+        Assert.That(page.Files.Select(file => (file.Root, file.FolderPath)),
+            Is.EqualTo(new (RootProvider, IReadOnlyList<string>)[]
+            {
+                (RootProvider.ICloudDrive, ["docs"]),
+                (RootProvider.Unknown, []),
+            }));
+    }
+
+    [Test]
     public async Task FileWhoseIdCannotBeReadIsShownByItsRememberedName()
     {
         TestApp app = new();
@@ -68,9 +95,44 @@ public sealed class RecentFilesPageTests
 
         await page.LoadCommand.ExecuteAsync(null);
 
-        Assert.That(page.Files.Select(file => file.DisplayPath),
+        Assert.That(page.Files.Select(file => file.DisplayName),
             Is.EqualTo(["a.axx", MobileTexts.RecentFileNameUnknown]));
+        Assert.That(page.Files.Select(file => file.DisplayLocation), Is.EqualTo(["", ""]));
         Assert.That(page.Files[0].IsEncrypted, Is.True);
+    }
+
+    [Test]
+    public async Task FileIsShownByWhereItIsStoredAndItsName()
+    {
+        TestApp app = new();
+        app.Store.Files =
+        [
+            new RecentFile
+            {
+                Id = "a.axx",
+                Name = "a.axx",
+                Operation = RecentFileOperation.View,
+                Root = RootProvider.GoogleDrive,
+                FolderPath = ["Work", "Secret"],
+            },
+            new RecentFile
+            {
+                Id = "b.txt",
+                Name = "b.txt",
+                Operation = RecentFileOperation.InPlace,
+                Root = RootProvider.None,
+                FolderPath = ["C:", "docs"],
+            },
+        ];
+        RecentFilesPageModel page = app.CreateRecentFilesPage();
+
+        await page.LoadCommand.ExecuteAsync(null);
+
+        Assert.That(page.Files.Select(file => file.DisplayName), Is.EqualTo(["a.axx", "b.txt"]));
+        Assert.That(page.Files.Select(file => file.DisplayLocation),
+            Is.EqualTo(["Drive › Work › Secret", "C: › docs"]));
+        Assert.That(page.Files.Select(file => file.DisplayPath),
+            Is.EqualTo(["Drive › Work › Secret › a.axx", "C: › docs › b.txt"]));
     }
 
     [Test]
@@ -86,6 +148,31 @@ public sealed class RecentFilesPageTests
 
         Assert.That(app.Preview.Prepared, Is.EqualTo(["a.axx"]));
         Assert.That(app.UserInterface.Confirmations, Is.Empty);
+    }
+
+    [Test]
+    public async Task OpenedFileKeepsWhereItIsStored()
+    {
+        TestApp app = new();
+        app.AddFile("downloads/a.axx");
+        app.Access.FileGrants.Add("downloads/a.axx");
+        app.Store.Files =
+        [
+            new RecentFile
+            {
+                Id = "downloads/a.axx",
+                Name = "a.axx",
+                Operation = RecentFileOperation.View,
+                Root = RootProvider.Downloads,
+                FolderPath = ["Work"],
+            },
+        ];
+        RecentFilesPageModel page = await LoadedPageAsync(app);
+
+        await page.OpenCommand.ExecuteAsync(page.Files[0]);
+
+        Assert.That((app.Flow.Source?.Root, app.Flow.Source?.FolderPath),
+            Is.EqualTo((RootProvider.Downloads, new[] { "Work" })));
     }
 
     [Test]
@@ -137,6 +224,23 @@ public sealed class RecentFilesPageTests
         await page.OpenCommand.ExecuteAsync(page.Files[0]);
 
         Assert.That(app.Launcher.Opened, Is.EqualTo([("docs/a.txt", true)]));
+    }
+
+    [Test]
+    public async Task EncryptedFileIsShownLikeAViewedFile()
+    {
+        TestApp app = new();
+        app.AddFolder("docs");
+        app.AddFile("docs/a.axx");
+        app.AddRecent("docs/a.axx", RecentFileOperation.InPlace, "a.axx");
+        RecentFilesPageModel page = await LoadedPageAsync(app);
+
+        await page.OpenCommand.ExecuteAsync(page.Files[0]);
+
+        Assert.That(app.Preview.Prepared, Is.EqualTo(["a.axx"]));
+        Assert.That(app.Launcher.Shared, Is.Empty);
+        Assert.That(app.Store.Files.Select(file => (file.Id, file.Operation)),
+            Is.EqualTo([("docs/a.axx", RecentFileOperation.InPlace)]));
     }
 
     [Test]

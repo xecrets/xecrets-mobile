@@ -150,8 +150,8 @@ public partial class RecentFilesPageModel(
     }
 
     /// <summary>
-    /// Shows a viewed or edited file again, like when decrypting a copy. Other files are opened in another app when
-    /// decrypted, or shared when encrypted, where they are stored.
+    /// Shows a viewed or edited file again, or a file encrypted where it is, like when decrypting a copy. Other files
+    /// are opened in another app when decrypted, or shared when encrypted, where they are stored.
     /// </summary>
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private async Task OpenAsync(RecentFileEntry entry)
@@ -174,7 +174,7 @@ public partial class RecentFilesPageModel(
 
     private async Task OpenFileAsync(RecentFileEntry entry, FileReference file)
     {
-        if (entry.IsViewed)
+        if (entry.IsViewed || entry.IsInPlace && entry.IsEncrypted)
         {
             if (!await fileOperations.PreviewAsync(file))
             {
@@ -195,6 +195,9 @@ public partial class RecentFilesPageModel(
             await UserInterfaceService.DisplayMessageAsync(MobileTexts.DialogTextNoAppToOpenFile);
         }
     }
+
+    [RelayCommand]
+    private Task ShowFullPathAsync(RecentFileEntry entry) => UserInterfaceService.DisplayMessageAsync(entry.DisplayPath);
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private Task ReverseAsync(RecentFileEntry entry) => ReverseFilesAsync([entry]);
@@ -293,7 +296,7 @@ public partial class RecentFilesPageModel(
     /// </summary>
     private async Task<FileReference?> AccessAsync(RecentFileEntry entry, bool isChanged)
     {
-        FileReference file = new(entry.Id, entry.FileName);
+        FileReference file = entry.File;
         if (isChanged || entry.Operation.IsWriteClass())
         {
             FileReference? reachable = await folderAccess.EnsureFolderAccessAsync(file);
@@ -377,31 +380,9 @@ public partial class RecentFilesPageModel(
         _ => throw new InvalidOperationException($"Unknown file state {SelectedState}."),
     };
 
-    // The name of a file is the one remembered when its id does not tell it. An id that cannot be made sense of, such
-    // as from an earlier version, is shown by the name remembered, so that it can still be removed from the list.
-    private RecentFileEntry CreateEntry(RecentFile recentFile)
+    private static RecentFileEntry CreateEntry(RecentFile recentFile)
     {
-        IReadOnlyList<string> segments;
-        try
-        {
-            segments = fileAccess.GetPathSegments(recentFile.Id, recentFile.Name);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            segments = [recentFile.Name ?? string.Empty];
-        }
-
-        string fileName = segments.Count > 0 ? segments[^1] : string.Empty;
-        if (fileName.Length == 0)
-        {
-            segments = [.. segments.SkipLast(1), MobileTexts.RecentFileNameUnknown];
-        }
-
-        return new RecentFileEntry(
-            recentFile.Id,
-            string.Join(Path.DirectorySeparatorChar, segments),
-            fileName,
-            fileName.IsEncrypted(),
-            recentFile.Operation);
+        FileReference file = recentFile.ToFileReference();
+        return new RecentFileEntry(file, file.Name.IsEncrypted(), recentFile.Operation);
     }
 }

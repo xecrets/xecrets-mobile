@@ -48,31 +48,20 @@ using UniformTypeIdentifiers;
 
 using UIKit;
 
+using Xecrets.Mobile.Models.Utilities;
+
 namespace Xecrets.Mobile.Platforms.Apple;
 
 public static class AppleExtensions
 {
+    // NSFeatureUnsupportedError.
+    private const int _featureUnsupportedError = 3328;
+
     private static string GrantDirectory => Path.Combine(FileSystem.AppDataDirectory, "WorkFolderGrants");
 
     public static async Task<NSUrl?> PickUrlAsync(this UTType contentType, NSUrl? initialUrl)
     {
         UIDocumentPickerViewController picker = new([contentType], false)
-        {
-            DirectoryUrl = initialUrl,
-        };
-        PickerDelegate pickerDelegate = new();
-        picker.Delegate = pickerDelegate;
-        await Platform.GetCurrentUIViewController()!.PresentViewControllerAsync(picker, true);
-        return await pickerDelegate.Completion.Task;
-    }
-
-    /// <summary>
-    /// Moves the file to where the user chooses, and returns the url it was moved to, which gives access to it, or null
-    /// if the user cancels.
-    /// </summary>
-    public static async Task<NSUrl?> SaveUrlAsync(this NSUrl fileUrl, NSUrl? initialUrl)
-    {
-        UIDocumentPickerViewController picker = new([fileUrl], false)
         {
             DirectoryUrl = initialUrl,
         };
@@ -91,6 +80,22 @@ public static class AppleExtensions
 
     extension(NSUrl url)
     {
+        /// <summary>
+        /// Moves the file to where the user chooses, and returns the url it was moved to, which gives access to it, or
+        /// null if the user cancels.
+        /// </summary>
+        public async Task<NSUrl?> SaveUrlAsync(NSUrl? initialUrl)
+        {
+            UIDocumentPickerViewController picker = new([url], false)
+            {
+                DirectoryUrl = initialUrl,
+            };
+            PickerDelegate pickerDelegate = new();
+            picker.Delegate = pickerDelegate;
+            await Platform.GetCurrentUIViewController()!.PresentViewControllerAsync(picker, true);
+            return await pickerDelegate.Completion.Task;
+        }
+
         public async Task<T> WithAccessAsync<T>(Func<Task<T>> action)
         {
             bool isAccessing = url.StartAccessingSecurityScopedResource();
@@ -166,61 +171,76 @@ public static class AppleExtensions
                 throw new NSErrorException(error);
             }
 
-            File.WriteAllBytes(GetGrantPath(id), [.. bookmark]);
+            File.WriteAllBytes(id.GetGrantPath(), [.. bookmark]);
         }
 
     }
 
-    internal static NSUrl ResolveGrant(string id)
+    extension(string id)
     {
-        NSData bookmark = NSData.FromArray(File.ReadAllBytes(GetGrantPath(id)));
+        internal NSUrl ResolveGrant()
+        {
+            NSData bookmark = NSData.FromArray(File.ReadAllBytes(id.GetGrantPath()));
 #if __MACCATALYST__
 #pragma warning disable CA1416 // The Apple SDK declares this option available on Mac Catalyst 13.0 and later.
-        NSUrlBookmarkResolutionOptions options = NSUrlBookmarkResolutionOptions.WithSecurityScope;
+            NSUrlBookmarkResolutionOptions options = NSUrlBookmarkResolutionOptions.WithSecurityScope;
 #pragma warning restore CA1416
 #else
-        NSUrlBookmarkResolutionOptions options = default;
+            NSUrlBookmarkResolutionOptions options = default;
 #endif
-        NSUrl url = NSUrl.FromBookmarkData(
-            bookmark,
-            options,
-            null,
-            out bool isStale,
-            out NSError? error);
-        if (error is not null)
-        {
-            throw new NSErrorException(error);
+            NSUrl url = NSUrl.FromBookmarkData(
+                bookmark,
+                options,
+                null,
+                out bool isStale,
+                out NSError? error);
+            if (error is not null)
+            {
+                throw new NSErrorException(error);
+            }
+
+            if (isStale)
+            {
+                url.SaveGrant(id);
+            }
+
+            return url;
         }
 
-        if (isStale)
+        internal NSUrl? TryResolveGrant()
         {
-            url.SaveGrant(id);
+            try
+            {
+                return File.Exists(id.GetGrantPath()) ? id.ResolveGrant() : null;
+            }
+            catch (NSErrorException)
+            {
+                return null;
+            }
         }
 
-        return url;
+        internal string GetGrantPath()
+        {
+            string key = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(id)));
+            return Path.Combine(GrantDirectory, key);
+        }
     }
 
     /// <summary>
     /// Deletes the bookmarks kept for any ids other than those given.
     /// </summary>
-    internal static void ReleaseGrantsExcept(IEnumerable<string> ids)
+    internal static void ReleaseGrantsExcept(this IEnumerable<string> ids)
     {
         if (!Directory.Exists(GrantDirectory))
         {
             return;
         }
 
-        HashSet<string> kept = [.. ids.Select(GetGrantPath)];
+        HashSet<string> kept = [.. ids.Select(id => id.GetGrantPath())];
         foreach (string path in Directory.EnumerateFiles(GrantDirectory).Where(path => !kept.Contains(path)))
         {
             File.Delete(path);
         }
-    }
-
-    internal static string GetGrantPath(string id)
-    {
-        string key = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(id)));
-        return Path.Combine(GrantDirectory, key);
     }
 
     /// <summary>
@@ -228,7 +248,9 @@ public static class AppleExtensions
     /// Some providers, such as Google Drive, do not keep a file at its path until it is asked for this way. The wait,
     /// which may include a download, is asynchronous, and the accessor runs on a background queue with the url the
     /// file is at then. An open stream remains valid after the coordinated read has ended. An exception may not pass
-    /// through the native coordinator, so it is caught in the accessor and set as the result instead.
+    /// through the native coordinator, so it is caught in the accessor and set as the result instead. A provider that
+    /// cannot provide the file yet, such as OneDrive with a file it has not finished syncing, tells that the feature is
+    /// not supported.
     /// </summary>
     private static Task<Stream> OpenCoordinatedReadAsync(NSUrl fileUrl)
     {
@@ -239,9 +261,11 @@ public static class AppleExtensions
         {
             try
             {
-                if (error is not null)
+                if (error != null!)
                 {
-                    opened.SetException(new NSErrorException(error));
+                    opened.SetException(error.Domain == NSError.CocoaErrorDomain && error.Code == _featureUnsupportedError
+                        ? new IOException(MobileTexts.DialogTextFileNotAvailable, new NSErrorException(error))
+                        : new NSErrorException(error));
                     return;
                 }
 
@@ -258,18 +282,6 @@ public static class AppleExtensions
             }
         });
         return opened.Task;
-    }
-
-    internal static NSUrl? TryResolveGrant(string id)
-    {
-        try
-        {
-            return File.Exists(GetGrantPath(id)) ? ResolveGrant(id) : null;
-        }
-        catch (NSErrorException)
-        {
-            return null;
-        }
     }
 
     private sealed class PickerDelegate : UIDocumentPickerDelegate

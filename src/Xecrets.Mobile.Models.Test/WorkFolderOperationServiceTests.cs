@@ -59,7 +59,7 @@ public sealed class WorkFolderOperationServiceTests
         Assert.That(app.Access.Files.Keys, Is.EquivalentTo([$"docs/{encryptedName}"]));
         Assert.That(app.Wiper.Wiped, Is.EqualTo(["docs/a.txt"]));
         Assert.That(app.Store.Files.Select(file => (file.Id, file.Name)),
-            Is.EqualTo([($"docs/{encryptedName}", (string?)encryptedName), ("other.txt", null)]));
+            Is.EqualTo([($"docs/{encryptedName}", encryptedName), ("other.txt", "")]));
     }
 
     /// <summary>
@@ -93,6 +93,32 @@ public sealed class WorkFolderOperationServiceTests
         Assert.That(result, Is.EqualTo(new FileReference("grant:docs|docs/a.txt", "a.txt")));
         Assert.That(app.Access.Files.Keys, Is.EquivalentTo(["docs/a.txt"]));
         Assert.That(app.RecentIds(), Is.EqualTo(["grant:docs|docs/a.txt"]));
+    }
+
+    [Test]
+    public async Task EncryptedFileIsStoredWhereTheSourceWas()
+    {
+        TestApp app = new();
+        app.AddFile("docs/a.txt");
+        FileReference source = new("docs/a.txt", "a.txt") { Root = RootProvider.OneDrive, FolderPath = ["docs"] };
+
+        FileReference result = await app.OperationService.EncryptAsync(source);
+
+        Assert.That((result.Root, result.FolderPath), Is.EqualTo((RootProvider.OneDrive, source.FolderPath)));
+        Assert.That(app.Store.Files.Select(file => (file.Root, file.FolderPath)),
+            Is.EqualTo([(RootProvider.OneDrive, new List<string> { "docs" })]));
+    }
+
+    [Test]
+    public async Task DecryptedFileIsStoredWhereTheSourceWas()
+    {
+        TestApp app = new(usesFolderIds: true);
+        app.Access.Files["docs/x.axx"] = "ENC:a.txt\ntext"u8.ToArray();
+        FileReference source = new("grant:docs|docs/x.axx", "x.axx") { Root = RootProvider.IPhone, FolderPath = ["docs"] };
+
+        FileReference? result = await app.OperationService.DecryptWithKnownPasswordsAsync(source);
+
+        Assert.That((result?.Root, result?.FolderPath), Is.EqualTo((RootProvider.IPhone, source.FolderPath)));
     }
 
     [Test]

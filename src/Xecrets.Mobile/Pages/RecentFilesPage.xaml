@@ -33,13 +33,12 @@
              xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
              xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
              xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
-             xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="Xecrets.Mobile.Pages.RecentFilesPage"
              x:Name="PageRoot"
              x:DataType="pageModels:RecentFilesPageModel">
     <ContentPage.Resources>
         <ResourceDictionary>
-            <utilities:PathEllipsisConverter x:Key="PathEllipsisConverter" />
             <FontImageSource x:Key="IconEncryptFile"
                              Glyph="{x:Static f:FluentUI.lock_closed_28_regular}"
                              FontFamily="{x:Static f:FluentUI.FontFamily}"
@@ -189,36 +188,38 @@
                                                             </DataTrigger>
                                                         </ImageButton.Triggers>
                                                     </ImageButton>
-                                                    <Border Grid.Column="1"
+                                                    <Border x:Name="EntryBorder"
+                                                            Grid.Column="1"
                                                             Background="{AppThemeBinding Light={StaticResource LightBackground}, Dark={StaticResource DarkBackground}}"
                                                             StrokeThickness="0"
                                                             StrokeShape="RoundRectangle 8"
                                                             Padding="12,0">
-                                                        <Border.GestureRecognizers>
-                                                            <TapGestureRecognizer Command="{Binding OpenCommand,
-                                                                                        Source={x:Reference PageRoot},
-                                                                                        x:DataType=pages:RecentFilesPage}"
-                                                                                  CommandParameter="{Binding .}" />
-                                                        </Border.GestureRecognizers>
-                                                        <!-- WinUI can only trim the end, so on Windows the path is shortened to
-                                                             about what fits the width of the label instead. -->
-                                                        <Label x:Name="PathLabel"
-                                                               LineBreakMode="{OnPlatform Default=HeadTruncation, WinUI=NoWrap}"
-                                                               HorizontalTextAlignment="{OnPlatform Default=Start, WinUI=End}"
-                                                               VerticalOptions="Center">
-                                                            <Label.Text>
-                                                                <MultiBinding Converter="{StaticResource PathEllipsisConverter}"
-                                                                              ConverterParameter="{OnPlatform Default=False, WinUI=True}">
-                                                                    <Binding Path="DisplayPath" />
-                                                                    <Binding Path="Width"
-                                                                             Source="{x:Reference PathLabel}"
-                                                                             x:DataType="Label" />
-                                                                    <Binding Path="FontSize"
-                                                                             Source="{x:Reference PathLabel}"
-                                                                             x:DataType="Label" />
-                                                                </MultiBinding>
-                                                            </Label.Text>
-                                                        </Label>
+                                                        <!-- Toolkit behaviors do not inherit the binding context of their view. -->
+                                                        <Border.Behaviors>
+                                                            <toolkit:TouchBehavior BindingContext="{Binding BindingContext,
+                                                                                         Source={x:Reference EntryBorder},
+                                                                                         x:DataType=Border}"
+                                                                                   Command="{Binding OpenCommand,
+                                                                                         Source={x:Reference PageRoot},
+                                                                                         x:DataType=pages:RecentFilesPage}"
+                                                                                   CommandParameter="{Binding .}"
+                                                                                   LongPressCommand="{Binding ShowFullPathCommand,
+                                                                                         Source={x:Reference PageRoot},
+                                                                                         x:DataType=pages:RecentFilesPage}"
+                                                                                   LongPressCommandParameter="{Binding .}" />
+                                                        </Border.Behaviors>
+                                                        <!-- WinUI can only trim the end, which is accepted there. -->
+                                                        <VerticalStackLayout VerticalOptions="Center">
+                                                            <Label Text="{Binding DisplayName}"
+                                                                   FontSize="13"
+                                                                   MaxLines="1"
+                                                                   LineBreakMode="MiddleTruncation" />
+                                                            <Label Text="{Binding DisplayLocation}"
+                                                                   IsVisible="{Binding HasLocation}"
+                                                                   FontSize="11"
+                                                                   MaxLines="1"
+                                                                   LineBreakMode="MiddleTruncation" />
+                                                        </VerticalStackLayout>
                                                     </Border>
                                                     <ImageButton Grid.Column="2"
                                                                  Background="Transparent"

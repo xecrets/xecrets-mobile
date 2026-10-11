@@ -48,10 +48,10 @@ public sealed class AppleFileGrants(WorkFolderStorage storage)
     // The urls the pickers gave while the app runs, by file id, which carry the access to the file picked.
     private readonly Dictionary<string, NSUrl> _picked = [];
 
-    public FileReference Remember(NSUrl fileUrl)
+    public NSUrl Add(NSUrl fileUrl)
     {
         _picked[fileUrl.AbsoluteString!] = fileUrl;
-        return new FileReference(fileUrl.AbsoluteString!, fileUrl.LastPathComponent!);
+        return fileUrl;
     }
 
     public bool IsPicked(string fileId) => _picked.ContainsKey(fileId);
@@ -68,7 +68,7 @@ public sealed class AppleFileGrants(WorkFolderStorage storage)
         int innermostLength = -1;
         foreach (WorkFolder folder in await storage.LoadFoldersAsync())
         {
-            if (AppleExtensions.TryResolveGrant(folder.GrantId)?.Path is not { } grantPath)
+            if (folder.GrantId.TryResolveGrant()?.Path is not { } grantPath)
             {
                 continue;
             }
@@ -109,12 +109,12 @@ public sealed class AppleFileGrants(WorkFolderStorage storage)
 
         NSUrl fileUrl = NSUrl.FromString(fileId)!;
         if (await FindFolderAsync(fileId, isFolderItself: false) is { } folder &&
-            AppleExtensions.TryResolveGrant(folder.GrantId) is { } grant)
+            folder.GrantId.TryResolveGrant() is { } grant)
         {
             return (grant, fileUrl);
         }
 
-        return AppleExtensions.TryResolveGrant(fileId) is { } own && own.LastPathComponent == fileUrl.LastPathComponent
+        return fileId.TryResolveGrant() is { } own && own.LastPathComponent == fileUrl.LastPathComponent
             ? (own, own)
             : null;
     }
@@ -123,7 +123,7 @@ public sealed class AppleFileGrants(WorkFolderStorage storage)
     // resolved again for each use.
     public async Task<NSUrl> GetFolderGrantAsync(string id, bool isFolderItself) =>
         await FindFolderAsync(id, isFolderItself) is { } folder
-            ? AppleExtensions.ResolveGrant(folder.GrantId)
+            ? folder.GrantId.ResolveGrant()
             : throw new IOException("The file is not in one of My folders.");
 
     public static string ResolvePath(string path) => new NSString(path).ResolveSymlinksInPath().ToString();

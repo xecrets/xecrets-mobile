@@ -54,6 +54,18 @@ internal static class AndroidExtensions
 {
     private static ContentResolver ContentResolver => Platform.CurrentActivity!.ContentResolver!;
 
+    /// <summary>
+    /// Tells if the exception is how a document provider reports that it does not support an operation, cannot find
+    /// the document, or does not give access to it.
+    /// Finding the path of a document that is not under a tree grant, such
+    /// as a file picked by itself, requires MANAGE_DOCUMENTS, which only the system has.
+    /// </summary>
+    public static bool IsDocumentProviderFailure(this Exception exception) =>
+        exception is Java.IO.FileNotFoundException or
+        Java.Lang.IllegalArgumentException or
+        Java.Lang.SecurityException or
+        Java.Lang.UnsupportedOperationException;
+
     // The system Quick Viewer (e.g. com.android.documentsui) commonly registers ACTION_QUICK_VIEW with
     // mimeType="*/*", so HasExternalHandler(quickViewIntent) matches every content type even though the
     // viewer only actually renders this narrower set - anything outside it launches fine but shows its
@@ -65,16 +77,18 @@ internal static class AndroidExtensions
         contentType.StartsWith("video/", StringComparison.OrdinalIgnoreCase) ||
         contentType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase);
 
-    public static Intent CreateQuickViewIntent(this AndroidUri uri, string contentType)
-    {
-        Intent intent = new(Intent.ActionQuickView);
-        intent.SetDataAndTypeAndNormalize(uri, contentType);
-        intent.AddFlags(ActivityFlags.GrantReadUriPermission);
-        return intent;
-    }
+    public static bool IsExternalStorage(this string? authority) => authority == AndroidFileLocation.ExternalStorageAuthority;
 
     extension(AndroidUri uri)
     {
+        public Intent CreateQuickViewIntent(string contentType)
+        {
+            Intent intent = new(Intent.ActionQuickView);
+            intent.SetDataAndTypeAndNormalize(uri, contentType);
+            intent.AddFlags(ActivityFlags.GrantReadUriPermission);
+            return intent;
+        }
+
         /// <summary>
         /// Writes a document with the given name in the folder through a temporary document, and returns the uri of the
         /// written document. A document overwritten is kept aside until the new one is in place, and then removed by

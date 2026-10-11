@@ -28,6 +28,8 @@
 
 #endregion Copyright and GPL License
 
+using Xecrets.Common.Models;
+
 namespace Xecrets.Mobile.Models.Models;
 
 /// <summary>
@@ -37,4 +39,16 @@ namespace Xecrets.Mobile.Models.Models;
 /// path on Windows. A file in one of My folders is referred to through that folder, where the platform tells the
 /// two apart.</param>
 /// <param name="Name">The name of the file, as shown to the user.</param>
-public sealed record FileReference(string Id, string Name);
+public sealed record FileReference(string Id, string Name)
+{
+    /// <summary>
+    /// Where the file is stored, as the platform could tell when the file was picked or saved.
+    /// </summary>
+    public RootProvider Root { get; init; } = RootProvider.Unknown;
+
+    /// <summary>
+    /// The names of the folders leading to the file below <see cref="Root"/>, outermost first, as far as they are
+    /// known.
+    /// </summary>
+    public IReadOnlyList<string> FolderPath { get; init; } = [];
+}

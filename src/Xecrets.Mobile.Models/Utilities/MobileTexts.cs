@@ -88,7 +88,7 @@ public static class MobileTexts
 
     public static string CrashPageTitle => "Sorry, we crashed!";
 
-    public static string WorkFolderDescription => "Xecrets Ez needs access to a folder before it can encrypt or decrypt files in it. Click a folder to select a file.";
+    public static string WorkFolderDescription => "Xecrets Ez needs access to a folder before it can encrypt or decrypt files in it. Not supported in all locations. Click a folder to select a file.";
 
     public static string DialogTextAllowFolderAccessFormat => "To change \"{0}\", Xecrets Ez needs access to the folder it is in. Do you want to choose that folder and add it to \"My folders\"?";
 
@@ -115,6 +115,8 @@ public static class MobileTexts
     public static string DialogTextFileDeleted => "The file was only deleted, and may still be recoverable.";
 
     public static string DialogTextRecentFileNotAccessible => "The file was not found, or is not available right now. Do you want to remove it from the list?";
+
+    public static string DialogTextFileNotAvailable => "The storage service cannot provide the file right now. It may still be syncing, so please try again later.";
 
     public static string DialogTextNoAppToOpenFile => "There is no app on this device that can open this file.";
 

@@ -44,13 +44,17 @@ public sealed class WorkFolderStorage(ProfileSession profileSession)
 
     /// <summary>
     /// Adds the folder first. A folder already stored keeps the name the user may have given it, and is reached through
-    /// the new grant from now on. Returns the stored folder.
+    /// the new grant from now on, where it is stored as told now. Returns the stored folder.
     /// </summary>
     public async Task<WorkFolder> AddFolderAsync(WorkFolder folder)
     {
         await using IEditScope<WorkFolders> scope = (await RequireUserStore().LoadWorkFoldersAsync()).BeginEdit();
         WorkFolder stored = scope.Value.Folders.FirstOrDefault(item => item.Id == folder.Id) is { } existing
             ? new WorkFolder(existing.Id, existing.DisplayName, folder.GrantId)
+            {
+                Root = folder.Root,
+                FolderPath = folder.FolderPath,
+            }
             : folder;
         scope.Value.Folders = [stored, .. scope.Value.Folders.Where(item => item.Id != folder.Id)];
         return stored;
@@ -89,7 +93,7 @@ public sealed class WorkFolderStorage(ProfileSession profileSession)
     {
         await using IEditScope<WorkFolders> scope = (await RequireUserStore().LoadWorkFoldersAsync()).BeginEdit();
         scope.Value.Folders = [.. scope.Value.Folders.Select(item => item.Id == folder.Id
-            ? new WorkFolder(item.Id, displayName, item.GrantId)
+            ? new WorkFolder(item.Id, displayName, item.GrantId) { Root = item.Root, FolderPath = item.FolderPath }
             : item)];
     }
 

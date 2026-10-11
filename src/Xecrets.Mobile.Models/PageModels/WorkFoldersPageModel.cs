@@ -43,29 +43,16 @@ namespace Xecrets.Mobile.Models.PageModels;
 /// My folders, the folders the user has given the app access to. Files are changed where they are by picking them in
 /// one of these, for the operation the page was opened for, or by default to encrypt or decrypt them as they are.
 /// </summary>
-public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel, IBreadcrumbPageModel
+public partial class WorkFoldersPageModel(
+    WorkFolderStorage storage,
+    IFileAccess fileAccess,
+    FolderAccessWorkflow folderAccess,
+    FileOperationWorkflow fileOperations,
+    IUserInterfaceService userInterfaceService) : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
 {
-    private readonly WorkFolderStorage _storage;
-    private readonly IFileAccess _fileAccess;
-    private readonly FolderAccessWorkflow _folderAccess;
-    private readonly FileOperationWorkflow _fileOperations;
 
     // The hint for the operation the page was opened for, shown once when the page has been shown.
     private string _pendingIntentHint = string.Empty;
-
-    public WorkFoldersPageModel(
-        WorkFolderStorage storage,
-        IFileAccess fileAccess,
-        FolderAccessWorkflow folderAccess,
-        FileOperationWorkflow fileOperations,
-        IUserInterfaceService userInterfaceService)
-        : base(userInterfaceService)
-    {
-        _storage = storage;
-        _fileAccess = fileAccess;
-        _folderAccess = folderAccess;
-        _fileOperations = fileOperations;
-    }
 
     public ObservableCollection<WorkFolderEntry> Folders { get; } = [];
 
@@ -107,9 +94,12 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel,
     {
         try
         {
+            // A folder added by an earlier version does not tell where it is stored, and only its id tells its path.
             WorkFolder[] folders = WithListDisplayNames(
-                [.. await _storage.LoadFoldersAsync()],
-                folder => _fileAccess.GetPathSegments(folder.Id, folder.DisplayName));
+                [.. await storage.LoadFoldersAsync()],
+                folder => folder.Root == RootProvider.Unknown
+                    ? fileAccess.GetPathSegments(folder.Id, folder.DisplayName)
+                    : [.. folder.Root.ToPathSegments(), .. folder.FolderPath, folder.DisplayName]);
 
             Folders.Clear();
             foreach (WorkFolder folder in folders)
@@ -137,7 +127,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel,
         {
             IsBusy = true;
             StatusText = string.Empty;
-            WorkFolder? folder = await _folderAccess.AddFolderAsync();
+            WorkFolder? folder = await folderAccess.AddFolderAsync();
             if (folder is null)
             {
                 return;
@@ -180,7 +170,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel,
     {
         try
         {
-            await _fileOperations.PickAndRunAsync(Intent, folder);
+            await fileOperations.PickAndRunAsync(Intent, folder);
         }
         catch (OperationCanceledException)
         {
@@ -208,7 +198,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel,
         {
             IsBusy = true;
             StatusText = string.Empty;
-            await _storage.RemoveFolderAsync(folder);
+            await storage.RemoveFolderAsync(folder);
             Folders.Remove(Folders.Single(entry => entry.Folder == folder));
         }
         catch (Exception ex)
@@ -236,7 +226,7 @@ public partial class WorkFoldersPageModel : PageModelBase, IStatusTextPageModel,
                 return;
             }
 
-            await _storage.RenameFolderAsync(folder, displayName.Trim());
+            await storage.RenameFolderAsync(folder, displayName.Trim());
 
             // Reload rather than replace the one item, so that the names of any folders it used to share a
             // name with are disambiguated again from the new set of names.

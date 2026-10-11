@@ -68,7 +68,7 @@ public sealed class WorkFolderOperationService(
                 encrypted => coreServices.EncryptAsync(cleartext, encrypted, request));
         }
 
-        FileReference result = new(resultId, destinationName);
+        FileReference result = file with { Id = resultId, Name = destinationName };
         await CompleteAsync(file, result);
         return result;
     }
@@ -132,7 +132,7 @@ public sealed class WorkFolderOperationService(
                 session.OriginalFileName,
                 overwrite,
                 session.DecryptAsync);
-            result = new FileReference(resultId, session.OriginalFileName);
+            result = file with { Id = resultId, Name = session.OriginalFileName };
         }
 
         await CompleteAsync(file, result);

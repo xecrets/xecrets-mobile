@@ -50,6 +50,9 @@ internal sealed class FakeFileAccess(WorkFolderStorage storage) : IFileAccess
 
     public bool CanKeepFileGrants { get; set; } = true;
 
+    // Where files are told to be stored once they have been used, by id.
+    public Dictionary<string, FileReference> LocatedAgain { get; } = [];
+
     public bool UsesFolderIds { get; init; }
 
     // The paths the user picks in turn, null for canceling.
@@ -107,7 +110,7 @@ internal sealed class FakeFileAccess(WorkFolderStorage storage) : IFileAccess
     }
 
     // An id that cannot be made sense of, such as from an earlier version, starts with "bad:".
-    public IReadOnlyList<string> GetPathSegments(string id, string? rememberedName = null)
+    public IReadOnlyList<string> GetPathSegments(string id, string rememberedName)
     {
         if (id.StartsWith("bad:", StringComparison.Ordinal))
         {
@@ -115,7 +118,7 @@ internal sealed class FakeFileAccess(WorkFolderStorage storage) : IFileAccess
         }
 
         string[] segments = PathOf(id).Split('/', StringSplitOptions.RemoveEmptyEntries);
-        return rememberedName is null || (segments.Length > 0 && segments[^1] == rememberedName)
+        return rememberedName.Length == 0 || (segments.Length > 0 && segments[^1] == rememberedName)
             ? segments
             : [.. segments, rememberedName];
     }
@@ -131,6 +134,9 @@ internal sealed class FakeFileAccess(WorkFolderStorage storage) : IFileAccess
 
         return Task.FromResult(canKeep);
     }
+
+    public Task<FileReference> LocateAgainAsync(FileReference file) =>
+        Task.FromResult(LocatedAgain.GetValueOrDefault(file.Id, file));
 
     public bool HasFileGrant(string fileId) => FileGrants.Contains(fileId);
 

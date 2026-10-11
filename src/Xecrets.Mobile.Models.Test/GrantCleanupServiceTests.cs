@@ -75,7 +75,7 @@ public sealed class GrantCleanupServiceTests
         await SetRecentFilesAsync(second,
             new RecentFile { Id = "c.txt", Operation = RecentFileOperation.EncryptCopySendTo },
             new RecentFile { Id = "docs/d.txt", Operation = RecentFileOperation.Edit },
-            new RecentFile { Id = "e.txt", OperationName = "FutureOperation" });
+            new RecentFile { Id = "e.txt", Operation = RecentFileOperation.Unknown });
         FakeFileAccess access = new(null!);
 
         await new GrantCleanupService(store, access, new TestCrashLogService()).RunAsync();
