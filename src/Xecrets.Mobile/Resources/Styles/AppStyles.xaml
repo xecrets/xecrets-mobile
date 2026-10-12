@@ -318,15 +318,18 @@
         <Setter Property="FontAttributes"
                 Value="{OnPlatform WinUI=None, Default=Bold}" />
     </Style>
-    <!-- The title of a card, placed in the top row between the corner icons and centered with them. The
-         horizontal margin clears the corner icons so the title stays centered on the card. -->
+    <!-- The leading margin of a card title, the same as the padding of the icon buttons, so that the title lines
+         up with the icons in the rows below it and is as far from the card edge as the trailing card icons. -->
+    <Thickness x:Key="CardTitleMargin">8,0,0,0</Thickness>
+
+    <!-- The title of a card, in the first column of the top row with the card icons in the second column. -->
     <Style x:Key="CardTitleStyle"
            TargetType="Label"
            BasedOn="{StaticResource Title1}">
-        <Setter Property="HorizontalOptions" Value="Center" />
+        <Setter Property="HorizontalOptions" Value="Start" />
         <Setter Property="VerticalOptions" Value="Center" />
-        <Setter Property="HorizontalTextAlignment" Value="Center" />
-        <Setter Property="Margin" Value="52,0" />
+        <Setter Property="HorizontalTextAlignment" Value="Start" />
+        <Setter Property="Margin" Value="{StaticResource CardTitleMargin}" />
     </Style>
     <Style x:Key="LargeTitle"
            TargetType="Label">

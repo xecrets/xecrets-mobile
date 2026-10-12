@@ -77,13 +77,14 @@
                                 </VerticalStackLayout>
                             </VerticalStackLayout>
                         </Grid>
-                        <Label Grid.Row="0"
-                               Text="{x:Static modelUtilities:MobileTexts.HomeContentTitle}"
-                               Style="{StaticResource CardTitleStyle}" />
-                        <controls:PageInformationButton Grid.Row="0"
-                                                        Style="{StaticResource PageInformationButtonCorner}"
-                                                        Title="{x:Static modelUtilities:MobileTexts.HomeContentTitle}"
-                                                        Message="{x:Static modelUtilities:MobileTexts.HomeDescription}" />
+                        <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                            <Label Text="{x:Static modelUtilities:MobileTexts.HomeContentTitle}"
+                                   Style="{StaticResource CardTitleStyle}" />
+                            <controls:PageInformationButton Grid.Column="1"
+                                                            Style="{StaticResource PageInformationButtonCorner}"
+                                                            Title="{x:Static modelUtilities:MobileTexts.HomeContentTitle}"
+                                                            Message="{x:Static modelUtilities:MobileTexts.HomeDescription}" />
+                        </Grid>
                     </Grid>
                 </Border>
             </VerticalStackLayout>

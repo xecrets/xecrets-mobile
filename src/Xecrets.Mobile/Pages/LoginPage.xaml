@@ -63,13 +63,14 @@
                         </VerticalStackLayout>
                         </VerticalStackLayout>
                     </Grid>
-                    <Label Grid.Row="0"
-                           Text="{x:Static modelUtilities:MobileTexts.SignInHeading}"
-                           Style="{StaticResource CardTitleStyle}" />
-                    <controls:PageInformationButton Grid.Row="0"
-                                                    Style="{StaticResource PageInformationButtonCorner}"
-                                                    Title="{x:Static modelUtilities:MobileTexts.SignInHeading}"
-                                                    Message="{x:Static modelUtilities:MobileTexts.ToolTipSignIn}" />
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                        <Label Text="{x:Static modelUtilities:MobileTexts.SignInHeading}"
+                               Style="{StaticResource CardTitleStyle}" />
+                        <controls:PageInformationButton Grid.Column="1"
+                                                        Style="{StaticResource PageInformationButtonCorner}"
+                                                        Title="{x:Static modelUtilities:MobileTexts.SignInHeading}"
+                                                        Message="{x:Static modelUtilities:MobileTexts.ToolTipSignIn}" />
+                    </Grid>
                 </Grid>
             </Border>
         </VerticalStackLayout>

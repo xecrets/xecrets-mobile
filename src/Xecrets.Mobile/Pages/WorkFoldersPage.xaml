@@ -110,26 +110,26 @@
                             </VerticalStackLayout>
                             </VerticalStackLayout>
                         </Grid>
-                        <Label Grid.Row="0"
-                               Text="{x:Static modelUtilities:MobileTexts.WorkFoldersContentTitle}"
-                               Style="{StaticResource CardTitleStyle}" />
-                        <ImageButton Grid.Row="0"
-                                     HorizontalOptions="Start"
-                                     VerticalOptions="Center"
-                                     Background="Transparent"
-                                     Padding="8"
-                                     Command="{Binding AddCommand}">
-                            <ImageButton.Source>
-                                <FontImageSource Glyph="{x:Static f:FluentUI.add_28_regular}"
-                                                 FontFamily="{x:Static f:FluentUI.FontFamily}"
-                                                 Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
-                                                 Size="28" />
-                            </ImageButton.Source>
-                        </ImageButton>
-                        <pageControls:PageInformationButton Grid.Row="0"
-                                                             Style="{StaticResource PageInformationButtonCorner}"
-                                                             Title="{x:Static modelUtilities:MobileTexts.WorkFoldersContentTitle}"
-                                                             Message="{Binding Description}" />
+                        <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                            <Label Text="{x:Static modelUtilities:MobileTexts.WorkFoldersContentTitle}"
+                                   Style="{StaticResource CardTitleStyle}" />
+                            <HorizontalStackLayout Grid.Column="1" VerticalOptions="Center">
+                                <ImageButton VerticalOptions="Center"
+                                             Background="Transparent"
+                                             Padding="8"
+                                             Command="{Binding AddCommand}">
+                                    <ImageButton.Source>
+                                        <FontImageSource Glyph="{x:Static f:FluentUI.add_28_regular}"
+                                                         FontFamily="{x:Static f:FluentUI.FontFamily}"
+                                                         Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                                                         Size="28" />
+                                    </ImageButton.Source>
+                                </ImageButton>
+                                <pageControls:PageInformationButton Style="{StaticResource PageInformationButtonCorner}"
+                                                                     Title="{x:Static modelUtilities:MobileTexts.WorkFoldersContentTitle}"
+                                                                     Message="{Binding Description}" />
+                            </HorizontalStackLayout>
+                        </Grid>
                     </Grid>
                 </Border>
             </VerticalStackLayout>

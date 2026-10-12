@@ -105,30 +105,6 @@
                                 <VerticalStackLayout x:Name="ActionButtonStack"
                                                      HorizontalOptions="Center"
                                                      Spacing="{StaticResource LayoutSpacing}">
-                                    <Grid>
-                                        <ImageButton HorizontalOptions="Start"
-                                                     VerticalOptions="Center"
-                                                     Background="Transparent"
-                                                     Padding="8"
-                                                     Source="{StaticResource IconDecryptFile}"
-                                                     IsVisible="{Binding IsReverseAllVisible}"
-                                                     Command="{Binding ReverseAllCommand}">
-                                            <ImageButton.Triggers>
-                                                <DataTrigger TargetType="ImageButton"
-                                                             Binding="{Binding ReverseAllEncrypts}"
-                                                             Value="True">
-                                                    <Setter Property="Source"
-                                                            Value="{StaticResource IconEncryptFile}" />
-                                                </DataTrigger>
-                                            </ImageButton.Triggers>
-                                        </ImageButton>
-                                        <ImageButton HorizontalOptions="End"
-                                                     VerticalOptions="Center"
-                                                     Background="Transparent"
-                                                     Padding="10"
-                                                     Source="{StaticResource IconReload}"
-                                                     Command="{Binding ReloadCommand}" />
-                                    </Grid>
                                     <ScrollView Orientation="Horizontal"
                                                 HorizontalOptions="Center">
                                         <pageControls:FileStateSelector SelectedState="{Binding SelectedState}"
@@ -237,20 +213,42 @@
                                 </VerticalStackLayout>
                             </VerticalStackLayout>
                         </Grid>
-                        <Label Grid.Row="0"
-                               Text="{x:Static modelUtilities:MobileTexts.RecentFilesContentTitle}"
-                               Style="{StaticResource CardTitleStyle}" />
-                        <ImageButton Grid.Row="0"
-                                     HorizontalOptions="Start"
-                                     VerticalOptions="Center"
-                                     Background="Transparent"
-                                     Padding="8"
-                                     Source="{StaticResource IconAdd}"
-                                     Command="{Binding AddCommand}" />
-                        <pageControls:PageInformationButton Grid.Row="0"
-                                                            Style="{StaticResource PageInformationButtonCorner}"
-                                                            Title="{x:Static modelUtilities:MobileTexts.RecentFilesContentTitle}"
-                                                            Message="{Binding Description}" />
+                        <Grid Grid.Row="0"
+                              ColumnDefinitions="*,Auto">
+                            <Label Text="{x:Static modelUtilities:MobileTexts.RecentFilesContentTitle}"
+                                   Style="{StaticResource CardTitleStyle}" />
+                            <HorizontalStackLayout Grid.Column="1"
+                                                   VerticalOptions="Center">
+                                <ImageButton VerticalOptions="Center"
+                                             Background="Transparent"
+                                             Padding="8"
+                                             Source="{StaticResource IconDecryptFile}"
+                                             IsVisible="{Binding IsReverseAllVisible}"
+                                             Command="{Binding ReverseAllCommand}">
+                                    <ImageButton.Triggers>
+                                        <DataTrigger TargetType="ImageButton"
+                                                     Binding="{Binding ReverseAllEncrypts}"
+                                                     Value="True">
+                                            <Setter Property="Source"
+                                                    Value="{StaticResource IconEncryptFile}" />
+                                        </DataTrigger>
+                                    </ImageButton.Triggers>
+                                </ImageButton>
+                                <ImageButton VerticalOptions="Center"
+                                             Background="Transparent"
+                                             Padding="8"
+                                             Source="{StaticResource IconAdd}"
+                                             Command="{Binding AddCommand}" />
+                                <ImageButton VerticalOptions="Center"
+                                             Background="Transparent"
+                                             Padding="10"
+                                             Source="{StaticResource IconReload}"
+                                             Command="{Binding ReloadCommand}" />
+                                <pageControls:PageInformationButton Style="{StaticResource PageInformationButtonCorner}"
+                                                                    Title="{x:Static modelUtilities:MobileTexts.RecentFilesContentTitle}"
+                                                                    Message="{Binding Description}" />
+                            </HorizontalStackLayout>
+                        </Grid>
                     </Grid>
                 </Border>
             </VerticalStackLayout>
