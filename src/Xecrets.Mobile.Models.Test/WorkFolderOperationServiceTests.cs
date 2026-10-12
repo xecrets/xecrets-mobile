@@ -125,7 +125,8 @@ public sealed class WorkFolderOperationServiceTests
     public async Task FileThatCannotBeDecryptedIsKeptForAPassword()
     {
         TestApp app = new();
-        app.AddFile("docs/x.axx", "not encrypted");
+        app.Core.Password = "other";
+        app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
 
         FileReference? result = await app.OperationService.DecryptWithKnownPasswordsAsync(
             new FileReference("docs/x.axx", "x.axx"));

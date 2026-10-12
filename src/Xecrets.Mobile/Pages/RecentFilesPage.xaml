@@ -130,7 +130,7 @@
                                                                  CommandParameter="{Binding .}">
                                                         <ImageButton.Triggers>
                                                             <DataTrigger TargetType="ImageButton"
-                                                                         Binding="{Binding IsEncrypted}"
+                                                                         Binding="{Binding IsNameEncrypted}"
                                                                          Value="True">
                                                                 <Setter Property="Source"
                                                                         Value="{StaticResource IconDecryptFile}" />
@@ -157,7 +157,7 @@
                                                                  CommandParameter="{Binding .}">
                                                         <ImageButton.Triggers>
                                                             <DataTrigger TargetType="ImageButton"
-                                                                         Binding="{Binding IsEncrypted}"
+                                                                         Binding="{Binding IsNameEncrypted}"
                                                                          Value="True">
                                                                 <Setter Property="Source"
                                                                         Value="{StaticResource IconShareFile}" />

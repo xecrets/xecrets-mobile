@@ -98,7 +98,7 @@ public sealed class RecentFilesPageTests
         Assert.That(page.Files.Select(file => file.DisplayName),
             Is.EqualTo(["a.axx", MobileTexts.RecentFileNameUnknown]));
         Assert.That(page.Files.Select(file => file.DisplayLocation), Is.EqualTo(["", ""]));
-        Assert.That(page.Files[0].IsEncrypted, Is.True);
+        Assert.That(page.Files[0].IsNameEncrypted, Is.True);
     }
 
     [Test]
@@ -373,6 +373,24 @@ public sealed class RecentFilesPageTests
         Assert.That(app.UserInterface.TransientMessages, Does.Contain(MobileTexts.DialogTextAlreadyEncrypted));
         Assert.That(app.RecentIds(), Is.EqualTo([$"docs/{encryptedName}", "docs/a.txt"]));
         Assert.That(page.Files.Select(file => file.Id), Is.EqualTo(["docs/a.txt"]));
+    }
+
+    [Test]
+    public async Task ReverseOfFileNamedAsEncryptedButNotEncryptedOnlyTellsTheUser()
+    {
+        TestApp app = new();
+        app.AddFolder("docs");
+        app.AddFile("docs/x.axx", "not encrypted");
+        app.AddRecent("docs/x.axx", RecentFileOperation.InPlace, "x.axx");
+        RecentFilesPageModel page = await LoadedPageAsync(app);
+        page.SelectedState = SelectedFileState.Encrypted;
+
+        await page.ReverseAllCommand.ExecuteAsync(null);
+
+        Assert.That(app.UserInterface.TransientMessages, Is.EqualTo([MobileTexts.DialogTextNotEncrypted]));
+        Assert.That(app.UserInterface.Destinations, Is.Empty);
+        Assert.That(page.StatusText, Is.Empty);
+        Assert.That(app.RecentIds(), Is.EqualTo(["docs/x.axx"]));
     }
 
     /// <summary>

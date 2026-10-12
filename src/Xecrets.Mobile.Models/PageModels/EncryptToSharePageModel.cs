@@ -84,7 +84,7 @@ public partial class EncryptToSharePageModel(
                 return;
             }
 
-            if (await fileOperationWorkflow.IsEncryptedAsync(file))
+            if (await fileOperationWorkflow.IsFileOrNameEncryptedAsync(file))
             {
                 await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextAlreadyEncrypted);
                 return;

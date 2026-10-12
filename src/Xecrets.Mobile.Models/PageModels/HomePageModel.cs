@@ -102,7 +102,7 @@ public partial class HomePageModel(
                 return;
             }
 
-            if (await fileOperationWorkflow.IsEncryptedAsync(file))
+            if (await fileOperationWorkflow.IsFileOrNameEncryptedAsync(file))
             {
                 await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextAlreadyEncrypted);
                 return;
@@ -151,7 +151,7 @@ public partial class HomePageModel(
             }
 
             // The picker may offer any file, since not all storage tells which files are encrypted.
-            if (!await fileOperationWorkflow.IsEncryptedAsync(file))
+            if (!await fileOperationWorkflow.IsFileEncryptedAsync(file))
             {
                 await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextNotEncrypted);
                 return;

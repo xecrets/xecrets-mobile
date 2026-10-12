@@ -174,7 +174,7 @@ public partial class RecentFilesPageModel(
 
     private async Task OpenFileAsync(RecentFileEntry entry, FileReference file)
     {
-        if (entry.IsViewed || entry.IsInPlace && entry.IsEncrypted)
+        if (entry.IsViewed || entry.IsInPlace && entry.IsNameEncrypted)
         {
             if (!await fileOperations.PreviewAsync(file))
             {
@@ -184,7 +184,7 @@ public partial class RecentFilesPageModel(
             return;
         }
 
-        if (entry.IsEncrypted)
+        if (entry.IsNameEncrypted)
         {
             await fileLauncher.ShareAsync(file);
             return;
@@ -222,7 +222,7 @@ public partial class RecentFilesPageModel(
             {
                 FileOperationOutcome? outcome = null;
                 WorkFolderOperation operation =
-                    entry.IsEncrypted ? WorkFolderOperation.Decrypt : WorkFolderOperation.Encrypt;
+                    entry.IsNameEncrypted ? WorkFolderOperation.Decrypt : WorkFolderOperation.Encrypt;
                 await RunOnFileAsync(entry, isChanged: true,
                     async file => outcome = await fileOperations.TransformAsync(file, operation));
                 await LoadAsync();
@@ -372,8 +372,8 @@ public partial class RecentFilesPageModel(
 
     private bool IsShown(RecentFileEntry entry) => SelectedState switch
     {
-        SelectedFileState.Encrypted => entry.IsInPlace && entry.IsEncrypted,
-        SelectedFileState.Decrypted => entry.IsInPlace && !entry.IsEncrypted,
+        SelectedFileState.Encrypted => entry.IsInPlace && entry.IsNameEncrypted,
+        SelectedFileState.Decrypted => entry.IsInPlace && !entry.IsNameEncrypted,
         SelectedFileState.Viewed => entry.IsViewed,
         SelectedFileState.Other => entry.IsOther,
         SelectedFileState.All => true,

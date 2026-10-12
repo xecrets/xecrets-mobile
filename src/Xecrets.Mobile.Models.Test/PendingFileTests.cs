@@ -149,7 +149,6 @@ public sealed class PendingFileTests
     }
 
     [TestCase("input.txt", false, AppDestination.EncryptResult)]
-    [TestCase("input.axx", false, AppDestination.EncryptResult)]
     [TestCase("input.txt", true, AppDestination.Preview)]
     [TestCase("input.axx", true, AppDestination.Preview)]
     public async Task ExistingIncomingFileProcessesAfterSignIn(string name, bool isEncrypted, AppDestination destination)
@@ -175,6 +174,27 @@ public sealed class PendingFileTests
 
         Assert.That(userInterface.Destinations, Is.EqualTo([AppDestination.Login, destination]));
         Assert.That(userInterface.Messages, Is.Empty);
+    }
+
+    [Test]
+    public async Task IncomingFileNamedAsEncryptedButNotEncryptedIsOnlyReported()
+    {
+        TransientFileService transient = CreateTransientService();
+        TestUserInterfaceService userInterface = new() { CanProcessIncomingFiles = true, CanReceiveIncomingFiles = true };
+        TestProfileService profile = new() { IsAuthenticated = true };
+        TestCoreServices core = new();
+        IncomingFileService incoming = new(profile, transient, null!, null!, new FlowContext(), core, userInterface);
+        await incoming.ReceiveAsync(async () =>
+        {
+            string path = transient.CreateIncomingPath("input.axx");
+            await File.WriteAllBytesAsync(path, [0x00]);
+            return new IncomingFileInfo(path, "input.axx", "application/octet-stream");
+        });
+
+        await incoming.ProcessPendingAsync();
+
+        Assert.That(userInterface.Destinations, Is.Empty);
+        Assert.That(userInterface.Messages, Is.EqualTo([MobileTexts.DialogTextNotEncrypted]));
     }
 
     [TestCase(false)]

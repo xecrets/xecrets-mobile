@@ -33,6 +33,7 @@ using System.Text;
 
 using Xecrets.Core.Abstractions;
 using Xecrets.Core.Models;
+using Xecrets.Core.Public;
 
 namespace Xecrets.Mobile.Models.Test;
 
@@ -64,8 +65,13 @@ internal sealed class FakeCoreServices : ICoreServices
     public async Task<IDecryptionSession> OpenDecryptionAsync(Stream encrypted, DecryptRequest request)
     {
         string contents = await new StreamReader(encrypted).ReadToEndAsync();
-        if (!contents.StartsWith(_marker, StringComparison.Ordinal)
-            || (Password is not null && request.Identities.All(identity => identity.Passphrase != Password)))
+        if (!contents.StartsWith(_marker, StringComparison.Ordinal))
+        {
+            throw new XecretsCoreException("No magic Guid was found.", ErrorCode.MagicGuidMissing,
+                new InvalidDataException());
+        }
+
+        if (Password is not null && request.Identities.All(identity => identity.Passphrase != Password))
         {
             return new FakeDecryptionSession(false, string.Empty, string.Empty);
         }

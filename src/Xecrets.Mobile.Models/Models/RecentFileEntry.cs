@@ -37,7 +37,7 @@ namespace Xecrets.Mobile.Models.Models;
 /// <param name="Operation">The operation that put the file on the list.</param>
 public sealed record RecentFileEntry(
     FileReference File,
-    bool IsEncrypted,
+    bool IsNameEncrypted,
     RecentFileOperation Operation)
 {
     public string Id => File.Id;

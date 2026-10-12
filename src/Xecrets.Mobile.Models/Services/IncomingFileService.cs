@@ -33,6 +33,7 @@ using Xecrets.Core.Abstractions;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Utilities;
+using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Models.Services;
 
@@ -103,10 +104,20 @@ public sealed class IncomingFileService(
         await HandleAuthenticatedAsync(file);
     }
 
+    /// <summary>
+    /// Shows a received file that is found to be encrypted, whatever its name, and encrypts any other file, unless it
+    /// is named as encrypted, which the user is told is not so.
+    /// </summary>
     private async Task HandleAuthenticatedAsync(IncomingFileInfo file)
     {
         bool isEncrypted = await coreServices.IsEncryptedAsync(
             () => Task.FromResult<Stream>(File.OpenRead(file.FilePath)));
+        if (!isEncrypted && file.DisplayName.IsEncrypted())
+        {
+            await userInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextNotEncrypted);
+            return;
+        }
+
         flowContext.Begin(
             FlowOrigin.ReceivedFile,
             isEncrypted ? WorkFolderOperation.Decrypt : WorkFolderOperation.Encrypt);

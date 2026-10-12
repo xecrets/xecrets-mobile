@@ -33,6 +33,7 @@ using Xecrets.Core.Abstractions;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Utilities;
+using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Models.Services;
 
@@ -51,9 +52,8 @@ public sealed class FileOperationWorkflow(
     IUserInterfaceService userInterfaceService)
 {
     /// <summary>
-    /// Lets the user pick a file in the folder, and does what is intended with it. Without a given operation, the
-    /// contents of the file decide whether it is encrypted or decrypted. A file that is not encrypted is not decrypted,
-    /// but the user is told so.
+    /// Lets the user pick a file in the folder, and does what is intended with it. Without a given operation, the name
+    /// of the file decides whether it is encrypted or decrypted.
     /// </summary>
     public async Task PickAndRunAsync(WorkFolderIntent intent, WorkFolder folder)
     {
@@ -73,28 +73,47 @@ public sealed class FileOperationWorkflow(
             case WorkFolderIntent.Encrypt:
                 await TransformAsync(file, WorkFolderOperation.Encrypt);
                 return;
+
+            case WorkFolderIntent.Decrypt:
+                await TransformAsync(file, WorkFolderOperation.Decrypt);
+                return;
         }
 
-        bool isEncrypted = await IsEncryptedAsync(file);
-        if (intent == WorkFolderIntent.Decrypt && !isEncrypted)
-        {
-            await userInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextNotEncrypted);
-            return;
-        }
-
-        await TransformAsync(file, isEncrypted ? WorkFolderOperation.Decrypt : WorkFolderOperation.Encrypt);
+        await TransformAsync(file, file.Name.IsEncrypted() ? WorkFolderOperation.Decrypt : WorkFolderOperation.Encrypt);
     }
 
-    public Task<bool> IsEncryptedAsync(FileReference file) =>
+    /// <summary>
+    /// Whether the contents of the file show that it is encrypted, whatever its name.
+    /// </summary>
+    public Task<bool> IsFileEncryptedAsync(FileReference file) =>
         coreServices.IsEncryptedAsync(() => fileAccess.OpenReadAsync(file.Id));
+
+    /// <summary>
+    /// Whether the file is not to be encrypted, since its contents or its name show that it is encrypted already.
+    /// </summary>
+    public async Task<bool> IsFileOrNameEncryptedAsync(FileReference file) =>
+        file.Name.IsEncrypted() || await IsFileEncryptedAsync(file);
 
     /// <summary>
     /// Encrypts or decrypts a file in one of My folders, returning the file it is replaced by, that nothing was done, or
     /// that the user was sent on to enter a password for it. The file is replaced by the result, so nothing is done
-    /// unless the file can be wiped afterwards.
+    /// unless the file can be wiped afterwards. A file named or found to be encrypted is not encrypted, and a file not
+    /// found to be encrypted is not decrypted, but the user is told so.
     /// </summary>
     public async Task<FileOperationOutcome> TransformAsync(FileReference file, WorkFolderOperation operation)
     {
+        if (operation == WorkFolderOperation.Encrypt && await IsFileOrNameEncryptedAsync(file))
+        {
+            await userInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextAlreadyEncrypted);
+            return FileOperationOutcome.NotDone;
+        }
+
+        if (operation == WorkFolderOperation.Decrypt && !await IsFileEncryptedAsync(file))
+        {
+            await userInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextNotEncrypted);
+            return FileOperationOutcome.NotDone;
+        }
+
         if (!await fileWiper.CanWipeAsync(await fileAccess.OpenWritableAsync(file.Id)))
         {
             await userInterfaceService.DisplayMessageAsync(MobileTexts.DialogTextInsufficientRights);
@@ -104,12 +123,6 @@ public sealed class FileOperationWorkflow(
         flowContext.Begin(FlowOrigin.Navigated, operation);
         if (operation == WorkFolderOperation.Encrypt)
         {
-            if (await IsEncryptedAsync(file))
-            {
-                await userInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextAlreadyEncrypted);
-                return FileOperationOutcome.NotDone;
-            }
-
             FileReference encrypted = await operationService.EncryptAsync(file);
             await userInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextFileEncrypted);
             return FileOperationOutcome.Completed(encrypted);

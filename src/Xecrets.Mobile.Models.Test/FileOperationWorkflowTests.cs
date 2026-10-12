@@ -112,4 +112,66 @@ public sealed class FileOperationWorkflowTests
         Assert.That(app.Access.Files.Keys, Is.EquivalentTo(["docs/a.txt"]));
         Assert.That(app.UserInterface.TransientMessages, Is.EqualTo([MobileTexts.DialogTextFileDecrypted]));
     }
+
+    [TestCase(WorkFolderIntent.Encrypt)]
+    [TestCase(WorkFolderIntent.Auto)]
+    public async Task FileNamedAsEncryptedIsNeverEncrypted(WorkFolderIntent intent)
+    {
+        TestApp app = new();
+        WorkFolder docs = app.AddFolder("docs");
+        app.AddFile("docs/x.axx", "not encrypted");
+        app.Access.PickedFiles.Enqueue("docs/x.axx");
+
+        await app.Operations.PickAndRunAsync(intent, docs);
+
+        string[] expected = intent == WorkFolderIntent.Encrypt
+            ? [MobileTexts.DialogTextAlreadyEncrypted]
+            : [MobileTexts.DialogTextNotEncrypted];
+        Assert.That(app.UserInterface.TransientMessages, Is.EqualTo(expected));
+        Assert.That(app.Access.Files.Keys, Is.EquivalentTo(["docs/x.axx"]));
+    }
+
+    [Test]
+    public async Task EncryptedFileNotNamedAsEncryptedIsNotEncryptedAgain()
+    {
+        TestApp app = new();
+        WorkFolder docs = app.AddFolder("docs");
+        app.AddFile("docs/x.txt", "ENC:a.txt\ntext");
+        app.Access.PickedFiles.Enqueue("docs/x.txt");
+
+        await app.Operations.PickAndRunAsync(WorkFolderIntent.Encrypt, docs);
+
+        Assert.That(app.UserInterface.TransientMessages, Is.EqualTo([MobileTexts.DialogTextAlreadyEncrypted]));
+        Assert.That(app.Access.Files.Keys, Is.EquivalentTo(["docs/x.txt"]));
+    }
+
+    [Test]
+    public async Task EncryptedFileNotNamedAsEncryptedIsDecrypted()
+    {
+        TestApp app = new();
+        WorkFolder docs = app.AddFolder("docs");
+        app.AddFile("docs/x.txt", "ENC:a.txt\ntext");
+        app.Access.PickedFiles.Enqueue("docs/x.txt");
+
+        await app.Operations.PickAndRunAsync(WorkFolderIntent.Decrypt, docs);
+
+        Assert.That(app.UserInterface.TransientMessages, Is.EqualTo([MobileTexts.DialogTextFileDecrypted]));
+        Assert.That(app.Access.Files.Keys, Is.EquivalentTo(["docs/a.txt"]));
+    }
+
+    [Test]
+    public async Task DecryptOfFileNamedAsEncryptedButNotEncryptedOnlyTellsTheUser()
+    {
+        TestApp app = new();
+        app.AddFolder("docs");
+        app.AddFile("docs/x.axx", "not encrypted");
+
+        FileOperationOutcome outcome =
+            await app.Operations.TransformAsync(new FileReference("docs/x.axx", "x.axx"), WorkFolderOperation.Decrypt);
+
+        Assert.That(outcome.Status, Is.EqualTo(FileOperationStatus.NotDone));
+        Assert.That(app.UserInterface.TransientMessages, Is.EqualTo([MobileTexts.DialogTextNotEncrypted]));
+        Assert.That(app.UserInterface.Destinations, Is.Empty);
+        Assert.That(app.Access.Files.Keys, Is.EquivalentTo(["docs/x.axx"]));
+    }
 }
