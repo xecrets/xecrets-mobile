@@ -26,10 +26,11 @@
 
 #endregion Copyright and GPL License
 
-# Nightly drift check: for each of 'main' and 'develop', compares the current tip
-# commits of xecrets-mobile and the resolved siblings against the commits recorded
-# by the branch's last successful build (the build-state artifact), and dispatches
-# a rebuild when they differ. Run from the repository root by the nightly job in
+# Nightly drift check: for 'main', and for whichever of 'develop' and 'feature/*' has
+# the newest xecrets-mobile tip commit, compares the current tip commits of
+# xecrets-mobile and the resolved siblings against the commits recorded by the
+# branch's last successful build (the build-state artifact), and dispatches a
+# rebuild when they differ. Run from the repository root by the nightly job in
 # ci.yml. The sibling resolution rules live in SiblingResolution.ps1.
 #
 # Inputs (environment): GH_TOKEN (for gh), GITHUB_REPOSITORY, RUNNER_TEMP,
@@ -50,6 +51,25 @@ function Get-MobileSha {
     } catch {
         return '' # branch does not exist
     }
+}
+
+# The branch among 'develop' and 'feature/*' whose xecrets-mobile tip commit is the
+# newest by committer date, so the nightly check follows the branch actually being
+# worked on. Ties go to 'develop', e.g. after a fast-forward merge of a feature.
+function Get-NewestDevelopmentBranch {
+    $branches = gh api "repos/$env:GITHUB_REPOSITORY/branches" --paginate --jq '.[] | select(.name == "develop" or (.name | startswith("feature/"))) | [.name, .commit.sha] | @tsv'
+    $candidates = foreach ($line in $branches) {
+        $name, $sha = $line -split "`t"
+        $date = [DateTimeOffset](gh api "repos/$env:GITHUB_REPOSITORY/commits/$sha" --jq .commit.committer.date)
+        [pscustomobject]@{ Name = $name; Date = $date; IsDevelop = $name -eq 'develop' }
+    }
+
+    # Write-Host, since this function's output is its return value.
+    Write-Host '--- development branch candidates ---'
+    $candidates | ForEach-Object { Write-Host "$($_.Name) $($_.Date.ToString('o'))" }
+    $newest = $candidates | Sort-Object -Property @{ Expression = 'Date'; Descending = $true }, @{ Expression = 'IsDevelop'; Descending = $true } | Select-Object -First 1
+    Write-Host "Newest development branch: $($newest.Name)"
+    $newest.Name
 }
 
 # The tips the branch would be built from right now, in the exact format the
@@ -88,7 +108,7 @@ function Get-LastBuiltState {
     [pscustomobject]@{ State = $state; Run = $run }
 }
 
-foreach ($branch in @('main', 'develop')) {
+foreach ($branch in @('main', (Get-NewestDevelopmentBranch))) {
     $current = Get-CurrentState $branch
     if ($null -eq $current) {
         Write-Output "Branch '$branch' does not exist; skipping."

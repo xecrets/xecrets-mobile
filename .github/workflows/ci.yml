@@ -48,8 +48,9 @@
 #   - Set XECRETS_*_REF in the env block below to pin a sibling to a branch/tag/SHA instead.
 #   - Pushes to the siblings do not trigger this workflow (GitHub Actions triggers are
 #     repository-local). Instead, a nightly schedule runs the 'nightly' gate job, which
-#     rebuilds 'main' and 'develop' only when the mobile repo or a resolved sibling has
-#     new commits compared to the branch's last successful build. Each successful build
+#     rebuilds 'main', and whichever of 'develop' and 'feature/*' has the newest mobile
+#     tip commit, only when the mobile repo or a resolved sibling has new commits
+#     compared to the branch's last successful build. Each successful build
 #     records the commits it was built from in a small 'build-state' artifact; the gate
 #     reads it back, so no writable state is needed anywhere.
 
@@ -67,7 +68,8 @@ on:
       - 'feature/*'
   workflow_dispatch:
   # Nightly (03:17 UTC): runs only the 'nightly' gate job, which dispatches real
-  # builds of 'main'/'develop' when their sources have drifted (see header comment).
+  # builds of 'main' and the newest of 'develop'/'feature/*' when their sources have
+  # drifted (see header comment).
   schedule:
     - cron: '17 3 * * *'
 
