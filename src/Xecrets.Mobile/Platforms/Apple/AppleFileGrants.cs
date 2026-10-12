@@ -31,6 +31,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using Foundation;
 using Xecrets.Common.Models;
@@ -59,11 +60,12 @@ public sealed class AppleFileGrants(WorkFolderStorage storage)
     /// <summary>
     /// Finds the innermost of My folders that contains the file or folder, or is the folder itself when that is
     /// allowed. The paths are compared with their symbolic links resolved, since the same location may be reached by
-    /// different paths, such as through /var and /private/var.
+    /// different paths, such as through /var and /private/var, and in the same Unicode form, since a name such as
+    /// "Bjärke" may be told with the "ä" as one character or as an "a" followed by a combining mark.
     /// </summary>
     public async Task<WorkFolder?> FindFolderAsync(string id, bool isFolderItself)
     {
-        string path = ResolvePath(NSUrl.FromString(id)!.Path!).TrimEnd('/');
+        string path = NormalizePath(NSUrl.FromString(id)!.Path!);
         WorkFolder? innermost = null;
         int innermostLength = -1;
         foreach (WorkFolder folder in await storage.LoadFoldersAsync())
@@ -73,7 +75,7 @@ public sealed class AppleFileGrants(WorkFolderStorage storage)
                 continue;
             }
 
-            string folderPath = ResolvePath(grantPath).TrimEnd('/');
+            string folderPath = NormalizePath(grantPath);
             bool isInFolder = path.StartsWith(folderPath + "/", StringComparison.Ordinal) ||
                 (isFolderItself && path == folderPath);
             if (isInFolder && folderPath.Length > innermostLength)
@@ -127,4 +129,7 @@ public sealed class AppleFileGrants(WorkFolderStorage storage)
             : throw new IOException("The file is not in one of My folders.");
 
     public static string ResolvePath(string path) => new NSString(path).ResolveSymlinksInPath().ToString();
+
+    private static string NormalizePath(string path) =>
+        ResolvePath(path).TrimEnd('/').Normalize(NormalizationForm.FormC);
 }
