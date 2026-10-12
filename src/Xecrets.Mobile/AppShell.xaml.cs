@@ -71,6 +71,27 @@ public partial class AppShell
         UpdateThemeButtons(ThemePreference.System);
     }
 
+    // Back navigation from the editor, by the toolbar or the device back button, asks first if there are unsaved
+    // changes. The deferral is taken before the first await, while Shell still waits for the handler. Concurrent, so
+    // that a back navigation while saving is not let through unasked.
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private async Task NavigatingAsync(ShellNavigatingEventArgs args)
+    {
+        if (args.Source is not (ShellNavigationSource.Pop or ShellNavigationSource.PopToRoot)
+            || CurrentPage?.BindingContext is not EditPageModel { HasUnsavedChanges: true } editPage)
+        {
+            return;
+        }
+
+        ShellNavigatingDeferral deferral = args.GetDeferral();
+        if (!await editPage.CanLeaveAsync())
+        {
+            args.Cancel();
+        }
+
+        deferral.Complete();
+    }
+
     [RelayCommand]
     private async Task NavigatedAsync(ShellNavigatedEventArgs args)
     {

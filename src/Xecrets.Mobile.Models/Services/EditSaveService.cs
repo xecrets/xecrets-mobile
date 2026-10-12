@@ -66,7 +66,7 @@ public sealed class EditSaveService(
         await recentFilesService.AddFlowSourceAsync(RecentFileOperation.Edit);
     }
 
-    public async Task SaveCopyAsync(string text)
+    public async Task<bool> SaveCopyAsync(string text)
     {
         Func<Stream, Task> encryptTo = await PrepareAsync(text);
         await using MemoryStream encrypted = new();
@@ -76,16 +76,22 @@ public sealed class EditSaveService(
         string fileName = previewService.Current.OriginalFileName.ToEncryptedName(string.Empty);
         FileReference? savedCopy = await fileOperationWorkflow.SaveAsAsync(fileName, encrypted);
 
+        if (savedCopy is null)
+        {
+            return false;
+        }
+
         // The saved copy holds the edits, so it is the one saved over and listed from then on, if it was saved in
         // one of My folders. Otherwise it cannot be changed, and each save is a new copy.
-        FileReference? reachable = savedCopy is null ? null : await folderAccess.FindInFoldersAsync(savedCopy);
+        FileReference? reachable = await folderAccess.FindInFoldersAsync(savedCopy);
         if (reachable is null)
         {
-            return;
+            return true;
         }
 
         flowContext.UpdateSource(reachable);
         await recentFilesService.AddFlowSourceAsync(RecentFileOperation.Edit);
+        return true;
     }
 
     /// <summary>

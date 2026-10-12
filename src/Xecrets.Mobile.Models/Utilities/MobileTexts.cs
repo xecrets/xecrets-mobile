@@ -55,7 +55,11 @@ public static class MobileTexts
     // "My folders"
     public static string BreadcrumbMyFolders => WorkFoldersContentTitle;
 
-    public static string BreadcrumbPreview => "Preview";
+    // "Edit"
+    public static string BreadcrumbEdit => EditContentTitle;
+
+    // "Preview"
+    public static string BreadcrumbPreview => PreviewContentTitle;
 
     public static string BreadcrumbReceivedFile => "Received file";
 
@@ -66,7 +70,12 @@ public static class MobileTexts
 
     public static string BreadcrumbSeparator => " › ";
 
+    // "View"
+    public static string BreadcrumbView => ViewContentTitle;
+
     public static string ButtonDecryptAs => "Decrypt copy and…";
+
+    public static string ButtonDiscard => "Discard";
 
     public static string ButtonEncryptAs => "Encrypt copy and…";
 
@@ -105,6 +114,8 @@ public static class MobileTexts
     public static string DialogTextConfirmOverwrite => "The file \"{0}\" already exists. Overwrite it?";
 
     public static string DialogTextFileEncrypted => "The file was encrypted.";
+
+    public static string DialogTextSaveChanges => "Save changes before leaving?";
 
     public static string DialogTextFileDecrypted => "The file was decrypted.";
 
@@ -151,6 +162,11 @@ public static class MobileTexts
 
     public static string EncryptToShareDescription => "Enter a separate password for the encrypted copy. Share the password through a different channel.";
 
+    // "Edit"
+    public static string EditContentTitle => ButtonEdit;
+
+    public static string EditDescription => "Edit the text. Click the save icon to encrypt and save changes.";
+
     public static string HomeContentTitle => "Actions";
 
     public static string HomeDescription => "Choose an action. Work with files where they are stored in \"My folders\", or encrypt or decrypt one directly. Work with copies in the app and select what to do next. Encrypt a copy with a separate password.";
@@ -169,11 +185,18 @@ public static class MobileTexts
 
     public static string MenuXecretsDesktop => "Xecrets desktop page";
 
+    public static string PreviewContentTitle => "Preview";
+
     public static string RecentFilesContentTitle => "Recent files";
 
     public static string RecentFilesDescription => "Files recently used, most recent first. Choose to show files decrypted or encrypted where they are, files viewed or edited, or other files, such as those copied. Use the lock button to encrypt or decrypt a file where it is. Select a decrypted file to open it in another app, an encrypted file to share or send it, or a viewed or edited file to see it again. The button next to each file does the same for files not encrypted or decrypted where they are. Use the add button to add a file from \"My folders\".";
 
     public static string SuggestPasswordDescription => "Suggested passwords that are strong, and easy to type and remember. Use » for a new suggestion, and the copy button to copy it to the clipboard.";
+
+    // "View"
+    public static string ViewContentTitle => ButtonView;
+
+    public static string ViewDescription => "Shows the text or image in the file. Go back to choose something else to do with it.";
 
     public static string ThirdPartyLicensesPageExplanation => "The application includes the following third-party material, under the terms reproduced here.";
 

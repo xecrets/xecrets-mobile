@@ -41,7 +41,8 @@ public interface IEditSaveService
     Task SaveAsync(string text);
 
     /// <summary>
-    /// Saves a copy where the user chooses. A copy saved in one of My folders becomes the source of the flow.
+    /// Saves a copy where the user chooses. A copy saved in one of My folders becomes the source of the flow. Returns
+    /// false if the user chose not to save after all.
     /// </summary>
-    Task SaveCopyAsync(string text);
+    Task<bool> SaveCopyAsync(string text);
 }

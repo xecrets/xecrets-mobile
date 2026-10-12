@@ -352,10 +352,19 @@
                 Value="{OnPlatform WinUI=None, Default=Bold}" />
     </Style>
 
-    <!-- The name of the file a page is working on, at the top of its card. Change the base here to restyle all four pages. -->
-    <Style x:Key="FileNameStyle"
-           TargetType="Label"
-           BasedOn="{StaticResource Body1Strong}" />
+    <!-- The name of a file, such as in the recent files list or at the top of a file's card. -->
+    <Style x:Key="FileName"
+           TargetType="Label">
+        <Setter Property="FontSize"
+                Value="13" />
+    </Style>
+
+    <!-- Information shown below a file name, such as its location or its metadata. -->
+    <Style x:Key="ExtraFileInfo"
+           TargetType="Label">
+        <Setter Property="FontSize"
+                Value="11" />
+    </Style>
 
     <Style TargetType="Border">
         <Setter Property="StrokeShape" Value="RoundRectangle 18"/>

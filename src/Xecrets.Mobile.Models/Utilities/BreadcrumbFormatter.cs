@@ -37,12 +37,12 @@ public static class BreadcrumbFormatter
 {
     /// <summary>
     /// Builds the trail shown at the top of a page, naming how the user got here, what they are
-    /// doing, and where they are.
+    /// doing, and the pages that lead to where they are, ending with it.
     /// </summary>
-    public static string Format(FlowOrigin origin, WorkFolderOperation operation, string page) =>
+    public static string Format(FlowOrigin origin, WorkFolderOperation operation, params string[] pages) =>
         string.Join(
             MobileTexts.BreadcrumbSeparator,
-            [OriginText(origin), OperationText(operation), page]);
+            [OriginText(origin), OperationText(operation), .. pages]);
 
     private static string OriginText(FlowOrigin origin) => origin switch
     {

@@ -353,6 +353,7 @@ public sealed class PendingFileTests
         }
         public Task<bool> DisplayConfirmationAsync(string message) => throw new NotSupportedException();
         public Task<string?> DisplayPromptAsync(string message, string initialValue) => throw new NotSupportedException();
+        public Task<SaveChangesChoice> DisplaySaveChangesAsync(string message) => throw new NotSupportedException();
         public Task DisplayTransientMessageAsync(string message) => DisplayMessageAsync(message);
         public Task NavigateToAsync(AppDestination destination)
         {

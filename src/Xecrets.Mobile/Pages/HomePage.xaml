@@ -39,16 +39,19 @@
         </ResourceDictionary>
     </ContentPage.Resources>
     <Grid>
-        <ScrollView>
-            <VerticalStackLayout x:Name="ContentRoot"
-                                 Padding="{StaticResource ContentTitleLayoutPadding}"
-                                 Spacing="{StaticResource LayoutSpacing}">
-                <controls:PageBreadcrumb Text="{Binding Breadcrumb}" />
-                <Border x:Name="ContentColumn"
-                        HorizontalOptions="Center"
-                        Style="{StaticResource PageInformationCardStyle}">
-                    <Grid RowDefinitions="Auto,Auto" RowSpacing="{StaticResource CardTitleSpacing}">
-                        <Grid x:Name="ContentBody" Grid.Row="1" Padding="{StaticResource PageInformationBodyPadding}">
+        <Grid x:Name="ContentRoot"
+              RowDefinitions="Auto,*"
+              Padding="{StaticResource ContentTitleLayoutPadding}"
+              RowSpacing="{StaticResource LayoutSpacing}">
+            <controls:PageBreadcrumb Text="{Binding Breadcrumb}" />
+            <Border x:Name="ContentColumn"
+                    Grid.Row="1"
+                    VerticalOptions="Start"
+                    HorizontalOptions="Center"
+                    Style="{StaticResource PageInformationCardStyle}">
+                <Grid RowDefinitions="Auto,*" RowSpacing="{StaticResource CardTitleSpacing}">
+                    <ScrollView Grid.Row="1">
+                        <Grid x:Name="ContentBody" Padding="{StaticResource PageInformationBodyPadding}">
                             <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
                                 <controls:PageMessages MessageText="{Binding MessageText}"
                                                        StatusText="{Binding StatusText}" />
@@ -77,18 +80,18 @@
                                 </VerticalStackLayout>
                             </VerticalStackLayout>
                         </Grid>
-                        <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-                            <Label Text="{x:Static modelUtilities:MobileTexts.HomeContentTitle}"
-                                   Style="{StaticResource CardTitleStyle}" />
-                            <controls:PageInformationButton Grid.Column="1"
-                                                            Style="{StaticResource PageInformationButtonCorner}"
-                                                            Title="{x:Static modelUtilities:MobileTexts.HomeContentTitle}"
-                                                            Message="{x:Static modelUtilities:MobileTexts.HomeDescription}" />
-                        </Grid>
+                    </ScrollView>
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                        <Label Text="{x:Static modelUtilities:MobileTexts.HomeContentTitle}"
+                               Style="{StaticResource CardTitleStyle}" />
+                        <controls:PageInformationButton Grid.Column="1"
+                                                        Style="{StaticResource PageInformationButtonCorner}"
+                                                        Title="{x:Static modelUtilities:MobileTexts.HomeContentTitle}"
+                                                        Message="{x:Static modelUtilities:MobileTexts.HomeDescription}" />
                     </Grid>
-                </Border>
-            </VerticalStackLayout>
-        </ScrollView>
+                </Grid>
+            </Border>
+        </Grid>
         <ActivityIndicator IsRunning="{Binding IsBusy}"
                            IsVisible="{Binding IsBusy}"
                            HorizontalOptions="Center"

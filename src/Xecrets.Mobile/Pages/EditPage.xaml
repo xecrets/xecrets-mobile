@@ -26,45 +26,67 @@
 -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:f="clr-namespace:Fonts"
              xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
              xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
-             xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
              xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
              x:Class="Xecrets.Mobile.Pages.EditPage"
              x:DataType="pageModels:EditPageModel">
     <ContentPage.Resources>
         <ResourceDictionary>
-            <utilities:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
+            <FontImageSource x:Key="IconSave"
+                             Glyph="{x:Static f:FluentUI.save_24_regular}"
+                             FontFamily="{x:Static f:FluentUI.FontFamily}"
+                             Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                             Size="24" />
         </ResourceDictionary>
     </ContentPage.Resources>
     <Grid>
-        <ScrollView>
-            <VerticalStackLayout Padding="{StaticResource ContentTitleLayoutPadding}"
-                                 Spacing="{StaticResource LayoutSpacing}">
-                <Border Style="{StaticResource CardStyle}">
-                    <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
-                        <Label Text="{Binding FileNameText}"
-                               Style="{StaticResource FileNameStyle}" />
-                        <Editor Text="{Binding Text, Mode=TwoWay}"
-                                AutoSize="TextChanges"
-                                MinimumHeightRequest="320" />
-                    </VerticalStackLayout>
-                </Border>
-                <controls:PageMessages MessageText="{Binding MessageText}"
-                                       StatusText="{Binding StatusText}" />
-                <HorizontalStackLayout Spacing="{StaticResource LayoutSpacing}"
-                                       HorizontalOptions="Center">
-                    <Button Text="{x:Static modelUtilities:MobileTexts.ButtonSave}"
-                            IsVisible="{Binding IsSaveVisible}"
-                            Command="{Binding SaveCommand}" />
-                    <Button Text="{x:Static modelUtilities:MobileTexts.ButtonSave}"
-                            IsVisible="{Binding IsSaveToLocationVisible}"
-                            Command="{Binding SaveToLocationCommand}" />
-                    <Button Text="{x:Static modelUtilities:MobileTexts.LabelClose}"
-                            Command="{Binding CloseCommand}" />
-                </HorizontalStackLayout>
-            </VerticalStackLayout>
-        </ScrollView>
+        <!-- The same layout as the view page. The card fills the page, and only the text scrolls, below the title
+             and the file. -->
+        <Grid RowDefinitions="Auto,*"
+              Padding="{StaticResource ContentTitleLayoutPadding}"
+              RowSpacing="{StaticResource LayoutSpacing}">
+            <controls:PageBreadcrumb Text="{Binding Breadcrumb}" />
+            <Border Grid.Row="1"
+                    Style="{StaticResource PageInformationCardStyle}">
+                <Grid RowDefinitions="Auto,*"
+                      RowSpacing="{StaticResource CardTitleSpacing}">
+                    <Grid Grid.Row="0"
+                          ColumnDefinitions="*,Auto">
+                        <Label Text="{x:Static modelUtilities:MobileTexts.EditContentTitle}"
+                               Style="{StaticResource CardTitleStyle}" />
+                        <HorizontalStackLayout Grid.Column="1"
+                                               VerticalOptions="Center">
+                            <ImageButton VerticalOptions="Center"
+                                         Background="Transparent"
+                                         Padding="8"
+                                         Source="{StaticResource IconSave}"
+                                         Command="{Binding SaveCommand}" />
+                            <controls:PageInformationButton Style="{StaticResource PageInformationButtonCorner}"
+                                                            Title="{x:Static modelUtilities:MobileTexts.EditContentTitle}"
+                                                            Message="{x:Static modelUtilities:MobileTexts.EditDescription}" />
+                        </HorizontalStackLayout>
+                    </Grid>
+                    <Grid Grid.Row="1"
+                          RowDefinitions="Auto,*,Auto"
+                          RowSpacing="{StaticResource LayoutSpacing}"
+                          Padding="{StaticResource PageInformationBodyPadding}">
+                        <VerticalStackLayout>
+                            <Label Text="{Binding FileNameText}"
+                                   Style="{StaticResource FileName}" />
+                            <Label Text="{Binding MetadataText}"
+                                   Style="{StaticResource ExtraFileInfo}" />
+                        </VerticalStackLayout>
+                        <Editor Grid.Row="1"
+                                Text="{Binding Text, Mode=TwoWay}" />
+                        <controls:PageMessages Grid.Row="2"
+                                               MessageText="{Binding MessageText}"
+                                               StatusText="{Binding StatusText}" />
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
         <ActivityIndicator IsRunning="{Binding IsBusy}"
                            IsVisible="{Binding IsBusy}"
                            HorizontalOptions="Center"

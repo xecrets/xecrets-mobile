@@ -28,6 +28,9 @@
 
 #endregion Copyright and GPL License
 
+using System.Security.Cryptography;
+using System.Text;
+
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -42,10 +45,22 @@ public partial class EditPageModel(
     IEditSaveService editSaveService,
     IFlowContext flowContext,
     IUserInterfaceService userInterfaceService)
-    : PageModelBase(userInterfaceService), IStatusTextPageModel
+    : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
 {
+    // A hash rather than a copy of the saved text, so that no more copies of the plaintext are kept than needed.
+    private byte[] _savedTextHash = [];
+
+    public string Breadcrumb => BreadcrumbFormatter.Format(
+        flowContext.Origin,
+        flowContext.Operation,
+        MobileTexts.BreadcrumbPreview,
+        MobileTexts.BreadcrumbEdit);
+
     [ObservableProperty]
     public partial string FileNameText { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string MetadataText { get; set; } = string.Empty;
 
     [ObservableProperty]
     public partial string Text { get; set; } = string.Empty;
@@ -57,16 +72,10 @@ public partial class EditPageModel(
     public partial string StatusText { get; set; } = string.Empty;
 
     [ObservableProperty]
-    public partial bool IsSaveVisible { get; set; }
-
-    [ObservableProperty]
-    public partial bool IsSaveToLocationVisible { get; set; }
-
-    [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
-    [NotifyCanExecuteChangedFor(nameof(SaveToLocationCommand))]
-    [NotifyCanExecuteChangedFor(nameof(CloseCommand))]
     public partial bool IsBusy { get; set; }
+
+    public bool HasUnsavedChanges => !HashText(Text).SequenceEqual(_savedTextHash);
 
     [RelayCommand]
     private async Task Initialize()
@@ -81,85 +90,95 @@ public partial class EditPageModel(
         FileNameText = string.IsNullOrWhiteSpace(state.OriginalFileName)
             ? MobileTexts.DisplayNameProgram
             : state.OriginalFileName;
+        MetadataText = PreviewMetadataFormatter.Format(state);
         Text = state.Text;
-        ShowSaveCommands();
+        _savedTextHash = HashText(Text);
         StatusText = string.Empty;
     }
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private async Task Save()
     {
-        IPreviewState state = previewService.Current;
-        if (!state.IsReady || state.Kind != PreviewKind.Text || !IsSaveVisible)
+        if (!HasUnsavedChanges)
         {
             return;
         }
 
-        try
-        {
-            IsBusy = true;
-            StatusText = string.Empty;
-
-            await editSaveService.SaveAsync(Text);
-            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextFileEncrypted);
-        }
-        catch (Exception ex)
-        {
-            StatusText = ex.FormatException();
-        }
-        finally
-        {
-            IsBusy = false;
-        }
+        await TrySaveAsync();
     }
 
-    [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private async Task SaveToLocation()
+    /// <summary>
+    /// Asks whether to save unsaved changes, and returns whether to leave the editor.
+    /// </summary>
+    public async Task<bool> CanLeaveAsync()
     {
-        IPreviewState state = previewService.Current;
-        if (!state.IsReady || state.Kind != PreviewKind.Text || !IsSaveToLocationVisible)
+        if (!HasUnsavedChanges)
         {
-            return;
+            return true;
         }
 
-        try
+        SaveChangesChoice choice = await UserInterfaceService.DisplaySaveChangesAsync(MobileTexts.DialogTextSaveChanges);
+        return choice switch
         {
-            IsBusy = true;
-            StatusText = string.Empty;
-
-            await editSaveService.SaveCopyAsync(Text);
-            ShowSaveCommands();
-        }
-        catch (OperationCanceledException)
-        {
-            StatusText = string.Empty;
-        }
-        catch (Exception ex)
-        {
-            StatusText = ex.FormatException();
-        }
-        finally
-        {
-            IsBusy = false;
-        }
-    }
-
-    [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private async Task Close()
-    {
-        await UserInterfaceService.GoBackAsync(null);
+            SaveChangesChoice.Save => await TrySaveAsync(),
+            SaveChangesChoice.Discard => true,
+            SaveChangesChoice.Cancel => false,
+            _ => throw new ArgumentOutOfRangeException(nameof(choice)),
+        };
     }
 
     private bool CanUseCommand()
         => !IsBusy;
 
     /// <summary>
-    /// Offers to save over the source, which is reached through one of My folders when there is one, and otherwise, for
-    /// a file received from another app, only to save a copy.
+    /// Saves over the source, which is reached through one of My folders when there is one, and otherwise, for a file
+    /// received from another app, saves a copy. Returns whether the text was saved.
     /// </summary>
-    private void ShowSaveCommands()
+    private async Task<bool> TrySaveAsync()
     {
-        IsSaveVisible = flowContext.Source is not null;
-        IsSaveToLocationVisible = !IsSaveVisible;
+        IPreviewState state = previewService.Current;
+        if (!state.IsReady || state.Kind != PreviewKind.Text)
+        {
+            return false;
+        }
+
+        string text = Text;
+        try
+        {
+            IsBusy = true;
+            StatusText = string.Empty;
+
+            if (flowContext.Source is null)
+            {
+                if (!await editSaveService.SaveCopyAsync(text))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                await editSaveService.SaveAsync(text);
+                await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextFileEncrypted);
+            }
+
+            _savedTextHash = HashText(text);
+            MetadataText = PreviewMetadataFormatter.Format(state);
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            return false;
+        }
+        catch (Exception ex)
+        {
+            StatusText = ex.FormatException();
+            return false;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
+
+    private static byte[] HashText(string text) => SHA256.HashData(Encoding.UTF8.GetBytes(text));
 }

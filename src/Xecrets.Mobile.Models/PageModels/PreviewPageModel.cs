@@ -52,8 +52,6 @@ public partial class PreviewPageModel(
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
 {
-    private const string _nonBreakingSpace = "\u00A0";
-
     public string Breadcrumb =>
         BreadcrumbFormatter.Format(flowContext.Origin, flowContext.Operation, MobileTexts.BreadcrumbPreview);
 
@@ -99,7 +97,7 @@ public partial class PreviewPageModel(
         FileNameText = string.IsNullOrWhiteSpace(state.OriginalFileName)
             ? MobileTexts.DisplayNameProgram
             : state.OriginalFileName;
-        MetadataText = CreateMetadataText(state);
+        MetadataText = PreviewMetadataFormatter.Format(state);
         StatusText = string.Empty;
         ViewMode = await decryptedFileViewer.GetViewModeAsync(state.File!);
     }
@@ -307,11 +305,4 @@ public partial class PreviewPageModel(
 
     private bool CanEdit()
         => !IsBusy && previewService.Current is { IsReady: true, Kind: PreviewKind.Text };
-
-    private static string CreateMetadataText(IPreviewState state)
-    {
-        string sizeValue = $"{state.FileSize:N0}".Replace(" ", _nonBreakingSpace, StringComparison.Ordinal);
-
-        return $"{state.ContentType} {sizeValue} bytes";
-    }
 }

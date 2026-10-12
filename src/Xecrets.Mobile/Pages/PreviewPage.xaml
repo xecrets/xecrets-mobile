@@ -38,23 +38,28 @@
         </ResourceDictionary>
     </ContentPage.Resources>
     <Grid>
-        <ScrollView>
-            <VerticalStackLayout x:Name="ContentRoot"
-                                 Padding="{StaticResource ContentTitleLayoutPadding}"
-                                 Spacing="{StaticResource LayoutSpacing}">
-                <controls:PageBreadcrumb Text="{Binding Breadcrumb}" />
-                <Border x:Name="ContentColumn"
-                        HorizontalOptions="Center"
-                        Style="{StaticResource PageInformationCardStyle}">
-                    <Grid RowDefinitions="Auto,Auto">
+        <Grid x:Name="ContentRoot"
+              RowDefinitions="Auto,*"
+              Padding="{StaticResource ContentTitleLayoutPadding}"
+              RowSpacing="{StaticResource LayoutSpacing}">
+            <controls:PageBreadcrumb Text="{Binding Breadcrumb}" />
+            <Border x:Name="ContentColumn"
+                    Grid.Row="1"
+                    VerticalOptions="Start"
+                    HorizontalOptions="Center"
+                    Style="{StaticResource PageInformationCardStyle}">
+                <Grid RowDefinitions="Auto,*"
+                      RowSpacing="{StaticResource CardTitleSpacing}">
+                    <ScrollView Grid.Row="1">
                         <Grid x:Name="ContentBody"
-                              Grid.Row="1"
                               Padding="{StaticResource PageInformationBodyPadding}">
                             <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
-                            <Label Text="{Binding FileNameText}"
-                                   Style="{StaticResource FileNameStyle}" />
-                            <Label Text="{Binding MetadataText}"
-                                   Style="{StaticResource Body2}" />
+                            <VerticalStackLayout>
+                                <Label Text="{Binding FileNameText}"
+                                       Style="{StaticResource FileName}" />
+                                <Label Text="{Binding MetadataText}"
+                                       Style="{StaticResource ExtraFileInfo}" />
+                            </VerticalStackLayout>
                             <controls:PageMessages MessageText="{Binding MessageText}"
                                                    StatusText="{Binding StatusText}" />
                             <VerticalStackLayout x:Name="ActionButtonStack"
@@ -73,14 +78,19 @@
                             </VerticalStackLayout>
                             </VerticalStackLayout>
                         </Grid>
-                        <controls:PageInformationButton Grid.Row="0"
+                    </ScrollView>
+                    <Grid Grid.Row="0"
+                          ColumnDefinitions="*,Auto">
+                        <Label Text="{x:Static modelUtilities:MobileTexts.PreviewContentTitle}"
+                               Style="{StaticResource CardTitleStyle}" />
+                        <controls:PageInformationButton Grid.Column="1"
                                                         Style="{StaticResource PageInformationButtonCorner}"
-                                                        Title="{Binding FileNameText}"
+                                                        Title="{x:Static modelUtilities:MobileTexts.PreviewContentTitle}"
                                                         Message="{x:Static modelUtilities:MobileTexts.DialogTextResult}" />
                     </Grid>
-                </Border>
-            </VerticalStackLayout>
-        </ScrollView>
+                </Grid>
+            </Border>
+        </Grid>
         <ActivityIndicator IsRunning="{Binding IsBusy}"
                            IsVisible="{Binding IsBusy}"
                            HorizontalOptions="Center"

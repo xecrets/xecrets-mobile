@@ -34,11 +34,13 @@ using Xecrets.Mobile.Models.Models;
 namespace Xecrets.Mobile.Models.Test;
 
 /// <summary>
-/// Answers the confirmations in turn, and no to any beyond those, and records what the user is shown.
+/// Answers the confirmations in turn, and no or cancel to any beyond those, and records what the user is shown.
 /// </summary>
 internal sealed class ScriptedUserInterface : IUserInterfaceService
 {
     public Queue<bool> Answers { get; } = new();
+
+    public Queue<SaveChangesChoice> SaveChangesAnswers { get; } = new();
 
     public List<string> Confirmations { get; } = [];
 
@@ -67,6 +69,12 @@ internal sealed class ScriptedUserInterface : IUserInterfaceService
     }
 
     public Task<string?> DisplayPromptAsync(string message, string initialValue) => throw new NotSupportedException();
+
+    public Task<SaveChangesChoice> DisplaySaveChangesAsync(string message)
+    {
+        Confirmations.Add(message);
+        return Task.FromResult(SaveChangesAnswers.Count > 0 ? SaveChangesAnswers.Dequeue() : SaveChangesChoice.Cancel);
+    }
 
     public Task DisplayTransientMessageAsync(string message)
     {

@@ -45,6 +45,12 @@
             BindingContext="{x:Reference AppShellRoot}"
             EventName="Navigated"
             Command="{Binding NavigatedCommand}" />
+        <toolkit:EventToCommandBehavior
+            x:TypeArguments="controls:ShellNavigatingEventArgs"
+            x:DataType="local:AppShell"
+            BindingContext="{x:Reference AppShellRoot}"
+            EventName="Navigating"
+            Command="{Binding NavigatingCommand}" />
     </Shell.Behaviors>
 
     <MenuItem x:Name="DebugMenuItem"

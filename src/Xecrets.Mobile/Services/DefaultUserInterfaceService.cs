@@ -91,6 +91,20 @@ public class DefaultUserInterfaceService(IBuildInformation buildInformation) : I
             MobileTexts.LabelYes,
             MobileTexts.LabelNo);
 
+    public async Task<SaveChangesChoice> DisplaySaveChangesAsync(string message)
+    {
+        string? choice = await Shell.Current.DisplayActionSheetAsync(
+            message,
+            MobileTexts.LabelCancel,
+            MobileTexts.ButtonDiscard,
+            MobileTexts.ButtonSave);
+
+        // Dismissing the action sheet gives the cancel text on some platforms and null on others.
+        return choice == MobileTexts.ButtonSave ? SaveChangesChoice.Save
+            : choice == MobileTexts.ButtonDiscard ? SaveChangesChoice.Discard
+            : SaveChangesChoice.Cancel;
+    }
+
     public Task<string?> DisplayPromptAsync(string message, string initialValue) =>
         Shell.Current.DisplayPromptAsync(
             MobileTexts.DisplayNameProgram,

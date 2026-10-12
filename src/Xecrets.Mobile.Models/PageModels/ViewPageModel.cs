@@ -37,11 +37,23 @@ using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
-public partial class ViewPageModel(IPreviewService previewService, IUserInterfaceService userInterfaceService)
-    : PageModelBase(userInterfaceService)
+public partial class ViewPageModel(
+    IPreviewService previewService,
+    IFlowContext flowContext,
+    IUserInterfaceService userInterfaceService)
+    : PageModelBase(userInterfaceService), IBreadcrumbPageModel
 {
+    public string Breadcrumb => BreadcrumbFormatter.Format(
+        flowContext.Origin,
+        flowContext.Operation,
+        MobileTexts.BreadcrumbPreview,
+        MobileTexts.BreadcrumbView);
+
     [ObservableProperty]
     public partial string FileNameText { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string MetadataText { get; set; } = string.Empty;
 
     [ObservableProperty]
     public partial string Text { get; set; } = string.Empty;
@@ -68,17 +80,12 @@ public partial class ViewPageModel(IPreviewService previewService, IUserInterfac
         FileNameText = string.IsNullOrWhiteSpace(state.OriginalFileName)
             ? MobileTexts.DisplayNameProgram
             : state.OriginalFileName;
+        MetadataText = PreviewMetadataFormatter.Format(state);
         ImageFilePath = state is { Kind: PreviewKind.Image, File: not null }
             ? state.File.FilePath
             : string.Empty;
         Text = state.Text;
         IsImageVisible = state.Kind == PreviewKind.Image;
         IsTextVisible = state.Kind == PreviewKind.Text;
-    }
-
-    [RelayCommand]
-    private async Task Close()
-    {
-        await UserInterfaceService.GoBackAsync(null);
     }
 }

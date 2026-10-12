@@ -84,18 +84,20 @@
         </ResourceDictionary>
     </ContentPage.Resources>
     <Grid>
-        <ScrollView>
-            <VerticalStackLayout x:Name="ContentRoot"
-                                 Padding="{StaticResource ContentTitleLayoutPadding}"
-                                 Spacing="{StaticResource LayoutSpacing}">
-                <pageControls:PageBreadcrumb Text="{Binding Breadcrumb}" />
-                <Border x:Name="ContentColumn"
-                        HorizontalOptions="Center"
-                        Style="{StaticResource PageInformationCardStyle}">
-                    <Grid RowDefinitions="Auto,Auto"
-                          RowSpacing="{StaticResource CardTitleSpacing}">
+        <Grid x:Name="ContentRoot"
+              RowDefinitions="Auto,*"
+              Padding="{StaticResource ContentTitleLayoutPadding}"
+              RowSpacing="{StaticResource LayoutSpacing}">
+            <pageControls:PageBreadcrumb Text="{Binding Breadcrumb}" />
+            <Border x:Name="ContentColumn"
+                    Grid.Row="1"
+                    VerticalOptions="Start"
+                    HorizontalOptions="Center"
+                    Style="{StaticResource PageInformationCardStyle}">
+                <Grid RowDefinitions="Auto,*"
+                      RowSpacing="{StaticResource CardTitleSpacing}">
+                    <ScrollView Grid.Row="1">
                         <Grid x:Name="ContentBody"
-                              Grid.Row="1"
                               Padding="{StaticResource IconRowBodyPadding}"
                               InputTransparent="{Binding IsBusy}">
                             <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
@@ -187,12 +189,12 @@
                                                         <!-- WinUI can only trim the end, which is accepted there. -->
                                                         <VerticalStackLayout VerticalOptions="Center">
                                                             <Label Text="{Binding DisplayName}"
-                                                                   FontSize="13"
+                                                                   Style="{StaticResource FileName}"
                                                                    MaxLines="1"
                                                                    LineBreakMode="MiddleTruncation" />
                                                             <Label Text="{Binding DisplayLocation}"
                                                                    IsVisible="{Binding HasLocation}"
-                                                                   FontSize="11"
+                                                                   Style="{StaticResource ExtraFileInfo}"
                                                                    MaxLines="1"
                                                                    LineBreakMode="MiddleTruncation" />
                                                         </VerticalStackLayout>
@@ -213,46 +215,46 @@
                                 </VerticalStackLayout>
                             </VerticalStackLayout>
                         </Grid>
-                        <Grid Grid.Row="0"
-                              ColumnDefinitions="*,Auto">
-                            <Label Text="{x:Static modelUtilities:MobileTexts.RecentFilesContentTitle}"
-                                   Style="{StaticResource CardTitleStyle}" />
-                            <HorizontalStackLayout Grid.Column="1"
-                                                   VerticalOptions="Center">
-                                <ImageButton VerticalOptions="Center"
-                                             Background="Transparent"
-                                             Padding="8"
-                                             Source="{StaticResource IconDecryptFile}"
-                                             IsVisible="{Binding IsReverseAllVisible}"
-                                             Command="{Binding ReverseAllCommand}">
-                                    <ImageButton.Triggers>
-                                        <DataTrigger TargetType="ImageButton"
-                                                     Binding="{Binding ReverseAllEncrypts}"
-                                                     Value="True">
-                                            <Setter Property="Source"
-                                                    Value="{StaticResource IconEncryptFile}" />
-                                        </DataTrigger>
-                                    </ImageButton.Triggers>
-                                </ImageButton>
-                                <ImageButton VerticalOptions="Center"
-                                             Background="Transparent"
-                                             Padding="8"
-                                             Source="{StaticResource IconAdd}"
-                                             Command="{Binding AddCommand}" />
-                                <ImageButton VerticalOptions="Center"
-                                             Background="Transparent"
-                                             Padding="10"
-                                             Source="{StaticResource IconReload}"
-                                             Command="{Binding ReloadCommand}" />
-                                <pageControls:PageInformationButton Style="{StaticResource PageInformationButtonCorner}"
-                                                                    Title="{x:Static modelUtilities:MobileTexts.RecentFilesContentTitle}"
-                                                                    Message="{Binding Description}" />
-                            </HorizontalStackLayout>
-                        </Grid>
+                    </ScrollView>
+                    <Grid Grid.Row="0"
+                          ColumnDefinitions="*,Auto">
+                        <Label Text="{x:Static modelUtilities:MobileTexts.RecentFilesContentTitle}"
+                               Style="{StaticResource CardTitleStyle}" />
+                        <HorizontalStackLayout Grid.Column="1"
+                                               VerticalOptions="Center">
+                            <ImageButton VerticalOptions="Center"
+                                         Background="Transparent"
+                                         Padding="8"
+                                         Source="{StaticResource IconDecryptFile}"
+                                         IsVisible="{Binding IsReverseAllVisible}"
+                                         Command="{Binding ReverseAllCommand}">
+                                <ImageButton.Triggers>
+                                    <DataTrigger TargetType="ImageButton"
+                                                 Binding="{Binding ReverseAllEncrypts}"
+                                                 Value="True">
+                                        <Setter Property="Source"
+                                                Value="{StaticResource IconEncryptFile}" />
+                                    </DataTrigger>
+                                </ImageButton.Triggers>
+                            </ImageButton>
+                            <ImageButton VerticalOptions="Center"
+                                         Background="Transparent"
+                                         Padding="8"
+                                         Source="{StaticResource IconAdd}"
+                                         Command="{Binding AddCommand}" />
+                            <ImageButton VerticalOptions="Center"
+                                         Background="Transparent"
+                                         Padding="10"
+                                         Source="{StaticResource IconReload}"
+                                         Command="{Binding ReloadCommand}" />
+                            <pageControls:PageInformationButton Style="{StaticResource PageInformationButtonCorner}"
+                                                                Title="{x:Static modelUtilities:MobileTexts.RecentFilesContentTitle}"
+                                                                Message="{Binding Description}" />
+                        </HorizontalStackLayout>
                     </Grid>
-                </Border>
-            </VerticalStackLayout>
-        </ScrollView>
+                </Grid>
+            </Border>
+        </Grid>
         <ActivityIndicator IsRunning="{Binding IsBusy}"
                            IsVisible="{Binding IsBusy}"
                            HorizontalOptions="Center"

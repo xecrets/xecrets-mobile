@@ -52,6 +52,11 @@ public interface IUserInterfaceService
     Task<bool> DisplayConfirmationAsync(string message);
 
     /// <summary>
+    /// Asks the user whether to save, discard or keep unsaved changes. Dismissing the question keeps them.
+    /// </summary>
+    Task<SaveChangesChoice> DisplaySaveChangesAsync(string message);
+
+    /// <summary>
     /// Asks the user for a line of text, starting from <paramref name="initialValue"/>. Returns null if
     /// the user cancels.
     /// </summary>

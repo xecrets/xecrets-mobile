@@ -40,15 +40,16 @@
             <utilities:StrengthColorToColorConverter x:Key="StrengthColorToColorConverter" />
         </ResourceDictionary>
     </ContentPage.Resources>
-    <ScrollView>
-        <VerticalStackLayout x:Name="ContentRoot"
-                             Padding="{StaticResource LayoutPadding}"
-                             Spacing="{StaticResource LayoutSpacing}">
-            <Border x:Name="ContentColumn"
-                    HorizontalOptions="Center"
-                    Style="{StaticResource PageInformationCardStyle}">
-                <Grid RowDefinitions="Auto,Auto" RowSpacing="{StaticResource CardTitleSpacing}">
-                    <Grid x:Name="ContentBody" Grid.Row="1" Padding="{StaticResource IconRowBodyPadding}">
+    <Grid x:Name="ContentRoot"
+          Padding="{StaticResource LayoutPadding}"
+          RowSpacing="{StaticResource LayoutSpacing}">
+        <Border x:Name="ContentColumn"
+                VerticalOptions="Start"
+                HorizontalOptions="Center"
+                Style="{StaticResource PageInformationCardStyle}">
+            <Grid RowDefinitions="Auto,*" RowSpacing="{StaticResource CardTitleSpacing}">
+                <ScrollView Grid.Row="1">
+                    <Grid x:Name="ContentBody" Padding="{StaticResource IconRowBodyPadding}">
                         <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
                         <Entry Margin="{StaticResource IconRowBodyContentMargin}" Text="{Binding Email}"
                                Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkEmail}"
@@ -96,16 +97,16 @@
                         </VerticalStackLayout>
                         </VerticalStackLayout>
                     </Grid>
-                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-                        <Label Text="{x:Static modelUtilities:MobileTexts.HeadingCreateUserFirstTimeSetup}"
-                               Style="{StaticResource CardTitleStyle}" />
-                        <controls:PageInformationButton Grid.Column="1"
-                                                        Style="{StaticResource PageInformationButtonCorner}"
-                                                        Title="{x:Static modelUtilities:MobileTexts.HeadingCreateUserFirstTimeSetup}"
-                                                        Message="{x:Static modelUtilities:MobileTexts.ToolTipEmail}" />
-                    </Grid>
+                </ScrollView>
+                <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                    <Label Text="{x:Static modelUtilities:MobileTexts.HeadingCreateUserFirstTimeSetup}"
+                           Style="{StaticResource CardTitleStyle}" />
+                    <controls:PageInformationButton Grid.Column="1"
+                                                    Style="{StaticResource PageInformationButtonCorner}"
+                                                    Title="{x:Static modelUtilities:MobileTexts.HeadingCreateUserFirstTimeSetup}"
+                                                    Message="{x:Static modelUtilities:MobileTexts.ToolTipEmail}" />
                 </Grid>
-            </Border>
-        </VerticalStackLayout>
-    </ScrollView>
+            </Grid>
+        </Border>
+    </Grid>
 </ContentPage>

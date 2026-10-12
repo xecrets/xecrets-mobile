@@ -297,6 +297,7 @@ public sealed class TransientFileServiceTests
         public Task DisplayMessageAsync(string message) => throw new NotSupportedException();
         public Task<bool> DisplayConfirmationAsync(string message) => throw new NotSupportedException();
         public Task<string?> DisplayPromptAsync(string message, string initialValue) => throw new NotSupportedException();
+        public Task<SaveChangesChoice> DisplaySaveChangesAsync(string message) => throw new NotSupportedException();
         public Task DisplayTransientMessageAsync(string message) => throw new NotSupportedException();
         public Task NavigateToAsync(AppDestination destination) => NavigateAsync();
         public Task NavigateToAsync(AppDestination destination, object parameter) => throw new NotSupportedException();

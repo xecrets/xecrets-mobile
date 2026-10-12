@@ -129,6 +129,8 @@ internal sealed class TestApp
     public WorkFoldersPageModel CreateWorkFoldersPage() =>
         new(Storage, Access, FolderAccess, Operations, UserInterface);
 
+    public EditPageModel CreateEditPage() => new(Preview, EditSave, Flow, UserInterface);
+
     public List<string> RecentIds() => [.. Store.Files.Select(file => file.Id)];
 
     public List<string> FolderIds() => [.. Store.Folders.Select(folder => folder.Id)];
