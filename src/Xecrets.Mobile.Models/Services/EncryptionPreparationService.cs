@@ -44,20 +44,18 @@ public sealed class EncryptionPreparationService(
     : IEncryptionPreparationService
 {
     public async Task<EncryptionPreparationResult> EncryptForCurrentProfileAsync(
-        string fileName,
-        Func<Task<Stream>> openReadAsync)
+        IReadableFile source)
     {
-        await using Stream cleartext = await openReadAsync();
-        return await EncryptAsync(cleartext, fileName, encryptRequestFactory.ForCurrentProfile(fileName), false);
+        await using Stream cleartext = await source.OpenReadAsync();
+        return await EncryptAsync(cleartext, source.FileName, encryptRequestFactory.ForCurrentProfile(source.FileName), false);
     }
 
     public async Task<EncryptionPreparationResult> EncryptForPasswordAsync(
-        string fileName,
-        Func<Task<Stream>> openReadAsync,
+        IReadableFile source,
         string password)
     {
-        await using Stream cleartext = await openReadAsync();
-        return await EncryptAsync(cleartext, fileName, EncryptRequestFactory.ForPassword(fileName, password), true);
+        await using Stream cleartext = await source.OpenReadAsync();
+        return await EncryptAsync(cleartext, source.FileName, EncryptRequestFactory.ForPassword(source.FileName, password), true);
     }
 
     private async Task<EncryptionPreparationResult> EncryptAsync(

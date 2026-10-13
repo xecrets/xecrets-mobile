@@ -97,19 +97,8 @@ internal static class AppleIncomingFileHandler
 
             string displayName = Path.GetFileName(sourcePath);
             string contentType = ContentTypeDetector.DetectContentType(displayName);
-            await incomingFileService.ReceiveAsync(async () =>
-            {
-                string incomingPath = transientFileStore.CreateIncomingPath(displayName);
-
-                await using (FileStream inputStream = File.OpenRead(sourcePath))
-                await using (FileStream outputStream =
-                             File.Open(incomingPath, FileMode.Create, FileAccess.Write, FileShare.Read))
-                {
-                    await inputStream.CopyToAsync(outputStream);
-                }
-
-                return new IncomingFileInfo(incomingPath, displayName, contentType);
-            });
+            await incomingFileService.ReceiveAsync(
+                new PathIncomingFileSource(sourcePath, displayName, contentType, transientFileStore));
         }
         finally
         {

@@ -50,12 +50,18 @@ public sealed class EditSaveService(
 {
     public async Task SaveAsync(string text)
     {
-        Func<Stream, Task> encryptTo = await PrepareAsync(text);
+        EncryptRequest request = await PrepareAsync(previewService.Current, text);
 
         // The source is reached through one of My folders, as it was when editing started.
         FileReference source = flowContext.Source!;
         string folderId = await fileAccess.GetFolderOfFileAsync(source.Id);
-        string savedId = await fileAccess.WriteFileInFolderAsync(folderId, source.Name, overwrite: true, encryptTo);
+        string savedId;
+        await using (IFileWriteSession destination =
+                     await fileAccess.OpenWriteInFolderAsync(folderId, source.Name, overwrite: true))
+        {
+            await EncryptPreparedAsync(previewService.Current, request, destination.OutputStream);
+            savedId = await destination.CommitAsync();
+        }
 
         // The file is replaced, which on some storage gives it a new id, while the old id refers to the replaced
         // file. The saved file is the one saved over and listed from then on, in place of any entry for the
@@ -68,9 +74,10 @@ public sealed class EditSaveService(
 
     public async Task<bool> SaveCopyAsync(string text)
     {
-        Func<Stream, Task> encryptTo = await PrepareAsync(text);
+        IPreviewState state = previewService.Current;
+        EncryptRequest request = await PrepareAsync(state, text);
         await using MemoryStream encrypted = new();
-        await encryptTo(encrypted);
+        await EncryptPreparedAsync(state, request, encrypted);
         encrypted.Position = 0;
 
         string fileName = previewService.Current.OriginalFileName.ToEncryptedName(string.Empty);
@@ -95,11 +102,10 @@ public sealed class EditSaveService(
     }
 
     /// <summary>
-    /// Writes the text to the decrypted file being previewed, and returns how to encrypt that file into a stream.
+    /// Writes the text to the decrypted file being previewed, and prepares its encryption request.
     /// </summary>
-    private async Task<Func<Stream, Task>> PrepareAsync(string text)
+    private async Task<EncryptRequest> PrepareAsync(IPreviewState state, string text)
     {
-        IPreviewState state = previewService.Current;
         if (state.File is not null)
         {
             TryClearReadOnly(state.File.FilePath);
@@ -110,12 +116,13 @@ public sealed class EditSaveService(
             state.UpdateFileSize(new FileInfo(state.File.FilePath).Length);
         }
 
-        EncryptRequest request = encryptRequestFactory.ForCurrentProfile(state.OriginalFileName);
-        return async encrypted =>
-        {
-            await using FileStream cleartext = File.OpenRead(state.DecryptedPath);
-            await coreServices.EncryptAsync(cleartext, encrypted, request);
-        };
+        return encryptRequestFactory.ForCurrentProfile(state.OriginalFileName);
+    }
+
+    private async Task EncryptPreparedAsync(IPreviewState state, EncryptRequest request, Stream encrypted)
+    {
+        await using FileStream cleartext = File.OpenRead(state.DecryptedPath);
+        await coreServices.EncryptAsync(cleartext, encrypted, request);
     }
 
     private static void TryClearReadOnly(string filePath)

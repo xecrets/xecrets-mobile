@@ -184,18 +184,8 @@ internal sealed class FakeFileAccess(WorkFolderStorage storage) : IFileAccess
     public Task<bool> FileExistsInFolderAsync(string folderId, string name) =>
         Task.FromResult(Files.ContainsKey(PathIn(folderId, name)));
 
-    public async Task<string> WriteFileInFolderAsync(
-        string folderId,
-        string name,
-        bool overwrite,
-        Func<Stream, Task> writer)
-    {
-        MemoryStream output = new();
-        await writer(output);
-        string path = PathIn(folderId, name);
-        Files[path] = output.ToArray();
-        return folderId.Contains('|') ? $"{folderId[..folderId.IndexOf('|')]}|{path}" : path;
-    }
+    public Task<IFileWriteSession> OpenWriteInFolderAsync(string folderId, string name, bool overwrite) =>
+        Task.FromResult<IFileWriteSession>(new FakeFileWriteSession(this, folderId, name));
 
     public async Task<FileReference?> SaveAsAsync(string fileName, Stream content)
     {
@@ -217,10 +207,27 @@ internal sealed class FakeFileAccess(WorkFolderStorage storage) : IFileAccess
         return folder.Length > 0 ? $"{folder}/{name}" : name;
     }
 
+    private sealed class FakeFileWriteSession(FakeFileAccess fileAccess, string folderId, string name) : IFileWriteSession
+    {
+        private readonly MemoryStream _output = new();
+
+        public Stream OutputStream => _output;
+
+        public async Task<string> CommitAsync()
+        {
+            await _output.DisposeAsync();
+            string path = PathIn(folderId, name);
+            fileAccess.Files[path] = _output.ToArray();
+            return folderId.Contains('|') ? $"{folderId[..folderId.IndexOf('|')]}|{path}" : path;
+        }
+
+        public ValueTask DisposeAsync() => _output.DisposeAsync();
+    }
+
     private sealed class FakeWritableFile(string id) : IWritableFile
     {
         public string Id => id;
-        public Task<T> WithAccessAsync<T>(Func<Task<T>> action) => action();
+        public IDisposable AcquireAccess() => new EmptyAccessScope();
         public Task<bool> CanWriteAsync() => throw new NotSupportedException();
         public Task<bool> CanDeleteAsync() => throw new NotSupportedException();
         public Task<long> GetLengthAsync() => throw new NotSupportedException();

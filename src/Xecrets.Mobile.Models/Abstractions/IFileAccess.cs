@@ -133,9 +133,9 @@ public interface IFileAccess
     Task<bool> FileExistsInFolderAsync(string folderId, string name);
 
     /// <summary>
-    /// Writes a file with the name in the folder, as given by <see cref="GetFolderOfFileAsync"/>, and returns its id.
+    /// Opens a temporary output in the folder, as given by <see cref="GetFolderOfFileAsync"/>, to write and commit.
     /// </summary>
-    Task<string> WriteFileInFolderAsync(string folderId, string name, bool overwrite, Func<Stream, Task> writer);
+    Task<IFileWriteSession> OpenWriteInFolderAsync(string folderId, string name, bool overwrite);
 
     /// <summary>
     /// Lets the user save a copy anywhere. Returns null when the user cancels. No lasting access to the saved file is

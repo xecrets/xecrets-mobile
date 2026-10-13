@@ -40,7 +40,7 @@ public interface IPreviewService
 
     Task PrepareTextAsync(DecryptedFileInfo file);
 
-    Task<bool> PrepareAsync(DocumentPreviewFile encryptedFile);
+    Task<bool> PrepareAsync(IReadableFile encryptedFile);
 
     Task<PreviewPreparationStatus> PrepareImportedAsync(string encryptedFilePath);
 

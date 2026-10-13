@@ -151,12 +151,8 @@ public sealed class WindowsFileAccess(WorkFolderStorage storage) : IFileAccess
     public Task<bool> FileExistsInFolderAsync(string folderId, string name) =>
         Task.FromResult(File.Exists(Path.Combine(folderId, name)));
 
-    public Task<string> WriteFileInFolderAsync(
-        string folderPath,
-        string name,
-        bool overwrite,
-        Func<Stream, Task> writer) =>
-        folderPath.WriteFileInFolderAsync(name, overwrite, writer);
+    public Task<IFileWriteSession> OpenWriteInFolderAsync(string folderId, string name, bool overwrite) =>
+        Task.FromResult<IFileWriteSession>(new LocalFileWriteSession(folderId, name, overwrite));
 
     public async Task<FileReference?> SaveAsAsync(string fileName, Stream content)
     {

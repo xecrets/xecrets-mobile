@@ -64,9 +64,12 @@ public sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants g
     {
         UTType contentType = UTTypes.Data;
         NSUrl? initialUrl = await GetInitialUrlAsync(initialFolder);
-        NSUrl? fileUrl = initialUrl is null
-            ? await contentType.PickUrlAsync(null)
-            : await initialUrl.WithAccessAsync(() => contentType.PickUrlAsync(initialUrl));
+        NSUrl? fileUrl;
+        using (IDisposable access = new AppleSecurityScope(initialUrl))
+        {
+            fileUrl = await contentType.PickUrlAsync(initialUrl);
+        }
+
         return fileUrl is null ? null : AppleFileLocation.Locate(grants.Add(fileUrl));
     }
 
@@ -157,11 +160,11 @@ public sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants g
 
         try
         {
-            return await grants.WithAccessAsync(fileId, url =>
-            {
-                url.SaveGrant(fileId);
-                return Task.FromResult(true);
-            });
+            ResolvedUrl resolved =
+                await grants.ResolveAccessAsync(fileId) ?? throw new FileNotAccessibleException();
+            using IDisposable access = new AppleSecurityScope(resolved.AccessUrl);
+            resolved.FileUrl.SaveGrant(fileId);
+            return true;
         }
         catch (Exception ex) when (ex is NSErrorException or FileNotAccessibleException)
         {
@@ -180,8 +183,8 @@ public sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants g
             return file;
         }
 
-        FileReference located = await access.Access.WithAccessAsync(() =>
-            Task.FromResult(AppleFileLocation.Locate(access.File)));
+        using IDisposable scope = new AppleSecurityScope(access.AccessUrl);
+        FileReference located = AppleFileLocation.Locate(access.FileUrl);
         return file with { Root = located.Root, FolderPath = located.FolderPath };
     }
 
@@ -196,11 +199,11 @@ public sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants g
 
     public async Task<Stream> OpenReadAsync(string fileId)
     {
-        (NSUrl access, NSUrl fileUrl) =
+        ResolvedUrl resolved =
             await grants.ResolveAccessAsync(fileId) ?? throw new FileNotAccessibleException();
         try
         {
-            return await access.OpenScopedReadAsync(fileUrl);
+            return await resolved.AccessUrl.OpenScopedReadAsync(resolved.FileUrl);
         }
         catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
         {
@@ -220,20 +223,19 @@ public sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants g
     public async Task<bool> FileExistsInFolderAsync(string folderId, string name)
     {
         NSUrl folderUrl = NSUrl.FromString(folderId)!;
-        return await (await grants.GetFolderGrantAsync(folderId, isFolderItself: true)).WithAccessAsync(() =>
-            Task.FromResult(File.Exists(Path.Combine(folderUrl.Path!, name))));
+        using IDisposable access = new AppleSecurityScope(
+            await grants.GetFolderGrantAsync(folderId, isFolderItself: true));
+        return File.Exists(Path.Combine(folderUrl.Path!, name));
     }
 
-    public async Task<string> WriteFileInFolderAsync(
+    public async Task<IFileWriteSession> OpenWriteInFolderAsync(
         string folderId,
         string name,
-        bool overwrite,
-        Func<Stream, Task> writer)
+        bool overwrite)
     {
         NSUrl folderUrl = NSUrl.FromString(folderId)!;
-        await (await grants.GetFolderGrantAsync(folderId, isFolderItself: true)).WithAccessAsync(() =>
-            folderUrl.Path!.WriteFileInFolderAsync(name, overwrite, writer));
-        return folderUrl.Append(name, false).AbsoluteString!;
+        return new AppleFileWriteSession(folderUrl, name, overwrite,
+            await grants.GetFolderGrantAsync(folderId, isFolderItself: true));
     }
 
     /// <summary>

@@ -34,10 +34,7 @@ namespace Xecrets.Mobile.Models.Abstractions;
 
 public interface IEncryptionPreparationService
 {
-    Task<EncryptionPreparationResult> EncryptForCurrentProfileAsync(string fileName, Func<Task<Stream>> openReadAsync);
+    Task<EncryptionPreparationResult> EncryptForCurrentProfileAsync(IReadableFile source);
 
-    Task<EncryptionPreparationResult> EncryptForPasswordAsync(
-        string fileName,
-        Func<Task<Stream>> openReadAsync,
-        string password);
+    Task<EncryptionPreparationResult> EncryptForPasswordAsync(IReadableFile source, string password);
 }

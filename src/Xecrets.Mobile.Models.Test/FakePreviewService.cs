@@ -43,7 +43,7 @@ internal sealed class FakePreviewService : IPreviewService
     public bool HasPendingPasswordRequest => NeedsPassword;
     public Task PrepareTextAsync(DecryptedFileInfo file) => throw new NotSupportedException();
 
-    public async Task<bool> PrepareAsync(DocumentPreviewFile encryptedFile)
+    public async Task<bool> PrepareAsync(IReadableFile encryptedFile)
     {
         await using (await encryptedFile.OpenReadAsync())
         {

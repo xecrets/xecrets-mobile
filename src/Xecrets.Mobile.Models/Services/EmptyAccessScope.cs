@@ -28,8 +28,11 @@
 
 #endregion Copyright and GPL License
 
-namespace Xecrets.Mobile.Models.Models;
+namespace Xecrets.Mobile.Models.Services;
 
-public sealed record DocumentPreviewFile(
-    string FileName,
-    Func<Task<Stream>> OpenReadAsync);
+public sealed class EmptyAccessScope : IDisposable
+{
+    public void Dispose()
+    {
+    }
+}

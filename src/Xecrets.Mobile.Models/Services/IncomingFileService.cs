@@ -49,7 +49,7 @@ public sealed class IncomingFileService(
 {
     private IncomingFileRequest _pendingRequest = IncomingFileRequest.Empty;
 
-    public Task ReceiveAsync(Func<Task<IncomingFileInfo>> receiveFileAsync)
+    public Task ReceiveAsync(IIncomingFileSource source)
         => transientFileService.RunExclusiveAsync(() => userInterfaceService.InvokeOnMainThreadAsync(async () =>
         {
             if (_pendingRequest != IncomingFileRequest.Empty || !userInterfaceService.CanReceiveIncomingFiles)
@@ -57,7 +57,7 @@ public sealed class IncomingFileService(
                 return;
             }
 
-            _pendingRequest = new IncomingFileRequest(await receiveFileAsync());
+            _pendingRequest = new IncomingFileRequest(await source.ImportAsync());
             if (userInterfaceService.CanProcessIncomingFiles)
             {
                 await ProcessPendingCoreAsync();
@@ -164,8 +164,7 @@ public sealed class IncomingFileService(
             }
 
             EncryptionPreparationResult result = await encryptionPreparationService.EncryptForCurrentProfileAsync(
-                file.DisplayName,
-                () => Task.FromResult<Stream>(File.OpenRead(file.FilePath)));
+                new LocalReadableFile(file.FilePath, file.DisplayName));
             await userInterfaceService.NavigateToAsync(AppDestination.EncryptResult, result);
         }
         catch (Exception ex)

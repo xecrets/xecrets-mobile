@@ -39,7 +39,7 @@ public interface IWritableFile
     /// </summary>
     string Id { get; }
 
-    Task<T> WithAccessAsync<T>(Func<Task<T>> action);
+    IDisposable AcquireAccess();
 
     Task<bool> CanWriteAsync();
 

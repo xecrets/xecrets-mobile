@@ -49,7 +49,7 @@ internal sealed class AppleWritableFile(NSUrl url, NSUrl folderGrant) : IWritabl
 
     public string Id => _fileUrl.AbsoluteString!;
 
-    public Task<T> WithAccessAsync<T>(Func<Task<T>> action) => folderGrant.WithAccessAsync(action);
+    public IDisposable AcquireAccess() => new AppleSecurityScope(folderGrant);
 
     public Task<bool> CanWriteAsync() => Task.FromResult(IsWritable(_fileUrl));
 

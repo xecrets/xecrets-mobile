@@ -40,6 +40,7 @@ using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
 using Xecrets.Mobile.Models.Abstractions;
+using Xecrets.Mobile.Models.Services;
 
 using AndroidUri = Android.Net.Uri;
 
@@ -56,7 +57,7 @@ internal sealed class AndroidWritableFile(AndroidUri uri) : IWritableFile
 
     public string Id => _fileUri.ToString()!;
 
-    public Task<T> WithAccessAsync<T>(Func<Task<T>> action) => action();
+    public IDisposable AcquireAccess() => new EmptyAccessScope();
 
     public Task<bool> CanWriteAsync() => Task.FromResult(Supports(_fileUri, DocumentContractFlags.SupportsWrite));
 

@@ -49,34 +49,36 @@ public sealed class FileWiper : IFileWiper
     /// </summary>
     public const string DeletedNotice = "Deleted by Xecrets Ez. Ensure to delete all versions of this file permanently.";
 
-    public Task<bool> CanWipeAsync(IWritableFile file) => file.WithAccessAsync(() => HasRightsAsync(file));
+    public async Task<bool> CanWipeAsync(IWritableFile file)
+    {
+        using IDisposable access = file.AcquireAccess();
+        return await HasRightsAsync(file);
+    }
 
     /// <summary>
     /// There are too many caveats with wiping a file that is on a mobile phone, or in cloud storage. Versions are created and many operations are not
     /// supported. So this is really a best effort, and we only do any attempt to overwrite if the stream is seekable.
     /// </summary>
-    public Task<FileWipeStatus> WipeAsync(IWritableFile file)
+    public async Task<FileWipeStatus> WipeAsync(IWritableFile file)
     {
-        return file.WithAccessAsync(async () =>
+        using IDisposable access = file.AcquireAccess();
+        if (!await HasRightsAsync(file))
         {
-            if (!await HasRightsAsync(file))
-            {
-                return FileWipeStatus.InsufficientRights;
-            }
+            return FileWipeStatus.InsufficientRights;
+        }
 
-            bool result;
-            try
-            {
-                result = await WipeCoreAsync(file);
-            }
-            catch
-            {
-                await TryDeleteAsync(file);
-                throw;
-            }
+        bool result;
+        try
+        {
+            result = await WipeCoreAsync(file);
+        }
+        catch
+        {
+            await TryDeleteAsync(file);
+            throw;
+        }
 
-            return result ? FileWipeStatus.Succeeded : FileWipeStatus.OnlyDelete;
-        });
+        return result ? FileWipeStatus.Succeeded : FileWipeStatus.OnlyDelete;
     }
 
     private static async Task<bool> HasRightsAsync(IWritableFile file) =>

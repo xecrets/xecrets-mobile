@@ -110,8 +110,7 @@ public partial class HomePageModel(
 
             flowContext.UpdateSource(file);
             EncryptionPreparationResult result = await encryptionPreparationService.EncryptForCurrentProfileAsync(
-                file.Name,
-                () => fileAccess.OpenReadAsync(file.Id));
+                new ReferencedReadableFile(fileAccess, file));
             await UserInterfaceService.NavigateToAsync(AppDestination.EncryptResult, result);
         }
         catch (OperationCanceledException)

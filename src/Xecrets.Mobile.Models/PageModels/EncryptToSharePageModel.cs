@@ -92,8 +92,7 @@ public partial class EncryptToSharePageModel(
 
             flowContext.UpdateSource(file);
             EncryptionPreparationResult result = await encryptionPreparationService.EncryptForPasswordAsync(
-                file.Name,
-                () => fileAccess.OpenReadAsync(file.Id),
+                new ReferencedReadableFile(fileAccess, file),
                 password);
             await profileService.RecordExtraPasswordUseAsync(password);
 

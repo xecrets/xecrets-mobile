@@ -59,17 +59,20 @@ public sealed class WorkFolderOperationService(
         bool overwrite = await ConfirmOverwriteAsync(folderId, destinationName);
         EncryptRequest request = encryptRequestFactory.ForCurrentProfile(file.Name);
         string resultId;
+
         await using (Stream cleartext = await fileAccess.OpenReadAsync(file.Id))
         {
-            resultId = await fileAccess.WriteFileInFolderAsync(
+            await using IFileWriteSession destination = await fileAccess.OpenWriteInFolderAsync(
                 folderId,
                 destinationName,
-                overwrite,
-                encrypted => coreServices.EncryptAsync(cleartext, encrypted, request));
+                overwrite);
+            await coreServices.EncryptAsync(cleartext, destination.OutputStream, request);
+            resultId = await destination.CommitAsync();
         }
 
         FileReference result = file with { Id = resultId, Name = destinationName };
         await CompleteAsync(file, result);
+
         return result;
     }
 
@@ -107,6 +110,7 @@ public sealed class WorkFolderOperationService(
 
         _pendingFile = null;
         await profileService.RecordExtraPasswordUseAsync(password);
+
         return result;
     }
 
@@ -127,11 +131,13 @@ public sealed class WorkFolderOperationService(
 
             string folderId = await fileAccess.GetFolderOfFileAsync(file.Id);
             bool overwrite = await ConfirmOverwriteAsync(folderId, session.OriginalFileName);
-            string resultId = await fileAccess.WriteFileInFolderAsync(
+
+            await using IFileWriteSession destination = await fileAccess.OpenWriteInFolderAsync(
                 folderId,
                 session.OriginalFileName,
-                overwrite,
-                session.DecryptAsync);
+                overwrite);
+            await session.DecryptAsync(destination.OutputStream);
+            string resultId = await destination.CommitAsync();
             result = file with { Id = resultId, Name = session.OriginalFileName };
         }
 

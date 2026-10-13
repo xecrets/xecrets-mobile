@@ -350,21 +350,9 @@ public sealed class AndroidFileAccess(WorkFolderStorage storage, IFileWiper file
     public Task<bool> FileExistsInFolderAsync(string folderId, string name) =>
         Task.Run(() => AndroidUri.Parse(folderId)!.FindChild(name) is not null);
 
-    public Task<string> WriteFileInFolderAsync(
-        string folderId,
-        string name,
-        bool overwrite,
-        Func<Stream, Task> writer) =>
-        AndroidUri.Parse(folderId)!.WriteDocumentAsync(name, overwrite, writer, WipeReplacedAsync);
-
-    // The replaced document holds the previous contents, such as before an edit, so it is wiped like any other file.
-    private async Task WipeReplacedAsync(AndroidUri replacedUri)
-    {
-        if (await fileWiper.WipeAsync(new AndroidWritableFile(replacedUri)) == FileWipeStatus.InsufficientRights)
-        {
-            throw new IOException("The replaced destination file could not be removed.");
-        }
-    }
+    public Task<IFileWriteSession> OpenWriteInFolderAsync(string folderId, string name, bool overwrite) =>
+        Task.FromResult<IFileWriteSession>(
+            new AndroidFileWriteSession(AndroidUri.Parse(folderId)!, name, overwrite, fileWiper));
 
     public async Task<FileReference?> SaveAsAsync(string fileName, Stream content)
     {

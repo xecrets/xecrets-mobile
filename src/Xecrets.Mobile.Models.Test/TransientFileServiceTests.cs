@@ -65,13 +65,13 @@ public sealed class TransientFileServiceTests
         bool copyStarted = false;
 
         Task cleanup = transient.MaybeWipeTrackedFilesAsync();
-        Task receive = incoming.ReceiveAsync(async () =>
+        Task receive = incoming.ReceiveAsync(new TestIncomingFileSource(async () =>
         {
             copyStarted = true;
             string path = transient.CreateIncomingPath("new.txt");
             await File.WriteAllTextAsync(path, "new");
             return new IncomingFileInfo(path, "new.txt", "text/plain");
-        });
+        }));
         try
         {
             Assert.That(cleanup.IsCompleted, Is.False);
@@ -98,13 +98,13 @@ public sealed class TransientFileServiceTests
             return Task.CompletedTask;
         });
         IncomingFileService incoming = CreateIncomingService(transient);
-        Task receive = incoming.ReceiveAsync(async () =>
+        Task receive = incoming.ReceiveAsync(new TestIncomingFileSource(async () =>
         {
             string path = transient.CreateIncomingPath("new.txt");
             await File.WriteAllTextAsync(path, "new");
             await releaseCopy.Task;
             return new IncomingFileInfo(path, "new.txt", "text/plain");
-        });
+        }));
 
         // The gate is held by the in-flight receive; wipe must not wait for it - it skips immediately,
         // leaving cleanup for another opportunity, so it can never end up deadlocked behind a caller that
@@ -126,11 +126,11 @@ public sealed class TransientFileServiceTests
     {
         TransientFileService transient = CreateService(_ => Task.CompletedTask);
         IncomingFileService incoming = CreateIncomingService(transient);
-        await Assert.ThatAsync(async () => await incoming.ReceiveAsync(async () =>
+        await Assert.ThatAsync(async () => await incoming.ReceiveAsync(new TestIncomingFileSource(async () =>
         {
             await Task.Yield();
             throw new IOException("Copy failed.");
-        }), Throws.TypeOf<IOException>());
+        })), Throws.TypeOf<IOException>());
         await transient.MaybeWipeTrackedFilesAsync().WaitAsync(TimeSpan.FromSeconds(5));
     }
 
@@ -217,12 +217,12 @@ public sealed class TransientFileServiceTests
             }
         };
         IncomingFileService incoming = new(new TestProfileService(), transient, null!, null!, null!, null!, userInterface);
-        Task processing = incoming.ReceiveAsync(async () =>
+        Task processing = incoming.ReceiveAsync(new TestIncomingFileSource(async () =>
         {
             string path = transient.CreateIncomingPath("new.txt");
             await File.WriteAllTextAsync(path, "new");
             return new IncomingFileInfo(path, "new.txt", "text/plain");
-        });
+        }));
         if (pending)
         {
             await processing;
@@ -273,7 +273,7 @@ public sealed class TransientFileServiceTests
         : IWritableFile
     {
         public string Id => file.Id;
-        public Task<T> WithAccessAsync<T>(Func<Task<T>> action) => file.WithAccessAsync(action);
+        public IDisposable AcquireAccess() => file.AcquireAccess();
         public Task<bool> CanWriteAsync() => file.CanWriteAsync();
         public Task<bool> CanDeleteAsync() => file.CanDeleteAsync();
         public Task<long> GetLengthAsync() => file.GetLengthAsync();

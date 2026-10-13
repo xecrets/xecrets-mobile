@@ -42,7 +42,7 @@ public sealed class LocalWritableFile(string path) : IWritableFile
 
     public string Id => _path;
 
-    public Task<T> WithAccessAsync<T>(Func<Task<T>> action) => action();
+    public IDisposable AcquireAccess() => new EmptyAccessScope();
 
     public Task<bool> CanWriteAsync() => Task.FromResult(IsWritable());
 

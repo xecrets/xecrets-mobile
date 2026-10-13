@@ -54,7 +54,7 @@ public sealed class PreviewService(
         previewState.SetText(file, text);
     }
 
-    public async Task<bool> PrepareAsync(DocumentPreviewFile encryptedFile)
+    public async Task<bool> PrepareAsync(IReadableFile encryptedFile)
     {
         string encryptedPath = transientFileService.CreateEncryptedInputPath(encryptedFile.FileName);
         await using (Stream inputStream = await encryptedFile.OpenReadAsync())

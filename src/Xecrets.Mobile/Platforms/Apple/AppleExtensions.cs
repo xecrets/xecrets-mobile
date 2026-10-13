@@ -96,54 +96,6 @@ public static class AppleExtensions
             return await pickerDelegate.Completion.Task;
         }
 
-        public T WithAccess<T>(Func<T> func)
-        {
-            bool isAccessing = url.StartAccessingSecurityScopedResource();
-            try
-            {
-                return func();
-            }
-            finally
-            {
-                if (isAccessing)
-                {
-                    url.StopAccessingSecurityScopedResource();
-                }
-            }
-        }
-
-        public async Task<T> WithAccessAsync<T>(Func<Task<T>> action)
-        {
-            bool isAccessing = url.StartAccessingSecurityScopedResource();
-            try
-            {
-                return await action();
-            }
-            finally
-            {
-                if (isAccessing)
-                {
-                    url.StopAccessingSecurityScopedResource();
-                }
-            }
-        }
-
-        public async Task WithAccessAsync(Func<Task> action)
-        {
-            bool isAccessing = url.StartAccessingSecurityScopedResource();
-            try
-            {
-                await action();
-            }
-            finally
-            {
-                if (isAccessing)
-                {
-                    url.StopAccessingSecurityScopedResource();
-                }
-            }
-        }
-
         /// <summary>
         /// Opens the file for reading, holding the access to this url until the stream is disposed.
         /// </summary>

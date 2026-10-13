@@ -56,34 +56,6 @@ public static class Extensions
                 return null;
             }
         }
-
-        /// <summary>
-        /// Writes the file in this folder through a temporary file in the same folder, and returns the path to the
-        /// written file.
-        /// </summary>
-        public async Task<string> WriteFileInFolderAsync(string name, bool overwrite, Func<Stream, Task> writer)
-        {
-            string destinationPath = Path.Combine(value, name);
-            string temporaryPath = Path.Combine(value, $".xecrets-{Guid.NewGuid():N}.tmp");
-            try
-            {
-                await using (FileStream output = File.Create(temporaryPath))
-                {
-                    await writer(output);
-                }
-
-                File.Move(temporaryPath, destinationPath, overwrite);
-            }
-            finally
-            {
-                if (File.Exists(temporaryPath))
-                {
-                    File.Delete(temporaryPath);
-                }
-            }
-
-            return destinationPath;
-        }
     }
 
     /// <summary>

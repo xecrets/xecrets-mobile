@@ -162,17 +162,8 @@ public class MainActivity : MauiAppCompatActivity, IActivityResultCallback
 
         await using (inputStream)
         {
-            await incomingFileService.ReceiveAsync(async () =>
-            {
-                string incomingPath = transientFileStore.CreateIncomingPath(displayName);
-                await using (FileStream outputStream =
-                             File.Open(incomingPath, FileMode.Create, FileAccess.Write, FileShare.Read))
-                {
-                    await inputStream.CopyToAsync(outputStream);
-                }
-
-                return new IncomingFileInfo(incomingPath, displayName, contentType);
-            });
+            await incomingFileService.ReceiveAsync(
+                new StreamIncomingFileSource(inputStream, displayName, contentType, transientFileStore));
         }
     }
 
@@ -193,12 +184,8 @@ public class MainActivity : MauiAppCompatActivity, IActivityResultCallback
         }
 
         const string displayName = "received.txt";
-        await incomingFileService.ReceiveAsync(async () =>
-        {
-            string incomingPath = transientFileStore.CreateIncomingPath(displayName);
-            await File.WriteAllTextAsync(incomingPath, text);
-            return new IncomingFileInfo(incomingPath, displayName, "text/plain");
-        });
+        await incomingFileService.ReceiveAsync(
+            new TextIncomingFileSource(text, displayName, transientFileStore));
     }
 
     private static AndroidUri? GetIncomingUri(Intent intent) =>

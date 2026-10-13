@@ -75,11 +75,11 @@ public sealed class PendingFileTests
         TestProfileService profile = new() { IsAuthenticated = authenticated };
         IncomingFileService incoming = new(profile, transient, null!, null!, null!, null!, userInterface);
         string path = transient.CreateIncomingPath(name);
-        await incoming.ReceiveAsync(async () =>
+        await incoming.ReceiveAsync(new TestIncomingFileSource(async () =>
         {
             await File.WriteAllTextAsync(path, "input");
             return new IncomingFileInfo(path, name, "application/octet-stream");
-        });
+        }));
 
         await transient.MaybeWipeTrackedFilesAsync();
         await incoming.ProcessPendingAsync();
@@ -101,13 +101,13 @@ public sealed class PendingFileTests
         IncomingFileService incoming = new(new TestProfileService(), transient, null!, null!, null!, null!, userInterface);
         int receivedCount = 0;
 
-        Task Receive(string name) => incoming.ReceiveAsync(async () =>
+        Task Receive(string name) => incoming.ReceiveAsync(new TestIncomingFileSource(async () =>
         {
             receivedCount++;
             string path = transient.CreateIncomingPath(name);
             await File.WriteAllTextAsync(path, name);
             return new IncomingFileInfo(path, name, "text/plain");
-        });
+        }));
 
         await Task.WhenAll(Receive("first.txt"), Receive("second.txt"));
 
@@ -123,11 +123,11 @@ public sealed class PendingFileTests
         IncomingFileService incoming = new(new TestProfileService(), transient, null!, null!, null!, null!, userInterface);
         int receivedCount = 0;
 
-        await incoming.ReceiveAsync(() =>
+        await incoming.ReceiveAsync(new TestIncomingFileSource(() =>
         {
             receivedCount++;
             return Task.FromResult(new IncomingFileInfo("unused", "file.txt", "text/plain"));
-        });
+        }));
 
         Assert.That(receivedCount, Is.Zero);
         Assert.That(userInterface.Destinations, Is.Empty);
@@ -160,12 +160,12 @@ public sealed class PendingFileTests
         PreviewService preview = new(core, profile, transient, new PreviewState(), new DecryptionPasswordRequestState());
         IncomingFileService incoming = new(profile, transient, preview,
             new EncryptionPreparationService(new EncryptRequestFactory(profile), transient, core), new FlowContext(), core, userInterface);
-        await incoming.ReceiveAsync(async () =>
+        await incoming.ReceiveAsync(new TestIncomingFileSource(async () =>
         {
             string path = transient.CreateIncomingPath(name);
             await File.WriteAllBytesAsync(path, isEncrypted ? [0xe0] : [0x00]);
             return new IncomingFileInfo(path, name, "application/octet-stream");
-        });
+        }));
         Assert.That(userInterface.Destinations, Is.EqualTo([AppDestination.Login]));
 
         profile.IsAuthenticated = true;
@@ -184,12 +184,12 @@ public sealed class PendingFileTests
         TestProfileService profile = new() { IsAuthenticated = true };
         TestCoreServices core = new();
         IncomingFileService incoming = new(profile, transient, null!, null!, new FlowContext(), core, userInterface);
-        await incoming.ReceiveAsync(async () =>
+        await incoming.ReceiveAsync(new TestIncomingFileSource(async () =>
         {
             string path = transient.CreateIncomingPath("input.axx");
             await File.WriteAllBytesAsync(path, [0x00]);
             return new IncomingFileInfo(path, "input.axx", "application/octet-stream");
-        });
+        }));
 
         await incoming.ProcessPendingAsync();
 

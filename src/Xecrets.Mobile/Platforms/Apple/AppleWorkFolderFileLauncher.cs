@@ -28,6 +28,7 @@
 
 #endregion Copyright and GPL License
 
+using System;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
 using CoreGraphics;
@@ -35,6 +36,7 @@ using Foundation;
 using UIKit;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
+using Xecrets.Mobile.Models.Services;
 using Platform = Microsoft.Maui.ApplicationModel.Platform;
 
 namespace Xecrets.Mobile.Platforms.Apple;
@@ -54,22 +56,22 @@ public class AppleWorkFolderFileLauncher(AppleFileGrants grants) : IWorkFolderFi
     /// </summary>
     public async Task<bool> OpenAsync(FileReference file, bool allowWrite)
     {
-        await grants.WithAccessAsync(file.Id, async fileUrl =>
-        {
-            await (QuickLookFileViewer.CanView(fileUrl)
-                ? QuickLookFileViewer.ViewAsync(fileUrl)
-                : PresentShareSheetAsync(fileUrl));
-            return true;
-        });
+        ResolvedUrl resolved =
+            await grants.ResolveAccessAsync(file.Id) ?? throw new FileNotAccessibleException();
+        using IDisposable access = new AppleSecurityScope(resolved.AccessUrl);
+        await (QuickLookFileViewer.CanView(resolved.FileUrl)
+            ? QuickLookFileViewer.ViewAsync(resolved.FileUrl)
+            : PresentShareSheetAsync(resolved.FileUrl));
         return true;
     }
 
-    public Task ShareAsync(FileReference file) =>
-        grants.WithAccessAsync(file.Id, async fileUrl =>
-        {
-            await PresentShareSheetAsync(fileUrl);
-            return true;
-        });
+    public async Task ShareAsync(FileReference file)
+    {
+        ResolvedUrl resolved =
+            await grants.ResolveAccessAsync(file.Id) ?? throw new FileNotAccessibleException();
+        using IDisposable access = new AppleSecurityScope(resolved.AccessUrl);
+        await PresentShareSheetAsync(resolved.FileUrl);
+    }
 
     /// <summary>
     /// Presents the share sheet, completing when it is dismissed and any chosen activity has finished with the file.

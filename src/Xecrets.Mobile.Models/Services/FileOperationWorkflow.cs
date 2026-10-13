@@ -167,7 +167,7 @@ public sealed class FileOperationWorkflow(
     public async Task<bool> PreviewAsync(FileReference file)
     {
         flowContext.Begin(FlowOrigin.Navigated, WorkFolderOperation.Decrypt, file);
-        DocumentPreviewFile previewFile = new(file.Name, () => fileAccess.OpenReadAsync(file.Id));
+        IReadableFile previewFile = new ReferencedReadableFile(fileAccess, file);
         if (await previewService.PrepareAsync(previewFile))
         {
             await userInterfaceService.NavigateToAsync(AppDestination.Preview);

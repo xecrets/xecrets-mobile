@@ -88,35 +88,26 @@ public sealed class AppleFileGrants(WorkFolderStorage storage)
     }
 
     /// <summary>
-    /// Runs the action with a url of the file while there is access to it, such as to hand it to another app.
-    /// </summary>
-    public async Task<T> WithAccessAsync<T>(string fileId, Func<NSUrl, Task<T>> action)
-    {
-        (NSUrl access, NSUrl fileUrl) = await ResolveAccessAsync(fileId) ?? throw new FileNotAccessibleException();
-        return await access.WithAccessAsync(() => action(fileUrl));
-    }
-
-    /// <summary>
     /// Finds what gives access to the file: the url a picker gave, the grant of a folder containing it, or its own
     /// bookmark. A bookmark follows a file that is renamed, but such a file is not where it was. Returns the url to
     /// access through and the url of the file, or null when there is no access.
     /// </summary>
-    public async Task<(NSUrl Access, NSUrl File)?> ResolveAccessAsync(string fileId)
+    public async Task<ResolvedUrl?> ResolveAccessAsync(string fileId)
     {
         if (_picked.TryGetValue(fileId, out NSUrl? picked))
         {
-            return (picked, picked);
+            return new ResolvedUrl(picked, picked);
         }
 
         NSUrl fileUrl = NSUrl.FromString(fileId)!;
         if (await FindFolderAsync(fileId, isFolderItself: false) is { } folder &&
             folder.GrantId.TryResolveGrant() is { } grant)
         {
-            return (grant, fileUrl);
+            return new ResolvedUrl(grant, fileUrl);
         }
 
         return fileId.TryResolveGrant() is { } own && own.LastPathComponent == fileUrl.LastPathComponent
-            ? (own, own)
+            ? new ResolvedUrl(own, own)
             : null;
     }
 
@@ -132,7 +123,7 @@ public sealed class AppleFileGrants(WorkFolderStorage storage)
     /// </summary>
     public async Task<string?> GetNormalizedPathAsync(string fileId) =>
         await ResolveAccessAsync(fileId) is { } access
-            ? NormalizePath(access.Access, NSUrl.FromString(fileId)!.Path!)
+            ? NormalizePath(access.AccessUrl, NSUrl.FromString(fileId)!.Path!)
             : null;
 
     /// <summary>
@@ -141,7 +132,9 @@ public sealed class AppleFileGrants(WorkFolderStorage storage)
     /// "ä" as one character or as an "a" followed by a combining mark. A link is only resolved where the path can be
     /// seen to exist, so this is done while accessing what gives access to the path.
     /// </summary>
-    public static string NormalizePath(NSUrl access, string path) =>
-        access.WithAccess(() =>
-            new NSString(path).ResolveSymlinksInPath().ToString().TrimEnd('/').Normalize(NormalizationForm.FormC));
+    public static string NormalizePath(NSUrl access, string path)
+    {
+        using IDisposable scope = new AppleSecurityScope(access);
+        return new NSString(path).ResolveSymlinksInPath().ToString().TrimEnd('/').Normalize(NormalizationForm.FormC);
+    }
 }

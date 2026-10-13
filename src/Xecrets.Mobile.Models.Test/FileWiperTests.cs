@@ -43,6 +43,8 @@ public sealed class FileWiperTests
 {
     private sealed class FakeWritableFile : IWritableFile
     {
+        public Func<IDisposable> Access { get; init; } = () => new EmptyAccessScope();
+
         public Func<Task<bool>> CanWrite { get; init; } = () => Task.FromResult(true);
 
         public Func<Task<bool>> CanDelete { get; init; } = () => Task.FromResult(true);
@@ -57,7 +59,7 @@ public sealed class FileWiperTests
 
         public string Id => "file";
 
-        public Task<T> WithAccessAsync<T>(Func<Task<T>> action) => action();
+        public IDisposable AcquireAccess() => Access();
 
         public Task<bool> CanWriteAsync() => CanWrite();
 
@@ -70,6 +72,87 @@ public sealed class FileWiperTests
         public Task<bool> RenameIfPossibleAsync(string newFileName) => RenameIfPossible(newFileName);
 
         public Task DeleteAsync() => Delete();
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task CanWipeAsyncHoldsAccessAcrossAwaitAndReleasesIt(bool fail)
+    {
+        bool hasAccess = false;
+        IWritableFile file = new FakeWritableFile
+        {
+            Access = () =>
+            {
+                hasAccess = true;
+                return new TestAccessScope(() => hasAccess = false);
+            },
+            CanWrite = async () =>
+            {
+                await Task.Yield();
+                Assert.That(hasAccess, Is.True);
+                if (fail)
+                {
+                    throw new IOException("Rights lookup failed.");
+                }
+
+                return false;
+            },
+        };
+
+        if (fail)
+        {
+            await Assert.ThatAsync(async () => await new FileWiper().CanWipeAsync(file), Throws.TypeOf<IOException>());
+        }
+        else
+        {
+            Assert.That(await new FileWiper().CanWipeAsync(file), Is.False);
+        }
+
+        Assert.That(hasAccess, Is.False);
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task WipeAsyncKeepsAccessThroughDeletionAndReleasesIt(bool fail)
+    {
+        bool hasAccess = false;
+        bool wasDeleted = false;
+        IWritableFile file = new FakeWritableFile
+        {
+            Access = () =>
+            {
+                hasAccess = true;
+                return new TestAccessScope(() => hasAccess = false);
+            },
+            RenameIfPossible = _ => Task.FromResult(false),
+            GetLength = () => Task.FromResult(0L),
+            OpenWrite = () => fail
+                ? throw new IOException("Write failed.")
+                : Task.FromResult<Stream>(new MemoryStream()),
+            Delete = async () =>
+            {
+                await Task.Yield();
+                Assert.That(hasAccess, Is.True);
+                wasDeleted = true;
+            },
+        };
+
+        if (fail)
+        {
+            await Assert.ThatAsync(async () => await new FileWiper().WipeAsync(file), Throws.TypeOf<IOException>());
+        }
+        else
+        {
+            Assert.That(await new FileWiper().WipeAsync(file), Is.EqualTo(FileWipeStatus.Succeeded));
+        }
+
+        Assert.That(wasDeleted, Is.True);
+        Assert.That(hasAccess, Is.False);
+    }
+
+    private sealed class TestAccessScope(Action dispose) : IDisposable
+    {
+        public void Dispose() => dispose();
     }
 
     [Test]
