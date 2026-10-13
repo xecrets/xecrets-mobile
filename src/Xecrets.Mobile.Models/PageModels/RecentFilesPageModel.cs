@@ -344,10 +344,7 @@ public partial class RecentFilesPageModel(
     /// </summary>
     private async Task OfferRemoveAsync(string fileId)
     {
-        if (await UserInterfaceService.DisplayConfirmationAsync(MobileTexts.DialogTextRecentFileNotAccessible))
-        {
-            await RemoveEntryAsync(fileId);
-        }
+        await UserInterfaceService.DisplayMessageAsync(MobileTexts.DialogTextFileNotAccessibleNow);
     }
 
     private async Task RemoveEntryAsync(string fileId)

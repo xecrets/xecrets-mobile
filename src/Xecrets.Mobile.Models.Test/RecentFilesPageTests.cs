@@ -205,7 +205,7 @@ public sealed class RecentFilesPageTests
 
         await page.OpenCommand.ExecuteAsync(page.Files[0]);
 
-        Assert.That(app.UserInterface.Confirmations, Is.EqualTo([MobileTexts.DialogTextRecentFileNotAccessible]));
+        Assert.That(app.UserInterface.Confirmations, Is.EqualTo([MobileTexts.DialogTextFileNotAccessibleNow]));
         Assert.That(app.Store.Files, Is.Empty);
         Assert.That(page.Files, Is.Empty);
         Assert.That(app.Preview.Prepared, Is.Empty);
@@ -226,7 +226,7 @@ public sealed class RecentFilesPageTests
 
         await page.OpenCommand.ExecuteAsync(page.Files[0]);
 
-        Assert.That(app.UserInterface.Confirmations, Is.EqualTo([MobileTexts.DialogTextRecentFileNotAccessible]));
+        Assert.That(app.UserInterface.Confirmations, Is.EqualTo([MobileTexts.DialogTextFileNotAccessibleNow]));
         Assert.That(app.RecentIds(), Is.EqualTo(["docs/a.txt"]));
         Assert.That(app.Launcher.Opened, Is.Empty);
     }
@@ -427,7 +427,7 @@ public sealed class RecentFilesPageTests
 
         await page.ReverseCommand.ExecuteAsync(page.Files[0]);
 
-        Assert.That(app.UserInterface.Confirmations, Is.EqualTo([MobileTexts.DialogTextRecentFileNotAccessible]));
+        Assert.That(app.UserInterface.Confirmations, Is.EqualTo([MobileTexts.DialogTextFileNotAccessibleNow]));
         Assert.That(page.StatusText, Is.Empty);
     }
 

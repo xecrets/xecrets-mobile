@@ -256,7 +256,7 @@ public static class AppleExtensions
                 if (error != null!)
                 {
                     opened.SetException(error.Domain == NSError.CocoaErrorDomain && error.Code == _featureUnsupportedError
-                        ? new IOException(MobileTexts.DialogTextFileNotAvailable, new NSErrorException(error))
+                        ? new IOException(MobileTexts.DialogTextFileNotAccessibleNow, new NSErrorException(error))
                         : new NSErrorException(error));
                     return;
                 }
