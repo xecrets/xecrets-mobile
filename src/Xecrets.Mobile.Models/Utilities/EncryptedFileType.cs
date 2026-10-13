@@ -40,13 +40,7 @@ public static class EncryptedFileType
 {
     /// <summary>
     /// The MIME content type, as declared in the Android intent filters and in the Apple manifest, where it
-    /// is a tag of <see cref="UniformTypeIdentifier"/>.
+    /// is a tag of the exported uniform type identifier <c>com.axantum.xecrets-file</c>.
     /// </summary>
     public const string ContentType = "application/vnd.xecrets-encrypted";
-
-    /// <summary>
-    /// The Apple uniform type identifier, declared as an exported type in the Apple manifest since the
-    /// format is ours. It owns both the file name extension and <see cref="ContentType"/>.
-    /// </summary>
-    public const string UniformTypeIdentifier = "com.axantum.xecrets-file";
 }

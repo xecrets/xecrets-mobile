@@ -37,7 +37,7 @@ using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Models.Services;
 
-public sealed class IncomingFileService(
+internal sealed class IncomingFileService(
     IProfileService profileService,
     ITransientFileService transientFileService,
     IPreviewService previewService,

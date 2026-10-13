@@ -32,7 +32,7 @@ using Microsoft.Maui.Controls;
 
 namespace Xecrets.Mobile.Abstractions;
 
-public static class PasswordEntryProperties
+internal static class PasswordEntryProperties
 {
     // Key for the global, once-per-app handler-mapper customization that applies platform-specific
     // password-entry configuration (autofill hints, content-type, etc.) to opted-in entries.

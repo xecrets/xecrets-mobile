@@ -284,7 +284,7 @@ public partial class RecentFilesPageModel(
         }
         catch (FileNotAccessibleException)
         {
-            await OfferRemoveAsync(ListedId(entry, file));
+            await UserInterfaceService.DisplayMessageAsync(MobileTexts.DialogTextFileNotAccessibleNow);
         }
     }
 
@@ -316,7 +316,7 @@ public partial class RecentFilesPageModel(
         }
         else if (!fileAccess.HasFileGrant(file.Id))
         {
-            await OfferRemoveAsync(entry.Id);
+            await UserInterfaceService.DisplayMessageAsync(MobileTexts.DialogTextFileNotAccessibleNow);
             return null;
         }
 
@@ -328,23 +328,11 @@ public partial class RecentFilesPageModel(
         }
         catch (FileNotAccessibleException)
         {
-            await OfferRemoveAsync(ListedId(entry, file));
+            await UserInterfaceService.DisplayMessageAsync(MobileTexts.DialogTextFileNotAccessibleNow);
             return null;
         }
 
         return file;
-    }
-
-    private static string ListedId(RecentFileEntry entry, FileReference file) =>
-        entry.Operation.IsWriteClass() ? file.Id : entry.Id;
-
-    /// <summary>
-    /// Asks the user whether to remove a file that cannot be reached, since it may be gone, or only not available right
-    /// now, such as when its storage is offline.
-    /// </summary>
-    private async Task OfferRemoveAsync(string fileId)
-    {
-        await UserInterfaceService.DisplayMessageAsync(MobileTexts.DialogTextFileNotAccessibleNow);
     }
 
     private async Task RemoveEntryAsync(string fileId)

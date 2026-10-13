@@ -45,7 +45,7 @@ using Platform = Microsoft.Maui.ApplicationModel.Platform;
 namespace Xecrets.Mobile.Platforms.Android;
 
 [SupportedOSPlatform("android26.0")]
-public sealed class AndroidFileWriteSession : IFileWriteSession
+internal sealed class AndroidFileWriteSession : IFileWriteSession
 {
     private readonly AndroidUri _folderUri;
     private readonly AndroidUri _temporaryUri;

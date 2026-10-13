@@ -39,7 +39,7 @@ namespace Xecrets.Mobile.Platforms.Android;
 
 internal static class MauiAppBuilderExtensions
 {
-    internal static MauiAppBuilder ConfigurePlatform(this MauiAppBuilder builder)
+    public static MauiAppBuilder ConfigurePlatform(this MauiAppBuilder builder)
     {
         builder.Services.AddSingleton<IFileService, AndroidFileService>();
         builder.Services.AddSingleton<IFileAccess, AndroidFileAccess>();

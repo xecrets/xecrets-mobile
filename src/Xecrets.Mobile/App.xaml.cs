@@ -43,7 +43,7 @@ using Xecrets.Mobile.Services;
 
 namespace Xecrets.Mobile;
 
-public partial class App
+internal partial class App
 {
     private readonly ITransientFileService _transientFileService;
     private readonly IUserInterfaceService _userInterfaceService;

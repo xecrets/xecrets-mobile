@@ -37,7 +37,7 @@ using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Models.Services;
 
-public sealed class EncryptionPreparationService(
+internal sealed class EncryptionPreparationService(
     EncryptRequestFactory encryptRequestFactory,
     ITransientFileService transientFileService,
     ICoreServices coreServices)

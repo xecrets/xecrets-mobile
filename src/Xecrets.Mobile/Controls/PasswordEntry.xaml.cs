@@ -38,7 +38,7 @@ using Microsoft.Maui.Graphics;
 
 namespace Xecrets.Mobile.Controls;
 
-public sealed partial class PasswordEntry
+internal sealed partial class PasswordEntry
 {
     public static readonly BindableProperty TextProperty = BindableProperty.Create(
         nameof(Text),

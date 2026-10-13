@@ -46,7 +46,7 @@ public sealed class WorkFolderStorage(ProfileSession profileSession)
     /// Adds the folder first. A folder already stored keeps the name the user may have given it, and is reached through
     /// the new grant from now on, where it is stored as told now. Returns the stored folder.
     /// </summary>
-    public async Task<WorkFolder> AddFolderAsync(WorkFolder folder)
+    internal async Task<WorkFolder> AddFolderAsync(WorkFolder folder)
     {
         await using IEditScope<WorkFolders> scope = (await RequireUserStore().LoadWorkFoldersAsync()).BeginEdit();
         WorkFolder stored = scope.Value.Folders.FirstOrDefault(item => item.Id == folder.Id) is { } existing
@@ -63,7 +63,7 @@ public sealed class WorkFolderStorage(ProfileSession profileSession)
     /// <summary>
     /// Moves the folder first, so that it is where the user is likely to look next time.
     /// </summary>
-    public async Task MoveFolderToTopAsync(WorkFolder folder)
+    internal async Task MoveFolderToTopAsync(WorkFolder folder)
     {
         IPersistentData<WorkFolders> data = await RequireUserStore().LoadWorkFoldersAsync();
         if (data.Value.Folders.Count == 0 || data.Value.Folders[0].Id == folder.Id)
@@ -79,7 +79,7 @@ public sealed class WorkFolderStorage(ProfileSession profileSession)
         ];
     }
 
-    public async Task RemoveFolderAsync(WorkFolder folder)
+    internal async Task RemoveFolderAsync(WorkFolder folder)
     {
         await using IEditScope<WorkFolders> scope = (await RequireUserStore().LoadWorkFoldersAsync()).BeginEdit();
         scope.Value.Folders = [.. scope.Value.Folders.Where(item => item.Id != folder.Id)];
@@ -89,7 +89,7 @@ public sealed class WorkFolderStorage(ProfileSession profileSession)
     /// Replaces the display name of the stored folder. A new record rather than a with-expression, so that the derived
     /// <see cref="WorkFolder.ListDisplayName"/> follows the new name instead of being copied.
     /// </summary>
-    public async Task RenameFolderAsync(WorkFolder folder, string displayName)
+    internal async Task RenameFolderAsync(WorkFolder folder, string displayName)
     {
         await using IEditScope<WorkFolders> scope = (await RequireUserStore().LoadWorkFoldersAsync()).BeginEdit();
         scope.Value.Folders = [.. scope.Value.Folders.Select(item => item.Id == folder.Id

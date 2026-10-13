@@ -31,7 +31,7 @@
 namespace Xecrets.Mobile.Models.Models;
 
 
-public sealed record IncomingFileRequest
+internal sealed record IncomingFileRequest
 {
     public static readonly IncomingFileRequest Empty = new(null, null);
 

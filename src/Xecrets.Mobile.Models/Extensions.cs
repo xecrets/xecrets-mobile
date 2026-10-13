@@ -34,7 +34,7 @@ using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models;
 
-public static class Extensions
+internal static class Extensions
 {
     extension(string value)
     {
@@ -71,7 +71,7 @@ public static class Extensions
     public static FileReference ToFileReference(this RecentFile recentFile) =>
         new(recentFile.Id, recentFile.Name) { Root = recentFile.Root, FolderPath = recentFile.FolderPath };
 
-    public static string Stringify(this DontShowAgain dontShowAgain)
+    private static string Stringify(this DontShowAgain dontShowAgain)
     {
         List<string> values = [];
         foreach (DontShowAgain value in Enum.GetValues<DontShowAgain>())
@@ -123,7 +123,7 @@ public static class Extensions
     /// <summary>
     /// The root as a short text to show, or empty when there is nothing meaningful to show.
     /// </summary>
-    public static string ToDisplay(this RootProvider root) => root switch
+    private static string ToDisplay(this RootProvider root) => root switch
     {
         RootProvider.Unknown => "",
         RootProvider.None => "",

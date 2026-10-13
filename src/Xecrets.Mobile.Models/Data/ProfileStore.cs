@@ -34,7 +34,7 @@ using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Models.Data;
 
-public sealed class ProfileStore(IXecretsDataStore dataStore) : IProfileStore
+internal sealed class ProfileStore(IXecretsDataStore dataStore) : IProfileStore
 {
     public async Task<bool> HasProfileAsync() =>
         (await dataStore.GetUsersAsync()).Count > 0;

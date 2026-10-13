@@ -48,7 +48,7 @@ using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Services;
 
-public class DefaultUserInterfaceService(IBuildInformation buildInformation) : IUserInterfaceService
+internal class DefaultUserInterfaceService(IBuildInformation buildInformation) : IUserInterfaceService
 {
     private static Shell? AppShell => Application.Current?.Windows.Count == 1
         ? Application.Current.Windows[0].Page as Shell

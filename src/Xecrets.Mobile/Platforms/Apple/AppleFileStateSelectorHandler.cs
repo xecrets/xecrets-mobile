@@ -41,7 +41,7 @@ using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Platforms.Apple;
 
-public sealed class AppleFileStateSelectorHandler() : ViewHandler<FileStateSelector, UISegmentedControl>(Mapper)
+internal sealed class AppleFileStateSelectorHandler() : ViewHandler<FileStateSelector, UISegmentedControl>(Mapper)
 {
     public static readonly IPropertyMapper<FileStateSelector, AppleFileStateSelectorHandler> Mapper =
         new PropertyMapper<FileStateSelector, AppleFileStateSelectorHandler>(ViewMapper)

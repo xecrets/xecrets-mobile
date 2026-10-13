@@ -32,4 +32,4 @@ using Foundation;
 
 namespace Xecrets.Mobile.Platforms.Apple;
 
-public sealed record ResolvedUrl(NSUrl AccessUrl, NSUrl FileUrl);
+internal sealed record ResolvedUrl(NSUrl AccessUrl, NSUrl FileUrl);

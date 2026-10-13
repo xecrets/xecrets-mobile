@@ -32,7 +32,7 @@ using Xecrets.Common.Models;
 
 namespace Xecrets.Mobile.Models.Abstractions;
 
-public interface IProfileStore
+internal interface IProfileStore
 {
     Task<bool> HasProfileAsync();
 

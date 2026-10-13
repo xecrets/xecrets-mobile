@@ -42,7 +42,7 @@ using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Services;
 
-public sealed class CrashLogService : ICrashLogService
+internal sealed class CrashLogService : ICrashLogService
 {
     private const string _crashLogDirectoryName = "XecretsCrashLogs";
 

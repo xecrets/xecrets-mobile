@@ -36,7 +36,7 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
-public partial class CreateProfilePage
+internal partial class CreateProfilePage
 {
     public Entry PasswordTextEntry => PasswordEntryControl.Entry;
 

@@ -40,7 +40,7 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
-public partial class WelcomePage : IQueryAttributable
+internal partial class WelcomePage : IQueryAttributable
 {
     public WelcomePage(WelcomePageModel model, IProfileService profileService, IPageHeaderService pageHeaderService)
     {

@@ -41,7 +41,7 @@ namespace Xecrets.Mobile.Platforms.MacCatalyst;
 
 internal static class MauiAppBuilderExtensions
 {
-    internal static MauiAppBuilder ConfigurePlatform(this MauiAppBuilder builder)
+    public static MauiAppBuilder ConfigurePlatform(this MauiAppBuilder builder)
     {
         builder.Services.AddSingleton<IFileService, MacCatalystFileService>();
         builder.Services.AddSingleton<AppleFileGrants>();

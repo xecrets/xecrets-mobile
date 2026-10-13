@@ -42,7 +42,7 @@ namespace Xecrets.Mobile.Platforms.Windows;
 [SupportedOSPlatform("windows10.0.19041")]
 internal static class MauiAppBuilderExtensions
 {
-    internal static MauiAppBuilder ConfigurePlatform(this MauiAppBuilder builder)
+    public static MauiAppBuilder ConfigurePlatform(this MauiAppBuilder builder)
     {
         builder.Services.AddSingleton<IFileService, WindowsFileService>();
         builder.Services.AddSingleton<IFileAccess, WindowsFileAccess>();

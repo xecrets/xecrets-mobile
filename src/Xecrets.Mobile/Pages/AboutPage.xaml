@@ -29,6 +29,7 @@
              xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
              xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
              x:Class="Xecrets.Mobile.Pages.AboutPage"
+             x:ClassModifier="internal"
              x:DataType="pageModels:AboutPageModel">
     <ScrollView>
         <VerticalStackLayout Padding="{StaticResource LayoutPadding}"

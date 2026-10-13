@@ -48,7 +48,7 @@ using AndroidView = Android.Views.View;
 
 namespace Xecrets.Mobile.Platforms.Android;
 
-public sealed class AndroidFileStateSelectorHandler()
+internal sealed class AndroidFileStateSelectorHandler()
     : ViewHandler<FileStateSelector, MaterialButtonToggleGroup>(Mapper)
 {
     public static readonly IPropertyMapper<FileStateSelector, AndroidFileStateSelectorHandler> Mapper =

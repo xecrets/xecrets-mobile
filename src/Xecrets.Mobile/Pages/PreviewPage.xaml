@@ -31,6 +31,7 @@
              xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
              xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
              x:Class="Xecrets.Mobile.Pages.PreviewPage"
+             x:ClassModifier="internal"
              x:DataType="pageModels:PreviewPageModel">
     <ContentPage.Resources>
         <ResourceDictionary>

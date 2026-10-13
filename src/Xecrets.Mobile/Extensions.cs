@@ -36,7 +36,7 @@ using Xecrets.Words.Model;
 
 namespace Xecrets.Mobile;
 
-public static class Extensions
+internal static class Extensions
 {
     public static Color ToColor(this StrengthColor color) => color switch
     {

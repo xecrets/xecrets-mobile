@@ -62,7 +62,7 @@ public sealed record RecentFileEntry(
     /// <summary>
     /// Where the file is stored and its name, as far as they are known.
     /// </summary>
-    public string DisplayPath => HasLocation
+    internal string DisplayPath => HasLocation
         ? DisplayLocation + MobileTexts.BreadcrumbSeparator + DisplayName
         : DisplayName;
 

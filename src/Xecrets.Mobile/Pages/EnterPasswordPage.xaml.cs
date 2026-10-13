@@ -34,7 +34,7 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
-public partial class EnterPasswordPage
+internal partial class EnterPasswordPage
 {
     public EnterPasswordPage(
         EnterPasswordPageModel model,

@@ -40,7 +40,7 @@ using Xecrets.Mobile.Services;
 namespace Xecrets.Mobile.Platforms.iOS;
 
 [SupportedOSPlatform("ios")]
-public class IOSFileService : FileServiceBase
+internal class IOSFileService : FileServiceBase
 {
     public override string PlatformId => "ios";
 

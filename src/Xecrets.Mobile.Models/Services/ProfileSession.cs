@@ -38,17 +38,17 @@ public sealed class ProfileSession
 {
     public bool IsAuthenticated => ProfileKeyPair is not null;
 
-    public KeyPair? ProfileKeyPair { get; private set; }
+    internal KeyPair? ProfileKeyPair { get; private set; }
 
     private string Password { get; set; } = string.Empty;
 
-    public IPersistentData<ExtraCredentials>? ExtraCredentials { get; private set; }
+    internal IPersistentData<ExtraCredentials>? ExtraCredentials { get; private set; }
 
     public IUserDataStore? UserStore { get; private set; }
 
     public string Email => ProfileKeyPair?.Email ?? string.Empty;
 
-    public void SignIn(
+    internal void SignIn(
         KeyPair keyPair,
         string password,
         IPersistentData<ExtraCredentials> extraCredentials,
@@ -68,7 +68,7 @@ public sealed class ProfileSession
         UserStore = null;
     }
 
-    public Identity CreateIdentity()
+    internal Identity CreateIdentity()
     {
         if (ProfileKeyPair is null || Password.Length == 0)
         {

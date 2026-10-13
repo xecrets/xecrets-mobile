@@ -37,7 +37,7 @@ namespace Xecrets.Mobile.Models.Services;
 /// <summary>
 /// Builds the requests to encrypt files, either for the current profile or for a password only.
 /// </summary>
-public sealed class EncryptRequestFactory(IProfileService profileService)
+internal sealed class EncryptRequestFactory(IProfileService profileService)
 {
     public EncryptRequest ForCurrentProfile(string originalFileName)
     {

@@ -49,7 +49,7 @@ using Xecrets.Mobile.Services;
 namespace Xecrets.Mobile.Platforms.iOS;
 
 [SupportedOSPlatform("ios")]
-public partial class IOSServices : PlatformServicesBase
+internal partial class IOSServices : PlatformServicesBase
 {
     // The binding rejects null, but an empty content type means none and disables password suggestions.
     private static readonly NSString _noTextContentType = new(string.Empty);

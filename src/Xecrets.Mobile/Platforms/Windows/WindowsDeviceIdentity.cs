@@ -42,7 +42,7 @@ namespace Xecrets.Mobile.Platforms.Windows;
 /// publisher on the device, and survives a reinstall of the app.
 /// </summary>
 [SupportedOSPlatform("windows10.0.19041")]
-public sealed class WindowsDeviceIdentity : IDeviceIdentity
+internal sealed class WindowsDeviceIdentity : IDeviceIdentity
 {
     public string DeviceId
     {

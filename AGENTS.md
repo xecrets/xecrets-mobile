@@ -77,6 +77,10 @@ and action SHAs in `.github/workflows/ci.yml`. Do not introduce dependencies on
 - All types must always reside in their own file. Do not declare more than one type per file, except for private nested types or similarly scoped implementation details.
 - Prefer file-scoped namespace declarations.
 - Keep `using` directives grouped at the top, with blank lines separating logical groups when helpful.
+- Give types and members the narrowest accessibility that works: `private` when only used in the declaring type, `internal` when only used in the assembly, `public` only when another assembly needs it. Everything in `Xecrets.Mobile` is `internal` except the platform entry points the OS instantiates (activities, application and scene delegates, `Program`, file providers), and XAML-backed classes declare `x:ClassModifier="internal"`. In `Xecrets.Mobile.Models`, only what `Xecrets.Mobile` uses is `public`; Models registers its own services in `AddMobileModels()` so their implementations can stay `internal`.
+  - Members of an `internal` type are `public`, not `internal`. Never make a type `public` while all of its members are `internal`; if the type must be public, for example because it is a constructor parameter of a page model resolved by dependency injection, keep its members public too.
+  - Do not widen accessibility for tests. Tests reach internals through `InternalsVisibleTo`.
+  - Exception: all texts in `MobileTexts` are `public`, sorted alphabetically within the two regions Untranslated texts and Translated texts.
 - Prefer explicit, descriptive names over abbreviations. Use private fields with the `_camelCase` convention.
 - Name base classes with `Base` as a suffix, not a prefix, e.g. `PageModelBase`, not `BasePageModel`.
 - Do not qualify member access with `this.` (e.g. call `Foo()`, not `this.Foo()`), except when calling an extension method, where `this.` is appropriate (e.g. `this.ApplyStandardHeader()`) — extension methods cannot be called unqualified.

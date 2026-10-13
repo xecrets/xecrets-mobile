@@ -45,7 +45,7 @@ using Xecrets.Mobile.Models.Services;
 
 namespace Xecrets.Mobile;
 
-public partial class AppShell
+internal partial class AppShell
 {
     private readonly IUserInterfaceService _userInterfaceService;
     private readonly SessionExitService _sessionExitService;

@@ -39,7 +39,7 @@ public static class ContentTypeDetector
     private const string _unknownContentType = "application/octet-stream";
 
     // The largest text file, in bytes, that the app's internal viewer/editor will handle. 
-    public const long MaxInlineTextSizeBytes = 100 * 1024;
+    internal const long MaxInlineTextSizeBytes = 100 * 1024;
 
     private static readonly Dictionary<string, string> _contentTypes = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -336,7 +336,7 @@ public static class ContentTypeDetector
         ".svg",
     };
 
-    public static DecryptedFileInfo CreateInfo(string filePath, string displayName)
+    internal static DecryptedFileInfo CreateInfo(string filePath, string displayName)
     {
         string fileName = string.IsNullOrWhiteSpace(displayName)
             ? Path.GetFileName(filePath)

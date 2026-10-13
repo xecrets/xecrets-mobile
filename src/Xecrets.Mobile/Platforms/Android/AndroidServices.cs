@@ -50,7 +50,7 @@ using Xecrets.Mobile.Utilities;
 namespace Xecrets.Mobile.Platforms.Android;
 
 [SupportedOSPlatform("android28.0")]
-public class AndroidServices : PlatformServicesBase
+internal class AndroidServices : PlatformServicesBase
 {
     public override void RegisterCrashHandlers(ICrashLogService crashLogService)
     {

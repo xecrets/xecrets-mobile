@@ -30,6 +30,7 @@
              xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
              xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
              x:Class="Xecrets.Mobile.Pages.ViewPage"
+             x:ClassModifier="internal"
              x:DataType="pageModels:ViewPageModel">
     <!-- The same layout as the edit page. The card fills the page, and only the contents scroll, below the
          title and the file. -->

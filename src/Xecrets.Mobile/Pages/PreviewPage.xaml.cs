@@ -34,7 +34,7 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
-public partial class PreviewPage
+internal partial class PreviewPage
 {
     public PreviewPage(PreviewPageModel model, IPageHeaderService pageHeaderService)
     {

@@ -33,7 +33,7 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Services;
 
-public sealed class DecryptedFileViewer(IFileService fileService) : IDecryptedFileViewer
+internal sealed class DecryptedFileViewer(IFileService fileService) : IDecryptedFileViewer
 {
     public async Task<FileViewMode> GetViewModeAsync(DecryptedFileInfo file)
     {

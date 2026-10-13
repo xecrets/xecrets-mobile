@@ -41,7 +41,7 @@ namespace Xecrets.Mobile.Platforms.iOS;
 
 internal static class MauiAppBuilderExtensions
 {
-    internal static MauiAppBuilder ConfigurePlatform(this MauiAppBuilder builder)
+    public static MauiAppBuilder ConfigurePlatform(this MauiAppBuilder builder)
     {
         builder.Services.AddSingleton<IFileService, IOSFileService>();
         builder.Services.AddSingleton<AppleFileGrants>();

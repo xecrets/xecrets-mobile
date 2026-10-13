@@ -35,7 +35,7 @@ using Microsoft.Maui.Controls;
 
 namespace Xecrets.Mobile.Utilities;
 
-public sealed class StringNotEmptyConverter : IValueConverter
+internal sealed class StringNotEmptyConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         => value is string { Length: > 0 };

@@ -40,7 +40,7 @@ public sealed record WorkFolderResult
         Folder = folder;
     }
 
-    public WorkFolderResultStatus Status { get; }
+    internal WorkFolderResultStatus Status { get; }
 
     public WorkFolder? Folder { get; }
 

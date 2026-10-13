@@ -30,7 +30,7 @@
 
 namespace Xecrets.Mobile.Abstractions;
 
-public enum PasswordEntryPurpose
+internal enum PasswordEntryPurpose
 {
     ExistingPassword,
     NewPassword,

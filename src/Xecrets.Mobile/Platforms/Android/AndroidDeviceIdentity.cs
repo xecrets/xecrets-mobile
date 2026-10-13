@@ -40,7 +40,7 @@ namespace Xecrets.Mobile.Platforms.Android;
 /// The device is identified by ANDROID_ID, which is unique to each combination of app signing key, user and device. It
 /// survives a reinstall of the app, but changes with a factory reset.
 /// </summary>
-public sealed class AndroidDeviceIdentity : IDeviceIdentity
+internal sealed class AndroidDeviceIdentity : IDeviceIdentity
 {
     public string DeviceId =>
         AndroidSecureSettings.GetString(Platform.AppContext.ContentResolver, AndroidSecureSettings.AndroidId) ?? string.Empty;

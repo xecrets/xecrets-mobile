@@ -42,7 +42,7 @@ using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Utilities;
 
-public sealed class PageHeaderService(
+internal sealed class PageHeaderService(
     IProfileService profileService,
     IPlatformServices platformServices) : IPageHeaderService
 {

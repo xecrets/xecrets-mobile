@@ -33,7 +33,7 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Services;
 
-public sealed class ReferencedReadableFile(IFileAccess fileAccess, FileReference file) : IReadableFile
+internal sealed class ReferencedReadableFile(IFileAccess fileAccess, FileReference file) : IReadableFile
 {
     public string FileName => file.Name;
 

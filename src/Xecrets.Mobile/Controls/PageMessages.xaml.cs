@@ -32,7 +32,7 @@ using Microsoft.Maui.Controls;
 
 namespace Xecrets.Mobile.Controls;
 
-public sealed partial class PageMessages
+internal sealed partial class PageMessages
 {
     public static readonly BindableProperty MessageTextProperty = BindableProperty.Create(
         nameof(MessageText), typeof(string), typeof(PageMessages), propertyChanged: OnTextChanged);

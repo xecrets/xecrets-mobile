@@ -38,7 +38,7 @@ using Xecrets.Mobile.Services;
 
 namespace Xecrets.Mobile.Platforms.Android;
 
-public class AndroidUserInterfaceService(IBuildInformation buildInformation) : DefaultUserInterfaceService(buildInformation)
+internal class AndroidUserInterfaceService(IBuildInformation buildInformation) : DefaultUserInterfaceService(buildInformation)
 {
     // Android 13 (API 33) and later show their own confirmation of what was copied.
     public override Task SetClipboardTextAsync(string text) =>

@@ -53,7 +53,7 @@ namespace Xecrets.Mobile.Platforms.Android;
 /// and a file in it is referred to by a document uri built on that grant, which gives the access to change it. A file
 /// only read is referred to by the document uri the picker returned, with a persisted grant to read it alone.
 /// </summary>
-public sealed class AndroidFileAccess(WorkFolderStorage storage, IFileWiper fileWiper) : IFileAccess
+internal sealed class AndroidFileAccess(WorkFolderStorage storage, IFileWiper fileWiper) : IFileAccess
 {
     private static ContentResolver ContentResolver => Platform.AppContext.ContentResolver!;
 

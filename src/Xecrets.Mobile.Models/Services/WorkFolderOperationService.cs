@@ -38,7 +38,7 @@ using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Models.Services;
 
-public sealed class WorkFolderOperationService(
+internal sealed class WorkFolderOperationService(
     ICoreServices coreServices,
     IProfileService profileService,
     EncryptRequestFactory encryptRequestFactory,

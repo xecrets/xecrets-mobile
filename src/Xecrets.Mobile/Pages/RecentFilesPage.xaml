@@ -35,6 +35,7 @@
              xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="Xecrets.Mobile.Pages.RecentFilesPage"
+             x:ClassModifier="internal"
              x:Name="PageRoot"
              x:DataType="pageModels:RecentFilesPageModel">
     <ContentPage.Resources>

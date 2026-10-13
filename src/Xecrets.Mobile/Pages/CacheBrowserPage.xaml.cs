@@ -35,7 +35,7 @@ using Xecrets.Mobile.Models.PageModels;
 
 namespace Xecrets.Mobile.Pages;
 
-public partial class CacheBrowserPage
+internal partial class CacheBrowserPage
 {
     public IAsyncRelayCommand LoadCommand { get; }
 

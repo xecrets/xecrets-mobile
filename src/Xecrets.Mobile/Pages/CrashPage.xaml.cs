@@ -41,7 +41,7 @@ using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
-public partial class CrashPage
+internal partial class CrashPage
 {
     private readonly StartupPageModel _startupPageModel;
     private readonly IUserInterfaceService _userInterfaceService;

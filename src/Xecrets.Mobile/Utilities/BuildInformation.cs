@@ -38,7 +38,7 @@ using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Utilities;
 
-public sealed class BuildInformation : IBuildInformation
+internal sealed class BuildInformation : IBuildInformation
 {
     private static Assembly AppAssembly => typeof(BuildInformation).Assembly;
 

@@ -38,7 +38,7 @@ namespace Xecrets.Mobile.Platforms.Apple;
 /// The device is identified by the identifier for vendor, which differs on another device and changes when all apps
 /// of the vendor have been removed. It is briefly unknown after a restart, before the device is first unlocked.
 /// </summary>
-public sealed class AppleDeviceIdentity : IDeviceIdentity
+internal sealed class AppleDeviceIdentity : IDeviceIdentity
 {
     public string DeviceId => UIDevice.CurrentDevice.IdentifierForVendor?.AsString() ?? string.Empty;
 }

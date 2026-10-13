@@ -52,7 +52,7 @@ namespace Xecrets.Mobile.Platforms.Apple;
 /// gives the access to the files in it, and a file only read has a bookmark of its own. A url a picker gave carries
 /// the access to the file until the app ends.
 /// </summary>
-public sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants grants) : IFileAccess
+internal sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants grants) : IFileAccess
 {
     /// <summary>
     /// Any file can be picked, also when an encrypted one is wanted, which is checked once it is read. A file provider

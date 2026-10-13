@@ -40,7 +40,7 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
-public partial class WorkFoldersPage : IQueryAttributable
+internal partial class WorkFoldersPage : IQueryAttributable
 {
     public IAsyncRelayCommand LoadCommand { get; }
 

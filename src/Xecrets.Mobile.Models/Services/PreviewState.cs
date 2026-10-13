@@ -33,7 +33,7 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Services;
 
-public sealed class PreviewState : IPreviewState
+internal sealed class PreviewState : IPreviewState
 {
     public PreviewKind Kind { get; private set; } = PreviewKind.Unknown;
 

@@ -40,7 +40,7 @@ using Xecrets.Mobile.Services;
 namespace Xecrets.Mobile.Platforms.MacCatalyst;
 
 [SupportedOSPlatform("maccatalyst")]
-public class MacCatalystFileService : FileServiceBase
+internal class MacCatalystFileService : FileServiceBase
 {
     public override string PlatformId => "maccatalyst";
 

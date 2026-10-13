@@ -53,7 +53,7 @@ using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Platforms.Apple;
 
-public static class AppleExtensions
+internal static class AppleExtensions
 {
     // NSFeatureUnsupportedError.
     private const int _featureUnsupportedError = 3328;
@@ -162,7 +162,7 @@ public static class AppleExtensions
 
     extension(string id)
     {
-        internal NSUrl ResolveGrant()
+        public NSUrl ResolveGrant()
         {
             NSData bookmark = NSData.FromArray(File.ReadAllBytes(id.GetGrantPath()));
 #if __MACCATALYST__
@@ -191,7 +191,7 @@ public static class AppleExtensions
             return url;
         }
 
-        internal NSUrl? TryResolveGrant()
+        public NSUrl? TryResolveGrant()
         {
             try
             {
@@ -203,7 +203,7 @@ public static class AppleExtensions
             }
         }
 
-        internal string GetGrantPath()
+        public string GetGrantPath()
         {
             string key = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(id)));
             return Path.Combine(GrantDirectory, key);
@@ -213,7 +213,7 @@ public static class AppleExtensions
     /// <summary>
     /// Deletes the bookmarks kept for any ids other than those given.
     /// </summary>
-    internal static void ReleaseGrantsExcept(this IEnumerable<string> ids)
+    public static void ReleaseGrantsExcept(this IEnumerable<string> ids)
     {
         // Earlier beta versions kept the bookmarks directly in AppData, which is backed up. They are no longer referenced.
         // This can be deleted 2027-01-01.

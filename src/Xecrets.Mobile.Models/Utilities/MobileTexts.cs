@@ -41,23 +41,19 @@ public static class MobileTexts
 
     public static string AboutPageThirdPartyNotice => "Built with .NET MAUI and CommunityToolkit.Maui. Other components are provided under their respective licenses, reproduced in full under Third-party licenses in the menu. All third-party product names and trademarks are the property of their respective owners. Their use does not imply affiliation, sponsorship or endorsement.";
 
-    // Not AppTexts.ButtonClose, that is "Close all" and this closes the current file only.
-    public static string LabelClose => "Close";
-
-    public static string LabelContinue => "Continue";
-
     // The breadcrumb segments, here and in the translated region below, are joined by
     // BreadcrumbSeparator to form the trail shown at the top of the pages that are shared between
     // the encrypted and decrypt flows.
+
+    // "Edit"
+    public static string BreadcrumbEdit => EditContentTitle;
+
     public static string BreadcrumbEncryptToShare => ButtonEncryptToShare.StripEllipsis();
 
     public static string BreadcrumbHome => "Home";
 
     // "My folders"
     public static string BreadcrumbMyFolders => WorkFoldersContentTitle;
-
-    // "Edit"
-    public static string BreadcrumbEdit => EditContentTitle;
 
     // "Preview"
     public static string BreadcrumbPreview => PreviewContentTitle;
@@ -98,55 +94,52 @@ public static class MobileTexts
 
     public static string CrashPageTitle => "Sorry, we crashed!";
 
-    public static string WorkFolderDescription => "Add a folder to allow the app access to it, then click a folder button to encrypt or decrypt a file. Some folders are not supported.";
-
     public static string DialogTextAllowFolderAccessFormat => "Do you want to allow the app to access the folder where \"{0}\" is located?";
-
-    public static string DialogTextFolderNoAccess => "The folder could not be accessed. Please select another folder.";
-
-    public static string DialogTextSelectFolderFirst => "You selected a file. Select and add its folder first.";
 
     public static string DialogTextAlreadyEncrypted => "This file is already encrypted.";
 
-    public static string DialogTextNotEncrypted => "This file is not encrypted.";
-
-    public static string DialogTextIncomingFileAccessDenied => "Access to the file was denied.";
-
     public static string DialogTextConfirmOverwrite => "The file \"{0}\" already exists. Overwrite it?";
-
-    public static string DialogTextFileEncrypted => "The file was encrypted.";
-
-    public static string DialogTextSaveChanges => "Save changes before leaving?";
-
-    public static string DialogTextFileDecrypted => "The file was decrypted.";
-
-    public static string DialogTextFileSaved => "The file was saved.";
-
-    public static string DialogTextFileOverwritten => "The file was overwritten and deleted. It may still be recoverable.";
-
-    public static string DialogTextFileDeleted => "The file was only deleted, not overwritten. It may still be recoverable.";
-
-    public static string DialogTextFileNotAccessibleNow => "The file was not found or is not available right now.";
-
-    public static string DialogTextNoAppToOpenFile => "The file could not be opened.";
-
-    public static string RecentFileNameUnknown => "???";
 
     public static string DialogTextCopiedToClipboard => "Copied to the clipboard.";
 
     public static string DialogTextExceptionFormat => "An unexpected error \"{0}\" occurred.";
 
+    public static string DialogTextFileDecrypted => "The file was decrypted.";
+
+    public static string DialogTextFileDeleted => "The file was only deleted, not overwritten. It may still be recoverable.";
+
+    public static string DialogTextFileEncrypted => "The file was encrypted.";
+
+    public static string DialogTextFileNotAccessibleNow => "The file was not found or is not available right now.";
+
+    public static string DialogTextFileOverwritten => "The file was overwritten and deleted. It may still be recoverable.";
+
+    public static string DialogTextFileSaved => "The file was saved.";
+
     public static string DialogTextFolderName => "Enter a label for this folder";
 
-    public static string WorkFolderIntentEncrypt => "Choose the folder of the file to encrypt.";
+    public static string DialogTextFolderNoAccess => "The folder could not be accessed. Please select another folder.";
 
-    public static string WorkFolderIntentDecrypt => "Choose the folder of the file to decrypt.";
+    public static string DialogTextIncomingFileAccessDenied => "Access to the file was denied.";
 
-    public static string WorkFolderIntentDelete => "Choose the folder of the file to securely delete.";
+    public static string DialogTextNoAppToOpenFile => "The file could not be opened.";
+
+    public static string DialogTextNotEncrypted => "This file is not encrypted.";
 
     public static string DialogTextResult => "The file is only saved temporarily in the app. Choose what to do with it next.";
 
+    public static string DialogTextSaveChanges => "Save changes before leaving?";
+
+    public static string DialogTextSelectFolderFirst => "You selected a file. Select and add its folder first.";
+
     public static string DialogTextSelfHandoffRejected => "The app can't handle files from itself.";
+
+    // "Edit"
+    public static string EditContentTitle => ButtonEdit;
+
+    public static string EditDescription => "Edit the text. Click the save icon to encrypt and save changes.";
+
+    public static string EncryptToShareDescription => "Enter a new password for the encrypted copy. Share the password through a different channel.";
 
     public static string FileStateAll => "All";
 
@@ -157,32 +150,35 @@ public static class MobileTexts
     // An ellipsis rather than a word, to save space in the segmented control.
     public static string FileStateOther => "…";
 
-    public static string EncryptToShareDescription => "Enter a new password for the encrypted copy. Share the password through a different channel.";
-
-    // "Edit"
-    public static string EditContentTitle => ButtonEdit;
-
-    public static string EditDescription => "Edit the text. Click the save icon to encrypt and save changes.";
+    public static string GitHubUrl => "https://github.com/xecrets/xecrets-mobile";
 
     public static string HomeContentTitle => "Actions";
 
     public static string HomeDescription => "Choose an action. Work with files where they are stored in \"My folders\". Work with copies in the app and select what to do next. Encrypt a file with a new password to share.";
 
+    public static string LabelContinue => "Continue";
+
     public static string MenuGitHub => "View source";
 
     public static string MenuInfo => "Xecrets home";
-
-    // "Third-party licenses"
-    public static string MenuThirdPartyLicenses => ThirdPartyLicensesPageTitle;
 
     // "Recent files"
     public static string MenuRecentFiles => RecentFilesContentTitle;
 
     public static string MenuSupport => "Support";
 
+    // "Third-party licenses"
+    public static string MenuThirdPartyLicenses => ThirdPartyLicensesPageTitle;
+
+    public static string MenuWelcome => "Welcome";
+
     public static string MenuXecretsDesktop => "Xecrets desktop";
 
+    public static string MobileHelpUrl => "https://www.axantum.com/help/mobile";
+
     public static string PreviewContentTitle => "Preview";
+
+    public static string RecentFileNameUnknown => "???";
 
     public static string RecentFilesContentTitle => "Recent files";
 
@@ -190,23 +186,25 @@ public static class MobileTexts
 
     public static string SuggestPasswordDescription => "Suggested passwords that are strong and easy to type and remember. Use » for a new suggestion, and the copy button to copy it to the clipboard.";
 
-    // "View"
-    public static string ViewContentTitle => ButtonView;
-
-    public static string ViewDescription => "Shows the text or image in the file. Go back to choose something else to do with it.";
-
     public static string ThirdPartyLicensesPageExplanation => "The app includes the following third-party material, under the terms reproduced here.";
 
     // Also used as the overflow menu item text, see MenuThirdPartyLicenses.
     public static string ThirdPartyLicensesPageTitle => "Third-party licenses";
 
+    // "View"
+    public static string ViewContentTitle => ButtonView;
+
+    public static string ViewDescription => "Shows the text or image in the file. Go back to choose something else to do with it.";
+
+    public static string WorkFolderDescription => "Add a folder to allow the app access to it, then click a folder button to encrypt or decrypt a file. Some folders are not supported.";
+
+    public static string WorkFolderIntentDecrypt => "Choose the folder of the file to decrypt.";
+
+    public static string WorkFolderIntentDelete => "Choose the folder of the file to securely delete.";
+
+    public static string WorkFolderIntentEncrypt => "Choose the folder of the file to encrypt.";
+
     public static string WorkFoldersContentTitle => "My folders";
-
-    public static string GitHubUrl => "https://github.com/xecrets/xecrets-mobile";
-
-    public static string MobileHelpUrl => "https://www.axantum.com/help/mobile";
-
-    public static string MenuWelcome => "Welcome";
 
     // The first line is the heading. The placeholders such as "(c)" must never be translated, and must stay at the
     // start of their line. Each is replaced at runtime by an icon, making the line a bullet. The same placeholder may be
@@ -233,7 +231,7 @@ public static class MobileTexts
 
     #endregion Untranslated texts
 
-    public static IReadOnlyList<WelcomeLine> WelcomeLines(IReadOnlyDictionary<string, string> iconMap) =>
+    internal static IReadOnlyList<WelcomeLine> WelcomeLines(IReadOnlyDictionary<string, string> iconMap) =>
     [
         .. WelcomeText
             .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
@@ -259,10 +257,6 @@ public static class MobileTexts
 
     public static string BreadcrumbEncrypt => AppTexts.ButtonEncrypt;
 
-    public static string ButtonDecrypt => AppTexts.ButtonDecrypt;
-
-    public static string ButtonEncrypt => AppTexts.ButtonEncrypt;
-
     // "Password"
     public static string BreadcrumbPassword => WatermarkPassword;
 
@@ -272,8 +266,12 @@ public static class MobileTexts
     // "Create"
     public static string ButtonCreate => AppTexts.LabelCreate;
 
+    public static string ButtonDecrypt => AppTexts.ButtonDecrypt;
+
     // "Edit"
     public static string ButtonEdit => AppTexts.ButtonEdit;
+
+    public static string ButtonEncrypt => AppTexts.ButtonEncrypt;
 
     public static string ButtonExit => AppTexts.ButtonExit;
 
@@ -300,8 +298,6 @@ public static class MobileTexts
 
     // "Encrypt copy to share"
     public static string DialogTitleEncryptCopyFor => AppTexts.DialogTitleEncryptCopyFor;
-
-    public static string DialogTitleSelectFilesToWipe => AppTexts.DialogTitleSelectFilesToWipe;
 
     public static string DialogValidationAlreadySignedIn => AppTexts.DialogValidationAlreadySignedIn;
 
@@ -332,11 +328,11 @@ public static class MobileTexts
 
     public static string MenuDebug => AppTexts.MenuDebug;
 
-    // "Suggest password", also used as the page title.
-    public static string MenuSuggestPassword => AppTexts.DialogTitleSuggestPassword;
-
     // "Help"
     public static string MenuHelp => ButtonHelp;
+
+    // "Suggest password", also used as the page title.
+    public static string MenuSuggestPassword => AppTexts.DialogTitleSuggestPassword;
 
     public static string MessageTextConfirmWipe => AppTexts.MessageTextConfirmWipe;
 

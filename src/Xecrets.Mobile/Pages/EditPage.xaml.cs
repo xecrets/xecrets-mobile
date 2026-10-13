@@ -33,7 +33,7 @@ using Xecrets.Mobile.Models.PageModels;
 
 namespace Xecrets.Mobile.Pages;
 
-public partial class EditPage
+internal partial class EditPage
 {
     private bool _initialized;
 

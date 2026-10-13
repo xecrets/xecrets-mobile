@@ -41,7 +41,7 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
-public partial class SuggestPasswordPage : IQueryAttributable
+internal partial class SuggestPasswordPage : IQueryAttributable
 {
     public IRelayCommand InitializeCommand { get; }
 

@@ -38,7 +38,7 @@ namespace Xecrets.Mobile.Controls;
 /// Selects which recent files to show, such as encrypted or decrypted ones, shown as the native segmented control of
 /// each platform through a platform specific handler.
 /// </summary>
-public partial class FileStateSelector : View
+internal partial class FileStateSelector : View
 {
     public static readonly BindableProperty SelectedStateProperty = BindableProperty.Create(
         nameof(SelectedState),

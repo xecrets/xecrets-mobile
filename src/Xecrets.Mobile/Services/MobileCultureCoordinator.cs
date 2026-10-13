@@ -28,7 +28,6 @@
 
 #endregion Copyright and GPL License
 
-using System;
 using System.Threading.Tasks;
 
 using Xecrets.Common.Abstractions;
@@ -38,9 +37,9 @@ using Xecrets.Texts;
 namespace Xecrets.Mobile.Services;
 
 /// <summary>
-/// Applies the persisted application culture and coordinates a future in-process UI reload.
+/// Applies the persisted application culture.
 /// </summary>
-public sealed class MobileCultureCoordinator(IXecretsDataStore dataStore, Cultures cultures)
+internal sealed class MobileCultureCoordinator(IXecretsDataStore dataStore, Cultures cultures)
 {
     /// <summary>
     /// Applies the persisted culture before application UI is constructed.
@@ -50,21 +49,5 @@ public sealed class MobileCultureCoordinator(IXecretsDataStore dataStore, Cultur
     {
         IPersistentData<ApplicationSettings> settings = await dataStore.OpenApplicationSettingsAsync();
         return cultures.SetBestCurrent(settings.Value.Culture);
-    }
-
-    /// <summary>
-    /// Persists a selected culture, applies it, and then reloads the UI without terminating the process.
-    /// </summary>
-    /// <param name="cultureName">The requested application UI culture.</param>
-    /// <param name="reloadAsync">Recreates the root UI after the culture has changed.</param>
-    public async Task ApplyAndReloadAsync(string cultureName, Func<Task> reloadAsync)
-    {
-        await using (IEditScope<ApplicationSettings> settings = (await dataStore.OpenApplicationSettingsAsync()).BeginEdit())
-        {
-            settings.Value.Culture = cultureName;
-        }
-
-        cultures.SetBestCurrent(cultureName);
-        await reloadAsync();
     }
 }

@@ -34,7 +34,7 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
-public partial class LoginPage
+internal partial class LoginPage
 {
     private readonly IPageHeaderService _pageHeaderService;
     private bool _initialized;

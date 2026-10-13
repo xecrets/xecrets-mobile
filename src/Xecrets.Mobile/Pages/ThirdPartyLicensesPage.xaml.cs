@@ -33,7 +33,7 @@ using Xecrets.Mobile.Models.PageModels;
 
 namespace Xecrets.Mobile.Pages;
 
-public partial class ThirdPartyLicensesPage
+internal partial class ThirdPartyLicensesPage
 {
     public ThirdPartyLicensesPage(ThirdPartyLicensesPageModel model, IPageHeaderService pageHeaderService)
     {

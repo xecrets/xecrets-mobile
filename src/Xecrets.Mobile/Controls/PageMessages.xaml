@@ -29,6 +29,7 @@
              xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
              xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
              x:Class="Xecrets.Mobile.Controls.PageMessages"
+             x:ClassModifier="internal"
              x:DataType="controls:PageMessages"
              x:Name="Root">
     <ContentView.Resources>

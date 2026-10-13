@@ -34,7 +34,7 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
-public partial class HomePage
+internal partial class HomePage
 {
     public HomePage(HomePageModel model, IPageHeaderService pageHeaderService)
     {

@@ -42,7 +42,7 @@ using Xecrets.Mobile.Services;
 namespace Xecrets.Mobile.Platforms.Windows;
 
 [SupportedOSPlatform("windows10.0.19041")]
-public class WindowsFileService : FileServiceBase
+internal class WindowsFileService : FileServiceBase
 {
     public override string PlatformId => "windows";
 

@@ -40,7 +40,7 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
-public partial class EncryptResultPage : IQueryAttributable
+internal partial class EncryptResultPage : IQueryAttributable
 {
     public EncryptResultPage(EncryptResultPageModel model, IPageHeaderService pageHeaderService)
     {

@@ -33,7 +33,7 @@ using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Models.Utilities;
 
-public static class PreviewMetadataFormatter
+internal static class PreviewMetadataFormatter
 {
     private const string _nonBreakingSpace = "\u00A0";
 

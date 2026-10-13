@@ -35,7 +35,7 @@ using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Services;
 
-public sealed class CrashTestService(IPlatformServices platformServices, ICrashLogService crashLogService) : ICrashTestService
+internal sealed class CrashTestService(IPlatformServices platformServices, ICrashLogService crashLogService) : ICrashTestService
 {
     private CrashTestOperation? _operation;
     private bool _native;

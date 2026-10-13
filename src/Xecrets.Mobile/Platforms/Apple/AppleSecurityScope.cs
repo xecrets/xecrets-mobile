@@ -34,7 +34,7 @@ using Foundation;
 
 namespace Xecrets.Mobile.Platforms.Apple;
 
-public sealed class AppleSecurityScope(NSUrl? url) : IDisposable
+internal sealed class AppleSecurityScope(NSUrl? url) : IDisposable
 {
     private bool _isAccessing = url?.StartAccessingSecurityScopedResource() ?? false;
 

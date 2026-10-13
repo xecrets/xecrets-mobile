@@ -42,7 +42,7 @@ namespace Xecrets.Mobile.Behaviors;
 /// <see cref="BindableLayout"/>. A removed row is otherwise still subscribed to its commands, and when they notify,
 /// MAUI reapplies the bindings of the detached row, which fails.
 /// </summary>
-public sealed partial class ReleaseRemovedCommandsBehavior : Behavior<Layout>
+internal sealed partial class ReleaseRemovedCommandsBehavior : Behavior<Layout>
 {
     protected override void OnAttachedTo(Layout bindable)
     {

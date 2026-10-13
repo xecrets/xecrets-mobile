@@ -32,7 +32,7 @@ using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Models.Services;
 
-public sealed class LocalReadableFile(string path, string fileName) : IReadableFile
+internal sealed class LocalReadableFile(string path, string fileName) : IReadableFile
 {
     public string FileName => fileName;
 

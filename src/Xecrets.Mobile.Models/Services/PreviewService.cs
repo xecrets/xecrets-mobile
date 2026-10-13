@@ -36,7 +36,7 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Services;
 
-public sealed class PreviewService(
+internal sealed class PreviewService(
     ICoreServices coreServices,
     IProfileService profileService,
     ITransientFileService transientFileService,

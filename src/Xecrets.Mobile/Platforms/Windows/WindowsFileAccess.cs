@@ -54,7 +54,7 @@ namespace Xecrets.Mobile.Platforms.Windows;
 // process runs with the user's own token, though, so there is no grant to persist in the first place: a plain
 // path is all that is needed to regain access on a later run.
 [SupportedOSPlatform("windows10.0.19041")]
-public sealed class WindowsFileAccess(WorkFolderStorage storage) : IFileAccess
+internal sealed class WindowsFileAccess(WorkFolderStorage storage) : IFileAccess
 {
     public async Task<FileReference?> PickFileAsync(string initialFolder, FilePickerKind kind)
     {

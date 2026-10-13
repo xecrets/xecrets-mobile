@@ -41,7 +41,7 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Services;
 
-public abstract class FileServiceBase : IFileService
+internal abstract class FileServiceBase : IFileService
 {
     public abstract string PlatformId { get; }
 

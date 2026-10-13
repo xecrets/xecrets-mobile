@@ -37,7 +37,7 @@ using Xecrets.Words.Model;
 
 namespace Xecrets.Mobile.Utilities;
 
-public sealed class StrengthColorToColorConverter : IValueConverter
+internal sealed class StrengthColorToColorConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         => ((StrengthColor)value!).ToColor();

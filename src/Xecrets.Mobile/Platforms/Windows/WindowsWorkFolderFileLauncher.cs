@@ -42,7 +42,7 @@ namespace Xecrets.Mobile.Platforms.Windows;
 /// Opens or shares the file itself, whose <see cref="FileReference.Id"/> is its path.
 /// </summary>
 [SupportedOSPlatform("windows10.0.19041")]
-public class WindowsWorkFolderFileLauncher : IWorkFolderFileLauncher
+internal class WindowsWorkFolderFileLauncher : IWorkFolderFileLauncher
 {
     public Task<bool> OpenAsync(FileReference file, bool allowWrite) =>
         Launcher.Default.OpenAsync(new OpenFileRequest(file.Name, new ReadOnlyFile(file.Id)));

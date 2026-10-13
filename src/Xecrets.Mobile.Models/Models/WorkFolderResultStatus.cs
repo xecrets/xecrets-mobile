@@ -30,7 +30,7 @@
 
 namespace Xecrets.Mobile.Models.Models;
 
-public enum WorkFolderResultStatus
+internal enum WorkFolderResultStatus
 {
     IsValid,
     NoAccess,

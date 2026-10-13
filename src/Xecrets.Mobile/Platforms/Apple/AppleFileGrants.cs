@@ -44,7 +44,7 @@ namespace Xecrets.Mobile.Platforms.Apple;
 /// Resolves what gives the access to a file or folder: the url a picker gave while the app runs, the grant of one of
 /// My folders containing it, or its own bookmark.
 /// </summary>
-public sealed class AppleFileGrants(WorkFolderStorage storage)
+internal sealed class AppleFileGrants(WorkFolderStorage storage)
 {
     // The urls the pickers gave while the app runs, by file id, which carry the access to the file picked.
     private readonly Dictionary<string, NSUrl> _picked = [];

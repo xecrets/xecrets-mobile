@@ -37,7 +37,7 @@ using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Models.Services;
 
-public sealed class EditSaveService(
+internal sealed class EditSaveService(
     IPreviewService previewService,
     EncryptRequestFactory encryptRequestFactory,
     ICoreServices coreServices,

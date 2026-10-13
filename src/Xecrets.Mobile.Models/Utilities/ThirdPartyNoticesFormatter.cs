@@ -36,7 +36,7 @@ namespace Xecrets.Mobile.Models.Utilities;
 /// removed. The text is left to wrap to whatever width it is shown at. Headings keep their
 /// own line, and the rules that frame the section headings are dropped.
 /// </summary>
-public static class ThirdPartyNoticesFormatter
+internal static class ThirdPartyNoticesFormatter
 {
     /// <summary>
     /// The longest a line may be to be taken for a heading rather than the first line of a

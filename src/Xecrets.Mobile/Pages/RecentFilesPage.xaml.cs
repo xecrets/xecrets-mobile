@@ -37,7 +37,7 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
-public partial class RecentFilesPage
+internal partial class RecentFilesPage
 {
     private readonly RecentFilesPageModel _model;
 

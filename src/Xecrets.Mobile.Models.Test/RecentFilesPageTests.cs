@@ -195,27 +195,26 @@ public sealed class RecentFilesPageTests
     }
 
     [Test]
-    public async Task FileOnlyReadWithoutAccessIsOfferedToBeRemoved()
+    public async Task FileOnlyReadWithoutAccessIsReportedAndKept()
     {
         TestApp app = new();
         app.AddFile("downloads/a.axx");
         app.AddRecent("downloads/a.axx", RecentFileOperation.View, "a.axx");
-        app.UserInterface.Answers.Enqueue(true);
         RecentFilesPageModel page = await LoadedPageAsync(app);
 
         await page.OpenCommand.ExecuteAsync(page.Files[0]);
 
-        Assert.That(app.UserInterface.Confirmations, Is.EqualTo([MobileTexts.DialogTextFileNotAccessibleNow]));
-        Assert.That(app.Store.Files, Is.Empty);
-        Assert.That(page.Files, Is.Empty);
+        Assert.That(app.UserInterface.Messages, Is.EqualTo([MobileTexts.DialogTextFileNotAccessibleNow]));
+        Assert.That(app.RecentIds(), Is.EqualTo(["downloads/a.axx"]));
+        Assert.That(page.Files, Has.Count.EqualTo(1));
         Assert.That(app.Preview.Prepared, Is.Empty);
     }
 
     /// <summary>
-    /// A file that cannot be reached may only be offline for now, so it is up to the user whether to remove it.
+    /// A file that cannot be reached may only be offline for now, so it is kept, and the user may remove it.
     /// </summary>
     [Test]
-    public async Task FileThatCannotBeReachedIsKeptWhenTheUserSaysSo()
+    public async Task FileThatCannotBeReachedIsReportedAndKept()
     {
         TestApp app = new();
         app.AddFolder("docs");
@@ -226,7 +225,7 @@ public sealed class RecentFilesPageTests
 
         await page.OpenCommand.ExecuteAsync(page.Files[0]);
 
-        Assert.That(app.UserInterface.Confirmations, Is.EqualTo([MobileTexts.DialogTextFileNotAccessibleNow]));
+        Assert.That(app.UserInterface.Messages, Is.EqualTo([MobileTexts.DialogTextFileNotAccessibleNow]));
         Assert.That(app.RecentIds(), Is.EqualTo(["docs/a.txt"]));
         Assert.That(app.Launcher.Opened, Is.Empty);
     }
@@ -416,7 +415,7 @@ public sealed class RecentFilesPageTests
     /// Only a search of the folders that completes can tell that the file is not there.
     /// </summary>
     [Test]
-    public async Task FileNotFoundInItsFolderIsOfferedToBeRemoved()
+    public async Task FileNotFoundInItsFolderIsReported()
     {
         TestApp app = new();
         app.AddFolder("docs");
@@ -427,7 +426,7 @@ public sealed class RecentFilesPageTests
 
         await page.ReverseCommand.ExecuteAsync(page.Files[0]);
 
-        Assert.That(app.UserInterface.Confirmations, Is.EqualTo([MobileTexts.DialogTextFileNotAccessibleNow]));
+        Assert.That(app.UserInterface.Messages, Is.EqualTo([MobileTexts.DialogTextFileNotAccessibleNow]));
         Assert.That(page.StatusText, Is.Empty);
     }
 

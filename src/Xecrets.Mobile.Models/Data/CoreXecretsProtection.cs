@@ -34,7 +34,7 @@ using Xecrets.Core.Models;
 
 namespace Xecrets.Mobile.Models.Data;
 
-public sealed class CoreXecretsProtection(ICoreServices coreServices, Identity identity) : IXecretsProtection
+internal sealed class CoreXecretsProtection(ICoreServices coreServices, Identity identity) : IXecretsProtection
 {
     public async Task<byte[]> ProtectAsync(byte[] cleartext, string originalFilename)
     {

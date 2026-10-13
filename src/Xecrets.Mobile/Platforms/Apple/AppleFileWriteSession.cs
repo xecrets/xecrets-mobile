@@ -39,7 +39,7 @@ using Xecrets.Mobile.Models.Services;
 
 namespace Xecrets.Mobile.Platforms.Apple;
 
-public sealed class AppleFileWriteSession : IFileWriteSession
+internal sealed class AppleFileWriteSession : IFileWriteSession
 {
     private readonly IDisposable _access;
     private readonly IFileWriteSession _session;

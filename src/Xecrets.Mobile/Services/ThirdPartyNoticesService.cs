@@ -40,7 +40,7 @@ namespace Xecrets.Mobile.Services;
 /// <summary>
 /// Reads the notices packaged with the app as a MauiAsset, see Xecrets.Mobile.csproj.
 /// </summary>
-public sealed class ThirdPartyNoticesService : IThirdPartyNoticesService
+internal sealed class ThirdPartyNoticesService : IThirdPartyNoticesService
 {
     private const string _thirdPartyNoticesAsset = "THIRD-PARTY-NOTICES.txt";
 

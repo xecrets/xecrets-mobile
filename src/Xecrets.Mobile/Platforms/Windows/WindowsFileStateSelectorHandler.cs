@@ -45,7 +45,7 @@ namespace Xecrets.Mobile.Platforms.Windows;
 // WinUI has no built-in segmented control, and Windows is only a development target, so a row of toggle buttons
 // stands in for one.
 [SupportedOSPlatform("windows10.0.19041")]
-public sealed class WindowsFileStateSelectorHandler() : ViewHandler<FileStateSelector, StackPanel>(Mapper)
+internal sealed class WindowsFileStateSelectorHandler() : ViewHandler<FileStateSelector, StackPanel>(Mapper)
 {
     public static readonly IPropertyMapper<FileStateSelector, WindowsFileStateSelectorHandler> Mapper =
         new PropertyMapper<FileStateSelector, WindowsFileStateSelectorHandler>(ViewMapper)

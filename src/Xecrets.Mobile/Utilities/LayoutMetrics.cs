@@ -35,7 +35,7 @@ using Microsoft.Maui.Controls;
 
 namespace Xecrets.Mobile.Utilities;
 
-public static class LayoutMetrics
+internal static class LayoutMetrics
 {
     private const double _actionButtonStackMaximumWidth = 420;
 

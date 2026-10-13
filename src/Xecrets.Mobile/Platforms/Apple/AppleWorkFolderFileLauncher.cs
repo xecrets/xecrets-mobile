@@ -47,7 +47,7 @@ namespace Xecrets.Mobile.Platforms.Apple;
 /// </summary>
 [SupportedOSPlatform("ios")]
 [SupportedOSPlatform("maccatalyst")]
-public class AppleWorkFolderFileLauncher(AppleFileGrants grants) : IWorkFolderFileLauncher
+internal class AppleWorkFolderFileLauncher(AppleFileGrants grants) : IWorkFolderFileLauncher
 {
     /// <summary>
     /// As the Files app does, previews the file with QuickLook, whose share button offers the apps it can be opened

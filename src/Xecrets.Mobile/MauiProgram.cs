@@ -44,10 +44,9 @@ using Xecrets.Core.Public;
 using Xecrets.Common.Abstractions;
 using Xecrets.Common.Implementation;
 using Xecrets.Mobile.Abstractions;
+using Xecrets.Mobile.Models;
 using Xecrets.Mobile.Models.Abstractions;
-using Xecrets.Mobile.Models.Data;
 using Xecrets.Mobile.Models.PageModels;
-using Xecrets.Mobile.Models.Services;
 using Xecrets.Mobile.Pages;
 using Xecrets.Mobile.Services;
 using Xecrets.Mobile.Utilities;
@@ -56,11 +55,11 @@ using Xecrets.Words;
 
 namespace Xecrets.Mobile;
 
-public static class MauiProgram
+internal static class MauiProgram
 {
-    internal static ICrashLogService CrashLog { get; } = new CrashLogService();
+    public static ICrashLogService CrashLog { get; } = new CrashLogService();
 
-    internal static IServiceProvider? Services { get; private set; }
+    public static IServiceProvider? Services { get; private set; }
 
     public static MauiApp CreateMauiApp()
     {
@@ -88,42 +87,13 @@ public static class MauiProgram
 
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddSingleton<IProtectedPayload, ProtectedPayload>();
-        builder.Services.AddSingleton<MobileDataStore>();
-        builder.Services.AddSingleton<IXecretsDataStore>(services => services.GetRequiredService<MobileDataStore>());
-        builder.Services.AddSingleton<IDeviceSettings, MobileDeviceSettings>();
-        builder.Services.AddSingleton<IProfileStore, ProfileStore>();
-        builder.Services.AddSingleton<ProfileSession>();
-        builder.Services.AddSingleton<IFileWiper, FileWiper>();
-        builder.Services.AddSingleton<ITransientFileService, TransientFileService>();
-        builder.Services.AddSingleton<PreviewState>();
-        builder.Services.AddSingleton<DecryptionPasswordRequestState>();
-        builder.Services.AddSingleton<IFlowContext, FlowContext>();
-        builder.Services.AddSingleton<IProfileService, ProfileService>();
-        builder.Services.AddSingleton<IDecryptedFileViewer, DecryptedFileViewer>();
-        builder.Services.AddSingleton<EncryptRequestFactory>();
-        builder.Services.AddSingleton<IEncryptionPreparationService, EncryptionPreparationService>();
-        builder.Services.AddSingleton<IPreviewService, PreviewService>();
-        builder.Services.AddSingleton<IIncomingFileService, IncomingFileService>();
-        builder.Services.AddSingleton<SessionExitService>();
         builder.Services.AddSingleton<ICrashTestService, CrashTestService>();
-        builder.Services.AddSingleton<IWorkFolderOperationService, WorkFolderOperationService>();
-        builder.Services.AddSingleton<IEditSaveService, EditSaveService>();
-        builder.Services.AddSingleton<FolderAccessWorkflow>();
-        builder.Services.AddSingleton<FileOperationWorkflow>();
-        builder.Services.AddSingleton<GrantCleanupService>();
-        builder.Services.AddSingleton<InstallationService>();
-        builder.Services.AddSingleton<IRecentFilesService, RecentFilesService>();
-        builder.Services.AddSingleton<WorkFolderStorage>();
         builder.Services.AddSingleton(CrashLog);
         builder.Services.AddSingleton<IBuildInformation>(buildInformation);
         builder.Services.AddSingleton<IPageHeaderService, PageHeaderService>();
         builder.Services.AddSingleton<IThirdPartyNoticesService, ThirdPartyNoticesService>();
         builder.Services.AddSingleton(new Cultures(() => deviceFormattingCultureName));
         builder.Services.AddSingleton<MobileCultureCoordinator>();
-
-        builder.Services.AddTransient<StartupPageModel>();
-        builder.Services.AddTransient<LoginPageModel>();
-        builder.Services.AddTransient<HomePageModel>();
 
         builder.Services.AddTransientWithShellRoute<CreateProfilePage, CreateProfilePageModel>("create-profile");
         builder.Services.AddTransientWithShellRoute<PreviewPage, PreviewPageModel>("preview");
@@ -140,6 +110,8 @@ public static class MauiProgram
         builder.Services.AddTransientWithShellRoute<SuggestPasswordPage, SuggestPasswordPageModel>("suggest-password");
         builder.Services.AddTransientWithShellRoute<RecentFilesPage, RecentFilesPageModel>("recent-files");
         builder.Services.AddTransientWithShellRoute<WelcomePage, WelcomePageModel>("welcome");
+
+        builder.Services.AddMobileModels();
 
         MauiApp app = builder.Build();
         Runtime.UseDeviceSettings(app.Services.GetRequiredService<IDeviceSettings>());

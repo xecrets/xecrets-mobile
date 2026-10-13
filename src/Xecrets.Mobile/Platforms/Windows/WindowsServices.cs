@@ -43,7 +43,7 @@ using Xecrets.Mobile.Utilities;
 namespace Xecrets.Mobile.Platforms.Windows;
 
 [SupportedOSPlatform("windows")]
-public class WindowsServices : PlatformServicesBase
+internal class WindowsServices : PlatformServicesBase
 {
     public WindowsServices()
     {

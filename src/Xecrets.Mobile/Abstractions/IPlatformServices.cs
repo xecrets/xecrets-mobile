@@ -34,7 +34,7 @@ using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Abstractions;
 
-public interface IPlatformServices
+internal interface IPlatformServices
 {
     string CrashPageAdditionalInformation { get; }
 

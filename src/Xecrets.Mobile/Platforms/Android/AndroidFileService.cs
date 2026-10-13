@@ -48,7 +48,7 @@ using Platform = Microsoft.Maui.ApplicationModel.Platform;
 namespace Xecrets.Mobile.Platforms.Android;
 
 [SupportedOSPlatform("android26.0")]
-public class AndroidFileService : FileServiceBase
+internal class AndroidFileService : FileServiceBase
 {
     public override string PlatformId => "android";
 

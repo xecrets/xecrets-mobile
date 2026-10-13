@@ -32,7 +32,7 @@ using Microsoft.Maui.Controls;
 
 namespace Xecrets.Mobile.Abstractions;
 
-public interface IPageHeaderService
+internal interface IPageHeaderService
 {
     void ApplyStandardHeader(ContentPage page);
 

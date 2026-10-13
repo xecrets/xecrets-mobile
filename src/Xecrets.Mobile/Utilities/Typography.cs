@@ -33,7 +33,7 @@ using Microsoft.Maui.Controls;
 
 namespace Xecrets.Mobile.Utilities;
 
-public static class Typography
+internal static class Typography
 {
     public static readonly BindableProperty FontWeightProperty = BindableProperty.CreateAttached(
         "FontWeight", typeof(TypographyWeight), typeof(Typography), TypographyWeight.Regular);
@@ -48,7 +48,7 @@ public static class Typography
         view.SetValue(FontWeightProperty, value);
 }
 
-public enum TypographyWeight
+internal enum TypographyWeight
 {
     Regular,
     Semibold,

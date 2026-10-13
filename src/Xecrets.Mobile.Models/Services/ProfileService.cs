@@ -39,7 +39,7 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Services;
 
-public sealed class ProfileService(
+internal sealed class ProfileService(
     ICoreServices coreServices,
     IXecretsDataStore dataStore,
     IProfileStore profileStore,

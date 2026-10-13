@@ -48,7 +48,7 @@ using Xecrets.Mobile.Services;
 namespace Xecrets.Mobile.Platforms.MacCatalyst;
 
 [SupportedOSPlatform("maccatalyst")]
-public class MacCatalystServices : PlatformServicesBase
+internal class MacCatalystServices : PlatformServicesBase
 {
     // The binding rejects null, but an empty content type means none and disables password suggestions.
     private static readonly NSString _noTextContentType = new(string.Empty);

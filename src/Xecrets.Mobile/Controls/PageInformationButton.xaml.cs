@@ -6,7 +6,7 @@ using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Controls;
 
-public partial class PageInformationButton
+internal partial class PageInformationButton
 {
     public static readonly BindableProperty TitleProperty = BindableProperty.Create(
         nameof(Title),

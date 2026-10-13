@@ -34,7 +34,7 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
-public partial class EncryptToSharePage
+internal partial class EncryptToSharePage
 {
     public EncryptToSharePage(
         EncryptToSharePageModel model,

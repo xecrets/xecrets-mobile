@@ -35,7 +35,7 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Services;
 
-public sealed class RecentFilesService(
+internal sealed class RecentFilesService(
     ProfileSession profileSession,
     IFlowContext flowContext,
     IFileAccess fileAccess)

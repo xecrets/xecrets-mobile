@@ -33,7 +33,7 @@ using Microsoft.Maui.Controls;
 
 namespace Xecrets.Mobile.Controls;
 
-public sealed partial class PageBreadcrumb
+internal sealed partial class PageBreadcrumb
 {
     public static readonly BindableProperty TextProperty = BindableProperty.Create(
         nameof(Text), typeof(string), typeof(PageBreadcrumb));

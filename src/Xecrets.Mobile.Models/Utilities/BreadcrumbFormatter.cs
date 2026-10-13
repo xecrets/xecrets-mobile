@@ -33,7 +33,7 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Utilities;
 
-public static class BreadcrumbFormatter
+internal static class BreadcrumbFormatter
 {
     /// <summary>
     /// Builds the trail shown at the top of a page, naming how the user got here, what they are

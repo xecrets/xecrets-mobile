@@ -33,7 +33,7 @@ using Xecrets.Mobile.Models.PageModels;
 
 namespace Xecrets.Mobile.Pages;
 
-public partial class DebugPage
+internal partial class DebugPage
 {
     public DebugPage(DebugPageModel model, IPageHeaderService pageHeaderService)
     {

@@ -33,7 +33,7 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Services;
 
-public sealed class FlowContext : IFlowContext
+internal sealed class FlowContext : IFlowContext
 {
     public FlowOrigin Origin { get; private set; } = FlowOrigin.Navigated;
 

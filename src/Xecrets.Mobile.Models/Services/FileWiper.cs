@@ -41,7 +41,7 @@ namespace Xecrets.Mobile.Models.Services;
 /// it. Storage that keeps versions of a file, or only moves a deleted file to a trash, such as Google Drive, then keeps
 /// the notice under the wiped name, rather than the original.
 /// </summary>
-public sealed class FileWiper : IFileWiper
+internal sealed class FileWiper : IFileWiper
 {
     /// <summary>
     /// The notice left in a wiped file, for anyone who finds what storage keeps of it. Not translated, so that it reads

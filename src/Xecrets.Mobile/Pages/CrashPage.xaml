@@ -30,6 +30,7 @@
              xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
              xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
              x:Class="Xecrets.Mobile.Pages.CrashPage"
+             x:ClassModifier="internal"
              x:DataType="pages:CrashPage"
              Shell.NavBarIsVisible="False">
     <ContentPage.Resources>

@@ -49,7 +49,7 @@ namespace Xecrets.Mobile.Platforms.Android;
 /// document by itself.
 /// </summary>
 [SupportedOSPlatform("android26.0")]
-public class AndroidWorkFolderFileLauncher : IWorkFolderFileLauncher
+internal class AndroidWorkFolderFileLauncher : IWorkFolderFileLauncher
 {
     /// <summary>
     /// As a file manager does, views content the system Quick Viewer handles in it, and opens anything else in the

@@ -37,7 +37,7 @@ using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Services;
 
-public abstract class PlatformServicesBase : IPlatformServices
+internal abstract class PlatformServicesBase : IPlatformServices
 {
     public virtual string CrashPageAdditionalInformation => string.Empty;
 

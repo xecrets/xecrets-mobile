@@ -32,7 +32,7 @@ using Xecrets.Mobile.Models.PageModels;
 
 namespace Xecrets.Mobile.Pages;
 
-public partial class StartupPage
+internal partial class StartupPage
 {
     public StartupPage(StartupPageModel model)
     {
