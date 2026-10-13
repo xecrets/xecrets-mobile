@@ -83,9 +83,9 @@ public interface IFileAccess
 
     /// <summary>
     /// Tells if two ids refer to the same file, such as one picked by itself and the same file reached through one of
-    /// My folders. Only what can be told from the ids is used.
+    /// My folders. The access the app has to the files may be used to tell.
     /// </summary>
-    bool IsSameFile(string fileId, string otherFileId);
+    Task<bool> IsSameFileAsync(string fileId, string otherFileId);
 
     /// <summary>
     /// Keeps the access to a picked file for reading it again later. Returns false when it cannot be kept.

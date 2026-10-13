@@ -140,9 +140,9 @@ internal sealed class FakeFileAccess(WorkFolderStorage storage) : IFileAccess
 
     public bool HasFileGrant(string fileId) => FileGrants.Contains(fileId);
 
-    public bool IsSameFile(string fileId, string otherFileId) =>
+    public Task<bool> IsSameFileAsync(string fileId, string otherFileId) =>
         !fileId.StartsWith("bad:", StringComparison.Ordinal)
-            ? PathOf(fileId) == PathOf(otherFileId)
+            ? Task.FromResult(PathOf(fileId) == PathOf(otherFileId))
             : throw new FormatException("The id is not valid.");
 
     public Task ReleaseUnusedGrantsAsync(GrantReferences references)

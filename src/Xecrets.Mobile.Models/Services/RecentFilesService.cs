@@ -62,10 +62,10 @@ public sealed class RecentFilesService(
     {
         if (!operation.IsWriteClass())
         {
-            RecentFile? listed = (await GetFilesAsync()).FirstOrDefault(item => IsSameFile(item.Id, file.Id));
+            RecentFile? listed = await FindListedAsync(file.Id);
             if (listed is not null && listed.Operation.IsWriteClass())
             {
-                await EditFilesAsync(files => [listed, .. files.Where(item => !IsSameFile(item.Id, file.Id))]);
+                await EditFilesAsync(async files => [listed, .. await RemoveFileAsync(files, file.Id)]);
                 return true;
             }
 
@@ -76,12 +76,10 @@ public sealed class RecentFilesService(
         }
 
         FileReference located = await fileAccess.LocateAgainAsync(file);
-        await EditFilesAsync(files =>
+        await EditFilesAsync(async files =>
         [
             located.ToRecentFile(operation),
-            .. files
-                .Where(item => !IsSameFile(item.Id, file.Id))
-                .Take(_maxRecentListLength - 1),
+            .. (await RemoveFileAsync(files, file.Id)).Take(_maxRecentListLength - 1),
         ]);
         return true;
     }
@@ -95,17 +93,44 @@ public sealed class RecentFilesService(
     }
 
     public Task RemoveAsync(string fileId) =>
-        EditFilesAsync(files => [.. files.Where(file => file.Id != fileId)]);
+        EditFilesAsync(files => Task.FromResult<List<RecentFile>>([.. files.Where(file => file.Id != fileId)]));
 
     public Task RemoveFileAsync(string fileId) =>
-        EditFilesAsync(files => [.. files.Where(file => !IsSameFile(file.Id, fileId))]);
+        EditFilesAsync(files => RemoveFileAsync(files, fileId));
+
+    private async Task<RecentFile?> FindListedAsync(string fileId)
+    {
+        foreach (RecentFile file in await GetFilesAsync())
+        {
+            if (await IsSameFileAsync(file.Id, fileId))
+            {
+                return file;
+            }
+        }
+
+        return null;
+    }
+
+    private async Task<List<RecentFile>> RemoveFileAsync(List<RecentFile> files, string fileId)
+    {
+        List<RecentFile> kept = [];
+        foreach (RecentFile file in files)
+        {
+            if (!await IsSameFileAsync(file.Id, fileId))
+            {
+                kept.Add(file);
+            }
+        }
+
+        return kept;
+    }
 
     // An id that cannot be made sense of, such as from an earlier version, is not taken to be the same file.
-    private bool IsSameFile(string listedId, string fileId)
+    private async Task<bool> IsSameFileAsync(string listedId, string fileId)
     {
         try
         {
-            return fileAccess.IsSameFile(listedId, fileId);
+            return await fileAccess.IsSameFileAsync(listedId, fileId);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -115,19 +140,19 @@ public sealed class RecentFilesService(
 
     // The file may already be listed by the new id, and is then only kept where it is listed first.
     public Task ReplaceIdAsync(string fileId, string newFileId) =>
-        EditFilesAsync(files =>
+        EditFilesAsync(files => Task.FromResult<List<RecentFile>>(
         [
             .. files
                 .Select(file => file.Id == fileId
                     ? file with { Id = newFileId }
                     : file)
                 .DistinctBy(file => file.Id),
-        ]);
+        ]));
 
-    private async Task EditFilesAsync(Func<List<RecentFile>, List<RecentFile>> edit)
+    private async Task EditFilesAsync(Func<List<RecentFile>, Task<List<RecentFile>>> edit)
     {
         await using IEditScope<RecentFileOperations> scope =
             (await profileSession.UserStore!.LoadRecentFileOperationsAsync()).BeginEdit();
-        scope.Value.Files = edit(scope.Value.Files);
+        scope.Value.Files = await edit(scope.Value.Files);
     }
 }

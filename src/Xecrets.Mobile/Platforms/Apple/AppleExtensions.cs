@@ -96,6 +96,22 @@ public static class AppleExtensions
             return await pickerDelegate.Completion.Task;
         }
 
+        public T WithAccess<T>(Func<T> func)
+        {
+            bool isAccessing = url.StartAccessingSecurityScopedResource();
+            try
+            {
+                return func();
+            }
+            finally
+            {
+                if (isAccessing)
+                {
+                    url.StopAccessingSecurityScopedResource();
+                }
+            }
+        }
+
         public async Task<T> WithAccessAsync<T>(Func<Task<T>> action)
         {
             bool isAccessing = url.StartAccessingSecurityScopedResource();

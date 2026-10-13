@@ -59,23 +59,22 @@ public sealed class AppleFileGrants(WorkFolderStorage storage)
 
     /// <summary>
     /// Finds the innermost of My folders that contains the file or folder, or is the folder itself when that is
-    /// allowed. The paths are compared with their symbolic links resolved, since the same location may be reached by
-    /// different paths, such as through /var and /private/var, and in the same Unicode form, since a name such as
-    /// "Bjärke" may be told with the "ä" as one character or as an "a" followed by a combining mark.
+    /// allowed. The paths are normalized with the access of each folder, which also gives access to what is in it.
     /// </summary>
     public async Task<WorkFolder?> FindFolderAsync(string id, bool isFolderItself)
     {
-        string path = NormalizePath(NSUrl.FromString(id)!.Path!);
+        string idPath = NSUrl.FromString(id)!.Path!;
         WorkFolder? innermost = null;
         int innermostLength = -1;
         foreach (WorkFolder folder in await storage.LoadFoldersAsync())
         {
-            if (folder.GrantId.TryResolveGrant()?.Path is not { } grantPath)
+            if (folder.GrantId.TryResolveGrant() is not { Path: { } grantPath } grant)
             {
                 continue;
             }
 
-            string folderPath = NormalizePath(grantPath);
+            string folderPath = NormalizePath(grant, grantPath);
+            string path = NormalizePath(grant, idPath);
             bool isInFolder = path.StartsWith(folderPath + "/", StringComparison.Ordinal) ||
                 (isFolderItself && path == folderPath);
             if (isInFolder && folderPath.Length > innermostLength)
@@ -128,8 +127,21 @@ public sealed class AppleFileGrants(WorkFolderStorage storage)
             ? folder.GrantId.ResolveGrant()
             : throw new IOException("The file is not in one of My folders.");
 
-    public static string ResolvePath(string path) => new NSString(path).ResolveSymlinksInPath().ToString();
+    /// <summary>
+    /// The path of the file, normalized with the access it is reached through, or null when there is no access to it.
+    /// </summary>
+    public async Task<string?> GetNormalizedPathAsync(string fileId) =>
+        await ResolveAccessAsync(fileId) is { } access
+            ? NormalizePath(access.Access, NSUrl.FromString(fileId)!.Path!)
+            : null;
 
-    private static string NormalizePath(string path) =>
-        ResolvePath(path).TrimEnd('/').Normalize(NormalizationForm.FormC);
+    /// <summary>
+    /// The path with its symbolic links resolved, since the same location may be reached by different paths, such as
+    /// through /var and /private/var, and in the same Unicode form, since a name such as "Bjärke" may be told with the
+    /// "ä" as one character or as an "a" followed by a combining mark. A link is only resolved where the path can be
+    /// seen to exist, so this is done while accessing what gives access to the path.
+    /// </summary>
+    public static string NormalizePath(NSUrl access, string path) =>
+        access.WithAccess(() =>
+            new NSString(path).ResolveSymlinksInPath().ToString().TrimEnd('/').Normalize(NormalizationForm.FormC));
 }

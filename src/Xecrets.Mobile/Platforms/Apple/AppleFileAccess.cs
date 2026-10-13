@@ -138,10 +138,11 @@ public sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants g
     }
 
     // The same location may be reached by different paths, such as through /var and /private/var.
-    public bool IsSameFile(string fileId, string otherFileId) =>
-        NSUrl.FromString(fileId)?.Path is { } path && NSUrl.FromString(otherFileId)?.Path is { } otherPath
-            ? AppleFileGrants.ResolvePath(path) == AppleFileGrants.ResolvePath(otherPath)
-            : fileId == otherFileId;
+    public async Task<bool> IsSameFileAsync(string fileId, string otherFileId) =>
+        fileId == otherFileId ||
+        (await grants.GetNormalizedPathAsync(fileId) is { } path &&
+            await grants.GetNormalizedPathAsync(otherFileId) is { } otherPath &&
+            path == otherPath);
 
     /// <summary>
     /// Keeps a bookmark of the file, made while there is access to it. A file that already has one keeps it, since a

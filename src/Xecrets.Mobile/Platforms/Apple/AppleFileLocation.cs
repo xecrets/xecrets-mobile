@@ -116,7 +116,7 @@ internal static partial class AppleFileLocation
         NSUrl fileUrl,
         bool isProviderAsked)
     {
-        string[] segments = AppleFileGrants.ResolvePath(fileUrl.Path!).Split('/', StringSplitOptions.RemoveEmptyEntries);
+        string[] segments = AppleFileGrants.NormalizePath(fileUrl, fileUrl.Path!).Split('/', StringSplitOptions.RemoveEmptyEntries);
         int last = segments.Length - 1;
 
         int index = Array.IndexOf(segments, _iCloudDriveFolderName);

@@ -209,19 +209,19 @@ public sealed class AndroidFileAccess(WorkFolderStorage storage, IFileWiper file
     /// A document is the same whether it is referred to by itself or through the grant of a folder, so the provider and
     /// document id are compared.
     /// </summary>
-    public bool IsSameFile(string fileId, string otherFileId)
+    public Task<bool> IsSameFileAsync(string fileId, string otherFileId)
     {
         AndroidUri fileUri = AndroidUri.Parse(fileId)!;
         AndroidUri otherFileUri = AndroidUri.Parse(otherFileId)!;
         try
         {
-            return fileUri.Authority == otherFileUri.Authority &&
-                DocumentsContract.GetDocumentId(fileUri) == DocumentsContract.GetDocumentId(otherFileUri);
+            return Task.FromResult(fileUri.Authority == otherFileUri.Authority &&
+                DocumentsContract.GetDocumentId(fileUri) == DocumentsContract.GetDocumentId(otherFileUri));
         }
         catch (Java.Lang.IllegalArgumentException)
         {
             // An id that is not a document uri.
-            return fileId == otherFileId;
+            return Task.FromResult(fileId == otherFileId);
         }
     }
 

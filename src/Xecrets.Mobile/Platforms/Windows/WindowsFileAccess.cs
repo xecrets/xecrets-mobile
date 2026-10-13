@@ -118,8 +118,8 @@ public sealed class WindowsFileAccess(WorkFolderStorage storage) : IFileAccess
             : [.. segments, rememberedName];
     }
 
-    public bool IsSameFile(string fileId, string otherFileId) =>
-        string.Equals(fileId, otherFileId, StringComparison.OrdinalIgnoreCase);
+    public Task<bool> IsSameFileAsync(string fileId, string otherFileId) =>
+        Task.FromResult(string.Equals(fileId, otherFileId, StringComparison.OrdinalIgnoreCase));
 
     // The path is all that is needed to access the file again.
     public Task<bool> KeepFileGrantAsync(string fileId) => Task.FromResult(true);
