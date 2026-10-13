@@ -85,6 +85,10 @@ internal static class AndroidExtensions
         {
             Intent intent = new(Intent.ActionQuickView);
             intent.SetDataAndTypeAndNormalize(uri, contentType);
+
+            // Google Drive's viewer honors EXTRA_QUICK_VIEW_FEATURES, which hides its "Insert" button, only for
+            // ClipData uris.
+            intent.ClipData = ClipData.NewRawUri(string.Empty, uri);
             intent.AddFlags(ActivityFlags.GrantReadUriPermission);
             return intent;
         }
@@ -142,7 +146,10 @@ internal static class AndroidExtensions
             {
                 quickViewIntent.SetPackage(resolved.PackageName);
             }
-            quickViewIntent.PutExtra(Intent.ExtraQuickViewFeatures, [QuickViewConstants.FeatureView]);
+
+            // No features, so that the viewer offers no extra actions. Google Drive's viewer would show "Open with"
+            // for FeatureView, which hands the file back to this app too.
+            quickViewIntent.PutExtra(Intent.ExtraQuickViewFeatures, Array.Empty<string>());
 
             Platform.CurrentActivity!.StartActivity(quickViewIntent);
         }

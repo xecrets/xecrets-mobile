@@ -72,7 +72,7 @@ public class AndroidFileService : FileServiceBase
     }
 
     private static AndroidUri GetUri(string filePath) =>
-        FileProvider.GetUriForFile(Platform.AppContext, $"{Platform.AppContext.PackageName}.fileProvider", new AndroidFile(filePath))!;
+        FileProvider.GetUriForFile(Platform.AppContext, QuickViewFileProvider.Authority, new AndroidFile(filePath))!;
 
     private static bool TryGetQuickViewIntent(DecryptedFileInfo file, [NotNullWhen(true)] out Intent? quickViewIntent)
     {
@@ -137,5 +137,6 @@ public class AndroidFileService : FileServiceBase
     }
 
     public override bool IsSelfHandoffReference(string reference) =>
-        AndroidUri.Parse(reference)?.Authority == $"{Platform.AppContext.PackageName}.fileProvider";
+        AndroidUri.Parse(reference)?.Authority is string authority &&
+        (authority == $"{Platform.AppContext.PackageName}.fileProvider" || authority == QuickViewFileProvider.Authority);
 }
