@@ -374,8 +374,7 @@ public partial class RecentFilesPageModel(
     {
         SelectedFileState.Encrypted => entry.IsInPlace && entry.IsNameEncrypted,
         SelectedFileState.Decrypted => entry.IsInPlace && !entry.IsNameEncrypted,
-        SelectedFileState.Viewed => entry.IsViewed,
-        SelectedFileState.Other => entry.IsOther,
+        SelectedFileState.Other => !entry.IsInPlace,
         SelectedFileState.All => true,
         _ => throw new InvalidOperationException($"Unknown file state {SelectedState}."),
     };

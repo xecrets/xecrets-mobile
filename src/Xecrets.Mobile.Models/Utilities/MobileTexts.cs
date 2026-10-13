@@ -155,8 +155,6 @@ public static class MobileTexts
 
     public static string FileStateEncrypted => "Encrypted";
 
-    public static string FileStateViewed => "Viewed";
-
     // An ellipsis rather than a word, to save space in the segmented control.
     public static string FileStateOther => "…";
 

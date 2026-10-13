@@ -54,7 +54,6 @@ public sealed class AppleFileStateSelectorHandler() : ViewHandler<FileStateSelec
             MobileTexts.FileStateAll,
             MobileTexts.FileStateDecrypted,
             MobileTexts.FileStateEncrypted,
-            MobileTexts.FileStateViewed,
             MobileTexts.FileStateOther,
         ])
         {
@@ -79,8 +78,7 @@ public sealed class AppleFileStateSelectorHandler() : ViewHandler<FileStateSelec
             SelectedFileState.All => 0,
             SelectedFileState.Decrypted => 1,
             SelectedFileState.Encrypted => 2,
-            SelectedFileState.Viewed => 3,
-            SelectedFileState.Other => 4,
+            SelectedFileState.Other => 3,
             _ => throw new InvalidOperationException($"Unknown file state {selector.SelectedState}."),
         };
 
@@ -90,8 +88,7 @@ public sealed class AppleFileStateSelectorHandler() : ViewHandler<FileStateSelec
             0 => SelectedFileState.All,
             1 => SelectedFileState.Decrypted,
             2 => SelectedFileState.Encrypted,
-            3 => SelectedFileState.Viewed,
-            4 => SelectedFileState.Other,
+            3 => SelectedFileState.Other,
             _ => throw new InvalidOperationException($"Unknown segment {PlatformView.SelectedSegment}."),
         };
 }

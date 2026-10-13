@@ -136,6 +136,25 @@ public sealed class RecentFilesPageTests
     }
 
     [Test]
+    public async Task OtherShowsEveryFileNotEncryptedOrDecryptedInPlace()
+    {
+        TestApp app = new();
+        app.AddFile("docs/a.txt");
+        app.AddFile("docs/b.axx");
+        app.AddFile("docs/c.txt");
+        app.AddFile("docs/d.axx");
+        app.AddRecent("docs/a.txt", RecentFileOperation.InPlace, "a.txt");
+        app.AddRecent("docs/b.axx", RecentFileOperation.View, "b.axx");
+        app.AddRecent("docs/c.txt", RecentFileOperation.Edit, "c.txt");
+        app.AddRecent("docs/d.axx", RecentFileOperation.DecryptCopySendTo, "d.axx");
+        RecentFilesPageModel page = await LoadedPageAsync(app);
+
+        page.SelectedState = SelectedFileState.Other;
+
+        Assert.That(page.Files.Select(file => file.Id), Is.EquivalentTo(["docs/b.axx", "docs/c.txt", "docs/d.axx"]));
+    }
+
+    [Test]
     public async Task ViewedFileIsShownAgainThroughTheAccessToItAlone()
     {
         TestApp app = new();
