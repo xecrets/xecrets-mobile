@@ -28,7 +28,6 @@
 
 #endregion Copyright and GPL License
 
-using Xecrets.Common.Abstractions;
 using Xecrets.Common.Models;
 using Xecrets.Core.Abstractions;
 
@@ -37,10 +36,10 @@ namespace Xecrets.Mobile.Models.Data;
 /// <summary>
 /// Persists Xecrets.Core device settings in <see cref="DeviceSettings.Values"/>.
 /// </summary>
-public sealed class MobileDeviceSettings(IXecretsDataStore dataStore) : IDeviceSettings
+public sealed class MobileDeviceSettings(MobileDataStore dataStore) : IDeviceSettings
 {
     private readonly Lazy<Dictionary<string, string>> _settings =
-        new(() => new Dictionary<string, string>(dataStore.OpenApplicationSettings().Value.DeviceSettings.Values));
+        new(() => new Dictionary<string, string>(dataStore.ReadDeviceValues()));
 
     public string this[string key]
     {
@@ -66,10 +65,5 @@ public sealed class MobileDeviceSettings(IXecretsDataStore dataStore) : IDeviceS
     // IDeviceSettings is synchronous and Core may call it on the UI thread. Task.Run keeps the awaited continuations
     // off the UI context, so the blocking wait cannot deadlock.
     private void Persist(Action<Dictionary<string, string>> update) =>
-        Task.Run(async () =>
-        {
-            await using IEditScope<ApplicationSettings> settings =
-                (await dataStore.OpenApplicationSettingsAsync()).BeginEdit();
-            update(settings.Value.DeviceSettings.Values);
-        }).Wait();
+        Task.Run(() => dataStore.UpdateDeviceValuesAsync(update)).Wait();
 }

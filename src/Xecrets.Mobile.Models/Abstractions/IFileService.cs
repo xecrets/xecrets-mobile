@@ -42,6 +42,11 @@ public interface IFileService
 
     string CacheDirectory { get; }
 
+    const string DeviceDirectoryName = "Device";
+
+    // Holds the data that only applies to the installation on this device, and is kept out of backups and transfers.
+    string DeviceDirectory => Path.Combine(AppDataDirectory, DeviceDirectoryName);
+
     Task<bool> OpenInAsync(string filePath, string displayName);
 
     Task SendToAsync(string filePath, string displayName, string contentType);
@@ -55,4 +60,10 @@ public interface IFileService
     // of reference is platform-specific (a content Uri on Android, a filesystem path on Apple platforms) and is
     // decided by the caller and the implementation together.
     bool IsSelfHandoffReference(string reference);
+
+    // Keeps the file out of the backups the platform makes of the app's data, where that is not already declared some
+    // other way, such as in the Android manifest.
+    void ExcludeFromBackup(string path)
+    {
+    }
 }

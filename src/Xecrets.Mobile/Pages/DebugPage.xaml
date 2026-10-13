@@ -36,6 +36,8 @@
                 <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
                     <Button Text="View Settings JSON"
                             Command="{Binding ViewSettingsJsonCommand}" />
+                    <Button Text="View Device Settings JSON"
+                            Command="{Binding ViewDeviceSettingsJsonCommand}" />
                     <Button Text="View Cache"
                             Command="{Binding ViewCacheCommand}" />
                 </VerticalStackLayout>

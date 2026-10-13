@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Backup and device transfer rules for Android 11 and earlier. The Device directory, IFileService.DeviceDirectory,
+     must never leave the device. Keep in sync with data_extraction_rules.xml. -->
+<full-backup-content>
+    <exclude domain="file" path="Device" />
+</full-backup-content>

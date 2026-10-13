@@ -111,6 +111,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<FolderAccessWorkflow>();
         builder.Services.AddSingleton<FileOperationWorkflow>();
         builder.Services.AddSingleton<GrantCleanupService>();
+        builder.Services.AddSingleton<InstallationService>();
         builder.Services.AddSingleton<IRecentFilesService, RecentFilesService>();
         builder.Services.AddSingleton<WorkFolderStorage>();
         builder.Services.AddSingleton(CrashLog);

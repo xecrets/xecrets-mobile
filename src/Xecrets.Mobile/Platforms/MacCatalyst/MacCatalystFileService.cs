@@ -31,6 +31,8 @@
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
+using Foundation;
+
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Platforms.Apple;
 using Xecrets.Mobile.Services;
@@ -47,4 +49,7 @@ public class MacCatalystFileService : FileServiceBase
 
     public override Task ViewFileAsync(DecryptedFileInfo file) =>
         QuickLookFileViewer.ViewAsync(file);
+
+    public override void ExcludeFromBackup(string path) =>
+        NSUrl.FromFilename(path).ExcludeFromBackup();
 }

@@ -71,13 +71,8 @@ public static class Extensions
     public static FileReference ToFileReference(this RecentFile recentFile) =>
         new(recentFile.Id, recentFile.Name) { Root = recentFile.Root, FolderPath = recentFile.FolderPath };
 
-    public static string? Stringify(this DontShowAgain dontShowAgain)
+    public static string Stringify(this DontShowAgain dontShowAgain)
     {
-        if (dontShowAgain == DontShowAgain.None)
-        {
-            return null;
-        }
-
         List<string> values = [];
         foreach (DontShowAgain value in Enum.GetValues<DontShowAgain>())
         {
@@ -95,7 +90,7 @@ public static class Extensions
         return string.Join(",", values);
     }
 
-    extension(UserSettings settings)
+    extension(ProfileDeviceSettings settings)
     {
         public bool ShouldShow(DontShowAgain flagToCheck) =>
             !ParseDontShowAgain(settings.DontShowAgain).HasFlag(flagToCheck);
@@ -104,13 +99,8 @@ public static class Extensions
             settings.DontShowAgain = (ParseDontShowAgain(settings.DontShowAgain) | flagToSet).Stringify();
     }
 
-    private static DontShowAgain ParseDontShowAgain(string? dontShowAgain)
+    private static DontShowAgain ParseDontShowAgain(string dontShowAgain)
     {
-        if (dontShowAgain == null)
-        {
-            return DontShowAgain.None;
-        }
-
         DontShowAgain flags = DontShowAgain.None;
         foreach (string value in dontShowAgain.Split(','))
         {

@@ -83,6 +83,12 @@ public abstract class FileServiceBase : IFileService
     public virtual bool IsSelfHandoffReference(string reference) =>
         reference.StartsWith(Path.Combine(CacheDirectory, "XecretsHandoff"), StringComparison.OrdinalIgnoreCase);
 
+    // Default for platforms that make no backups of the app's data (Windows), or where the exclusions are declared in
+    // the manifest (Android). Apple platforms override this.
+    public virtual void ExcludeFromBackup(string path)
+    {
+    }
+
     protected static void EnsureReadableFile(string filePath)
     {
         if (!File.Exists(filePath))

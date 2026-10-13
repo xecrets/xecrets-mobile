@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Effective date: July 26, 2026
+Effective date: October 13, 2026
 
 This privacy policy applies to the Xecrets Ez mobile applications for Android and iOS,
 developed by Svante Seleborg and published by Axantum Software AB.
@@ -31,13 +31,12 @@ physical erasure cannot be guaranteed.
 
 The app stores a local profile containing the key material required for its operation.
 The profile key pair is encrypted with the profile password, which is not stored with
-it. App settings are stored using the operating system's secure-storage facilities.
+it. App settings are stored using the operating system's app storage facilities.
 
-The device operating system may include the encrypted profile in its cloud backup or
+The device operating system may include the local profile in its cloud backup or
 device-transfer service, according to the user's platform and account settings. Xecrets
 Ez does not perform or control that transfer and does not have access to the backup.
-Secure app settings are excluded from Android backup, and Apple secure-storage items
-are configured for use on the current device only.
+Device specific settings are excluded from Android and iOS backup.
 
 ## Crash Reports
 

@@ -48,6 +48,7 @@ using UniformTypeIdentifiers;
 
 using UIKit;
 
+using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Platforms.Apple;
@@ -57,7 +58,22 @@ public static class AppleExtensions
     // NSFeatureUnsupportedError.
     private const int _featureUnsupportedError = 3328;
 
-    private static string GrantDirectory => Path.Combine(FileSystem.AppDataDirectory, "WorkFolderGrants");
+    // The bookmarks hold the paths of the files and folders, so they are kept with the other device-specific data, out of
+    // backups and transfers.
+    private static string GrantDirectory =>
+        Path.Combine(FileSystem.AppDataDirectory, IFileService.DeviceDirectoryName, "WorkFolderGrants");
+
+    /// <summary>
+    /// Keeps the file or directory out of iCloud, Finder and Time Machine backups. The exclusion belongs to the item
+    /// itself, so it must be set again whenever it is replaced.
+    /// </summary>
+    public static void ExcludeFromBackup(this NSUrl fileUrl)
+    {
+        if (!fileUrl.SetResource(NSUrl.IsExcludedFromBackupKey, NSNumber.FromBoolean(true), out NSError? error))
+        {
+            throw new NSErrorException(error!);
+        }
+    }
 
     public static async Task<NSUrl?> PickUrlAsync(this UTType contentType, NSUrl? initialUrl)
     {
@@ -199,6 +215,14 @@ public static class AppleExtensions
     /// </summary>
     internal static void ReleaseGrantsExcept(this IEnumerable<string> ids)
     {
+        // Earlier beta versions kept the bookmarks directly in AppData, which is backed up. They are no longer referenced.
+        // This can be deleted 2027-01-01.
+        string legacyGrantDirectory = Path.Combine(FileSystem.AppDataDirectory, "WorkFolderGrants");
+        if (Directory.Exists(legacyGrantDirectory))
+        {
+            Directory.Delete(legacyGrantDirectory, true);
+        }
+
         if (!Directory.Exists(GrantDirectory))
         {
             return;

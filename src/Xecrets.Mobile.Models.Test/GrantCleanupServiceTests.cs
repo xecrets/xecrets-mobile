@@ -87,12 +87,14 @@ public sealed class GrantCleanupServiceTests
     [Test]
     public async Task AllGrantsAreReleasedWhenTheListsCannotBeLoaded()
     {
-        Directory.CreateDirectory(_directory);
-        await File.WriteAllTextAsync(Path.Combine(_directory, "xecrets-data.json"), """{ "version": 999 }""");
+        string deviceDirectory = Path.Combine(_directory, IFileService.DeviceDirectoryName);
+        Directory.CreateDirectory(deviceDirectory);
+        await File.WriteAllTextAsync(Path.Combine(deviceDirectory, MobileDataStore.DeviceSettingsFileName), "{ malformed");
         TestCrashLogService crashLog = new();
         FakeFileAccess access = new(null!);
+        MobileDataStore store = new(new TestFileService(_directory), crashLog, TimeProvider.System, new ProtectedPayload());
 
-        await new GrantCleanupService(CreateStore(), access, crashLog).RunAsync();
+        await new GrantCleanupService(store, access, new TestCrashLogService()).RunAsync();
 
         Assert.That(access.Released!.FolderGrantIds, Is.Empty);
         Assert.That(access.Released.FileIds, Is.Empty);

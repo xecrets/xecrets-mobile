@@ -136,11 +136,12 @@ public sealed class ProfileService(
             : throw new InvalidOperationException("No authenticated profile is available.");
 
     public async Task<bool> ShouldShowAsync(DontShowAgain notice) =>
-        (await session.UserStore!.LoadSettingsAsync()).Value.ShouldShow(notice);
+        (await session.UserStore!.LoadDeviceSettingsAsync()).Value.ShouldShow(notice);
 
     public async Task SetDontShowAgainAsync(DontShowAgain notice)
     {
-        await using IEditScope<UserSettings> settings = (await session.UserStore!.LoadSettingsAsync()).BeginEdit();
+        await using IEditScope<ProfileDeviceSettings> settings =
+            (await session.UserStore!.LoadDeviceSettingsAsync()).BeginEdit();
         settings.Value.SetDontShowAgain(notice);
     }
 }

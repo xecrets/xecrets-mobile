@@ -84,11 +84,11 @@ internal sealed class MobileUserDataStore(MobileDataStore store, UserId id, Time
 
     public async Task<IPersistentData<RecentFileOperations>> LoadRecentFileOperationsAsync()
     {
-        RecentFileOperations recentFiles = new() { Files = [.. (await store.ReadUserAsync(Id)).RecentFileOperations] };
+        RecentFileOperations recentFiles = new() { Files = [.. (await store.ReadProfileDeviceSettingsAsync(Id)).RecentFiles] };
         return new PersistentData<RecentFileOperations>(recentFiles,
             async value =>
             {
-                await store.UpdateUserAsync(Id, user => user.RecentFileOperations = [.. value.Files]);
+                await store.UpdateProfileDeviceSettingsAsync(Id, settings => settings.RecentFiles = [.. value.Files]);
                 return JsonFile.Serialize(value);
             });
     }
@@ -106,11 +106,27 @@ internal sealed class MobileUserDataStore(MobileDataStore store, UserId id, Time
 
     public async Task<IPersistentData<WorkFolders>> LoadWorkFoldersAsync()
     {
-        WorkFolders workFolders = (await store.ReadUserAsync(Id)).WorkFolders;
+        WorkFolders workFolders = (await store.ReadProfileDeviceSettingsAsync(Id)).WorkFolders;
         return new PersistentData<WorkFolders>(workFolders,
             async value =>
             {
-                await store.UpdateUserAsync(Id, user => user.WorkFolders = value);
+                await store.UpdateProfileDeviceSettingsAsync(Id, settings => settings.WorkFolders = value);
+                return JsonFile.Serialize(value);
+            });
+    }
+
+    public async Task<IPersistentData<ProfileDeviceSettings>> LoadDeviceSettingsAsync()
+    {
+        ProfileDeviceSettings deviceSettings = await store.ReadProfileDeviceSettingsAsync(Id);
+        return new PersistentData<ProfileDeviceSettings>(deviceSettings,
+            async value =>
+            {
+                await store.UpdateProfileDeviceSettingsAsync(Id, settings =>
+                {
+                    settings.WorkFolders = value.WorkFolders;
+                    settings.RecentFiles = value.RecentFiles;
+                    settings.DontShowAgain = value.DontShowAgain;
+                });
                 return JsonFile.Serialize(value);
             });
     }

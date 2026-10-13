@@ -46,6 +46,7 @@ internal static class MauiAppBuilderExtensions
     {
         builder.Services.AddSingleton<IFileService, WindowsFileService>();
         builder.Services.AddSingleton<IFileAccess, WindowsFileAccess>();
+        builder.Services.AddSingleton<IDeviceIdentity, WindowsDeviceIdentity>();
         builder.Services.AddSingleton<IWorkFolderFileLauncher, WindowsWorkFolderFileLauncher>();
         builder.Services.AddSingleton<IUserInterfaceService, WindowsUserInterfaceService>();
         builder.Services.AddSingleton<IPlatformServices, WindowsServices>();

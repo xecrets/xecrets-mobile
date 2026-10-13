@@ -29,6 +29,7 @@
 #endregion Copyright and GPL License
 
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 using NUnit.Framework;
@@ -105,30 +106,123 @@ public sealed class MobileDataStoreTests
     [Test]
     public async Task ExportedApplicationConfigurationExcludesDeviceSettings()
     {
-        await using (IEditScope<ApplicationSettings> settings =
-                     (await _store.OpenApplicationSettingsAsync()).BeginEdit())
-        {
-            settings.Value.DeviceSettings.Values["key"] = "value";
-        }
+        await _store.UpdateDeviceValuesAsync(values => values["key"] = "device-value");
 
         ApplicationConfigurationPackage package = await _store.ExportApplicationConfigurationAsync();
 
-        Assert.That(package.Settings.DeviceSettings.Values, Is.Empty);
-        Assert.That((await _store.OpenApplicationSettingsAsync()).Value.DeviceSettings.Values["key"], Is.EqualTo("value"));
+        Assert.That(JsonSerializer.Serialize(package), Does.Not.Contain("device-value"));
+        Assert.That(_store.ReadDeviceValues()["key"], Is.EqualTo("device-value"));
     }
 
     [Test]
-    public async Task ImportedApplicationConfigurationClearsDeviceSettings()
+    public async Task ImportedApplicationConfigurationClearsDeviceSettingsButKeepsTheirOrigin()
     {
-        await using (IEditScope<ApplicationSettings> settings =
-                     (await _store.OpenApplicationSettingsAsync()).BeginEdit())
-        {
-            settings.Value.DeviceSettings.Values["key"] = "local";
-        }
+        IUserDataStore user = await CreateUserWithDeviceSettingsAsync();
 
         await _store.ImportApplicationConfigurationAsync(await _store.ExportApplicationConfigurationAsync());
 
-        Assert.That((await _store.OpenApplicationSettingsAsync()).Value.DeviceSettings.Values, Is.Empty);
+        await AssertDeviceSettingsClearedAsync(user);
+    }
+
+    [Test]
+    public async Task ResetApplicationConfigurationClearsDeviceSettingsButKeepsTheirOrigin()
+    {
+        IUserDataStore user = await CreateUserWithDeviceSettingsAsync();
+
+        await _store.ResetApplicationConfigurationAsync();
+
+        await AssertDeviceSettingsClearedAsync(user);
+    }
+
+    [Test]
+    public async Task DeviceSettingsAreKeptApartInTheDeviceDirectory()
+    {
+        await CreateUserWithDeviceSettingsAsync();
+
+        string data = await File.ReadAllTextAsync(DataPath);
+        DeviceSettings stored = ReadStoredDeviceSettings();
+
+        Assert.That(data, Does.Not.Contain("Folder").And.Not.Contain("viewed").And.Not.Contain("local"));
+        Assert.That(stored.Values["key"], Is.EqualTo("local"));
+        Assert.That(stored.Profiles.Single().Value.WorkFolders.Folders.Single().DisplayName, Is.EqualTo("Folder"));
+    }
+
+    [Test]
+    public async Task ReplaceDeviceSettingsReplacesThemAll()
+    {
+        IUserDataStore user = await CreateUserWithDeviceSettingsAsync();
+
+        await _store.ReplaceDeviceSettingsAsync(new DeviceSettings { Version = 2, DeviceId = "other" });
+
+        DeviceSettings settings = await _store.ReadDeviceSettingsAsync();
+        Assert.That((settings.Version, settings.DeviceId), Is.EqualTo((2, "other")));
+        Assert.That(_store.ReadDeviceValues(), Is.Empty);
+        Assert.That((await user.LoadWorkFoldersAsync()).Value.Folders, Is.Empty);
+        Assert.That(await _store.GetUsersAsync(), Has.Count.EqualTo(1));
+    }
+
+    [Test]
+    public async Task ResetUserRemovesItsDeviceSettings()
+    {
+        IUserDataStore user = await CreateUserWithDeviceSettingsAsync();
+
+        await _store.ResetUserAsync(user.Id);
+
+        Assert.That(ReadStoredDeviceSettings().Profiles, Is.Empty);
+    }
+
+    [Test]
+    public async Task ResetStoreRemovesTheDeviceSettings()
+    {
+        await CreateUserWithDeviceSettingsAsync();
+
+        await _store.ResetStoreAsync();
+
+        Assert.That(File.Exists(DeviceSettingsPath), Is.False);
+        Assert.That(_store.ReadDeviceValues(), Is.Empty);
+    }
+
+    [Test]
+    public async Task GrantReferencesComeFromTheDeviceSettingsOfAllProfiles()
+    {
+        await CreateUserWithDeviceSettingsAsync();
+
+        GrantReferences references = await _store.GetGrantReferencesAsync();
+
+        Assert.That(references.FolderGrantIds, Is.EquivalentTo(new[] { "grant" }));
+        Assert.That(references.FileIds, Is.EquivalentTo(new[] { "viewed" }));
+    }
+
+    [Test]
+    public async Task DontShowAgainIsKeptInTheDeviceSettings()
+    {
+        IUserDataStore user = await _store.CreateUserAsync(NewUser("a@example.com", "A", 1));
+        await using (IEditScope<ProfileDeviceSettings> settings = (await user.LoadDeviceSettingsAsync()).BeginEdit())
+        {
+            settings.Value.SetDontShowAgain(DontShowAgain.WelcomeInformation);
+        }
+
+        ApplicationData stored = JsonFile.Deserialize<ApplicationData>(await File.ReadAllBytesAsync(DataPath), _ => { });
+        Assert.That((await user.LoadDeviceSettingsAsync()).Value.ShouldShow(DontShowAgain.WelcomeInformation), Is.False);
+        Assert.That(ReadStoredDeviceSettings().Profiles[user.Id.Value].DontShowAgain, Is.EqualTo("WelcomeInformation"));
+        Assert.That(stored.Users.Single().Settings.DontShowAgain, Is.Null);
+    }
+
+    [Test]
+    public async Task ProfileDeviceDataInTheOldFormatIsIgnored()
+    {
+        IUserDataStore user = await _store.CreateUserAsync(NewUser("a@example.com", "A", 1));
+        await RewriteStoredUserAsync(storedUser =>
+        {
+            storedUser["workFolders"] = new JsonObject
+            {
+                ["folders"] = new JsonArray(new JsonObject { ["id"] = "old", ["displayName"] = "Old" }),
+            };
+            storedUser["recentFileOperations"] = new JsonArray(new JsonObject { ["id"] = "old", ["operation"] = "View" });
+        });
+
+        Assert.That((await user.LoadWorkFoldersAsync()).Value.Folders, Is.Empty);
+        Assert.That((await user.LoadRecentFileOperationsAsync()).Value.Files, Is.Empty);
     }
 
     [Test]
@@ -293,79 +387,68 @@ public sealed class MobileDataStoreTests
             (await user.LoadRecentFileOperationsAsync()).Value.Files.Select(file => (file.Id, file.Operation)),
             Is.EqualTo(expected));
         Assert.That(
-            stored.Users.Single().RecentFileOperations.Select(file => (file.Id, file.Operation)),
+            ReadStoredDeviceSettings().Profiles[user.Id.Value].RecentFiles.Select(file => (file.Id, file.Operation)),
             Is.EqualTo(expected));
         Assert.That(storedUser.ContainsKey("recentFiles"), Is.False);
-    }
-
-    [Test]
-    public async Task LegacyRecentFilesAreReadAsInPlace()
-    {
-        IUserDataStore user = await _store.CreateUserAsync(NewUser("a@example.com", "A", 1));
-        await RewriteStoredUserAsync(storedUser => storedUser["recentFiles"] = new JsonArray("second", "first"));
-
-        RecentFileOperations recentFiles = (await user.LoadRecentFileOperationsAsync()).Value;
-
-        Assert.That(recentFiles.Files.Select(file => (file.Id, file.Operation)), Is.EqualTo(
-        [
-            ("second", RecentFileOperation.InPlace),
-            ("first", RecentFileOperation.InPlace),
-        ]));
-    }
-
-    [Test]
-    public async Task LegacyRecentFilesAreMergedAfterCurrentWithoutDuplicates()
-    {
-        IUserDataStore user = await _store.CreateUserAsync(NewUser("a@example.com", "A", 1));
-        await RewriteStoredUserAsync(storedUser =>
-        {
-            storedUser["recentFiles"] = new JsonArray("legacy", "both");
-            storedUser["recentFileOperations"] = new JsonArray(
-                new JsonObject { ["id"] = "current", ["operation"] = "View" },
-                new JsonObject { ["id"] = "both", ["operation"] = "Edit" });
-        });
-
-        RecentFileOperations recentFiles = (await user.LoadRecentFileOperationsAsync()).Value;
-
-        Assert.That(recentFiles.Files.Select(file => (file.Id, file.Operation)), Is.EqualTo(
-        [
-            ("current", RecentFileOperation.View),
-            ("both", RecentFileOperation.Edit),
-            ("legacy", RecentFileOperation.InPlace),
-        ]));
     }
 
     [Test]
     public async Task UnknownRecentFileOperationIsReadAsUnknown()
     {
         IUserDataStore user = await _store.CreateUserAsync(NewUser("a@example.com", "A", 1));
-        await RewriteStoredUserAsync(storedUser => storedUser["recentFileOperations"] = new JsonArray(
-            new JsonObject { ["id"] = "future", ["operation"] = "SomethingNew" }));
+        Directory.CreateDirectory(Path.GetDirectoryName(DeviceSettingsPath)!);
+        await File.WriteAllTextAsync(DeviceSettingsPath, new JsonObject
+        {
+            ["profiles"] = new JsonObject
+            {
+                [user.Id.Value] = new JsonObject
+                {
+                    ["recentFiles"] = new JsonArray(new JsonObject { ["id"] = "future", ["operation"] = "SomethingNew" }),
+                },
+            },
+        }.ToJsonString());
 
         RecentFileOperations recentFiles = (await user.LoadRecentFileOperationsAsync()).Value;
 
         Assert.That(recentFiles.Files.Single().Operation, Is.EqualTo(RecentFileOperation.Unknown));
     }
 
-    [Test]
-    public async Task AnyUpdateMigratesAndRemovesLegacyRecentFiles()
+    private async Task<IUserDataStore> CreateUserWithDeviceSettingsAsync()
     {
+        await _store.ReplaceDeviceSettingsAsync(new DeviceSettings { Version = 1, DeviceId = "device" });
+        await _store.UpdateDeviceValuesAsync(values => values["key"] = "local");
         IUserDataStore user = await _store.CreateUserAsync(NewUser("a@example.com", "A", 1));
-        await RewriteStoredUserAsync(storedUser => storedUser["recentFiles"] = new JsonArray("legacy"));
-
-        await using (IEditScope<UserSettings> settings = (await user.LoadSettingsAsync()).BeginEdit())
+        await using (IEditScope<WorkFolders> workFolders = (await user.LoadWorkFoldersAsync()).BeginEdit())
         {
-            settings.Value.LocalUserId = 42;
+            workFolders.Value.Folders.Add(new WorkFolder("folder", "Folder", "grant"));
         }
 
-        JsonObject storedUser = await ReadStoredUserAsync();
-        Assert.That(storedUser.ContainsKey("recentFiles"), Is.False);
-        Assert.That(storedUser["recentFileOperations"]![0]!["id"]!.GetValue<string>(), Is.EqualTo("legacy"));
-        Assert.That(storedUser["recentFileOperations"]![0]!["operation"]!.GetValue<string>(), Is.EqualTo("InPlace"));
+        await using (IEditScope<RecentFileOperations> recentFiles = (await user.LoadRecentFileOperationsAsync()).BeginEdit())
+        {
+            recentFiles.Value.Files =
+            [
+                new RecentFile { Id = "viewed", Operation = RecentFileOperation.View },
+                new RecentFile { Id = "changed", Operation = RecentFileOperation.InPlace },
+            ];
+        }
+
+        return user;
+    }
+
+    private async Task AssertDeviceSettingsClearedAsync(IUserDataStore user)
+    {
+        DeviceSettings settings = await _store.ReadDeviceSettingsAsync();
+        Assert.That((settings.Version, settings.DeviceId), Is.EqualTo((1, "device")));
+        Assert.That(_store.ReadDeviceValues(), Is.Empty);
+        Assert.That((await user.LoadWorkFoldersAsync()).Value.Folders, Is.Empty);
+        Assert.That((await user.LoadRecentFileOperationsAsync()).Value.Files, Is.Empty);
     }
 
     private async Task<JsonObject> ReadStoredUserAsync() =>
         JsonNode.Parse(await File.ReadAllTextAsync(DataPath))!["users"]![0]!.AsObject();
+
+    private DeviceSettings ReadStoredDeviceSettings() =>
+        JsonFile.Load<DeviceSettings>(DeviceSettingsPath, exception => throw exception);
 
     private async Task RewriteStoredUserAsync(Action<JsonObject> rewrite)
     {
@@ -375,6 +458,9 @@ public sealed class MobileDataStoreTests
     }
 
     private string DataPath => Path.Combine(_directory, "xecrets-data.json");
+
+    private string DeviceSettingsPath =>
+        Path.Combine(_directory, IFileService.DeviceDirectoryName, MobileDataStore.DeviceSettingsFileName);
 
     private static NewUserData NewUser(string email, string name, byte marker) =>
         new(email, name, new SignInKey(email, DateTimeOffset.UtcNow, [marker]));

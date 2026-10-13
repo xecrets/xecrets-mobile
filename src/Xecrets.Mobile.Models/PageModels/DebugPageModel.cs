@@ -44,13 +44,20 @@ public partial class DebugPageModel(
     : PageModelBase(userInterfaceService)
 {
     [RelayCommand]
-    private async Task ViewSettingsJsonAsync()
+    private Task ViewSettingsJsonAsync() =>
+        ViewJsonAsync(fileService.AppDataDirectory, MobileDataStore.DataFileName);
+
+    [RelayCommand]
+    private Task ViewDeviceSettingsJsonAsync() =>
+        ViewJsonAsync(fileService.DeviceDirectory, MobileDataStore.DeviceSettingsFileName);
+
+    private async Task ViewJsonAsync(string directory, string fileName)
     {
-        string filePath = Path.Combine(fileService.AppDataDirectory, MobileDataStore.DataFileName);
+        string filePath = Path.Combine(directory, fileName);
         FileInfo file = new(filePath);
         await previewService.PrepareTextAsync(new DecryptedFileInfo(
             filePath,
-            MobileDataStore.DataFileName,
+            fileName,
             "text/plain",
             file.Length,
             PreviewKind.Text));

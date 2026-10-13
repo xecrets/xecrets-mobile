@@ -46,6 +46,7 @@ internal static class MauiAppBuilderExtensions
         builder.Services.AddSingleton<IFileService, MacCatalystFileService>();
         builder.Services.AddSingleton<AppleFileGrants>();
         builder.Services.AddSingleton<IFileAccess, AppleFileAccess>();
+        builder.Services.AddSingleton<IDeviceIdentity, AppleDeviceIdentity>();
         builder.Services.AddSingleton<IWorkFolderFileLauncher, AppleWorkFolderFileLauncher>();
         builder.Services.AddSingleton<IUserInterfaceService, DefaultUserInterfaceService>();
         builder.Services.AddSingleton<IPlatformServices, MacCatalystServices>();

@@ -78,7 +78,7 @@ public sealed class MobileDeviceSettingsTests
     }
 
     [Test]
-    public async Task ClearIsPersisted()
+    public void ClearIsPersisted()
     {
         MobileDeviceSettings deviceSettings = new(_store);
         deviceSettings["key"] = "value";
@@ -86,7 +86,7 @@ public sealed class MobileDeviceSettingsTests
         deviceSettings.Clear();
 
         Assert.That(deviceSettings["key"], Is.Empty);
-        Assert.That((await _store.OpenApplicationSettingsAsync()).Value.DeviceSettings.Values, Is.Empty);
+        Assert.That(new MobileDeviceSettings(_store)["key"], Is.Empty);
     }
 
     private sealed class TestCrashLogService : ICrashLogService

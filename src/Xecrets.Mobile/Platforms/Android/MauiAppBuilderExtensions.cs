@@ -43,6 +43,7 @@ internal static class MauiAppBuilderExtensions
     {
         builder.Services.AddSingleton<IFileService, AndroidFileService>();
         builder.Services.AddSingleton<IFileAccess, AndroidFileAccess>();
+        builder.Services.AddSingleton<IDeviceIdentity, AndroidDeviceIdentity>();
         builder.Services.AddSingleton<IWorkFolderFileLauncher, AndroidWorkFolderFileLauncher>();
         builder.Services.AddSingleton<IUserInterfaceService, AndroidUserInterfaceService>();
         builder.Services.AddSingleton<IPlatformServices, AndroidServices>();

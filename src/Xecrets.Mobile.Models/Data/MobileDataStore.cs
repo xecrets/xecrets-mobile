@@ -45,7 +45,13 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
 
     private readonly SemaphoreSlim _access = new(1, 1);
 
+    internal const string DeviceSettingsFileName = "xecrets-device.json";
+
     private string DataPath => Path.Combine(fileService.AppDataDirectory, DataFileName);
+
+    // The device-specific settings are kept in a file of their own, in a directory that is kept out of backups and
+    // transfers, so that they never leave the device.
+    private string DeviceSettingsPath => Path.Combine(fileService.DeviceDirectory, DeviceSettingsFileName);
 
     private async Task<TResult> ReadAsync<TResult>(Func<ApplicationData, TResult> read)
     {
@@ -67,7 +73,35 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
         {
             ApplicationData document = await LoadAsync();
             update(document);
-            await SaveAsync(document);
+            await SaveAsync(DataPath, document);
+        }
+        finally
+        {
+            _access.Release();
+        }
+    }
+
+    private async Task<TResult> ReadDeviceAsync<TResult>(Func<DeviceSettings, TResult> read)
+    {
+        await _access.WaitAsync();
+        try
+        {
+            return read(await LoadDeviceAsync());
+        }
+        finally
+        {
+            _access.Release();
+        }
+    }
+
+    private async Task UpdateDeviceAsync(Action<DeviceSettings> update)
+    {
+        await _access.WaitAsync();
+        try
+        {
+            DeviceSettings settings = await LoadDeviceAsync();
+            update(settings);
+            await SaveAsync(DeviceSettingsPath, settings);
         }
         finally
         {
@@ -128,21 +162,16 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
         return new MobileUserDataStore(this, userId, timeProvider, protectedPayload);
     }
 
-    public async Task<ApplicationConfigurationPackage> ExportApplicationConfigurationAsync()
-    {
-        ApplicationSettings settings = await ReadAsync(document => document.ApplicationSettings);
-        settings.DeviceSettings = new DeviceSettings();
-        return new ApplicationConfigurationPackage { Settings = settings };
-    }
+    public async Task<ApplicationConfigurationPackage> ExportApplicationConfigurationAsync() =>
+        new() { Settings = await ReadAsync(document => document.ApplicationSettings) };
 
-    public Task ImportApplicationConfigurationAsync(ApplicationConfigurationPackage package)
+    // Importing all the settings replaces the device-specific settings too, which are never exported.
+    public async Task ImportApplicationConfigurationAsync(ApplicationConfigurationPackage package)
     {
         ValidateVersion("application configuration package", package.Version,
             ApplicationConfigurationPackage.SupportedVersion);
-        return UpdateAsync(document =>
-        {
-            document.ApplicationSettings = package.Settings;
-        });
+        await UpdateAsync(document => document.ApplicationSettings = package.Settings);
+        await ClearDeviceSettingsAsync();
     }
 
     public async Task<UserDataPackage> ExportUserAsync(UserId userId, IXecretsProtection protection)
@@ -190,20 +219,26 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
         return userStore;
     }
 
-    public Task ResetApplicationConfigurationAsync() =>
-        UpdateAsync(document => document.ApplicationSettings = new ApplicationSettings());
+    public async Task ResetApplicationConfigurationAsync()
+    {
+        await UpdateAsync(document => document.ApplicationSettings = new ApplicationSettings());
+        await ClearDeviceSettingsAsync();
+    }
 
-    public Task ResetUserAsync(UserId userId) =>
-        UpdateAsync(document => document.Users.Remove(FindUser(document, userId)));
+    public async Task ResetUserAsync(UserId userId)
+    {
+        await UpdateAsync(document => document.Users.Remove(FindUser(document, userId)));
+        await UpdateDeviceAsync(settings => settings.Profiles.Remove(userId.Value));
+    }
 
     public async Task ResetStoreAsync()
     {
         await _access.WaitAsync();
         try
         {
-            if (File.Exists(DataPath))
+            foreach (string path in new[] { DataPath, DeviceSettingsPath }.Where(File.Exists))
             {
-                File.Delete(DataPath);
+                File.Delete(path);
             }
         }
         finally
@@ -213,7 +248,13 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
     }
 
     private async Task<ApplicationData> LoadAsync() =>
-        MigrateRecentFiles(Validate(await JsonFile.LoadAsync<ApplicationData>(DataPath, OnInvalidJson)));
+        Validate(await JsonFile.LoadAsync<ApplicationData>(DataPath, OnInvalidJson));
+
+    private Task<DeviceSettings> LoadDeviceAsync() =>
+        JsonFile.LoadAsync<DeviceSettings>(DeviceSettingsPath, OnInvalidDeviceJson);
+
+    private void OnInvalidDeviceJson(Exception exception) =>
+        crashLogService.WriteCrashLog("Device settings were invalid JSON; resetting to new settings.", exception);
 
     private void OnInvalidJson(Exception exception) =>
         crashLogService.WriteCrashLog("Mobile data was invalid JSON; resetting to a new document.", exception);
@@ -232,38 +273,16 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
         return document;
     }
 
-    // The legacy 'recentFiles' only holds plain strings, which is all that earlier versions can read. Recent files are
-    // now kept in 'recentFileOperations', and the legacy list is merged into it and then cleared, so that it is no
-    // longer written. Earlier versions then just see an empty list of recent files.
-    private static ApplicationData MigrateRecentFiles(ApplicationData document)
+    private static async Task SaveAsync<T>(string path, T document)
     {
-        foreach (LocalProfileData user in document.Users)
-        {
-            if (user.RecentFiles is null)
-            {
-                continue;
-            }
-
-            HashSet<string> ids = [.. user.RecentFileOperations.Select(file => file.Id)];
-            user.RecentFileOperations.AddRange(user.RecentFiles
-                .Where(ids.Add)
-                .Select(id => new RecentFile { Id = id, Operation = RecentFileOperation.InPlace }));
-            user.RecentFiles = null!;
-        }
-
-        return document;
-    }
-
-    private async Task SaveAsync(ApplicationData document)
-    {
-        Directory.CreateDirectory(fileService.AppDataDirectory);
-        string temporaryPath = $"{DataPath}.tmp";
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        string temporaryPath = $"{path}.tmp";
 
         try
         {
             string serialized = JsonFile.Serialize(document);
             await File.WriteAllTextAsync(temporaryPath, serialized);
-            File.Move(temporaryPath, DataPath, true);
+            File.Move(temporaryPath, path, true);
         }
         finally
         {
@@ -279,16 +298,67 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
     /// held by the app rather than by a profile.
     /// </summary>
     public Task<GrantReferences> GetGrantReferencesAsync() =>
-        ReadAsync(document => new GrantReferences(
-            document.Users
-                .SelectMany(user => user.WorkFolders.Folders)
+        ReadDeviceAsync(settings => new GrantReferences(
+            settings.Profiles.Values
+                .SelectMany(profile => profile.WorkFolders.Folders)
                 .Select(folder => folder.GrantId)
                 .ToHashSet(),
-            document.Users
-                .SelectMany(user => user.RecentFileOperations)
+            settings.Profiles.Values
+                .SelectMany(profile => profile.RecentFiles)
                 .Where(file => !file.Operation.IsWriteClass())
                 .Select(file => file.Id)
                 .ToHashSet()));
+
+    /// <summary>
+    /// The device-specific settings, which are new ones if there are none.
+    /// </summary>
+    public Task<DeviceSettings> ReadDeviceSettingsAsync() => ReadDeviceAsync(settings => settings);
+
+    /// <summary>
+    /// Replaces all the device-specific settings.
+    /// </summary>
+    public async Task ReplaceDeviceSettingsAsync(DeviceSettings settings)
+    {
+        await _access.WaitAsync();
+        try
+        {
+            await SaveAsync(DeviceSettingsPath, settings);
+        }
+        finally
+        {
+            _access.Release();
+        }
+    }
+
+    // Keeps what tells which version and device the settings belong to.
+    private Task ClearDeviceSettingsAsync() =>
+        UpdateDeviceAsync(settings =>
+        {
+            settings.Values = [];
+            settings.Profiles = [];
+        });
+
+    // Reads without _access, for the same reason as OpenApplicationSettings.
+    internal Dictionary<string, string> ReadDeviceValues() =>
+        JsonFile.Load<DeviceSettings>(DeviceSettingsPath, OnInvalidDeviceJson).Values;
+
+    internal Task UpdateDeviceValuesAsync(Action<Dictionary<string, string>> update) =>
+        UpdateDeviceAsync(settings => update(settings.Values));
+
+    internal Task<ProfileDeviceSettings> ReadProfileDeviceSettingsAsync(UserId userId) =>
+        ReadDeviceAsync(settings => settings.Profiles.GetValueOrDefault(userId.Value) ?? new ProfileDeviceSettings());
+
+    internal Task UpdateProfileDeviceSettingsAsync(UserId userId, Action<ProfileDeviceSettings> update) =>
+        UpdateDeviceAsync(deviceSettings =>
+        {
+            Dictionary<string, ProfileDeviceSettings> profiles = deviceSettings.Profiles;
+            if (!profiles.TryGetValue(userId.Value, out ProfileDeviceSettings? settings))
+            {
+                profiles[userId.Value] = settings = new ProfileDeviceSettings();
+            }
+
+            update(settings);
+        });
 
     internal Task<LocalProfileData> ReadUserAsync(UserId userId) =>
         ReadAsync(document => FindUser(document, userId));
