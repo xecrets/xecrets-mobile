@@ -301,6 +301,7 @@ public sealed class TransientFileServiceTests
         public Task DisplayTransientMessageAsync(string message) => throw new NotSupportedException();
         public Task NavigateToAsync(AppDestination destination) => NavigateAsync();
         public Task NavigateToAsync(AppDestination destination, object parameter) => throw new NotSupportedException();
+        public Task NavigateReplacingAsync(AppDestination destination, object parameter) => throw new NotSupportedException();
         public Task GoBackAsync(object? parameter) => throw new NotSupportedException();
         public Task OpenBrowserAsync(string url) => throw new NotSupportedException();
 
@@ -310,10 +311,12 @@ public sealed class TransientFileServiceTests
     private sealed class TestProfileService : IProfileService
     {
         public string CurrentEmail => throw new NotSupportedException();
+        public string CurrentPassword => throw new NotSupportedException();
         public bool IsAuthenticated => false;
         public Task<bool> HasProfileAsync() => Task.FromResult(true);
         public Task<SignInKey?> LoadProfileAsync() => throw new NotSupportedException();
         public Task<ProfileActionResult> CreateProfileAsync(string email, string password) => throw new NotSupportedException();
+        public Task<ProfileActionResult> ChangeProfileAsync(string email, string password) => throw new NotSupportedException();
         public Task<ProfileActionResult> LoginAsync(string password) => throw new NotSupportedException();
         public void SignOut() => throw new NotSupportedException();
         public Identity GetIdentity() => throw new NotSupportedException();

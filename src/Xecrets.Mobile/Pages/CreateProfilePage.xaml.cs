@@ -28,15 +28,19 @@
 
 #endregion Copyright and GPL License
 
+using System;
+using System.Collections.Generic;
+
 using Microsoft.Maui.Controls;
 
 using Xecrets.Mobile.Abstractions;
+using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.PageModels;
 using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
-internal partial class CreateProfilePage
+internal partial class CreateProfilePage : IQueryAttributable
 {
     public Entry PasswordTextEntry => PasswordEntryControl.Entry;
 
@@ -50,6 +54,27 @@ internal partial class CreateProfilePage
         platformServices.ConfigurePasswordEntry(PasswordEntryControl.Entry, PasswordEntryPurpose.NewPassword);
         platformServices.ConfigurePasswordEntry(ConfirmPasswordEntryControl.Entry, PasswordEntryPurpose.NewPassword);
         pageHeaderService.ApplyStandardHeader(this);
+    }
+
+    public void ApplyQueryAttributes(IDictionary<string, object> query)
+    {
+        if (!query.TryGetValue(nameof(NavigationParameter.Payload), out object? payload))
+        {
+            return;
+        }
+
+        ProfileAction action = (ProfileAction)payload;
+        switch (action)
+        {
+            case ProfileAction.Create:
+                break;
+            case ProfileAction.Change:
+                ((CreateProfilePageModel)BindingContext).InitializeChange();
+                break;
+            case ProfileAction.Unknown:
+            default:
+                throw new ArgumentOutOfRangeException(nameof(query), action, @"Unsupported profile action.");
+        }
     }
 
     protected override void OnSizeAllocated(double width, double height)

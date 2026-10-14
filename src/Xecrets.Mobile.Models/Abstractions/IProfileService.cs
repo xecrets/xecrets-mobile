@@ -40,6 +40,8 @@ public interface IProfileService
 {
     string CurrentEmail { get; }
 
+    string CurrentPassword { get; }
+
     bool IsAuthenticated { get; }
 
     Task<bool> HasProfileAsync();
@@ -47,6 +49,8 @@ public interface IProfileService
     Task<SignInKey?> LoadProfileAsync();
 
     Task<ProfileActionResult> CreateProfileAsync(string email, string password);
+
+    Task<ProfileActionResult> ChangeProfileAsync(string email, string password);
 
     Task<ProfileActionResult> LoginAsync(string password);
 

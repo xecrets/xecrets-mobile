@@ -474,7 +474,7 @@ public sealed class MobileDataStoreTests
             Task.FromResult(Convert.FromBase64String(Encoding.UTF8.GetString(protectedBytes)));
     }
 
-    private sealed class TestCrashLogService : ICrashLogService
+    internal sealed class TestCrashLogService : ICrashLogService
     {
         public bool HasPendingCrashLog => false;
 
@@ -489,7 +489,7 @@ public sealed class MobileDataStoreTests
         }
     }
 
-    private sealed class TestFileService(string directory) : IFileService
+    internal sealed class TestFileService(string directory) : IFileService
     {
         public string PlatformId => "test";
         public string AppDataDirectory => directory;

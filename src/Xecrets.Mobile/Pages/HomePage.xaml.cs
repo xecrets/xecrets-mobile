@@ -29,6 +29,7 @@
 #endregion Copyright and GPL License
 
 using Xecrets.Mobile.Abstractions;
+using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.PageModels;
 using Xecrets.Mobile.Utilities;
 
@@ -36,11 +37,32 @@ namespace Xecrets.Mobile.Pages;
 
 internal partial class HomePage
 {
-    public HomePage(HomePageModel model, IPageHeaderService pageHeaderService)
+    private readonly IProfileService _profileService;
+    private readonly IPageHeaderService _pageHeaderService;
+    private string _headerEmail;
+
+    public HomePage(HomePageModel model, IProfileService profileService, IPageHeaderService pageHeaderService)
     {
+        _profileService = profileService;
+        _pageHeaderService = pageHeaderService;
         InitializeComponent();
         BindingContext = model;
         pageHeaderService.ApplyStandardHeader(this);
+        _headerEmail = profileService.CurrentEmail;
+    }
+
+    // The page is kept by Shell, and the email in the header changes when the profile is changed.
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+
+        if (_profileService.CurrentEmail == _headerEmail)
+        {
+            return;
+        }
+
+        _headerEmail = _profileService.CurrentEmail;
+        _pageHeaderService.ApplyStandardHeaderTitle(this, _headerEmail);
     }
 
     protected override void OnDisappearing()

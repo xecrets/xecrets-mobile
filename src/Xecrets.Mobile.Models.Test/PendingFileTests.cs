@@ -361,6 +361,7 @@ public sealed class PendingFileTests
             return Task.CompletedTask;
         }
         public Task NavigateToAsync(AppDestination destination, object parameter) => NavigateToAsync(destination);
+        public Task NavigateReplacingAsync(AppDestination destination, object parameter) => NavigateToAsync(destination);
         public Task GoBackAsync(object? parameter)
         {
             if (parameter is not null)
@@ -379,11 +380,13 @@ public sealed class PendingFileTests
     private sealed class TestProfileService : IProfileService
     {
         public string CurrentEmail => "test@example.com";
+        public string CurrentPassword => throw new NotSupportedException();
         public bool IsAuthenticated { get; set; }
         public List<string> RecordedPasswords { get; } = [];
         public Task<bool> HasProfileAsync() => Task.FromResult(true);
         public Task<SignInKey?> LoadProfileAsync() => throw new NotSupportedException();
         public Task<ProfileActionResult> CreateProfileAsync(string email, string password) => throw new NotSupportedException();
+        public Task<ProfileActionResult> ChangeProfileAsync(string email, string password) => throw new NotSupportedException();
         public Task<ProfileActionResult> LoginAsync(string password) => throw new NotSupportedException();
         public void SignOut() => IsAuthenticated = false;
         public Identity GetIdentity() => new(IsAuthenticated ? "password" : "profile", []);
@@ -410,6 +413,7 @@ public sealed class PendingFileTests
         public Task<IDecryptionSession> OpenDecryptionAsync(Stream encrypted, DecryptRequest request) =>
             Task.FromResult<IDecryptionSession>(new TestDecryptionSession(request.Identities[0].Passphrase == "password", decryptionFailure));
         public Task<KeyPair> CreateKeyPairAsync(string email, string passphrase, DateTimeOffset createdUtc) => throw new NotSupportedException();
+        public Task<KeyPair> ChangeKeyPairAsync(KeyPair keyPair, string email, string passphrase) => throw new NotSupportedException();
         public bool TryLoadKeyPair(ReadOnlyMemory<byte> encryptedKeyPair, IReadOnlyList<string> passphrases,
             [NotNullWhen(true)] out LoadedKeyPair? loadedKeyPair) => throw new NotSupportedException();
         public string ExportPublicKey(PublicKey publicKey) => throw new NotSupportedException();

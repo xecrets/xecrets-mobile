@@ -51,4 +51,6 @@ public enum AppDestination
     SuggestPassword,
     RecentFiles,
     Welcome,
+    VerifyPassword,
+    ChangeProfile,
 }

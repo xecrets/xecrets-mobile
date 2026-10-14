@@ -89,6 +89,7 @@ internal sealed class ScriptedUserInterface : IUserInterfaceService
     }
 
     public Task NavigateToAsync(AppDestination destination, object parameter) => NavigateToAsync(destination);
+    public Task NavigateReplacingAsync(AppDestination destination, object parameter) => NavigateToAsync(destination);
     public Task GoBackAsync(object? parameter) => throw new NotSupportedException();
     public Task OpenBrowserAsync(string url) => throw new NotSupportedException();
     public Task SetClipboardTextAsync(string text) => throw new NotSupportedException();

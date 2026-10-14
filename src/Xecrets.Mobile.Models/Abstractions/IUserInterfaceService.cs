@@ -68,6 +68,11 @@ public interface IUserInterfaceService
 
     Task NavigateToAsync(AppDestination destination, object parameter);
 
+    /// <summary>
+    /// Navigates to <paramref name="destination"/> in place of the current page, so that going back skips it.
+    /// </summary>
+    Task NavigateReplacingAsync(AppDestination destination, object parameter);
+
     Task GoBackAsync(object? parameter);
 
     Task OpenBrowserAsync(string url);

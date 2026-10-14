@@ -39,11 +39,13 @@ namespace Xecrets.Mobile.Models.Test;
 internal sealed class FakeProfileService : IProfileService
 {
     public string CurrentEmail => throw new NotSupportedException();
+    public string CurrentPassword => throw new NotSupportedException();
     public bool IsAuthenticated => true;
     public Task<bool> HasProfileAsync() => throw new NotSupportedException();
     public Task<SignInKey?> LoadProfileAsync() => throw new NotSupportedException();
     public Task<ProfileActionResult> CreateProfileAsync(string email, string password) =>
         throw new NotSupportedException();
+    public Task<ProfileActionResult> ChangeProfileAsync(string email, string password) => throw new NotSupportedException();
     public Task<ProfileActionResult> LoginAsync(string password) => throw new NotSupportedException();
     public void SignOut() => throw new NotSupportedException();
     public Identity GetIdentity() => new("password", []);

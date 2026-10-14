@@ -82,6 +82,8 @@ internal sealed class FakeCoreServices : ICoreServices
 
     public Task<KeyPair> CreateKeyPairAsync(string email, string passphrase, DateTimeOffset createdUtc) =>
         throw new NotSupportedException();
+    public Task<KeyPair> ChangeKeyPairAsync(KeyPair keyPair, string email, string passphrase) =>
+        throw new NotSupportedException();
     public bool TryLoadKeyPair(ReadOnlyMemory<byte> encryptedKeyPair, IReadOnlyList<string> passphrases,
         [NotNullWhen(true)] out LoadedKeyPair? loadedKeyPair) => throw new NotSupportedException();
     public string ExportPublicKey(PublicKey publicKey) => throw new NotSupportedException();

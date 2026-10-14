@@ -88,6 +88,8 @@ public static class MobileTexts
 
     public static string ButtonView => "View";
 
+    public static string ChangeProfileDescription => "Change the email and password of your local profile. Files encrypted before can still be opened.";
+
     public static string CrashPageAppleAdditionalInformation => "Apple may have additional crash information. You can report it manually or enable Share with App Developers under Analytics & Improvements.";
 
     public static string CrashPageExplanation => "There was a problem. We have copied the following log to the clipboard. Use the button to report it. Paste the log into the message.";
@@ -126,6 +128,8 @@ public static class MobileTexts
 
     public static string DialogTextNotEncrypted => "This file is not encrypted.";
 
+    public static string DialogTextProfileChanged => "Your profile was changed.";
+
     public static string DialogTextResult => "The file is only saved temporarily in the app. Choose what to do with it next.";
 
     public static string DialogTextSaveChanges => "Save changes before leaving?";
@@ -157,6 +161,8 @@ public static class MobileTexts
     public static string HomeDescription => "Choose an action. Work with files where they are stored in \"My folders\". Work with copies in the app and select what to do next. Encrypt a file with a new password to share.";
 
     public static string LabelContinue => "Continue";
+
+    public static string MenuChangeProfile => "Change local profile";
 
     public static string MenuGitHub => "View source";
 
@@ -193,6 +199,10 @@ public static class MobileTexts
 
     // "View"
     public static string ViewContentTitle => ButtonView;
+
+    public static string VerifyPasswordDescription => "Enter your current password to confirm that it's you.";
+
+    public static string VerifyPasswordHeading => "Verify your password";
 
     public static string ViewDescription => "Shows the text or image in the file. Go back to choose something else to do with it.";
 

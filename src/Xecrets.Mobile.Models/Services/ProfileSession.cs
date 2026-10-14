@@ -40,7 +40,7 @@ public sealed class ProfileSession
 
     internal KeyPair? ProfileKeyPair { get; private set; }
 
-    private string Password { get; set; } = string.Empty;
+    internal string Password { get; private set; } = string.Empty;
 
     internal IPersistentData<ExtraCredentials>? ExtraCredentials { get; private set; }
 

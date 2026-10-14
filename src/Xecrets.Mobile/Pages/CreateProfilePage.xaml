@@ -93,19 +93,19 @@
                         <VerticalStackLayout x:Name="ActionButtonStack" Margin="{StaticResource IconRowBodyContentMargin}"
                                              HorizontalOptions="Center"
                                              Spacing="{StaticResource LayoutSpacing}">
-                            <Button Text="{x:Static modelUtilities:MobileTexts.ButtonCreate}"
+                            <Button Text="{Binding ButtonText}"
                                     Command="{Binding CreateCommand}" />
                         </VerticalStackLayout>
                         </VerticalStackLayout>
                     </Grid>
                 </ScrollView>
                 <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-                    <Label Text="{x:Static modelUtilities:MobileTexts.HeadingCreateUserFirstTimeSetup}"
+                    <Label Text="{Binding Heading}"
                            Style="{StaticResource CardTitleStyle}" />
                     <controls:PageInformationButton Grid.Column="1"
                                                     Style="{StaticResource PageInformationButtonCorner}"
-                                                    Title="{x:Static modelUtilities:MobileTexts.HeadingCreateUserFirstTimeSetup}"
-                                                    Message="{x:Static modelUtilities:MobileTexts.ToolTipEmail}" />
+                                                    Title="{Binding Heading}"
+                                                    Message="{Binding Information}" />
                 </Grid>
             </Grid>
         </Border>

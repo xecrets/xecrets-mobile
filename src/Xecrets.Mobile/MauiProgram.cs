@@ -110,6 +110,8 @@ internal static class MauiProgram
         builder.Services.AddTransientWithShellRoute<SuggestPasswordPage, SuggestPasswordPageModel>("suggest-password");
         builder.Services.AddTransientWithShellRoute<RecentFilesPage, RecentFilesPageModel>("recent-files");
         builder.Services.AddTransientWithShellRoute<WelcomePage, WelcomePageModel>("welcome");
+        builder.Services.AddTransientWithShellRoute<LoginPage, LoginPageModel>("verify-password");
+        builder.Services.AddTransientWithShellRoute<CreateProfilePage, CreateProfilePageModel>("change-profile");
 
         builder.Services.AddMobileModels();
 

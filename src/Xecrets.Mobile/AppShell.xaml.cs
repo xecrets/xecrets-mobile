@@ -97,6 +97,7 @@ internal partial class AppShell
     {
         // Signing in and out always navigates, and recent files are kept per signed-in profile.
         SetFlyoutItemIsVisible(RecentFilesMenuItem, _profileSession.UserStore is not null);
+        SetFlyoutItemIsVisible(ChangeProfileMenuItem, _profileSession.UserStore is not null);
         if (args.Current.Location.OriginalString != "//startup")
         {
             return;
@@ -120,6 +121,18 @@ internal partial class AppShell
     {
         FlyoutIsPresented = false;
         await _userInterfaceService.NavigateToAsync(AppDestination.RecentFiles);
+    }
+
+    [RelayCommand]
+    private async Task ChangeProfileAsync()
+    {
+        FlyoutIsPresented = false;
+        if (CurrentPage?.BindingContext is LoginPageModel or CreateProfilePageModel)
+        {
+            return;
+        }
+
+        await _userInterfaceService.NavigateToAsync(AppDestination.VerifyPassword, ProfileAction.Change);
     }
 
     [RelayCommand]

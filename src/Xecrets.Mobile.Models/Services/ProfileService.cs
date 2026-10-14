@@ -48,6 +48,8 @@ internal sealed class ProfileService(
 {
     public string CurrentEmail => session.Email;
 
+    public string CurrentPassword => session.Password;
+
     public bool IsAuthenticated => session.IsAuthenticated;
 
     public Task<bool> HasProfileAsync()
@@ -72,6 +74,37 @@ internal sealed class ProfileService(
         await profileStore.SaveAsync(new SignInKey(keyPair.Email, keyPair.CreatedUtc, keyPair.EncryptedBytes));
 
         return new ProfileActionResult(ProfileActionStatus.Success);
+    }
+
+    // As when creating a profile, but the existing key pair is kept, so that everything encrypted with it can still be
+    // opened. The old password is kept among the extra passwords, for files encrypted with it.
+    public async Task<ProfileActionResult> ChangeProfileAsync(string email, string password)
+    {
+        if (!coreServices.TryParseEmail(email, out string? parsedEmail) || string.IsNullOrWhiteSpace(parsedEmail))
+        {
+            return new ProfileActionResult(ProfileActionStatus.InvalidEmail);
+        }
+
+        string oldPassword = session.Password;
+        IUserDataStore userStore = session.UserStore!;
+
+        KeyPair keyPair = await coreServices.ChangeKeyPairAsync(session.ProfileKeyPair!, parsedEmail, password);
+        SignInKey oldKey = (await userStore.GetSignInKeysAsync())[0];
+        await userStore.ReplaceSignInKeyAsync(
+            oldKey,
+            new SignInKey(keyPair.Email, oldKey.CreatedUtc, keyPair.EncryptedBytes),
+            keyPair.Email,
+            keyPair.Email);
+
+        ProfileActionResult result = await LoginAsync(password);
+        if (result.Succeeded && !string.Equals(oldPassword, password, StringComparison.Ordinal))
+        {
+            // Always a change, adding the password or counting its use, so the extra credentials are saved and thus
+            // protected with the new password.
+            await RecordExtraPasswordUseAsync(oldPassword);
+        }
+
+        return result;
     }
 
     public async Task<ProfileActionResult> LoginAsync(string password)
@@ -108,6 +141,7 @@ internal sealed class ProfileService(
     public async Task RecordExtraPasswordUseAsync(string password)
     {
         await using IEditScope<ExtraCredentials> credentials = session.ExtraCredentials!.BeginEdit();
+
         PasswordUsage? entry = credentials.Value.Passwords
             .FirstOrDefault(extraPassword => string.Equals(extraPassword.Password, password, StringComparison.Ordinal));
 

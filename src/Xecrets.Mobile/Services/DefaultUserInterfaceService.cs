@@ -136,6 +136,14 @@ internal class DefaultUserInterfaceService(IBuildInformation buildInformation) :
                 { nameof(NavigationParameter.Payload), parameter },
             });
 
+    public Task NavigateReplacingAsync(AppDestination destination, object parameter) =>
+        NavigateToRouteAsync(
+            $"../{GetRoute(destination)}",
+            new Dictionary<string, object>
+            {
+                { nameof(NavigationParameter.Payload), parameter },
+            });
+
     private static string GetRoute(AppDestination destination)
     {
         return destination switch
@@ -159,6 +167,8 @@ internal class DefaultUserInterfaceService(IBuildInformation buildInformation) :
             AppDestination.SuggestPassword => "suggest-password",
             AppDestination.RecentFiles => "recent-files",
             AppDestination.Welcome => "welcome",
+            AppDestination.VerifyPassword => "verify-password",
+            AppDestination.ChangeProfile => "change-profile",
             _ => throw new ArgumentOutOfRangeException(nameof(destination), destination, @"Unknown app destination."),
         };
     }

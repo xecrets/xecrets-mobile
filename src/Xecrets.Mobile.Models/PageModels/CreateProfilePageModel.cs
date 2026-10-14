@@ -47,6 +47,15 @@ public partial class CreateProfilePageModel(
     : PageModelBase(userInterfaceService)
 {
     [ObservableProperty]
+    public partial string Heading { get; private set; } = MobileTexts.HeadingCreateUserFirstTimeSetup;
+
+    [ObservableProperty]
+    public partial string Information { get; private set; } = MobileTexts.ToolTipEmail;
+
+    [ObservableProperty]
+    public partial string ButtonText { get; private set; } = MobileTexts.ButtonCreate;
+
+    [ObservableProperty]
     public partial string Email { get; set; } = string.Empty;
 
     [ObservableProperty]
@@ -71,6 +80,20 @@ public partial class CreateProfilePageModel(
     // ReSharper disable once MemberCanBeMadeStatic.Local
     private partial bool IsBusy { get; set; }
 
+    // Pushed with a payload, the page changes the current profile instead of creating one.
+    private bool _isChange;
+
+    public void InitializeChange()
+    {
+        _isChange = true;
+        Heading = MobileTexts.MenuChangeProfile;
+        Information = MobileTexts.ChangeProfileDescription;
+        ButtonText = MobileTexts.ButtonSave;
+        Email = profileService.CurrentEmail;
+        Password = profileService.CurrentPassword;
+        ConfirmPassword = profileService.CurrentPassword;
+    }
+
     [RelayCommand(CanExecute = nameof(CanCreate))]
     private async Task Create()
     {
@@ -85,7 +108,9 @@ public partial class CreateProfilePageModel(
                 return;
             }
 
-            ProfileActionResult result = await profileService.CreateProfileAsync(Email, Password);
+            ProfileActionResult result = _isChange
+                ? await profileService.ChangeProfileAsync(Email, Password)
+                : await profileService.CreateProfileAsync(Email, Password);
             if (!result.Succeeded)
             {
                 ErrorText = result.Status switch
@@ -100,6 +125,13 @@ public partial class CreateProfilePageModel(
             Email = string.Empty;
             Password = string.Empty;
             ConfirmPassword = string.Empty;
+            if (_isChange)
+            {
+                await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextProfileChanged);
+                await UserInterfaceService.NavigateToAsync(AppDestination.Home);
+                return;
+            }
+
             await UserInterfaceService.NavigateToAsync(AppDestination.Login);
         }
         finally

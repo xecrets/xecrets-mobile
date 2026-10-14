@@ -47,6 +47,10 @@ public partial class LoginPageModel(
 {
     [ObservableProperty] public partial string Email { get; private set; } = string.Empty;
 
+    [ObservableProperty] public partial string Heading { get; private set; } = MobileTexts.SignInHeading;
+
+    [ObservableProperty] public partial string Information { get; private set; } = MobileTexts.ToolTipSignIn;
+
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(LoginCommand))]
     public partial string Password { get; set; } = string.Empty;
@@ -56,6 +60,17 @@ public partial class LoginPageModel(
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(LoginCommand))]
     private partial bool IsBusy { get; set; }
+
+    // As the Shell root, the page signs in. Pushed on top of another page, it is initialized with a payload and only
+    // verifies the password before the profile is changed.
+    private bool _isVerification;
+
+    public void InitializeVerification()
+    {
+        _isVerification = true;
+        Heading = MobileTexts.VerifyPasswordHeading;
+        Information = MobileTexts.VerifyPasswordDescription;
+    }
 
     [RelayCommand]
     private async Task Initialize()
@@ -91,6 +106,12 @@ public partial class LoginPageModel(
             }
 
             Password = string.Empty;
+            if (_isVerification)
+            {
+                await UserInterfaceService.NavigateReplacingAsync(AppDestination.ChangeProfile, ProfileAction.Change);
+                return;
+            }
+
             await UserInterfaceService.NavigateToAsync(AppDestination.Home);
             if (await profileService.ShouldShowAsync(DontShowAgain.WelcomeInformation))
             {

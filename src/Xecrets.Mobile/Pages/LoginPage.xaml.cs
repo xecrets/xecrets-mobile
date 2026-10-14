@@ -28,16 +28,21 @@
 
 #endregion Copyright and GPL License
 
+using System;
+using System.Collections.Generic;
+
+using Microsoft.Maui.Controls;
+
 using Xecrets.Mobile.Abstractions;
+using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.PageModels;
 using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
-internal partial class LoginPage
+internal partial class LoginPage : IQueryAttributable
 {
     private readonly IPageHeaderService _pageHeaderService;
-    private bool _initialized;
 
     public LoginPage(
         LoginPageModel model,
@@ -51,17 +56,32 @@ internal partial class LoginPage
         pageHeaderService.ApplyStandardHeader(this);
     }
 
+    public void ApplyQueryAttributes(IDictionary<string, object> query)
+    {
+        if (!query.TryGetValue(nameof(NavigationParameter.Payload), out object? payload))
+        {
+            return;
+        }
+
+        ProfileAction action = (ProfileAction)payload;
+        switch (action)
+        {
+            case ProfileAction.Change:
+                ((LoginPageModel)BindingContext).InitializeVerification();
+                break;
+            case ProfileAction.Unknown:
+            case ProfileAction.Create:
+            default:
+                throw new ArgumentOutOfRangeException(nameof(query), action, @"Unsupported profile action.");
+        }
+    }
+
+    // Every time, since the page is kept by Shell and the email changes when the profile is changed.
     // ReSharper disable once AsyncVoidMethod
     protected override async void OnAppearing()
     {
         base.OnAppearing();
 
-        if (_initialized)
-        {
-            return;
-        }
-
-        _initialized = true;
         LoginPageModel model = (LoginPageModel)BindingContext;
         await model.InitializeCommand.ExecuteAsync(null);
         _pageHeaderService.ApplyStandardHeaderTitle(this, model.Email);
