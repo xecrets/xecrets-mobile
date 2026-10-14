@@ -48,7 +48,7 @@ public partial class EncryptToSharePageModel(
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
 {
     public string Breadcrumb =>
-        BreadcrumbFormatter.Format(flowContext.Origin, flowContext.Operation, MobileTexts.BreadcrumbEncryptToShare);
+        BreadcrumbFormatter.Format(flowContext.Origin, MobileTexts.BreadcrumbEncryptToShare);
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SubmitCommand))]

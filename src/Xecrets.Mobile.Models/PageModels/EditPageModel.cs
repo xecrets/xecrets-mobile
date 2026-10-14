@@ -52,7 +52,6 @@ public partial class EditPageModel(
 
     public string Breadcrumb => BreadcrumbFormatter.Format(
         flowContext.Origin,
-        flowContext.Operation,
         MobileTexts.BreadcrumbPreview,
         MobileTexts.BreadcrumbEdit);
 

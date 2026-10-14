@@ -71,11 +71,11 @@
                         </Grid>
                     </ScrollView>
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-                        <Label Text="{x:Static modelUtilities:MobileTexts.DialogTitleEncryptCopyFor}"
+                        <Label Text="{x:Static modelUtilities:MobileTexts.EncryptToShareContentTitle}"
                                Style="{StaticResource CardTitleStyle}" />
                         <controls:PageInformationButton Grid.Column="1"
                                                         Style="{StaticResource PageInformationButtonCorner}"
-                                                        Title="{x:Static modelUtilities:MobileTexts.DialogTitleEncryptCopyFor}"
+                                                        Title="{x:Static modelUtilities:MobileTexts.EncryptToShareContentTitle}"
                                                         Message="{x:Static modelUtilities:MobileTexts.EncryptToShareDescription}" />
                     </Grid>
                 </Grid>

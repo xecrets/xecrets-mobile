@@ -49,14 +49,18 @@
                     VerticalOptions="Start"
                     HorizontalOptions="Center"
                     Style="{StaticResource PageInformationCardStyle}">
-                <Grid RowDefinitions="Auto,*">
+                <Grid RowDefinitions="Auto,*"
+                      RowSpacing="{StaticResource CardTitleSpacing}">
                     <ScrollView Grid.Row="1">
-                        <Grid x:Name="ContentBody" Padding="{StaticResource PageInformationBodyPadding}">
+                        <Grid x:Name="ContentBody"
+                              Padding="{StaticResource PageInformationBodyPadding}">
                             <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
-                            <Label Text="{Binding FileNameText}"
-                                   Style="{StaticResource FileName}" />
-                            <Label Text="{Binding MetadataText}"
-                                   Style="{StaticResource ExtraFileInfo}" />
+                            <VerticalStackLayout>
+                                <Label Text="{Binding FileNameText}"
+                                       Style="{StaticResource FileName}" />
+                                <Label Text="{Binding MetadataText}"
+                                       Style="{StaticResource ExtraFileInfo}" />
+                            </VerticalStackLayout>
                             <controls:PageMessages MessageText="{Binding MessageText}"
                                                    StatusText="{Binding StatusText}" />
                             <VerticalStackLayout x:Name="ActionButtonStack"
@@ -70,10 +74,15 @@
                             </VerticalStackLayout>
                         </Grid>
                     </ScrollView>
-                    <controls:PageInformationButton Grid.Row="0"
-                                                    Style="{StaticResource PageInformationButtonCorner}"
-                                                    Title="{Binding FileNameText}"
-                                                    Message="{x:Static modelUtilities:MobileTexts.DialogTextResult}" />
+                    <Grid Grid.Row="0"
+                          ColumnDefinitions="*,Auto">
+                        <Label Text="{x:Static modelUtilities:MobileTexts.EncryptResultContentTitle}"
+                               Style="{StaticResource CardTitleStyle}" />
+                        <controls:PageInformationButton Grid.Column="1"
+                                                        Style="{StaticResource PageInformationButtonCorner}"
+                                                        Title="{x:Static modelUtilities:MobileTexts.EncryptResultContentTitle}"
+                                                        Message="{x:Static modelUtilities:MobileTexts.DialogTextResult}" />
+                    </Grid>
                 </Grid>
             </Border>
         </Grid>

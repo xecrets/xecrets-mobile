@@ -49,10 +49,12 @@ public partial class EncryptResultPageModel(
 {
     private const string _nonBreakingSpace = "\u00A0";
 
-    public string Breadcrumb =>
-        BreadcrumbFormatter.Format(flowContext.Origin, flowContext.Operation, MobileTexts.BreadcrumbResult);
+    public string Breadcrumb => BreadcrumbFormatter.Format(
+        flowContext.Origin,
+        Result.IsForPassword ? MobileTexts.BreadcrumbEncryptToShare : MobileTexts.BreadcrumbEncryptedCopy);
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Breadcrumb))]
     [NotifyCanExecuteChangedFor(nameof(SaveAsCommand))]
     [NotifyCanExecuteChangedFor(nameof(SendToCommand))]
     // ReSharper disable once MemberCanBeMadeStatic.Local
@@ -180,5 +182,5 @@ public partial class EncryptResultPageModel(
     {
         string sizeValue = $"{result.FileSize:N0}".Replace(" ", _nonBreakingSpace, StringComparison.Ordinal);
 
-        return $"{result.ContentType} {sizeValue} bytes";
+        return $"{result.ContentType} {string.Format(MobileTexts.FileSizeFormat, sizeValue)}";
     }}

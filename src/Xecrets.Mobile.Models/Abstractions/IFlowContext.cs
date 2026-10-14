@@ -34,21 +34,19 @@ using Xecrets.Mobile.Models.Models;
 namespace Xecrets.Mobile.Models.Abstractions;
 
 /// <summary>
-/// The origin and operation of the encrypt or decrypt flow the user is currently in, so that pages
-/// shared by several flows can say which one they are serving.
+/// The origin of the encrypt or decrypt flow the user is currently in, so that pages shared by
+/// several flows can say which one they are serving.
 /// </summary>
 public interface IFlowContext
 {
     FlowOrigin Origin { get; }
-
-    WorkFolderOperation Operation { get; }
 
     /// <summary>
     /// The file the flow works on, or null for a file received from another app.
     /// </summary>
     FileReference? Source { get; }
 
-    void Begin(FlowOrigin origin, WorkFolderOperation operation, FileReference? source = null);
+    void Begin(FlowOrigin origin, FileReference? source = null);
 
     /// <summary>
     /// Makes another reference the one the flow works on from then on, such as the same file reached through one of

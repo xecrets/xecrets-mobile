@@ -36,25 +36,20 @@ namespace Xecrets.Mobile.Models.Utilities;
 internal static class BreadcrumbFormatter
 {
     /// <summary>
-    /// Builds the trail shown at the top of a page, naming how the user got here, what they are
-    /// doing, and the pages that lead to where they are, ending with it.
+    /// Builds the trail shown at the top of a page, naming the pages where the user started and
+    /// the pages that lead to where they are, ending with it.
     /// </summary>
-    public static string Format(FlowOrigin origin, WorkFolderOperation operation, params string[] pages) =>
+    public static string Format(FlowOrigin origin, params string[] pages) =>
         string.Join(
             MobileTexts.BreadcrumbSeparator,
-            [OriginText(origin), OperationText(operation), .. pages]);
+            [.. OriginTexts(origin), .. pages]);
 
-    private static string OriginText(FlowOrigin origin) => origin switch
+    private static string[] OriginTexts(FlowOrigin origin) => origin switch
     {
-        FlowOrigin.Navigated => MobileTexts.BreadcrumbHome,
-        FlowOrigin.ReceivedFile => MobileTexts.BreadcrumbReceivedFile,
+        FlowOrigin.Home => [MobileTexts.BreadcrumbHome],
+        FlowOrigin.MyFolders => [MobileTexts.BreadcrumbHome, MobileTexts.BreadcrumbMyFolders],
+        FlowOrigin.RecentFiles => [MobileTexts.BreadcrumbHome, MobileTexts.BreadcrumbRecentFiles],
+        FlowOrigin.ReceivedFile => [MobileTexts.BreadcrumbReceivedFile],
         _ => throw new ArgumentOutOfRangeException(nameof(origin), origin, @"Unknown flow origin."),
-    };
-
-    private static string OperationText(WorkFolderOperation operation) => operation switch
-    {
-        WorkFolderOperation.Encrypt => MobileTexts.BreadcrumbEncrypt,
-        WorkFolderOperation.Decrypt => MobileTexts.BreadcrumbDecrypt,
-        _ => throw new ArgumentOutOfRangeException(nameof(operation), operation, @"Unknown work folder operation."),
     };
 }

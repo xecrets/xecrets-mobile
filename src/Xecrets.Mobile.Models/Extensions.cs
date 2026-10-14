@@ -123,7 +123,7 @@ internal static class Extensions
     /// <summary>
     /// The root as a short text to show, or empty when there is nothing meaningful to show.
     /// </summary>
-    private static string ToDisplay(this RootProvider root) => root switch
+    public static string ToDisplay(this RootProvider root) => root switch
     {
         RootProvider.Unknown => "",
         RootProvider.None => "",

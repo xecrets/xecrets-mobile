@@ -166,8 +166,10 @@ public sealed class FileOperationWorkflowTests
         app.AddFolder("docs");
         app.AddFile("docs/x.axx", "not encrypted");
 
-        FileOperationOutcome outcome =
-            await app.Operations.TransformAsync(new FileReference("docs/x.axx", "x.axx"), WorkFolderOperation.Decrypt);
+        FileOperationOutcome outcome = await app.Operations.TransformAsync(
+            new FileReference("docs/x.axx", "x.axx"),
+            WorkFolderOperation.Decrypt,
+            FlowOrigin.MyFolders);
 
         Assert.That(outcome.Status, Is.EqualTo(FileOperationStatus.NotDone));
         Assert.That(app.UserInterface.TransientMessages, Is.EqualTo([MobileTexts.DialogTextNotEncrypted]));

@@ -90,7 +90,7 @@ public partial class HomePageModel(
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private async Task EncryptAs()
     {
-        flowContext.Begin(FlowOrigin.Navigated, WorkFolderOperation.Encrypt);
+        flowContext.Begin(FlowOrigin.Home);
         crashTestService.CrashIfArmed(CrashTestOperation.Encrypt);
         try
         {
@@ -130,14 +130,14 @@ public partial class HomePageModel(
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private async Task EncryptToShare()
     {
-        flowContext.Begin(FlowOrigin.Navigated, WorkFolderOperation.Encrypt);
+        flowContext.Begin(FlowOrigin.Home);
         await UserInterfaceService.NavigateToAsync(AppDestination.EncryptToShare);
     }
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private async Task DecryptAs()
     {
-        flowContext.Begin(FlowOrigin.Navigated, WorkFolderOperation.Decrypt);
+        flowContext.Begin(FlowOrigin.Home);
         crashTestService.CrashIfArmed(CrashTestOperation.Decrypt);
         try
         {
@@ -156,7 +156,7 @@ public partial class HomePageModel(
                 return;
             }
 
-            if (!await fileOperationWorkflow.PreviewAsync(file))
+            if (!await fileOperationWorkflow.PreviewAsync(file, FlowOrigin.Home))
             {
                 StatusText = MobileTexts.DialogTextWrongPasswordOpen;
             }

@@ -32,10 +32,12 @@
 namespace Xecrets.Mobile.Models.Models;
 
 /// <summary>
-/// How the user got into the current encrypt or decrypt flow.
+/// Where the user started the current encrypt or decrypt flow.
 /// </summary>
 public enum FlowOrigin
 {
-    Navigated,
+    Home,
+    MyFolders,
+    RecentFiles,
     ReceivedFile,
 }

@@ -53,7 +53,7 @@ public partial class PreviewPageModel(
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
 {
     public string Breadcrumb =>
-        BreadcrumbFormatter.Format(flowContext.Origin, flowContext.Operation, MobileTexts.BreadcrumbPreview);
+        BreadcrumbFormatter.Format(flowContext.Origin, MobileTexts.BreadcrumbPreview);
 
     [ObservableProperty]
     public partial string FileNameText { get; set; } = string.Empty;

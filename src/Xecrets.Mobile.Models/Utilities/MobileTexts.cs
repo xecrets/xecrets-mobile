@@ -48,6 +48,8 @@ public static class MobileTexts
     // "Edit"
     public static string BreadcrumbEdit => EditContentTitle;
 
+    public static string BreadcrumbEncryptedCopy => "Encrypted copy";
+
     public static string BreadcrumbEncryptToShare => ButtonEncryptToShare.StripEllipsis();
 
     public static string BreadcrumbHome => "Home";
@@ -62,8 +64,6 @@ public static class MobileTexts
 
     // "Recent files"
     public static string BreadcrumbRecentFiles => RecentFilesContentTitle;
-
-    public static string BreadcrumbResult => "Result";
 
     public static string BreadcrumbSeparator => " › ";
 
@@ -87,6 +87,8 @@ public static class MobileTexts
     public static string ButtonSendTo => "Send to…";
 
     public static string ButtonView => "View";
+
+    public static string ButtonWipe => "Overwrite and delete";
 
     public static string ChangeProfileDescription => "Change the email and password of your local profile. Files encrypted before can still be opened.";
 
@@ -143,7 +145,14 @@ public static class MobileTexts
 
     public static string EditDescription => "Edit the text. Click the save icon to encrypt and save changes.";
 
-    public static string EncryptToShareDescription => "Enter a new password for the encrypted copy. Share the password through a different channel.";
+    public static string EncryptResultContentTitle => "Copy to share";
+
+    // "Password"
+    public static string EncryptToShareContentTitle => WatermarkPassword;
+
+    public static string EncryptToShareDescription =>"Enter a new password for the encrypted copy. Share the password through a different channel.";
+
+    public static string FileSizeFormat => "{0} bytes";
 
     public static string FileStateAll => "All";
 
@@ -210,7 +219,7 @@ public static class MobileTexts
 
     public static string WorkFolderIntentDecrypt => "Choose the folder of the file to decrypt.";
 
-    public static string WorkFolderIntentDelete => "Choose the folder of the file to securely delete.";
+    public static string WorkFolderIntentDelete => "Choose the folder of the file to overwrite and delete.";
 
     public static string WorkFolderIntentEncrypt => "Choose the folder of the file to encrypt.";
 
@@ -263,10 +272,6 @@ public static class MobileTexts
 
     #region Translated texts
 
-    public static string BreadcrumbDecrypt => AppTexts.ButtonDecrypt;
-
-    public static string BreadcrumbEncrypt => AppTexts.ButtonEncrypt;
-
     // "Password"
     public static string BreadcrumbPassword => WatermarkPassword;
 
@@ -294,8 +299,6 @@ public static class MobileTexts
     // "Save As…"
     public static string ButtonSaveAs => AppTexts.ButtonSaveAs.ToSentenceCase();
 
-    public static string ButtonWipe => AppTexts.ButtonWipe;
-
     // "Add a decryption password"
     public static string DialogTextAddPassword => AppTexts.DialogTextAddPassword;
 
@@ -305,9 +308,6 @@ public static class MobileTexts
     public static string DialogTextOperationNotCompleted => AppTexts.FilesCanceledMessage;
 
     public static string DialogTextWrongPasswordOpen => AppTexts.DialogTextWrongPasswordOpen;
-
-    // "Encrypt copy to share"
-    public static string DialogTitleEncryptCopyFor => AppTexts.DialogTitleEncryptCopyFor;
 
     public static string DialogValidationAlreadySignedIn => AppTexts.DialogValidationAlreadySignedIn;
 

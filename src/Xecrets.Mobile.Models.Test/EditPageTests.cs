@@ -170,9 +170,13 @@ public sealed class EditPageTests
 
         EditPageModel page = await OpenAsync(app);
 
-        Assert.That(page.Breadcrumb, Is.EqualTo("Home › Decrypt › Preview › Edit"));
+        Assert.That(page.Breadcrumb, Is.EqualTo(string.Join(
+            MobileTexts.BreadcrumbSeparator,
+            MobileTexts.BreadcrumbHome,
+            MobileTexts.BreadcrumbPreview,
+            MobileTexts.BreadcrumbEdit)));
         Assert.That(page.FileNameText, Is.EqualTo("a.txt"));
-        Assert.That(page.MetadataText, Is.EqualTo("text/plain 4 bytes"));
+        Assert.That(page.MetadataText, Is.EqualTo($"text/plain {string.Format(MobileTexts.FileSizeFormat, 4)}"));
     }
 
     [Test]
@@ -184,7 +188,7 @@ public sealed class EditPageTests
 
         await page.SaveCommand.ExecuteAsync(null);
 
-        Assert.That(page.MetadataText, Is.EqualTo("text/plain 6 bytes"));
+        Assert.That(page.MetadataText, Is.EqualTo($"text/plain {string.Format(MobileTexts.FileSizeFormat, 6)}"));
     }
 
     private static async Task<EditPageModel> OpenAsync(TestApp app)
@@ -201,7 +205,7 @@ public sealed class EditPageTests
         TestApp app = CreateEditing();
         app.AddFolder("docs");
         app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
-        app.Flow.Begin(FlowOrigin.Navigated, WorkFolderOperation.Decrypt, new FileReference("docs/x.axx", "x.axx"));
+        app.Flow.Begin(FlowOrigin.Home, new FileReference("docs/x.axx", "x.axx"));
         return app;
     }
 

@@ -129,10 +129,15 @@ public sealed class RecentFilesPageTests
         await page.LoadCommand.ExecuteAsync(null);
 
         Assert.That(page.Files.Select(file => file.DisplayName), Is.EqualTo(["a.axx", "b.txt"]));
+        string separator = MobileTexts.BreadcrumbSeparator;
+        string drive = RootProvider.GoogleDrive.ToDisplay();
         Assert.That(page.Files.Select(file => file.DisplayLocation),
-            Is.EqualTo(["Drive › Work › Secret", "C: › docs"]));
+            Is.EqualTo([string.Join(separator, drive, "Work", "Secret"), string.Join(separator, "C:", "docs")]));
         Assert.That(page.Files.Select(file => file.DisplayPath),
-            Is.EqualTo(["Drive › Work › Secret › a.axx", "C: › docs › b.txt"]));
+            Is.EqualTo([
+                string.Join(separator, drive, "Work", "Secret", "a.axx"),
+                string.Join(separator, "C:", "docs", "b.txt"),
+            ]));
     }
 
     [Test]

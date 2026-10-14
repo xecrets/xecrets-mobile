@@ -176,7 +176,7 @@ public partial class RecentFilesPageModel(
     {
         if (entry.IsViewed || entry.IsInPlace && entry.IsNameEncrypted)
         {
-            if (!await fileOperations.PreviewAsync(file))
+            if (!await fileOperations.PreviewAsync(file, FlowOrigin.RecentFiles))
             {
                 StatusText = MobileTexts.DialogTextWrongPasswordOpen;
             }
@@ -224,7 +224,7 @@ public partial class RecentFilesPageModel(
                 WorkFolderOperation operation =
                     entry.IsNameEncrypted ? WorkFolderOperation.Decrypt : WorkFolderOperation.Encrypt;
                 await RunOnFileAsync(entry, isChanged: true,
-                    async file => outcome = await fileOperations.TransformAsync(file, operation));
+                    async file => outcome = await fileOperations.TransformAsync(file, operation, FlowOrigin.RecentFiles));
                 await LoadAsync();
                 if (outcome?.Status is not (FileOperationStatus.Completed or FileOperationStatus.NotDone))
                 {

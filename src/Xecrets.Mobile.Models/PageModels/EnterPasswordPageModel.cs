@@ -45,7 +45,7 @@ public partial class EnterPasswordPageModel(
     : PageModelBase(userInterfaceService), IBreadcrumbPageModel
 {
     public string Breadcrumb =>
-        BreadcrumbFormatter.Format(flowContext.Origin, flowContext.Operation, MobileTexts.BreadcrumbPassword);
+        BreadcrumbFormatter.Format(flowContext.Origin, MobileTexts.BreadcrumbPassword);
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SubmitCommand))]

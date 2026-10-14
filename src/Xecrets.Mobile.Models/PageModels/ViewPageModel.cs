@@ -45,7 +45,6 @@ public partial class ViewPageModel(
 {
     public string Breadcrumb => BreadcrumbFormatter.Format(
         flowContext.Origin,
-        flowContext.Operation,
         MobileTexts.BreadcrumbPreview,
         MobileTexts.BreadcrumbView);
 

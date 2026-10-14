@@ -118,9 +118,7 @@ internal sealed class IncomingFileService(
             return;
         }
 
-        flowContext.Begin(
-            FlowOrigin.ReceivedFile,
-            isEncrypted ? WorkFolderOperation.Decrypt : WorkFolderOperation.Encrypt);
+        flowContext.Begin(FlowOrigin.ReceivedFile);
 
         if (isEncrypted)
         {

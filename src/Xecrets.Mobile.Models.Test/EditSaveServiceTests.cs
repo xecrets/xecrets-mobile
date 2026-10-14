@@ -64,7 +64,7 @@ public sealed class EditSaveServiceTests
         app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
         app.AddRecent("docs/x.axx", RecentFileOperation.InPlace, "x.axx");
         FileReference source = new("grant:docs|docs/x.axx", "x.axx");
-        app.Flow.Begin(FlowOrigin.Navigated, WorkFolderOperation.Decrypt, source);
+        app.Flow.Begin(FlowOrigin.Home, source);
 
         await app.EditSave.SaveAsync("edited");
 

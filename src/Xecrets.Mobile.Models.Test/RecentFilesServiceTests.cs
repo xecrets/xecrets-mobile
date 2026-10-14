@@ -184,7 +184,7 @@ public sealed class RecentFilesServiceTests
     {
         TestApp app = new();
         await app.Recent.AddFlowSourceAsync(RecentFileOperation.DecryptCopySendTo);
-        app.Flow.Begin(FlowOrigin.Navigated, WorkFolderOperation.Decrypt, new FileReference("a.axx", "a.axx"));
+        app.Flow.Begin(FlowOrigin.Home, new FileReference("a.axx", "a.axx"));
 
         await app.Recent.AddFlowSourceAsync(RecentFileOperation.DecryptCopySendTo);
 

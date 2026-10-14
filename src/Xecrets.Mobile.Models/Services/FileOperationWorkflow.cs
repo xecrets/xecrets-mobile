@@ -71,15 +71,18 @@ public sealed class FileOperationWorkflow(
                 return;
 
             case WorkFolderIntent.Encrypt:
-                await TransformAsync(file, WorkFolderOperation.Encrypt);
+                await TransformAsync(file, WorkFolderOperation.Encrypt, FlowOrigin.MyFolders);
                 return;
 
             case WorkFolderIntent.Decrypt:
-                await TransformAsync(file, WorkFolderOperation.Decrypt);
+                await TransformAsync(file, WorkFolderOperation.Decrypt, FlowOrigin.MyFolders);
                 return;
         }
 
-        await TransformAsync(file, file.Name.IsEncrypted() ? WorkFolderOperation.Decrypt : WorkFolderOperation.Encrypt);
+        await TransformAsync(
+            file,
+            file.Name.IsEncrypted() ? WorkFolderOperation.Decrypt : WorkFolderOperation.Encrypt,
+            FlowOrigin.MyFolders);
     }
 
     /// <summary>
@@ -100,7 +103,10 @@ public sealed class FileOperationWorkflow(
     /// unless the file can be wiped afterwards. A file named or found to be encrypted is not encrypted, and a file not
     /// found to be encrypted is not decrypted, but the user is told so.
     /// </summary>
-    public async Task<FileOperationOutcome> TransformAsync(FileReference file, WorkFolderOperation operation)
+    public async Task<FileOperationOutcome> TransformAsync(
+        FileReference file,
+        WorkFolderOperation operation,
+        FlowOrigin origin)
     {
         if (operation == WorkFolderOperation.Encrypt && await IsFileOrNameEncryptedAsync(file))
         {
@@ -120,7 +126,7 @@ public sealed class FileOperationWorkflow(
             return FileOperationOutcome.NotDone;
         }
 
-        flowContext.Begin(FlowOrigin.Navigated, operation);
+        flowContext.Begin(origin);
         if (operation == WorkFolderOperation.Encrypt)
         {
             FileReference encrypted = await operationService.EncryptAsync(file);
@@ -164,9 +170,9 @@ public sealed class FileOperationWorkflow(
     /// Decrypts a file temporarily to show it, or sends the user on to enter a password for it. Returns false when the
     /// file could not be decrypted.
     /// </summary>
-    public async Task<bool> PreviewAsync(FileReference file)
+    public async Task<bool> PreviewAsync(FileReference file, FlowOrigin origin)
     {
-        flowContext.Begin(FlowOrigin.Navigated, WorkFolderOperation.Decrypt, file);
+        flowContext.Begin(origin, file);
         IReadableFile previewFile = new ReferencedReadableFile(fileAccess, file);
         if (await previewService.PrepareAsync(previewFile))
         {

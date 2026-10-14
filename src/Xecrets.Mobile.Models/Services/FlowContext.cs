@@ -35,16 +35,13 @@ namespace Xecrets.Mobile.Models.Services;
 
 internal sealed class FlowContext : IFlowContext
 {
-    public FlowOrigin Origin { get; private set; } = FlowOrigin.Navigated;
-
-    public WorkFolderOperation Operation { get; private set; } = WorkFolderOperation.Encrypt;
+    public FlowOrigin Origin { get; private set; } = FlowOrigin.Home;
 
     public FileReference? Source { get; private set; }
 
-    public void Begin(FlowOrigin origin, WorkFolderOperation operation, FileReference? source = null)
+    public void Begin(FlowOrigin origin, FileReference? source = null)
     {
         Origin = origin;
-        Operation = operation;
         Source = source;
     }
 

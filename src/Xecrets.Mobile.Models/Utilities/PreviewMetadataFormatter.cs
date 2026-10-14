@@ -44,6 +44,6 @@ internal static class PreviewMetadataFormatter
     {
         string sizeValue = $"{state.FileSize:N0}".Replace(" ", _nonBreakingSpace, StringComparison.Ordinal);
 
-        return $"{state.ContentType} {sizeValue} bytes";
+        return $"{state.ContentType} {string.Format(MobileTexts.FileSizeFormat, sizeValue)}";
     }
 }
