@@ -39,5 +39,8 @@ public interface IFileWiper
     /// </summary>
     Task<bool> CanWipeAsync(IWritableFile file);
 
-    Task<FileWipeStatus> WipeAsync(IWritableFile file);
+    /// <summary>
+    /// Wipes the file, overwriting it first only when it is on the device. Elsewhere it is only deleted.
+    /// </summary>
+    Task<FileWipeStatus> WipeAsync(IWritableFile file, bool isOnDevice);
 }

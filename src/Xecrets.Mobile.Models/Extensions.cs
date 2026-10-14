@@ -150,6 +150,46 @@ internal static class Extensions
     };
 
     /// <summary>
+    /// The name a file is kept under while it is saved over, with its extension in the name, as for an encrypted file,
+    /// so that it is seen what it is: "report-txt.axx" is kept as "report-txt-axx.bak".
+    /// </summary>
+    public static string ToBackupName(this string fileName) =>
+        Path.GetExtension(fileName) is { Length: > 1 } extension
+            ? $"{Path.GetFileNameWithoutExtension(fileName)}-{extension[1..]}.bak"
+            : $"{Path.GetFileNameWithoutExtension(fileName)}.bak";
+
+    /// <summary>
+    /// Tells if the root is storage in the device itself, where overwriting a file replaces its contents. Removable
+    /// media and cloud storage are not, nor is storage that is not known, since cloud storage keeps replaced contents as
+    /// versions.
+    /// </summary>
+    public static bool IsOnDevice(this RootProvider root) => root switch
+    {
+        RootProvider.Unknown => false,
+        RootProvider.None => true,
+        RootProvider.Other => false,
+        RootProvider.AndroidPhone => true,
+        RootProvider.AndroidTablet => true,
+        RootProvider.AndroidDevice => true,
+        RootProvider.IPhone => true,
+        RootProvider.IPad => true,
+        RootProvider.Mac => true,
+        RootProvider.RemovableStorage => false,
+        RootProvider.ExternalDrive => false,
+        RootProvider.Downloads => true,
+        RootProvider.MediaImages => true,
+        RootProvider.MediaVideos => true,
+        RootProvider.MediaAudio => true,
+        RootProvider.MediaDocuments => true,
+        RootProvider.ICloudDrive => false,
+        RootProvider.GoogleDrive => false,
+        RootProvider.OneDrive => false,
+        RootProvider.Dropbox => false,
+        RootProvider.CloudStorage => false,
+        _ => throw new ArgumentOutOfRangeException(nameof(root), root, @"Unknown root provider."),
+    };
+
+    /// <summary>
     /// Combines a user-facing message with the exception detail, for display as status text.
     /// </summary>
     public static string FormatException(this Exception exception)

@@ -109,7 +109,7 @@ public sealed class FolderAccessWorkflow(
         }
 
         await storage.MoveFolderToTopAsync(folder);
-        return fileAccess.GetFileInFolder(folder, file);
+        return await fileAccess.GetFileInFolderAsync(folder, file);
     }
 
     /// <summary>
@@ -149,6 +149,6 @@ public sealed class FolderAccessWorkflow(
     private async Task<WorkFolder?> RequestFolderAsync(FileReference file) =>
         await userInterfaceService.DisplayConfirmationAsync(
             string.Format(MobileTexts.DialogTextAllowFolderAccessFormat, file.Name))
-            ? await AddFolderAsync(fileAccess.GetParentFolder(file.Id))
+            ? await AddFolderAsync(await fileAccess.GetParentFolderAsync(file.Id))
             : null;
 }

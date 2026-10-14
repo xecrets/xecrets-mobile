@@ -38,7 +38,8 @@ namespace Xecrets.Mobile.Models.Services;
 internal sealed class RecentFilesService(
     ProfileSession profileSession,
     IFlowContext flowContext,
-    IFileAccess fileAccess)
+    IFileAccess fileAccess,
+    ICrashLogService crashLogService)
     : IRecentFilesService
 {
     private const int _maxRecentListLength = 50;
@@ -134,6 +135,7 @@ internal sealed class RecentFilesService(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            crashLogService.WriteSwallowedException(ex);
             return listedId == fileId;
         }
     }

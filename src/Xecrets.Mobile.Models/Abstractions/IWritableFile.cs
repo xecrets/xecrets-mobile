@@ -35,7 +35,7 @@ namespace Xecrets.Mobile.Models.Abstractions;
 public interface IWritableFile
 {
     /// <summary>
-    /// The platform reference to the file, which follows it when it is renamed.
+    /// The platform reference to the file.
     /// </summary>
     string Id { get; }
 
@@ -45,14 +45,12 @@ public interface IWritableFile
 
     Task<bool> CanDeleteAsync();
 
-    Task<long> GetLengthAsync();
+    /// <summary>
+    /// The length of the file, or null when the storage does not tell it.
+    /// </summary>
+    Task<long?> GetLengthAsync();
 
     Task<Stream> OpenWriteAsync();
-
-    /// <summary>
-    /// Renames the file within its folder, if the storage allows it. Returns whether it was renamed.
-    /// </summary>
-    Task<bool> RenameIfPossibleAsync(string newFileName);
 
     /// <summary>
     /// Deletes the file, together with any other versions of it that the platform keeps where it can remove them.

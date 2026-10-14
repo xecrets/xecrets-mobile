@@ -33,7 +33,8 @@ using Xecrets.Mobile.Models.Models;
 namespace Xecrets.Mobile.Models.Abstractions;
 
 /// <summary>
-/// Encrypts and decrypts files where they are, in one of My folders, replacing the file with the result.
+/// Encrypts and decrypts files where they are, in one of My folders, replacing the file with the result. A file in none
+/// of them is replaced by a result saved where the user chooses.
 /// </summary>
 public interface IWorkFolderOperationService
 {
@@ -55,6 +56,26 @@ public interface IWorkFolderOperationService
     /// wrong.
     /// </summary>
     Task<FileReference?> DecryptWithPasswordAsync(string password);
+
+    /// <summary>
+    /// Encrypts a file that is in none of My folders, saving the result where the user chooses, and then overwrites and
+    /// deletes the file. Returns the saved file, or that nothing was done, which the user has then been told why.
+    /// </summary>
+    Task<FileOperationOutcome> EncryptElsewhereAsync(FileReference file);
+
+    /// <summary>
+    /// Decrypts a file that is in none of My folders with the passwords known, saving the result where the user
+    /// chooses, and then overwrites and deletes the file. Returns the saved file, that nothing was done, which the user
+    /// has then been told why, or that a password is needed, keeping the file for
+    /// <see cref="DecryptPendingWithPasswordAsync"/>.
+    /// </summary>
+    Task<FileOperationOutcome> DecryptElsewhereWithKnownPasswordsAsync(FileReference file);
+
+    /// <summary>
+    /// Decrypts the pending file with the password, the same way as it was started. Returns that a password is still
+    /// needed when the password is wrong.
+    /// </summary>
+    Task<FileOperationOutcome> DecryptPendingWithPasswordAsync(string password);
 
     void CancelPasswordRequest();
 }

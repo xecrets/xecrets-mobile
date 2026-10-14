@@ -37,82 +37,66 @@ using Android.Content;
 using Android.Provider;
 
 using Xecrets.Mobile.Models.Abstractions;
-using Xecrets.Mobile.Models.Models;
 
 using AndroidUri = Android.Net.Uri;
 using Platform = Microsoft.Maui.ApplicationModel.Platform;
 
 namespace Xecrets.Mobile.Platforms.Android;
 
+/// <summary>
+/// Writes the destination document in place. The provider is called off the main thread, as for the writable file.
+/// </summary>
 [SupportedOSPlatform("android26.0")]
 internal sealed class AndroidFileWriteSession : IFileWriteSession
 {
-    private readonly AndroidUri _folderUri;
-    private readonly AndroidUri _temporaryUri;
-    private readonly string _name;
-    private readonly bool _overwrite;
-    private readonly IFileWiper _fileWiper;
-    private bool _destinationCommitted;
+    private readonly AndroidUri _fileUri;
+    private bool _isCommitted;
 
     private static ContentResolver ContentResolver => Platform.CurrentActivity!.ContentResolver!;
 
-    public AndroidFileWriteSession(AndroidUri folderUri, string name, bool overwrite, IFileWiper fileWiper)
+    private AndroidFileWriteSession(AndroidUri fileUri, Stream outputStream)
     {
-        _folderUri = folderUri;
-        _name = name;
-        _overwrite = overwrite;
-        _fileWiper = fileWiper;
-        _temporaryUri = DocumentsContract.CreateDocument( ContentResolver, folderUri, "application/octet-stream", $".xecrets-{Guid.NewGuid():N}.tmp")!;
-
-        try
-        {
-            OutputStream = ContentResolver.OpenOutputStream(_temporaryUri, "w")!;
-        }
-        catch
-        {
-            DocumentsContract.DeleteDocument(ContentResolver, _temporaryUri);
-            throw;
-        }
+        _fileUri = fileUri;
+        OutputStream = outputStream;
     }
 
     public Stream OutputStream { get; }
 
-    public async Task<string> CommitAsync()
+    /// <summary>
+    /// Opens an existing document with the name to replace it, when allowed, and otherwise creates it. A document that
+    /// was created, but could not be opened, is removed. Storage such as Dropbox does not truncate when only opened for
+    /// writing, so it is asked to.
+    /// </summary>
+    public static async Task<AndroidFileWriteSession> CreateAsync(
+        AndroidUri folderUri,
+        string name,
+        string contentType,
+        bool overwrite)
     {
-        OutputStream.Close();
-
-        AndroidUri? backupUri = _overwrite
-            ? _folderUri.FindChild(_name)!.RenameDocument($".xecrets-{Guid.NewGuid():N}.bak")
-            : null;
-        AndroidUri renamedUri;
-
+        AndroidUri? existingUri = overwrite ? await folderUri.FindChildAsync(name) : null;
+        AndroidUri fileUri = existingUri ?? await CreateDocumentAsync(folderUri, name, contentType);
         try
         {
-            renamedUri = _temporaryUri.RenameDocument(_name);
-            if (renamedUri.GetDisplayName() != _name)
-            {
-                throw new IOException("The destination file name is already in use.");
-            }
-
-            _destinationCommitted = true;
+            return new AndroidFileWriteSession(
+                fileUri,
+                await Task.Run(() => ContentResolver.OpenOutputStream(fileUri, "wt")!));
         }
         catch
         {
-            if (backupUri is not null)
+            if (existingUri is null)
             {
-                _ = backupUri.RenameDocument(_name);
+                await fileUri.DeleteDocumentAsync();
             }
 
             throw;
         }
+    }
 
-        if (backupUri is not null &&
-            await _fileWiper.WipeAsync(new AndroidWritableFile(backupUri)) == FileWipeStatus.InsufficientRights)
-        {
-            throw new IOException("The replaced destination file could not be removed.");
-        }
-
-        return renamedUri.ToString()!;
+    public async Task<string> CommitAsync()
+    {
+        await Task.Run(OutputStream.Close);
+        _isCommitted = true;
+        return _fileUri.ToString()!;
     }
 
     public async ValueTask DisposeAsync()
@@ -123,11 +107,26 @@ internal sealed class AndroidFileWriteSession : IFileWriteSession
         }
         finally
         {
-            // A failure to wipe the backup must not remove the replacement already put in place.
-            if (!_destinationCommitted)
+            if (!_isCommitted)
             {
-                DocumentsContract.DeleteDocument(ContentResolver, _temporaryUri);
+                await _fileUri.DeleteDocumentAsync();
             }
         }
+    }
+
+    // The provider gives the document another name when the one asked for is taken, which is then not the file asked
+    // for.
+    private static async Task<AndroidUri> CreateDocumentAsync(AndroidUri folderUri, string name, string contentType)
+    {
+        AndroidUri fileUri =
+            await Task.Run(() => DocumentsContract.CreateDocument(ContentResolver, folderUri, contentType, name)) ??
+            throw new IOException("The file could not be created.");
+        if (await Task.Run(fileUri.GetDisplayName) != name)
+        {
+            await fileUri.DeleteDocumentAsync();
+            throw new IOException("The destination file name is already in use or could not be determined.");
+        }
+
+        return fileUri;
     }
 }

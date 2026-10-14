@@ -32,10 +32,9 @@ using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Models.Services;
 
-public sealed class TransientFileService(IFileService fileService, IFileWiper fileWiper) : ITransientFileService
+public sealed class TransientFileService(IFileService fileService, IFileWiper fileWiper, ICrashLogService crashLogService)
+    : ITransientFileService
 {
-    private static readonly IReadOnlyCollection<string> _protectedCacheDirectoryNames = ["oat_primary", "XecretsCrashLogs"];
-
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     private readonly string _rootDirectory = CreateRootDirectory(fileService);
@@ -93,11 +92,11 @@ public sealed class TransientFileService(IFileService fileService, IFileWiper fi
     }
 
     private async Task WipeTrackedFilesCoreAsync()
-        => await WipeDirectoryAsync(fileService.CacheDirectory, _protectedCacheDirectoryNames);
+        => await WipeDirectoryAsync(fileService.CacheDirectory);
 
     // Recursive post-order descent: fully wipe each subdirectory (and try to remove it) before touching
     // this directory's own files, then try to remove this directory once everything under it is gone.
-    private async Task WipeDirectoryAsync(string directory, IReadOnlyCollection<string> protectedDirectoryNames)
+    private async Task WipeDirectoryAsync(string directory)
     {
         string[] subdirectories;
         string[] files;
@@ -106,21 +105,17 @@ public sealed class TransientFileService(IFileService fileService, IFileWiper fi
             subdirectories = Directory.GetDirectories(directory);
             files = Directory.GetFiles(directory);
         }
-        catch
+        catch (Exception ex)
         {
             // The directory lives in the cache, which the OS (or the user, via "Clear cache") can reclaim
             // at any time - if it's already gone, there's nothing left to do here.
+            crashLogService.WriteSwallowedException(ex);
             return;
         }
 
         foreach (string subdirectory in subdirectories)
         {
-            if (protectedDirectoryNames.Contains(Path.GetFileName(subdirectory), StringComparer.Ordinal))
-            {
-                continue;
-            }
-
-            await WipeDirectoryAsync(subdirectory, []);
+            await WipeDirectoryAsync(subdirectory);
         }
 
         foreach (string file in files)
@@ -141,15 +136,16 @@ public sealed class TransientFileService(IFileService fileService, IFileWiper fi
             File.SetAttributes(path, FileAttributes.Normal);
 
             // Should the wipe fail, the wiper still deletes the file if possible.
-            await fileWiper.WipeAsync(new LocalWritableFile(path));
+            await fileWiper.WipeAsync(new LocalWritableFile(path), isOnDevice: true);
         }
-        catch
+        catch (Exception ex)
         {
             // Best effort.
+            crashLogService.WriteSwallowedException(ex);
         }
     }
 
-    private static void TryDeleteIfEmpty(string directory)
+    private void TryDeleteIfEmpty(string directory)
     {
         try
         {
@@ -158,9 +154,10 @@ public sealed class TransientFileService(IFileService fileService, IFileWiper fi
                 Directory.Delete(directory);
             }
         }
-        catch
+        catch (Exception ex)
         {
             // Best effort.
+            crashLogService.WriteSwallowedException(ex);
         }
     }
 

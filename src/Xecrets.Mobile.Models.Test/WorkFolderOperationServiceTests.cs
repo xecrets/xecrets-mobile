@@ -153,20 +153,23 @@ public sealed class WorkFolderOperationServiceTests
     }
 
     /// <summary>
-    /// A failure to wipe the source is unexpected and reported, but the operation itself has succeeded, so the recent
-    /// files still list the result instead of the source.
+    /// Storage may refuse to remove the source, such as Dropbox when offline, but the operation itself has succeeded,
+    /// so that is told instead, and the recent files list the result instead of the source.
     /// </summary>
     [Test]
-    public void FailedWipeIsReportedAndRecentFilesAreStillUpdated()
+    public async Task FailedWipeIsToldAndRecentFilesAreStillUpdated()
     {
         TestApp app = new();
         app.Access.Files["docs/x.axx"] = "ENC:a.txt\ntext"u8.ToArray();
         app.AddRecent("docs/x.axx", RecentFileOperation.InPlace);
         app.Wiper.Fails = true;
 
-        Assert.That(async () => await app.OperationService.DecryptWithKnownPasswordsAsync(
-                new FileReference("docs/x.axx", "x.axx")),
-            Throws.TypeOf<IOException>().With.Message.EqualTo("Wipe failed."));
+        FileReference? result = await app.OperationService.DecryptWithKnownPasswordsAsync(
+            new FileReference("docs/x.axx", "x.axx"));
+
+        Assert.That(result, Is.EqualTo(new FileReference("docs/a.txt", "a.txt")));
+        Assert.That(app.UserInterface.TransientMessages, Is.EqualTo([MobileTexts.DialogTextOriginalNotRemoved]));
+        Assert.That(app.UserInterface.Messages, Is.Empty);
         Assert.That(app.RecentIds(), Is.EqualTo(["docs/a.txt"]));
     }
 

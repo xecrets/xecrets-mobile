@@ -44,6 +44,7 @@ internal sealed class IncomingFileService(
     IEncryptionPreparationService encryptionPreparationService,
     IFlowContext flowContext,
     ICoreServices coreServices,
+    ICrashLogService crashLogService,
     IUserInterfaceService userInterfaceService)
     : IIncomingFileService
 {
@@ -167,6 +168,7 @@ internal sealed class IncomingFileService(
         }
         catch (Exception ex)
         {
+            crashLogService.WriteSwallowedException(ex);
             await userInterfaceService.DisplayMessageAsync(ex.FormatException());
         }
     }

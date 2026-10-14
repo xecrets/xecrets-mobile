@@ -76,6 +76,63 @@ public sealed class EditSaveServiceTests
     }
 
     [Test]
+    public async Task SaveLeavesNoBackupOfTheSource()
+    {
+        TestApp app = CreateEditing("text");
+        app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
+        app.Flow.Begin(FlowOrigin.Home, new FileReference("docs/x.axx", "x.axx"));
+
+        Assert.That(await app.EditSave.SaveAsync("edited"), Is.True);
+
+        Assert.That(app.Access.Files.Keys, Is.EqualTo(["docs/x.axx"]));
+    }
+
+    [Test]
+    public async Task SaveIsNotDoneWhenTheBackupNameIsInUse()
+    {
+        TestApp app = CreateEditing("text");
+        app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
+        app.AddFile("docs/x-axx.bak", "other");
+        app.Flow.Begin(FlowOrigin.Home, new FileReference("docs/x.axx", "x.axx"));
+
+        Assert.That(await app.EditSave.SaveAsync("edited"), Is.False);
+
+        Assert.That(Encoding.UTF8.GetString(app.Access.Files["docs/x.axx"]), Is.EqualTo("ENC:a.txt\ntext"));
+        Assert.That(Encoding.UTF8.GetString(app.Access.Files["docs/x-axx.bak"]), Is.EqualTo("other"));
+    }
+
+    /// <summary>
+    /// Only the edits are lost, since the source is kept under its backup name while saving.
+    /// </summary>
+    [Test]
+    public void FailedSaveKeepsTheSource()
+    {
+        TestApp app = CreateEditing("text");
+        app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
+        app.Access.FailingWrites.Add("docs/x.axx");
+        app.Flow.Begin(FlowOrigin.Home, new FileReference("docs/x.axx", "x.axx"));
+
+        Assert.That(async () => await app.EditSave.SaveAsync("edited"), Throws.TypeOf<IOException>());
+
+        Assert.That(app.Access.Files.Keys, Is.EqualTo(["docs/x.axx"]));
+        Assert.That(Encoding.UTF8.GetString(app.Access.Files["docs/x.axx"]), Is.EqualTo("ENC:a.txt\ntext"));
+    }
+
+    [Test]
+    public void SaveIsNotDoneWhenTheSourceCannotBeKeptUnderItsBackupName()
+    {
+        TestApp app = CreateEditing("text");
+        app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
+        app.Access.FailingRenames.Add("docs/x.axx");
+        app.Flow.Begin(FlowOrigin.Home, new FileReference("docs/x.axx", "x.axx"));
+
+        Assert.That(async () => await app.EditSave.SaveAsync("edited"), Throws.TypeOf<IOException>());
+
+        Assert.That(app.Access.Files.Keys, Is.EqualTo(["docs/x.axx"]));
+        Assert.That(Encoding.UTF8.GetString(app.Access.Files["docs/x.axx"]), Is.EqualTo("ENC:a.txt\ntext"));
+    }
+
+    [Test]
     public async Task CopySavedInMyFoldersBecomesTheSource()
     {
         TestApp app = CreateEditing("text");

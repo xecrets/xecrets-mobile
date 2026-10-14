@@ -47,7 +47,7 @@ public sealed class BreadcrumbTests
     {
         TestApp app = new();
         app.Flow.Begin(origin);
-        EncryptResultPageModel page = new(null!, app.Operations, app.Recent, app.Flow, app.UserInterface);
+        EncryptResultPageModel page = new(null!, app.Operations, app.Recent, app.Flow, app.CrashLog, app.UserInterface);
 
         page.Initialize(EncryptionPreparationResult.Empty with { IsForPassword = isForPassword });
 

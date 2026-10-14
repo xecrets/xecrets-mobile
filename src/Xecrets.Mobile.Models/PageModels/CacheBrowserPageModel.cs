@@ -42,14 +42,21 @@ namespace Xecrets.Mobile.Models.PageModels;
 public partial class CacheBrowserPageModel : PageModelBase
 {
     private readonly IFileService _fileService;
+    private readonly ICrashLogService _crashLogService;
     private readonly string _cacheDirectory;
     private string _currentDirectory;
 
-    public CacheBrowserPageModel(IFileService fileService, IUserInterfaceService userInterfaceService)
+    public CacheBrowserPageModel(
+        IFileService fileService,
+        ICrashLogService crashLogService,
+        IUserInterfaceService userInterfaceService)
         : base(userInterfaceService)
     {
         _fileService = fileService;
-        _cacheDirectory = fileService.CacheDirectory;
+        _crashLogService = crashLogService;
+        // The whole cache of the app, of which the cache directory of the files is a part, so that also the crash logs
+        // are shown.
+        _cacheDirectory = Path.GetDirectoryName(fileService.CacheDirectory)!;
         _currentDirectory = _cacheDirectory;
     }
 
@@ -89,6 +96,7 @@ public partial class CacheBrowserPageModel : PageModelBase
         }
         catch (Exception ex)
         {
+            _crashLogService.WriteSwallowedException(ex);
             StatusText = ex.FormatException();
         }
 
@@ -127,6 +135,7 @@ public partial class CacheBrowserPageModel : PageModelBase
         }
         catch (Exception ex)
         {
+            _crashLogService.WriteSwallowedException(ex);
             StatusText = ex.FormatException();
         }
     }

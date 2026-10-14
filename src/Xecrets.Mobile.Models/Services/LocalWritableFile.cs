@@ -37,10 +37,7 @@ namespace Xecrets.Mobile.Models.Services;
 /// </summary>
 public sealed class LocalWritableFile(string path) : IWritableFile
 {
-    // A rename moves the file to a new path, so the target of subsequent calls has to track it.
-    private string _path = path;
-
-    public string Id => _path;
+    public string Id => path;
 
     public IDisposable AcquireAccess() => new EmptyAccessScope();
 
@@ -48,31 +45,16 @@ public sealed class LocalWritableFile(string path) : IWritableFile
 
     public Task<bool> CanDeleteAsync() => Task.FromResult(IsWritable());
 
-    public Task<long> GetLengthAsync() => Task.FromResult(new FileInfo(_path).Length);
+    public Task<long?> GetLengthAsync() => Task.FromResult<long?>(new FileInfo(path).Length);
 
     public Task<Stream> OpenWriteAsync() =>
-        Task.FromResult<Stream>(new FileStream(_path, FileMode.Open, FileAccess.Write, FileShare.None));
-
-    public Task<bool> RenameIfPossibleAsync(string newFileName)
-    {
-        try
-        {
-            string renamedPath = Path.Combine(Path.GetDirectoryName(_path)!, newFileName);
-            File.Move(_path, renamedPath);
-            _path = renamedPath;
-            return Task.FromResult(true);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            return Task.FromResult(false);
-        }
-    }
+        Task.FromResult<Stream>(new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.None));
 
     public Task DeleteAsync()
     {
-        File.Delete(_path);
+        File.Delete(path);
         return Task.CompletedTask;
     }
 
-    private bool IsWritable() => (File.GetAttributes(_path) & FileAttributes.ReadOnly) == 0;
+    private bool IsWritable() => (File.GetAttributes(path) & FileAttributes.ReadOnly) == 0;
 }

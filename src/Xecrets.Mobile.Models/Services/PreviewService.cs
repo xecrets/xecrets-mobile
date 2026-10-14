@@ -41,7 +41,8 @@ internal sealed class PreviewService(
     IProfileService profileService,
     ITransientFileService transientFileService,
     PreviewState previewState,
-    DecryptionPasswordRequestState passwordRequestState)
+    DecryptionPasswordRequestState passwordRequestState,
+    ICrashLogService crashLogService)
     : IPreviewService
 {
     public IPreviewState Current => previewState;
@@ -182,15 +183,16 @@ internal sealed class PreviewService(
         return PreviewPreparationStatus.Prepared;
     }
 
-    private static void TryMakeReadOnly(string filePath)
+    private void TryMakeReadOnly(string filePath)
     {
         try
         {
             File.SetAttributes(filePath, File.GetAttributes(filePath) | FileAttributes.ReadOnly);
         }
-        catch
+        catch (Exception ex)
         {
             // Best effort. Some mobile filesystems do not support this attribute.
+            crashLogService.WriteSwallowedException(ex);
         }
     }
 }

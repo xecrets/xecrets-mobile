@@ -44,6 +44,7 @@ public partial class EncryptToSharePageModel(
     FileOperationWorkflow fileOperationWorkflow,
     IEncryptionPreparationService encryptionPreparationService,
     IFlowContext flowContext,
+    ICrashLogService crashLogService,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
 {
@@ -106,6 +107,7 @@ public partial class EncryptToSharePageModel(
         }
         catch (Exception ex)
         {
+            crashLogService.WriteSwallowedException(ex);
             StatusText = ex.FormatException();
         }
         finally

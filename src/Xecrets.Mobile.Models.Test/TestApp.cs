@@ -48,7 +48,7 @@ internal sealed class TestApp
         Session.SignIn(null!, "password", null!, Store);
         Storage = new WorkFolderStorage(Session);
         Access = new FakeFileAccess(Storage) { UsesFolderIds = usesFolderIds };
-        Recent = new RecentFilesService(Session, Flow, Access);
+        Recent = new RecentFilesService(Session, Flow, Access, CrashLog);
         FolderAccess = new FolderAccessWorkflow(Access, Storage, UserInterface);
         Wiper = new FakeFileWiper(Access);
         FakeProfileService profile = new();
@@ -59,6 +59,7 @@ internal sealed class TestApp
             Recent,
             Access,
             Wiper,
+            CrashLog,
             UserInterface);
         Operations = new FileOperationWorkflow(
             FolderAccess,
@@ -69,6 +70,7 @@ internal sealed class TestApp
             Core,
             Wiper,
             Recent,
+            CrashLog,
             UserInterface);
         EditSave = new EditSaveService(
             Preview,
@@ -78,7 +80,8 @@ internal sealed class TestApp
             FolderAccess,
             Operations,
             Recent,
-            Flow);
+            Flow,
+            CrashLog);
     }
 
     public FakeUserDataStore Store { get; } = new();
@@ -94,6 +97,8 @@ internal sealed class TestApp
     public FlowContext Flow { get; } = new();
 
     public FakeCoreServices Core { get; } = new();
+
+    public FakeCrashLogService CrashLog { get; } = new();
 
     public FakePreviewService Preview { get; } = new();
 
@@ -124,12 +129,12 @@ internal sealed class TestApp
         Store.Files.Add(new RecentFile { Id = id, Operation = operation, Name = name });
 
     public RecentFilesPageModel CreateRecentFilesPage() =>
-        new(Recent, Access, Storage, FolderAccess, Operations, Launcher, UserInterface);
+        new(Recent, Access, Storage, FolderAccess, Operations, Launcher, CrashLog, UserInterface);
 
     public WorkFoldersPageModel CreateWorkFoldersPage() =>
-        new(Storage, Access, FolderAccess, Operations, UserInterface);
+        new(Storage, Access, FolderAccess, Operations, CrashLog, UserInterface);
 
-    public EditPageModel CreateEditPage() => new(Preview, EditSave, Flow, UserInterface);
+    public EditPageModel CreateEditPage() => new(Preview, EditSave, Flow, CrashLog, UserInterface);
 
     public List<string> RecentIds() => [.. Store.Files.Select(file => file.Id)];
 

@@ -32,39 +32,25 @@ using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Models.Services;
 
-public sealed class LocalFileWriteSession : IFileWriteSession
+/// <summary>
+/// Writes the destination file in place. A new file is created only if there is none with the name, so that an
+/// existing file is never replaced unless that is allowed.
+/// </summary>
+public sealed class LocalFileWriteSession(string folderPath, string name, bool overwrite) : IFileWriteSession
 {
-    private readonly string _destinationPath;
-    private readonly string _temporaryPath;
-    private readonly bool _overwrite;
+    private readonly string _destinationPath = Path.Combine(folderPath, name);
+    private bool _isCommitted;
 
-    public LocalFileWriteSession(string folderPath, string name, bool overwrite)
-    {
-        _destinationPath = Path.Combine(folderPath, name);
-        _temporaryPath = Path.Combine(folderPath, $".xecrets-{Guid.NewGuid():N}.tmp");
-        _overwrite = overwrite;
-        try
-        {
-            OutputStream = File.Create(_temporaryPath);
-        }
-        catch
-        {
-            if (File.Exists(_temporaryPath))
-            {
-                File.Delete(_temporaryPath);
-            }
-
-            throw;
-        }
-    }
-
-    public Stream OutputStream { get; }
+    public Stream OutputStream { get; } = new FileStream(
+        Path.Combine(folderPath, name),
+        overwrite ? FileMode.Create : FileMode.CreateNew,
+        FileAccess.Write,
+        FileShare.None);
 
     public async Task<string> CommitAsync()
     {
-        OutputStream.Close();
-
-        File.Move(_temporaryPath, _destinationPath, _overwrite);
+        await OutputStream.DisposeAsync();
+        _isCommitted = true;
         return _destinationPath;
     }
 
@@ -76,9 +62,9 @@ public sealed class LocalFileWriteSession : IFileWriteSession
         }
         finally
         {
-            if (File.Exists(_temporaryPath))
+            if (!_isCommitted)
             {
-                File.Delete(_temporaryPath);
+                File.Delete(_destinationPath);
             }
         }
     }

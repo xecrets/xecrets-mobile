@@ -52,7 +52,7 @@ namespace Xecrets.Mobile.Platforms.Apple;
 /// gives the access to the files in it, and a file only read has a bookmark of its own. A url a picker gave carries
 /// the access to the file until the app ends.
 /// </summary>
-internal sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants grants) : IFileAccess
+internal sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants grants, ICrashLogService crashLogService) : IFileAccess
 {
     /// <summary>
     /// Any file can be picked, also when an encrypted one is wanted, which is checked once it is read. A file provider
@@ -126,10 +126,10 @@ internal sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants
     public Task<WorkFolder?> FindFolderAsync(string fileId) => grants.FindFolderAsync(fileId, isFolderItself: false);
 
     // A file url does not tell what folder it is reached through, so it is the same in a folder.
-    public FileReference GetFileInFolder(WorkFolder folder, FileReference file) => file;
+    public Task<FileReference> GetFileInFolderAsync(WorkFolder folder, FileReference file) => Task.FromResult(file);
 
-    public string GetParentFolder(string fileId) =>
-        NSUrl.FromString(fileId)?.RemoveLastPathComponent().AbsoluteString ?? string.Empty;
+    public Task<string> GetParentFolderAsync(string fileId) =>
+        Task.FromResult(NSUrl.FromString(fileId)?.RemoveLastPathComponent().AbsoluteString ?? string.Empty);
 
     public IReadOnlyList<string> GetPathSegments(string id, string rememberedName)
     {
@@ -168,6 +168,7 @@ internal sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants
         }
         catch (Exception ex) when (ex is NSErrorException or FileNotAccessibleException)
         {
+            crashLogService.WriteSwallowedException(ex);
             return false;
         }
     }
@@ -184,6 +185,7 @@ internal sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants
         }
 
         using IDisposable scope = new AppleSecurityScope(access.AccessUrl);
+
         FileReference located = AppleFileLocation.Locate(access.FileUrl);
         return file with { Root = located.Root, FolderPath = located.FolderPath };
     }
@@ -211,10 +213,17 @@ internal sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants
         }
     }
 
-    public async Task<IWritableFile> OpenWritableAsync(string fileId) =>
-        new AppleWritableFile(
-            NSUrl.FromString(fileId)!,
-            await grants.GetFolderGrantAsync(fileId, isFolderItself: false));
+    // A file in none of My folders is reached by the access the picker gave to it.
+    public async Task<IWritableFile> OpenWriteAsync(string fileId)
+    {
+        if (await grants.FindFolderAsync(fileId, isFolderItself: false) is { } folder)
+        {
+            return new AppleWritableFile(NSUrl.FromString(fileId)!, folder.GrantId.ResolveGrant());
+        }
+
+        ResolvedUrl resolved = await grants.ResolveAccessAsync(fileId) ?? throw new FileNotAccessibleException();
+        return new AppleWritableFile(resolved.FileUrl, resolved.AccessUrl);
+    }
 
     // The folder of a file is told by its url.
     public Task<string> GetFolderOfFileAsync(string fileId) =>
@@ -225,6 +234,7 @@ internal sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants
         NSUrl folderUrl = NSUrl.FromString(folderId)!;
         using IDisposable access = new AppleSecurityScope(
             await grants.GetFolderGrantAsync(folderId, isFolderItself: true));
+
         return File.Exists(Path.Combine(folderUrl.Path!, name));
     }
 
@@ -234,8 +244,21 @@ internal sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants
         bool overwrite)
     {
         NSUrl folderUrl = NSUrl.FromString(folderId)!;
-        return new AppleFileWriteSession(folderUrl, name, overwrite,
+        return await AppleFileWriteSession.CreateAsync(folderUrl, name, overwrite,
             await grants.GetFolderGrantAsync(folderId, isFolderItself: true));
+    }
+
+    /// <summary>
+    /// The file is moved within its folder through a file coordinator, as for writing.
+    /// </summary>
+    public async Task<string> RenameAsync(string fileId, string newName)
+    {
+        NSUrl fileUrl = NSUrl.FromString(fileId)!;
+        NSUrl renamedUrl = fileUrl.RemoveLastPathComponent().Append(newName, false);
+        using IDisposable access = new AppleSecurityScope(
+            await grants.GetFolderGrantAsync(fileId, isFolderItself: false));
+        await fileUrl.MoveCoordinatedAsync(renamedUrl);
+        return renamedUrl.AbsoluteString!;
     }
 
     /// <summary>
@@ -257,6 +280,29 @@ internal sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants
             }
 
             fileUrl = await NSUrl.FromFilename(temporaryPath).SaveUrlAsync(null);
+        }
+        finally
+        {
+            Directory.Delete(directory, true);
+        }
+
+        return fileUrl is null ? null : AppleFileLocation.Locate(grants.Add(fileUrl), isProviderAsked: false);
+    }
+
+    /// <summary>
+    /// The picker can only move or copy a file that exists, so an empty file is moved to where the user chooses, which
+    /// gives access to it while the app runs. The picker asks the user before replacing a file of the same name.
+    /// </summary>
+    public async Task<FileReference?> CreateFileAsync(string initialFolder, string fileName)
+    {
+        string directory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        NSUrl? fileUrl;
+        try
+        {
+            string temporaryPath = Path.Combine(directory, fileName);
+            await File.WriteAllBytesAsync(temporaryPath, []);
+            fileUrl = await NSUrl.FromFilename(temporaryPath).SaveUrlAsync(await GetInitialUrlAsync(initialFolder));
         }
         finally
         {
@@ -312,7 +358,7 @@ internal sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants
         }
     }
 
-    private static async Task<bool> CanAccessFolderAsync(string folderPath)
+    private async Task<bool> CanAccessFolderAsync(string folderPath)
     {
         try
         {
@@ -321,6 +367,7 @@ internal sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
         {
+            crashLogService.WriteSwallowedException(ex);
             return false;
         }
     }

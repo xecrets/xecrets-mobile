@@ -39,39 +39,43 @@ using Xecrets.Mobile.Models.Abstractions;
 namespace Xecrets.Mobile.Platforms.Apple;
 
 /// <summary>
-/// A file in one of My folders, which has no access of its own, and is accessed through the grant of the folder.
+/// A file accessed through a grant: that of one of My folders containing it, or, for a file in none of them, the url
+/// a picker gave for it.
 /// </summary>
-internal sealed class AppleWritableFile(NSUrl url, NSUrl folderGrant) : IWritableFile
+internal sealed class AppleWritableFile(NSUrl url, NSUrl grant) : IWritableFile
 {
-    // A rename gives the file a new NSUrl (a new path in the same directory), so the target of
-    // subsequent access/write/delete calls has to track it - hence a mutable field.
-    private NSUrl _fileUrl = url;
+    private readonly NSUrl _fileUrl = url;
 
     public string Id => _fileUrl.AbsoluteString!;
 
-    public IDisposable AcquireAccess() => new AppleSecurityScope(folderGrant);
+    public IDisposable AcquireAccess() => new AppleSecurityScope(grant);
 
-    public Task<bool> CanWriteAsync() => Task.FromResult(IsWritable(_fileUrl));
+    // Called while accessing the grant, as by the wiper.
+    public Task<bool> CanWriteAsync() => Task.FromResult(
+        NSFileManager.DefaultManager.IsReadableFile(_fileUrl.Path!) &&
+        NSFileManager.DefaultManager.IsWritableFile(_fileUrl.Path!));
 
-    public Task<bool> CanDeleteAsync() => Task.FromResult(IsWritable(_fileUrl));
+    public Task<bool> CanDeleteAsync() => Task.FromResult(NSFileManager.DefaultManager.IsDeletableFile(_fileUrl.Path!));
 
-    public Task<long> GetLengthAsync() => Task.FromResult(new FileInfo(_fileUrl.Path!).Length);
-
-    public Task<Stream> OpenWriteAsync() =>
-        Task.FromResult<Stream>(new FileStream(_fileUrl.Path!, FileMode.Open, FileAccess.Write, FileShare.None));
+    public Task<long?> GetLengthAsync() => Task.FromResult<long?>(new FileInfo(_fileUrl.Path!).Length);
 
     /// <summary>
-    /// Renames the file within its folder by setting its name, which is a writable resource value.
+    /// The file is written within a coordinated write, which lasts until the stream is disposed.
     /// </summary>
-    public Task<bool> RenameIfPossibleAsync(string newFileName)
+    public async Task<Stream> OpenWriteAsync()
     {
-        if (!_fileUrl.SetResource(NSUrl.NameKey, new NSString(newFileName), out NSError _))
+        AppleCoordinatedWrite coordination = await AppleCoordinatedWrite.BeginAsync(_fileUrl, default);
+        try
         {
-            return Task.FromResult(false);
+            return new OwningStream(
+                new FileStream(coordination.Url.Path!, FileMode.Open, FileAccess.Write, FileShare.None),
+                coordination);
         }
-
-        _fileUrl = _fileUrl.RemoveLastPathComponent().Append(newFileName, false);
-        return Task.FromResult(true);
+        catch
+        {
+            coordination.Dispose();
+            throw;
+        }
     }
 
     /// <summary>
@@ -106,7 +110,4 @@ internal sealed class AppleWritableFile(NSUrl url, NSUrl folderGrant) : IWritabl
 
         return Task.CompletedTask;
     }
-
-    private static bool IsWritable(NSUrl url) =>
-        url.TryGetResource(NSUrl.IsWritableKey, out NSObject value, out NSError _) && ((NSNumber)value).BoolValue;
 }

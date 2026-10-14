@@ -208,6 +208,10 @@ public sealed class InstallationServiceTests
         public void WriteCrashLog(string source, object? crash)
         {
         }
+
+        public void WriteSwallowedException(Exception exception, string filePath = "", string memberName = "", int lineNumber = 0)
+        {
+        }
     }
 
     private sealed class TestFileService(string directory) : IFileService

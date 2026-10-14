@@ -54,7 +54,7 @@ namespace Xecrets.Mobile.Platforms.Windows;
 // process runs with the user's own token, though, so there is no grant to persist in the first place: a plain
 // path is all that is needed to regain access on a later run.
 [SupportedOSPlatform("windows10.0.19041")]
-internal sealed class WindowsFileAccess(WorkFolderStorage storage) : IFileAccess
+internal sealed class WindowsFileAccess(WorkFolderStorage storage, ICrashLogService crashLogService) : IFileAccess
 {
     public async Task<FileReference?> PickFileAsync(string initialFolder, FilePickerKind kind)
     {
@@ -103,9 +103,9 @@ internal sealed class WindowsFileAccess(WorkFolderStorage storage) : IFileAccess
             .OrderByDescending(folder => folder.Id.Length)
             .FirstOrDefault();
 
-    public FileReference GetFileInFolder(WorkFolder folder, FileReference file) => file;
+    public Task<FileReference> GetFileInFolderAsync(WorkFolder folder, FileReference file) => Task.FromResult(file);
 
-    public string GetParentFolder(string fileId) => Path.GetDirectoryName(fileId) ?? string.Empty;
+    public Task<string> GetParentFolderAsync(string fileId) => Task.FromResult(Path.GetDirectoryName(fileId) ?? string.Empty);
 
     public IReadOnlyList<string> GetPathSegments(string id, string rememberedName)
     {
@@ -143,16 +143,23 @@ internal sealed class WindowsFileAccess(WorkFolderStorage storage) : IFileAccess
         }
     }
 
-    public Task<IWritableFile> OpenWritableAsync(string fileId) =>
+    public Task<IWritableFile> OpenWriteAsync(string fileId) =>
         Task.FromResult<IWritableFile>(new LocalWritableFile(fileId));
 
-    public Task<string> GetFolderOfFileAsync(string fileId) => Task.FromResult(GetParentFolder(fileId));
+    public Task<string> GetFolderOfFileAsync(string fileId) => GetParentFolderAsync(fileId);
 
     public Task<bool> FileExistsInFolderAsync(string folderId, string name) =>
         Task.FromResult(File.Exists(Path.Combine(folderId, name)));
 
     public Task<IFileWriteSession> OpenWriteInFolderAsync(string folderId, string name, bool overwrite) =>
         Task.FromResult<IFileWriteSession>(new LocalFileWriteSession(folderId, name, overwrite));
+
+    public Task<string> RenameAsync(string fileId, string newName)
+    {
+        string renamedPath = Path.Combine(Path.GetDirectoryName(fileId)!, newName);
+        File.Move(fileId, renamedPath);
+        return Task.FromResult(renamedPath);
+    }
 
     public async Task<FileReference?> SaveAsAsync(string fileName, Stream content)
     {
@@ -174,6 +181,32 @@ internal sealed class WindowsFileAccess(WorkFolderStorage storage) : IFileAccess
         {
             output.SetLength(0);
             await content.CopyToAsync(output);
+        }
+
+        return WindowsFileLocation.Locate(file);
+    }
+
+    // The picker leaves an existing file as it is, so it is emptied to be written as new.
+    public async Task<FileReference?> CreateFileAsync(string initialFolder, string fileName)
+    {
+        string extension = Path.GetExtension(fileName);
+        FileSavePicker picker = new()
+        {
+            SettingsIdentifier = CreateSettingsIdentifier(initialFolder),
+            SuggestedFileName = Path.GetFileNameWithoutExtension(fileName),
+        };
+        picker.FileTypeChoices.Add(extension.Length > 0 ? extension : ".", [extension.Length > 0 ? extension : "."]);
+        InitializeWithWindow.Initialize(picker, GetWindowHandle());
+        StorageFile? file = await picker.PickSaveFileAsync();
+        if (file is null)
+        {
+            return null;
+        }
+
+        // An existing file the user chose to replace is left as it is until the result is written to it.
+        if (!File.Exists(file.Path))
+        {
+            await File.WriteAllBytesAsync(file.Path, []);
         }
 
         return WindowsFileLocation.Locate(file);
@@ -204,7 +237,7 @@ internal sealed class WindowsFileAccess(WorkFolderStorage storage) : IFileAccess
         }
     }
 
-    private static async Task<bool> CanAccessFolderAsync(StorageFolder folder)
+    private async Task<bool> CanAccessFolderAsync(StorageFolder folder)
     {
         try
         {
@@ -213,6 +246,7 @@ internal sealed class WindowsFileAccess(WorkFolderStorage storage) : IFileAccess
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or COMException)
         {
+            crashLogService.WriteSwallowedException(ex);
             return false;
         }
     }

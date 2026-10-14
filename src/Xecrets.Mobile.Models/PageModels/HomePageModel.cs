@@ -45,6 +45,7 @@ public partial class HomePageModel(
     ICrashTestService crashTestService,
     SessionExitService sessionExitService,
     IFlowContext flowContext,
+    ICrashLogService crashLogService,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
 {
@@ -119,6 +120,7 @@ public partial class HomePageModel(
         }
         catch (Exception ex)
         {
+            crashLogService.WriteSwallowedException(ex);
             StatusText = ex.FormatException();
         }
         finally
@@ -167,6 +169,7 @@ public partial class HomePageModel(
         }
         catch (Exception ex)
         {
+            crashLogService.WriteSwallowedException(ex);
             StatusText = ex.FormatException();
         }
         finally

@@ -50,25 +50,17 @@ public sealed class LocalFileWriteSessionTests
 
     [TestCase(false)]
     [TestCase(true)]
-    public async Task CommitPublishesCompleteContentsAndClosesStream(bool overwrite)
+    public async Task CommitLeavesCompleteContentsAndClosesStream(bool overwrite)
     {
         string path = Path.Combine(_directory, "output.txt");
         if (overwrite)
         {
-            await File.WriteAllTextAsync(path, "original");
+            await File.WriteAllTextAsync(path, "original contents");
         }
 
         await using (IFileWriteSession session = new LocalFileWriteSession(_directory, "output.txt", overwrite))
         {
             await session.OutputStream.WriteAsync(Encoding.UTF8.GetBytes("replacement"));
-            if (overwrite)
-            {
-                Assert.That(await File.ReadAllTextAsync(path), Is.EqualTo("original"));
-            }
-            else
-            {
-                Assert.That(File.Exists(path), Is.False);
-            }
 
             Assert.That(await session.CommitAsync(), Is.EqualTo(path));
             Assert.That(session.OutputStream.CanWrite, Is.False);
@@ -78,16 +70,23 @@ public sealed class LocalFileWriteSessionTests
         Assert.That(Directory.GetFiles(_directory), Is.EqualTo((string[])[path]));
     }
 
-    [TestCase(false)]
-    [TestCase(true)]
-    public async Task AbandonedWritePreservesDestinationAndRemovesTemporaryFile(bool fail)
+    /// <summary>
+    /// A partly written file is removed, so that it is not taken for the result. A file that was replaced is then lost.
+    /// </summary>
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public async Task AbandonedWriteRemovesDestination(bool fail, bool overwrite)
     {
-        string path = Path.Combine(_directory, "output.txt");
-        await File.WriteAllTextAsync(path, "original");
+        if (overwrite)
+        {
+            await File.WriteAllTextAsync(Path.Combine(_directory, "output.txt"), "original");
+        }
 
         async Task WriteAsync()
         {
-            await using IFileWriteSession session = new LocalFileWriteSession(_directory, "output.txt", true);
+            await using IFileWriteSession session = new LocalFileWriteSession(_directory, "output.txt", overwrite);
             await session.OutputStream.WriteAsync(Encoding.UTF8.GetBytes("partial"));
             if (fail)
             {
@@ -104,21 +103,16 @@ public sealed class LocalFileWriteSessionTests
             await WriteAsync();
         }
 
-        Assert.That(await File.ReadAllTextAsync(path), Is.EqualTo("original"));
-        Assert.That(Directory.GetFiles(_directory), Is.EqualTo((string[])[path]));
+        Assert.That(Directory.GetFiles(_directory), Is.Empty);
     }
 
     [Test]
-    public async Task FailedCommitPreservesDestinationAndRemovesTemporaryFile()
+    public async Task NewFileIsNotCreatedOverExistingFile()
     {
         string path = Path.Combine(_directory, "output.txt");
         await File.WriteAllTextAsync(path, "original");
 
-        await using (IFileWriteSession session = new LocalFileWriteSession(_directory, "output.txt", false))
-        {
-            await session.OutputStream.WriteAsync(Encoding.UTF8.GetBytes("replacement"));
-            await Assert.ThatAsync(async () => await session.CommitAsync(), Throws.TypeOf<IOException>());
-        }
+        Assert.That(() => new LocalFileWriteSession(_directory, "output.txt", false), Throws.TypeOf<IOException>());
 
         Assert.That(await File.ReadAllTextAsync(path), Is.EqualTo("original"));
         Assert.That(Directory.GetFiles(_directory), Is.EqualTo((string[])[path]));

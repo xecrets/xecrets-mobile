@@ -157,26 +157,18 @@ public sealed class TransientFileServiceTests
     }
 
     [Test]
-    public async Task WipeClearsUnprotectedCacheEntries()
+    public async Task WipeClearsAllCacheEntries()
     {
-        string unprotectedDirectory = Path.Combine(_cacheDirectory, "legacy-cache");
-        string crashLogDirectory = Path.Combine(_cacheDirectory, "XecretsCrashLogs");
-        string oatDirectory = Path.Combine(_cacheDirectory, "oat_primary");
-        Directory.CreateDirectory(unprotectedDirectory);
-        Directory.CreateDirectory(crashLogDirectory);
-        Directory.CreateDirectory(oatDirectory);
+        string directory = Path.Combine(_cacheDirectory, "legacy-cache");
+        Directory.CreateDirectory(directory);
         await File.WriteAllTextAsync(Path.Combine(_cacheDirectory, "legacy-file"), "legacy");
-        await File.WriteAllTextAsync(Path.Combine(unprotectedDirectory, "legacy-file"), "legacy");
-        await File.WriteAllTextAsync(Path.Combine(crashLogDirectory, "crashlog.txt"), "crash");
-        await File.WriteAllTextAsync(Path.Combine(oatDirectory, "base.art"), "runtime");
+        await File.WriteAllTextAsync(Path.Combine(directory, "legacy-file"), "legacy");
         TransientFileService transient = CreateService(_ => Task.CompletedTask);
 
         await transient.MaybeWipeTrackedFilesAsync();
 
         Assert.That(File.Exists(Path.Combine(_cacheDirectory, "legacy-file")), Is.False);
-        Assert.That(Directory.Exists(unprotectedDirectory), Is.False);
-        Assert.That(File.Exists(Path.Combine(crashLogDirectory, "crashlog.txt")), Is.True);
-        Assert.That(File.Exists(Path.Combine(oatDirectory, "base.art")), Is.True);
+        Assert.That(Directory.Exists(directory), Is.False);
     }
 
     [Test]
@@ -216,7 +208,7 @@ public sealed class TransientFileServiceTests
                 }
             }
         };
-        IncomingFileService incoming = new(new TestProfileService(), transient, null!, null!, null!, null!, userInterface);
+        IncomingFileService incoming = new(new TestProfileService(), transient, null!, null!, null!, null!, new FakeCrashLogService(), userInterface);
         Task processing = incoming.ReceiveAsync(new TestIncomingFileSource(async () =>
         {
             string path = transient.CreateIncomingPath("new.txt");
@@ -252,21 +244,21 @@ public sealed class TransientFileServiceTests
     }
 
     private TransientFileService CreateService(Func<IWritableFile, Task> onOverwriteAsync)
-        => new(new TestFileService(_cacheDirectory), new TestFileWiper(onOverwriteAsync));
+        => new(new TestFileService(_cacheDirectory), new TestFileWiper(onOverwriteAsync), new FakeCrashLogService());
 
     private static IncomingFileService CreateIncomingService(ITransientFileService transient)
-        => new(null!, transient, null!, null!, null!, null!, new TestUserInterfaceService { CanReceiveIncomingFiles = true });
+        => new(null!, transient, null!, null!, null!, null!, new FakeCrashLogService(), new TestUserInterfaceService { CanReceiveIncomingFiles = true });
 
     // The real wiper, calling the action when a file is opened to be overwritten, so that a failure of the action is
     // a failure during the wipe.
     private sealed class TestFileWiper(Func<IWritableFile, Task> onOverwriteAsync) : IFileWiper
     {
-        private readonly FileWiper _wiper = new();
+        private readonly FileWiper _wiper = new(new FakeCrashLogService());
 
         public Task<bool> CanWipeAsync(IWritableFile file) => _wiper.CanWipeAsync(file);
 
-        public Task<FileWipeStatus> WipeAsync(IWritableFile file) =>
-            _wiper.WipeAsync(new OverwriteHookFile(file, onOverwriteAsync));
+        public Task<FileWipeStatus> WipeAsync(IWritableFile file, bool isOnDevice) =>
+            _wiper.WipeAsync(new OverwriteHookFile(file, onOverwriteAsync), isOnDevice);
     }
 
     private sealed class OverwriteHookFile(IWritableFile file, Func<IWritableFile, Task> onOverwriteAsync)
@@ -276,13 +268,12 @@ public sealed class TransientFileServiceTests
         public IDisposable AcquireAccess() => file.AcquireAccess();
         public Task<bool> CanWriteAsync() => file.CanWriteAsync();
         public Task<bool> CanDeleteAsync() => file.CanDeleteAsync();
-        public Task<long> GetLengthAsync() => file.GetLengthAsync();
+        public Task<long?> GetLengthAsync() => file.GetLengthAsync();
         public async Task<Stream> OpenWriteAsync()
         {
             await onOverwriteAsync(file);
             return await file.OpenWriteAsync();
         }
-        public Task<bool> RenameIfPossibleAsync(string newFileName) => file.RenameIfPossibleAsync(newFileName);
         public Task DeleteAsync() => file.DeleteAsync();
     }
 

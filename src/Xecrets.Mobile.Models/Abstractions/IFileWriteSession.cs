@@ -31,14 +31,15 @@
 namespace Xecrets.Mobile.Models.Abstractions;
 
 /// <summary>
-/// Owns a temporary output stream. Disposal removes an uncommitted output without replacing the destination.
+/// Owns the output stream to the destination file, which is written in place. Disposal removes an uncommitted output,
+/// so that a partly written file is not taken for the result. A destination that was replaced is then lost.
 /// </summary>
 public interface IFileWriteSession : IAsyncDisposable
 {
     Stream OutputStream { get; }
 
     /// <summary>
-    /// Closes the stream and puts the output in place, returning its file id. Called once, after writing succeeds.
+    /// Closes the stream, returning the file id of the destination. Called once, after writing succeeds.
     /// </summary>
     Task<string> CommitAsync();
 }

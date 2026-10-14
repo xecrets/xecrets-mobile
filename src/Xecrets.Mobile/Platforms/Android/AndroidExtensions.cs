@@ -38,9 +38,11 @@ using System.Threading.Tasks;
 using Android.Content;
 using Android.Content.PM;
 using Android.Database;
+using Android.OS;
 using Android.Provider;
 using Android.Webkit;
 
+using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Services;
 
 using AndroidUri = Android.Net.Uri;
@@ -55,6 +57,20 @@ namespace Xecrets.Mobile.Platforms.Android;
 [SupportedOSPlatform("android26.0")]
 internal static class AndroidExtensions
 {
+    // Retried 4 times, 250 ms apart, which is up to a second.
+    private const int _deleteRetries = 4;
+
+    // Retried 12 times, 250 ms apart, which is up to three seconds.
+    private const int _readableRetries = 12;
+
+    private static readonly TimeSpan _retryInterval = TimeSpan.FromMilliseconds(250);
+
+    private static readonly TimeSpan _providerTimeout = TimeSpan.FromSeconds(10);
+
+    // A provider tells when it has loaded a folder, but not if it does so before being listened to, so a folder still
+    // loading is also listed again after a while.
+    private static readonly TimeSpan _loadingRecheckInterval = TimeSpan.FromSeconds(1);
+
     private static ContentResolver ContentResolver => Platform.CurrentActivity!.ContentResolver!;
 
     /// <summary>
@@ -80,7 +96,28 @@ internal static class AndroidExtensions
         contentType.StartsWith("video/", StringComparison.OrdinalIgnoreCase) ||
         contentType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase);
 
-    public static bool IsExternalStorage(this string? authority) => authority == AndroidFileLocation.ExternalStorageAuthority;
+    public static bool IsExternalStorage(this string? authority) => authority == "com.android.externalstorage.documents";
+
+    /// <summary>
+    /// Waits for a call to a document provider for up to ten seconds, since storage such as Dropbox may never finish
+    /// renaming a document it has only just created. The call itself cannot be canceled, so should it fail after that,
+    /// it is logged, rather than left unobserved.
+    /// </summary>
+    /// <exception cref="TimeoutException">The call did not finish in time.</exception>
+    public static async Task<T> WaitForProviderAsync<T>(this Task<T> call, ICrashLogService crashLogService)
+    {
+        try
+        {
+            return await call.WaitAsync(_providerTimeout);
+        }
+        catch (TimeoutException)
+        {
+            _ = call.ContinueWith(
+                task => crashLogService.WriteSwallowedException(task.Exception!.InnerException!),
+                TaskContinuationOptions.OnlyOnFaulted);
+            throw;
+        }
+    }
 
     // Android's own table knows extensions that ContentTypeDetector does not, as file managers do.
     public static string OrAndroidContentType(this string contentType, string fileName) =>
@@ -108,41 +145,181 @@ internal static class AndroidExtensions
             DocumentsContract.RenameDocument(ContentResolver, uri, name) ??
             throw new IOException("The document could not be renamed.");
 
-        public AndroidUri? FindChild(string name)
+        /// <summary>
+        /// Deletes the document, off the main thread. Storage such as Dropbox may not yet delete a document it has only
+        /// just created, so the deletion is retried for up to a second, after which the failure is thrown.
+        /// </summary>
+        public async Task DeleteDocumentAsync()
         {
-            string documentId = DocumentsContract.GetDocumentId(uri)!;
-            AndroidUri childrenUri = DocumentsContract.BuildChildDocumentsUriUsingTree(uri, documentId)!;
-            using ICursor cursor = ContentResolver.Query(
-                childrenUri,
-                [DocumentsContract.Document.ColumnDocumentId, DocumentsContract.Document.ColumnDisplayName],
-                null,
-                null,
-                null)!;
-
-            AndroidUri? child = null;
-            while (child is null && cursor.MoveToNext())
+            for (int retry = 0; ; retry++)
             {
-                if (cursor.GetString(1) == name)
+                try
                 {
-                    child = DocumentsContract.BuildDocumentUriUsingTree(uri, cursor.GetString(0)!);
-                }
-            }
+                    if (await Task.Run(() => DocumentsContract.DeleteDocument(ContentResolver, uri)))
+                    {
+                        return;
+                    }
 
-            cursor.Close(); // Dispose does not call Java close()
-            return child;
+                    throw new IOException("The file could not be deleted.");
+                }
+                catch (Exception ex) when (retry < _deleteRetries && (ex is IOException || ex.IsDocumentProviderFailure()))
+                {
+                    // Retried below.
+                }
+
+                await Task.Delay(_retryInterval);
+            }
         }
 
-        public string GetDisplayName()
+        /// <summary>
+        /// Waits, off the main thread, until the document can be opened for reading, for up to three seconds. Storage
+        /// such as Dropbox does not yet know a document it has only just created, and then does not open it, may not
+        /// delete it, and may never finish renaming it. Returns whether it could be opened.
+        /// </summary>
+        public async Task<bool> WaitUntilReadableAsync()
         {
-            using ICursor cursor = ContentResolver.Query(
+            for (int retry = 0; ; retry++)
+            {
+                try
+                {
+                    Stream? input = await Task.Run(() => ContentResolver.OpenInputStream(uri));
+                    if (input is not null)
+                    {
+                        await input.DisposeAsync();
+                        return true;
+                    }
+                }
+                catch (Exception ex) when (ex is IOException || ex.IsDocumentProviderFailure())
+                {
+                    // Not known yet, retried below.
+                }
+
+                if (retry == _readableRetries)
+                {
+                    return false;
+                }
+
+                await Task.Delay(_retryInterval);
+            }
+        }
+
+        /// <summary>
+        /// Finds the document with the name in the folder, once the provider has listed all of it.
+        /// </summary>
+        public async Task<AndroidUri?> FindChildAsync(string name) =>
+            (await uri.ListChildrenAsync(DocumentsContract.GetDocumentId(uri)!))
+                .FirstOrDefault(child => child.Name == name) is { } found
+                ? DocumentsContract.BuildDocumentUriUsingTree(uri, found.Id)
+                : null;
+
+        /// <summary>
+        /// Lists the documents in a folder, through the tree grant the uri is built on, off the main thread. A provider
+        /// still loading the folder, such as from the cloud, tells so with the listing, and notifies when it has loaded,
+        /// after which the folder is listed again, as the system document picker does. A provider that could not load
+        /// it tells why, which is thrown, since the folder is then not known to be listed completely. There is no
+        /// timeout, as reaching the storage is up to the provider.
+        /// </summary>
+        public async Task<IReadOnlyList<DocumentChild>> ListChildrenAsync(string folderDocumentId)
+        {
+            AndroidUri childrenUri = DocumentsContract.BuildChildDocumentsUriUsingTree(uri, folderDocumentId)!;
+            while (true)
+            {
+                if (await TryListChildrenAsync(childrenUri) is { } children)
+                {
+                    return children;
+                }
+            }
+        }
+    }
+
+    // Returns null when the provider is still loading the folder, after it has told that it has loaded, or after a
+    // while.
+    private static async Task<IReadOnlyList<DocumentChild>?> TryListChildrenAsync(AndroidUri childrenUri)
+    {
+        using ICursor cursor = await Task.Run(() => ContentResolver.Query(
+            childrenUri,
+            [
+                DocumentsContract.Document.ColumnDocumentId,
+                DocumentsContract.Document.ColumnDisplayName,
+                DocumentsContract.Document.ColumnMimeType,
+            ],
+            null, null, null)) ?? throw new IOException("The folder could not be listed.");
+        try
+        {
+            Bundle? extras = cursor.Extras;
+            if (extras?.GetString(DocumentsContract.ExtraError) is { Length: > 0 } error)
+            {
+                throw new IOException(error);
+            }
+
+            if (extras?.GetBoolean(DocumentsContract.ExtraLoading) == true)
+            {
+                using ChangeObserver observer = new();
+                cursor.RegisterContentObserver(observer);
+                try
+                {
+                    await Task.WhenAny(observer.Changed, Task.Delay(_loadingRecheckInterval));
+                }
+                finally
+                {
+                    cursor.UnregisterContentObserver(observer);
+                }
+
+                return null;
+            }
+
+            return await Task.Run(() =>
+            {
+                List<DocumentChild> children = [];
+                while (cursor.MoveToNext())
+                {
+                    children.Add(new DocumentChild(cursor.GetString(0)!, cursor.GetString(1) ?? "", cursor.GetString(2)));
+                }
+
+                return children;
+            });
+        }
+        finally
+        {
+            await Task.Run(cursor.Close); // Dispose does not call Java close()
+        }
+    }
+
+    private sealed class ChangeObserver : ContentObserver
+    {
+        private readonly TaskCompletionSource _changed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        // Without a handler, the change is told on a binder thread, which only completes the task.
+        public ChangeObserver()
+            : base(null)
+        {
+        }
+
+        public Task Changed => _changed.Task;
+
+        public override void OnChange(bool selfChange) => _changed.TrySetResult();
+    }
+
+    extension(AndroidUri uri)
+    {
+
+        public string? GetDisplayName()
+        {
+            using ICursor? cursor = ContentResolver.Query(
                 uri,
                 [DocumentsContract.Document.ColumnDisplayName],
                 null, null, null)!;
+
+            if (cursor is null)
+            {
+                return null;
+            }
+
             cursor.MoveToFirst();
             string displayName = cursor.GetString(0)!;
-            cursor.Close();
+            cursor.Close(); // Dispose does not call Java close()
 
-            return displayName; // Dispose does not call Java close()
+            return displayName;
         }
     }
 

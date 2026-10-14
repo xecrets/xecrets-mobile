@@ -132,6 +132,10 @@ public sealed class GrantCleanupServiceTests
         public string ReadCurrent() => string.Empty;
 
         public void WriteCrashLog(string source, object? crash) => Logged = true;
+
+        public void WriteSwallowedException(Exception exception, string filePath = "", string memberName = "", int lineNumber = 0)
+        {
+        }
     }
 
     private sealed class TestFileService(string directory) : IFileService

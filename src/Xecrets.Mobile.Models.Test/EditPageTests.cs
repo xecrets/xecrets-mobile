@@ -124,6 +124,22 @@ public sealed class EditPageTests
     }
 
     [Test]
+    public async Task SaveIsNotDoneWhenTheBackupNameIsInUse()
+    {
+        TestApp app = CreateEditingSource();
+        app.AddFile("docs/x-axx.bak", "other");
+        EditPageModel page = await OpenAsync(app);
+        page.Text = "edited";
+
+        await page.SaveCommand.ExecuteAsync(null);
+
+        Assert.That(SourceText(app), Is.EqualTo("ENC:a.txt\ntext"));
+        Assert.That(page.StatusText, Is.EqualTo(string.Format(MobileTexts.DialogTextBackupNameInUse, "x-axx.bak")));
+        Assert.That(page.HasUnsavedChanges, Is.True);
+        Assert.That(app.UserInterface.TransientMessages, Is.Empty);
+    }
+
+    [Test]
     public async Task SaveWithoutChangesDoesNothing()
     {
         TestApp app = CreateEditing();

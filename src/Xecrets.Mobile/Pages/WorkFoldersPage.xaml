@@ -67,12 +67,23 @@
                     <ScrollView Grid.Row="1">
                         <Grid x:Name="ContentBody" Padding="{StaticResource IconRowBodyPadding}">
                             <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
+                            <!-- Without any folders, the page information is shown, to make it easier to find. -->
+                            <Border Margin="{StaticResource IconRowBodyContentMargin}"
+                                    IsVisible="{Binding NoFoldersText, Converter={StaticResource StringNotEmptyConverter}}"
+                                    BackgroundColor="{AppThemeBinding Light={StaticResource LightOutline}, Dark={StaticResource DarkOutline}}"
+                                    Stroke="{AppThemeBinding Light={StaticResource LightOutline}, Dark={StaticResource DarkOutline}}"
+                                    StrokeShape="RoundRectangle 4"
+                                    Padding="10,6">
+                                <Label Text="{Binding NoFoldersText}"
+                                       FontSize="13" />
+                            </Border>
                             <pageControls:PageMessages Margin="{StaticResource IconRowBodyContentMargin}"
                                                        MessageText="{Binding MessageText}"
                                                        StatusText="{Binding StatusText}" />
                             <VerticalStackLayout x:Name="ActionButtonStack"
                                                  HorizontalOptions="Center"
-                                                 Spacing="{StaticResource LayoutSpacing}"
+                                                 Spacing="{StaticResource LayoutSpacing}">
+                            <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}"
                                                  BindableLayout.ItemsSource="{Binding Folders}">
                             <BindableLayout.ItemTemplate>
                                 <DataTemplate x:DataType="mobileModels:WorkFolderEntry">
@@ -91,12 +102,20 @@
                                                                  Size="28" />
                                             </ImageButton.Source>
                                         </ImageButton>
-                                        <Button Grid.Column="1"
-                                                VerticalOptions="Center"
-                                                Text="{Binding ListDisplayName}"
-                                                LineBreakMode="MiddleTruncation"
-                                                Command="{Binding OpenCommand}"
-                                                CommandParameter="{Binding Folder}" />
+                                        <Grid Grid.Column="1" VerticalOptions="Center">
+                                            <Button Text="{Binding ListDisplayName, StringFormat='{0}…'}"
+                                                    Padding="50,8"
+                                                    LineBreakMode="MiddleTruncation"
+                                                    Command="{Binding OpenCommand}"
+                                                    CommandParameter="{Binding Folder}" />
+                                            <Image Source="{StaticResource IconOpenFolderButton}"
+                                                   HorizontalOptions="Start"
+                                                   VerticalOptions="Center"
+                                                   Margin="18,0,0,0"
+                                                   WidthRequest="24"
+                                                   HeightRequest="24"
+                                                   InputTransparent="True" />
+                                        </Grid>
                                         <ImageButton Grid.Column="2"
                                                      Style="{StaticResource ActionRowIconButtonStyle}"
                                                      Command="{Binding RemoveCommand}"
@@ -111,6 +130,20 @@
                                     </Grid>
                                 </DataTemplate>
                             </BindableLayout.ItemTemplate>
+                            </VerticalStackLayout>
+                            <BoxView Style="{StaticResource ActionDividerStyle}" />
+                            <Grid Margin="{StaticResource IconRowActionButtonMargin}">
+                                <Button Text="{x:Static modelUtilities:MobileTexts.ButtonBrowseElsewhere}"
+                                        Padding="50,8"
+                                        Command="{Binding BrowseCommand}" />
+                                <Image Source="{StaticResource IconOpenFolderButton}"
+                                       HorizontalOptions="Start"
+                                       VerticalOptions="Center"
+                                       Margin="18,0,0,0"
+                                       WidthRequest="24"
+                                       HeightRequest="24"
+                                       InputTransparent="True" />
+                            </Grid>
                             </VerticalStackLayout>
                             </VerticalStackLayout>
                         </Grid>

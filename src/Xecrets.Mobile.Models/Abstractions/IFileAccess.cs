@@ -34,13 +34,13 @@ using Xecrets.Mobile.Models.Models;
 namespace Xecrets.Mobile.Models.Abstractions;
 
 /// <summary>
-/// The primitive file operations each platform provides. Anything that changes a file does so through one of My
-/// folders, which holds a grant to the folder, while a file that is only read may be reached through a grant to the
-/// file itself.
+/// The primitive file operations each platform provides. A file is changed where it is through one of My folders,
+/// which holds a grant to the folder, or, when it is in none of them, by the access the pickers gave to the file and
+/// to a new file to save the result in. A file that is only read may be reached through a grant to the file itself.
 /// <para>
 /// A file id is the platform reference to it: a content uri on Android, a file url on Apple platforms and a path on
 /// Windows. A folder id or initial folder is the <see cref="WorkFolder.Id"/> of a folder, or the parent of a file as
-/// given by <see cref="GetParentFolder"/>. An empty initial folder lets the platform decide where to start.
+/// given by <see cref="GetParentFolderAsync"/>. An empty initial folder lets the platform decide where to start.
 /// </para>
 /// </summary>
 public interface IFileAccess
@@ -67,12 +67,12 @@ public interface IFileAccess
     /// The file as reached through the grant of a folder known to contain it, which is the reference used to change
     /// it.
     /// </summary>
-    FileReference GetFileInFolder(WorkFolder folder, FileReference file);
+    Task<FileReference> GetFileInFolderAsync(WorkFolder folder, FileReference file);
 
     /// <summary>
     /// The folder of the file, as a hint where to start a picker, or empty when it cannot be told.
     /// </summary>
-    string GetParentFolder(string fileId);
+    Task<string> GetParentFolderAsync(string fileId);
 
     /// <summary>
     /// The path of the file or folder as segments to show, the last being its name. Only what can be told from the id
@@ -115,9 +115,10 @@ public interface IFileAccess
     Task<Stream> OpenReadAsync(string fileId);
 
     /// <summary>
-    /// The file for writing, renaming and deleting it, which requires it to be reached through one of My folders.
+    /// The file for writing and deleting it, reached through one of My folders, or by the access a picker
+    /// gave to the file itself while the app runs.
     /// </summary>
-    Task<IWritableFile> OpenWritableAsync(string fileId);
+    Task<IWritableFile> OpenWriteAsync(string fileId);
 
     /// <summary>
     /// The folder of a file reached through one of My folders, as reached through the same folder. Finding it may take
@@ -133,13 +134,28 @@ public interface IFileAccess
     Task<bool> FileExistsInFolderAsync(string folderId, string name);
 
     /// <summary>
-    /// Opens a temporary output in the folder, as given by <see cref="GetFolderOfFileAsync"/>, to write and commit.
+    /// Opens the file with the name in the folder, as given by <see cref="GetFolderOfFileAsync"/>, to write and commit.
+    /// The file is written in place, replacing an existing file when allowed, and otherwise created, which fails if
+    /// there already is one.
     /// </summary>
     Task<IFileWriteSession> OpenWriteInFolderAsync(string folderId, string name, bool overwrite);
+
+    /// <summary>
+    /// Renames a file reached through one of My folders, and returns its id under the new name. Fails if there already
+    /// is a file with the new name, or the storage gives the file another name than the one asked for.
+    /// </summary>
+    Task<string> RenameAsync(string fileId, string newName);
 
     /// <summary>
     /// Lets the user save a copy anywhere. Returns null when the user cancels. No lasting access to the saved file is
     /// kept.
     /// </summary>
     Task<FileReference?> SaveAsAsync(string fileName, Stream content);
+
+    /// <summary>
+    /// Lets the user choose where to save a new file, starting in the initial folder if the platform allows it, and
+    /// creates it empty, to be written through <see cref="OpenWriteAsync"/>. The user may change the name. The file
+    /// can be reached while the app runs, but no lasting access to it is kept. Returns null when the user cancels.
+    /// </summary>
+    Task<FileReference?> CreateFileAsync(string initialFolder, string fileName);
 }

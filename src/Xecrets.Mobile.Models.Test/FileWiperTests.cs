@@ -49,11 +49,9 @@ public sealed class FileWiperTests
 
         public Func<Task<bool>> CanDelete { get; init; } = () => Task.FromResult(true);
 
-        public Func<Task<long>> GetLength { get; init; } = () => throw new AssertionException("The file should not be inspected.");
+        public Func<Task<long?>> GetLength { get; init; } = () => throw new AssertionException("The file should not be inspected.");
 
         public Func<Task<Stream>> OpenWrite { get; init; } = () => throw new AssertionException("The file should not be opened.");
-
-        public Func<string, Task<bool>> RenameIfPossible { get; init; } = _ => throw new AssertionException("The file should not be renamed.");
 
         public Func<Task> Delete { get; init; } = () => throw new AssertionException("The file should not be deleted.");
 
@@ -65,11 +63,9 @@ public sealed class FileWiperTests
 
         public Task<bool> CanDeleteAsync() => CanDelete();
 
-        public Task<long> GetLengthAsync() => GetLength();
+        public Task<long?> GetLengthAsync() => GetLength();
 
         public Task<Stream> OpenWriteAsync() => OpenWrite();
-
-        public Task<bool> RenameIfPossibleAsync(string newFileName) => RenameIfPossible(newFileName);
 
         public Task DeleteAsync() => Delete();
     }
@@ -86,7 +82,7 @@ public sealed class FileWiperTests
                 hasAccess = true;
                 return new TestAccessScope(() => hasAccess = false);
             },
-            CanWrite = async () =>
+            CanDelete = async () =>
             {
                 await Task.Yield();
                 Assert.That(hasAccess, Is.True);
@@ -101,11 +97,11 @@ public sealed class FileWiperTests
 
         if (fail)
         {
-            await Assert.ThatAsync(async () => await new FileWiper().CanWipeAsync(file), Throws.TypeOf<IOException>());
+            await Assert.ThatAsync(async () => await new FileWiper(new FakeCrashLogService()).CanWipeAsync(file), Throws.TypeOf<IOException>());
         }
         else
         {
-            Assert.That(await new FileWiper().CanWipeAsync(file), Is.False);
+            Assert.That(await new FileWiper(new FakeCrashLogService()).CanWipeAsync(file), Is.False);
         }
 
         Assert.That(hasAccess, Is.False);
@@ -124,8 +120,7 @@ public sealed class FileWiperTests
                 hasAccess = true;
                 return new TestAccessScope(() => hasAccess = false);
             },
-            RenameIfPossible = _ => Task.FromResult(false),
-            GetLength = () => Task.FromResult(0L),
+            GetLength = () => Task.FromResult<long?>(0),
             OpenWrite = () => fail
                 ? throw new IOException("Write failed.")
                 : Task.FromResult<Stream>(new MemoryStream()),
@@ -139,11 +134,11 @@ public sealed class FileWiperTests
 
         if (fail)
         {
-            await Assert.ThatAsync(async () => await new FileWiper().WipeAsync(file), Throws.TypeOf<IOException>());
+            await Assert.ThatAsync(async () => await new FileWiper(new FakeCrashLogService()).WipeAsync(file, isOnDevice: true), Throws.TypeOf<IOException>());
         }
         else
         {
-            Assert.That(await new FileWiper().WipeAsync(file), Is.EqualTo(FileWipeStatus.Succeeded));
+            Assert.That(await new FileWiper(new FakeCrashLogService()).WipeAsync(file, isOnDevice: true), Is.EqualTo(FileWipeStatus.Succeeded));
         }
 
         Assert.That(wasDeleted, Is.True);
@@ -162,7 +157,7 @@ public sealed class FileWiperTests
         bool wasDeleted = false;
         IWritableFile file = new FakeWritableFile
         {
-            CanWrite = () => Task.FromResult(false),
+            CanDelete = () => Task.FromResult(false),
             OpenWrite = () =>
             {
                 wasOpened = true;
@@ -175,60 +170,73 @@ public sealed class FileWiperTests
             },
         };
 
-        FileWipeStatus status = await new FileWiper().WipeAsync(file);
+        FileWipeStatus status = await new FileWiper(new FakeCrashLogService()).WipeAsync(file, isOnDevice: true);
 
         Assert.That(status, Is.EqualTo(FileWipeStatus.InsufficientRights));
         Assert.That(wasOpened, Is.False);
         Assert.That(wasDeleted, Is.False);
     }
 
+    /// <summary>
+    /// Some storage cannot overwrite a file, but can delete it.
+    /// </summary>
     [Test]
-    public async Task WipeAsyncDeletesFileWhenRenameIsNotSupported()
+    public async Task WipeAsyncOnlyDeletesFileThatCannotBeWritten()
     {
-        byte[] contents = new byte[1024];
-        bool wasDeleted = false;
+        List<string> steps = [];
         IWritableFile file = new FakeWritableFile
         {
-            GetLength = () => Task.FromResult((long)contents.Length),
-            OpenWrite = () => Task.FromResult<Stream>(new MemoryStream(contents, writable: true)),
-            RenameIfPossible = _ => Task.FromResult(false),
+            CanWrite = () => Task.FromResult(false),
             Delete = () =>
             {
-                wasDeleted = true;
+                steps.Add("delete");
                 return Task.CompletedTask;
             },
         };
 
-        FileWipeStatus status = await new FileWiper().WipeAsync(file);
+        Assert.That(await new FileWiper(new FakeCrashLogService()).CanWipeAsync(file), Is.True);
 
-        Assert.That(status, Is.EqualTo(FileWipeStatus.Succeeded));
-        Assert.That(wasDeleted, Is.True);
-        Assert.That(contents, Is.Not.All.EqualTo((byte)0));
+        FileWipeStatus status = await new FileWiper(new FakeCrashLogService()).WipeAsync(file, isOnDevice: true);
+
+        Assert.That(status, Is.EqualTo(FileWipeStatus.OnlyDelete));
+        Assert.That(steps, Is.EqualTo(["delete"]));
     }
 
     /// <summary>
-    /// Storage that keeps versions, or moves a deleted file to a trash, then keeps only the notice, named as wiped,
-    /// rather than the original.
+    /// Storage that is not on the device, such as cloud storage, keeps overwritten contents as versions, so the file is
+    /// only deleted, and is found under its own name in any trash.
     /// </summary>
     [Test]
-    public async Task WipeAsyncRenamesOverwritesAndLeavesOnlyNoticeBeforeDeleting()
+    public async Task WipeAsyncOnlyDeletesFileNotOnDevice()
     {
         List<string> steps = [];
-        MemoryStream written = new();
-        string? newName = null;
         IWritableFile file = new FakeWritableFile
         {
-            GetLength = () => Task.FromResult(4096L),
+            Delete = () =>
+            {
+                steps.Add("delete");
+                return Task.CompletedTask;
+            },
+        };
+
+        FileWipeStatus status = await new FileWiper(new FakeCrashLogService()).WipeAsync(file, isOnDevice: false);
+
+        Assert.That(status, Is.EqualTo(FileWipeStatus.OnlyDelete));
+        Assert.That(steps, Is.EqualTo(["delete"]));
+    }
+
+    [Test]
+    public async Task WipeAsyncOverwritesAndDeletesFileOnDevice()
+    {
+        List<string> steps = [];
+        byte[] contents = new byte[1024];
+        IWritableFile file = new FakeWritableFile
+        {
+            GetLength = () => Task.FromResult<long?>(contents.Length),
             OpenWrite = () =>
             {
                 steps.Add("write");
-                return Task.FromResult<Stream>(new UnclosedStream(written));
-            },
-            RenameIfPossible = name =>
-            {
-                steps.Add("rename");
-                newName = name;
-                return Task.FromResult(true);
+                return Task.FromResult<Stream>(new MemoryStream(contents, writable: true));
             },
             Delete = () =>
             {
@@ -237,12 +245,38 @@ public sealed class FileWiperTests
             },
         };
 
-        FileWipeStatus status = await new FileWiper().WipeAsync(file);
+        FileWipeStatus status = await new FileWiper(new FakeCrashLogService()).WipeAsync(file, isOnDevice: true);
+
+        Assert.That(status, Is.EqualTo(FileWipeStatus.Succeeded));
+        Assert.That(steps, Is.EqualTo(["write", "delete"]));
+        Assert.That(contents, Is.Not.All.EqualTo((byte)0));
+    }
+
+    [Test]
+    public async Task WipeAsyncOverwritesAndLeavesOnlyNoticeBeforeDeleting()
+    {
+        List<string> steps = [];
+        MemoryStream written = new();
+        IWritableFile file = new FakeWritableFile
+        {
+            GetLength = () => Task.FromResult<long?>(4096),
+            OpenWrite = () =>
+            {
+                steps.Add("write");
+                return Task.FromResult<Stream>(new UnclosedStream(written));
+            },
+            Delete = () =>
+            {
+                steps.Add("delete");
+                return Task.CompletedTask;
+            },
+        };
+
+        FileWipeStatus status = await new FileWiper(new FakeCrashLogService()).WipeAsync(file, isOnDevice: true);
 
         byte[] notice = Encoding.UTF8.GetBytes(FileWiper.DeletedNotice);
         Assert.That(status, Is.EqualTo(FileWipeStatus.Succeeded));
-        Assert.That(steps, Is.EqualTo(["rename", "write", "delete"]));
-        Assert.That(newName, Does.Match("^\\.xecrets-wiped-[0-9a-f]{32}\\.txt$"));
+        Assert.That(steps, Is.EqualTo(["write", "delete"]));
         Assert.That(written.ToArray(), Is.EqualTo(notice));
     }
 
@@ -255,18 +289,17 @@ public sealed class FileWiperTests
         List<MemoryStream> opened = [];
         IWritableFile file = new FakeWritableFile
         {
-            GetLength = () => Task.FromResult(4096L),
+            GetLength = () => Task.FromResult<long?>(4096),
             OpenWrite = () =>
             {
                 MemoryStream stream = new();
                 opened.Add(stream);
                 return Task.FromResult<Stream>(new UnseekableStream(stream));
             },
-            RenameIfPossible = _ => Task.FromResult(true),
             Delete = () => Task.CompletedTask,
         };
 
-        await new FileWiper().WipeAsync(file);
+        await new FileWiper(new FakeCrashLogService()).WipeAsync(file, isOnDevice: true);
 
         Assert.That(opened, Has.Count.EqualTo(1));
         Assert.That(Encoding.UTF8.GetString(opened[0].ToArray()), Is.EqualTo(FileWiper.DeletedNotice));
@@ -278,9 +311,8 @@ public sealed class FileWiperTests
         bool wasDeleted = false;
         IWritableFile file = new FakeWritableFile
         {
-            GetLength = () => Task.FromResult(1024L),
+            GetLength = () => Task.FromResult<long?>(1024),
             OpenWrite = () => throw new IOException("Overwrite failed."),
-            RenameIfPossible = _ => Task.FromResult(true),
             Delete = () =>
             {
                 wasDeleted = true;
@@ -288,7 +320,7 @@ public sealed class FileWiperTests
             },
         };
 
-        Assert.That(async () => await new FileWiper().WipeAsync(file),
+        Assert.That(async () => await new FileWiper(new FakeCrashLogService()).WipeAsync(file, isOnDevice: true),
             Throws.TypeOf<IOException>().With.Message.EqualTo("Overwrite failed."));
         Assert.That(wasDeleted, Is.True);
     }
@@ -298,13 +330,12 @@ public sealed class FileWiperTests
     {
         IWritableFile file = new FakeWritableFile
         {
-            GetLength = () => Task.FromResult(1024L),
+            GetLength = () => Task.FromResult<long?>(1024),
             OpenWrite = () => throw new IOException("Overwrite failed."),
-            RenameIfPossible = _ => Task.FromResult(true),
             Delete = () => throw new IOException("Delete failed."),
         };
 
-        Assert.That(async () => await new FileWiper().WipeAsync(file),
+        Assert.That(async () => await new FileWiper(new FakeCrashLogService()).WipeAsync(file, isOnDevice: true),
             Throws.TypeOf<IOException>().With.Message.EqualTo("Overwrite failed."));
     }
 

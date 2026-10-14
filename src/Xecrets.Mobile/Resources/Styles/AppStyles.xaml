@@ -115,6 +115,9 @@
     <!-- Between an icon button and the control beside it. -->
     <x:Double x:Key="IconRowSpacing">4</x:Double>
 
+    <!-- Align a standalone button with the center of a row: 44-unit icon plus 4-unit gap on each side. -->
+    <Thickness x:Key="IconRowActionButtonMargin">48,0</Thickness>
+
 
     <OnIdiom x:Key="CardPadding"
              x:TypeArguments="Thickness"
@@ -158,6 +161,11 @@
         <On Platform="WinUI" Value="Consolas" />
     </OnPlatform>
 
+    <FontImageSource x:Key="IconOpenFolderButton"
+                Glyph="{x:Static f:FluentUI.folder_open_24_regular}"
+                FontFamily="{x:Static f:FluentUI.FontFamily}"
+                Color="{StaticResource White}"
+                Size="{StaticResource size240}" />
     <FontImageSource x:Key="IconLight"
                 Glyph="{x:Static f:FluentUI.weather_sunny_28_regular}"
                 FontFamily="{x:Static f:FluentUI.FontFamily}"

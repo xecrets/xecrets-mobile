@@ -53,6 +53,7 @@ public partial class RecentFilesPageModel(
     FolderAccessWorkflow folderAccess,
     FileOperationWorkflow fileOperations,
     IWorkFolderFileLauncher fileLauncher,
+    ICrashLogService crashLogService,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
 {
@@ -106,6 +107,7 @@ public partial class RecentFilesPageModel(
         }
         catch (Exception ex)
         {
+            crashLogService.WriteSwallowedException(ex);
             StatusText = ex.FormatException();
         }
     }
@@ -141,6 +143,7 @@ public partial class RecentFilesPageModel(
         }
         catch (Exception ex)
         {
+            crashLogService.WriteSwallowedException(ex);
             StatusText = ex.FormatException();
         }
         finally
@@ -164,6 +167,7 @@ public partial class RecentFilesPageModel(
         }
         catch (Exception ex)
         {
+            crashLogService.WriteSwallowedException(ex);
             StatusText = ex.FormatException();
         }
         finally
@@ -238,6 +242,7 @@ public partial class RecentFilesPageModel(
         }
         catch (Exception ex)
         {
+            crashLogService.WriteSwallowedException(ex);
             StatusText = ex.FormatException();
         }
         finally
@@ -257,6 +262,7 @@ public partial class RecentFilesPageModel(
         }
         catch (Exception ex)
         {
+            crashLogService.WriteSwallowedException(ex);
             StatusText = ex.FormatException();
         }
         finally
@@ -282,8 +288,9 @@ public partial class RecentFilesPageModel(
         {
             await action(file);
         }
-        catch (FileNotAccessibleException)
+        catch (FileNotAccessibleException ex)
         {
+            crashLogService.WriteSwallowedException(ex);
             await UserInterfaceService.DisplayMessageAsync(MobileTexts.DialogTextFileNotAccessibleNow);
         }
     }
@@ -326,8 +333,9 @@ public partial class RecentFilesPageModel(
             {
             }
         }
-        catch (FileNotAccessibleException)
+        catch (FileNotAccessibleException ex)
         {
+            crashLogService.WriteSwallowedException(ex);
             await UserInterfaceService.DisplayMessageAsync(MobileTexts.DialogTextFileNotAccessibleNow);
             return null;
         }

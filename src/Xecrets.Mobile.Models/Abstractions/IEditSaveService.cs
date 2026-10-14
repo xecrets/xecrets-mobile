@@ -36,9 +36,10 @@ namespace Xecrets.Mobile.Models.Abstractions;
 public interface IEditSaveService
 {
     /// <summary>
-    /// Saves over the source of the flow, in its folder, which then refers to the saved file.
+    /// Saves over the source of the flow, in its folder, which then refers to the saved file. Returns false, without
+    /// saving, when there already is a file with the backup name of the source, under which it is kept while saving.
     /// </summary>
-    Task SaveAsync(string text);
+    Task<bool> SaveAsync(string text);
 
     /// <summary>
     /// Saves a copy where the user chooses. A copy saved in one of My folders becomes the source of the flow. Returns
