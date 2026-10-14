@@ -34,6 +34,7 @@ using CommunityToolkit.Mvvm.Input;
 using Xecrets.Common.Models;
 
 using Xecrets.Mobile.Models.Abstractions;
+using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
 using Xecrets.Mobile.Models.Utilities;
 
@@ -93,13 +94,19 @@ public partial class EncryptResultPageModel(
             IsBusy = true;
             StatusText = string.Empty;
             EncryptionPreparationResult encryptionResult = Result;
-            await using FileStream content = File.OpenRead(encryptionResult.FilePath);
-            if (await fileOperationWorkflow.SaveAsAsync(encryptionResult.DisplayName, content) is not null)
+            FileReference? saved;
+            await using (FileStream content = File.OpenRead(encryptionResult.FilePath))
+            {
+                saved = await fileOperationWorkflow.SaveAsAsync(encryptionResult.DisplayName, content);
+            }
+
+            if (saved is not null)
             {
                 await recentFilesService.AddFlowSourceAsync(
                     encryptionResult.IsForPassword
                         ? RecentFileOperation.EncryptWithSaveAs
                         : RecentFileOperation.EncryptCopySaveAs);
+                await GoHomeAsync();
             }
         }
         catch (OperationCanceledException)
@@ -149,9 +156,25 @@ public partial class EncryptResultPageModel(
     [RelayCommand]
     private async Task Close()
     {
+        ClearResult();
+        await UserInterfaceService.GoBackAsync(null);
+    }
+
+    /// <summary>
+    /// The copy has been saved, which is usually all the user wanted, so they are taken back to start. Not so after
+    /// Send to, which returns while the user is still choosing where to send, and the copy must be kept until it has
+    /// been read.
+    /// </summary>
+    private async Task GoHomeAsync()
+    {
+        ClearResult();
+        await UserInterfaceService.NavigateToAsync(AppDestination.Home);
+    }
+
+    private void ClearResult()
+    {
         DeleteTemporaryFile(Result.FilePath);
         Result = EncryptionPreparationResult.Empty;
-        await UserInterfaceService.GoBackAsync(null);
     }
 
     private bool CanUseCommand()

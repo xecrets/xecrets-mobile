@@ -242,6 +242,7 @@ public partial class PreviewPageModel(
             if (await fileOperationWorkflow.SaveAsAsync(file.DisplayName, content) is not null)
             {
                 await recentFilesService.AddFlowSourceAsync(RecentFileOperation.DecryptCopySaveAs);
+                await GoHomeIfStartedThereAsync();
             }
         }
         catch (OperationCanceledException)
@@ -298,6 +299,30 @@ public partial class PreviewPageModel(
     {
         previewService.Current.Clear();
         await UserInterfaceService.GoBackAsync(null);
+    }
+
+    /// <summary>
+    /// A copy saved in a flow started on the home page is usually all the user wanted, so they are taken back to start.
+    /// When started from where the file is kept, they stay to go on with it there. Not so after Send to, which returns
+    /// while the user is still choosing where to send.
+    /// </summary>
+    private async Task GoHomeIfStartedThereAsync()
+    {
+        bool startedAtHome = flowContext.Origin switch
+        {
+            FlowOrigin.Home => true,
+            FlowOrigin.ReceivedFile => true,
+            FlowOrigin.MyFolders => false,
+            FlowOrigin.RecentFiles => false,
+            _ => throw new ArgumentOutOfRangeException(nameof(flowContext.Origin), flowContext.Origin, @"Unexpected flow origin."),
+        };
+        if (!startedAtHome)
+        {
+            return;
+        }
+
+        previewService.Current.Clear();
+        await UserInterfaceService.NavigateToAsync(AppDestination.Home);
     }
 
     private bool CanUseCommand()
