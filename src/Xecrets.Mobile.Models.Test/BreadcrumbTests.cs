@@ -74,6 +74,31 @@ public sealed class BreadcrumbTests
             MobileTexts.BreadcrumbPassword)));
     }
 
+    [TestCase(WorkFolderIntent.Auto, nameof(MobileTexts.BreadcrumbMyFolders))]
+    [TestCase(WorkFolderIntent.Encrypt, nameof(MobileTexts.BreadcrumbEncrypt))]
+    [TestCase(WorkFolderIntent.Decrypt, nameof(MobileTexts.BreadcrumbDecrypt))]
+    [TestCase(WorkFolderIntent.Delete, nameof(MobileTexts.BreadcrumbWipe))]
+    public void MyFoldersIsNamedForTheOperationItWasOpenedFor(WorkFolderIntent intent, string pageTextName)
+    {
+        TestApp app = new();
+        WorkFoldersPageModel page = app.CreateWorkFoldersPage();
+
+        page.Initialize(intent);
+
+        string pageText = pageTextName switch
+        {
+            nameof(MobileTexts.BreadcrumbMyFolders) => MobileTexts.BreadcrumbMyFolders,
+            nameof(MobileTexts.BreadcrumbEncrypt) => MobileTexts.BreadcrumbEncrypt,
+            nameof(MobileTexts.BreadcrumbDecrypt) => MobileTexts.BreadcrumbDecrypt,
+            nameof(MobileTexts.BreadcrumbWipe) => MobileTexts.BreadcrumbWipe,
+            _ => throw new ArgumentOutOfRangeException(nameof(pageTextName), pageTextName, @"Unexpected page text."),
+        };
+        Assert.That(page.Breadcrumb, Is.EqualTo(string.Join(
+            MobileTexts.BreadcrumbSeparator,
+            MobileTexts.BreadcrumbHome,
+            pageText)));
+    }
+
     private static string ExpectedBreadcrumb(FlowOrigin origin, string pageTextName)
     {
         string originText = origin switch

@@ -56,8 +56,18 @@ public partial class WorkFoldersPageModel(
 
     public ObservableCollection<WorkFolderEntry> Folders { get; } = [];
 
-    public string Breadcrumb =>
-        string.Join(MobileTexts.BreadcrumbSeparator, MobileTexts.BreadcrumbHome, MobileTexts.BreadcrumbMyFolders);
+    // Opened for an operation, the page is named for it, since that is what the user is doing here.
+    public string Breadcrumb => string.Join(
+        MobileTexts.BreadcrumbSeparator,
+        MobileTexts.BreadcrumbHome,
+        Intent switch
+        {
+            WorkFolderIntent.Auto => MobileTexts.BreadcrumbMyFolders,
+            WorkFolderIntent.Encrypt => MobileTexts.BreadcrumbEncrypt,
+            WorkFolderIntent.Decrypt => MobileTexts.BreadcrumbDecrypt,
+            WorkFolderIntent.Delete => MobileTexts.BreadcrumbWipe,
+            _ => throw new ArgumentOutOfRangeException(nameof(Intent), Intent, @"Unknown work folder intent."),
+        });
 
     [ObservableProperty] public partial string MessageText { get; set; } = string.Empty;
 
@@ -80,6 +90,7 @@ public partial class WorkFoldersPageModel(
     public void Initialize(WorkFolderIntent intent)
     {
         Intent = intent;
+        OnPropertyChanged(nameof(Breadcrumb));
         _pendingIntentHint = intent switch
         {
             WorkFolderIntent.Encrypt => MobileTexts.WorkFolderIntentEncrypt,

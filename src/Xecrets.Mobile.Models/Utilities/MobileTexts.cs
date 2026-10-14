@@ -48,6 +48,12 @@ public static class MobileTexts
     // "Edit"
     public static string BreadcrumbEdit => EditContentTitle;
 
+    // "Decrypt"
+    public static string BreadcrumbDecrypt => ButtonDecrypt;
+
+    // "Encrypt"
+    public static string BreadcrumbEncrypt => ButtonEncrypt;
+
     public static string BreadcrumbEncryptedCopy => "Encrypted copy";
 
     public static string BreadcrumbEncryptToShare => ButtonEncryptToShare.StripEllipsis();
@@ -69,6 +75,9 @@ public static class MobileTexts
 
     // "View"
     public static string BreadcrumbView => ViewContentTitle;
+
+    // "Overwrite and delete"
+    public static string BreadcrumbWipe => ButtonWipe;
 
     public static string ButtonDecryptAs => "Decrypt and…";
 
