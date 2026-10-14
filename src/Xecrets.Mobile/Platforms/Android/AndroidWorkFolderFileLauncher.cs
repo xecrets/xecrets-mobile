@@ -98,7 +98,7 @@ internal class AndroidWorkFolderFileLauncher : IWorkFolderFileLauncher
     {
         string? contentType = Platform.AppContext.ContentResolver!.GetType(uri);
         return string.IsNullOrEmpty(contentType) || contentType == "application/octet-stream"
-            ? ContentTypeDetector.DetectContentType(fileName)
+            ? ContentTypeDetector.DetectContentType(fileName).OrAndroidContentType(fileName)
             : contentType;
     }
 }

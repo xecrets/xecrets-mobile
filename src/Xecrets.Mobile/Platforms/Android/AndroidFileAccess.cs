@@ -360,7 +360,7 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, IFileWiper fi
         intent.AddCategory(Intent.CategoryOpenable);
         intent.SetType(fileName.IsEncrypted()
             ? EncryptedFileType.ContentType
-            : ContentTypeDetector.DetectContentType(fileName));
+            : ContentTypeDetector.DetectContentType(fileName).OrAndroidContentType(fileName));
         intent.PutExtra(Intent.ExtraTitle, fileName);
         intent.AddFlags(ActivityFlags.GrantReadUriPermission | ActivityFlags.GrantWriteUriPermission);
         Intent? result = await StartPickerAsync(intent);

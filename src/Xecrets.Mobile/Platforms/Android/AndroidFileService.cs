@@ -67,23 +67,34 @@ internal class AndroidFileService : FileServiceBase
 
     public override Task ViewFileAsync(DecryptedFileInfo file)
     {
-        GetUri(file.FilePath).CreateQuickViewIntent(file.ContentType).StartQuickView();
+        CreateQuickViewIntent(file, GetContentType(file)).StartQuickView();
         return Task.CompletedTask;
     }
 
     private static AndroidUri GetUri(string filePath) =>
         FileProvider.GetUriForFile(Platform.AppContext, QuickViewFileProvider.Authority, new AndroidFile(filePath))!;
 
+    // Google Drive's video player reads the uri with a query appended, which only a prefix grant covers.
+    private static Intent CreateQuickViewIntent(DecryptedFileInfo file, string contentType)
+    {
+        Intent intent = GetUri(file.FilePath).CreateQuickViewIntent(contentType);
+        intent.AddFlags(ActivityFlags.GrantPrefixUriPermission);
+        return intent;
+    }
+
+    private static string GetContentType(DecryptedFileInfo file) => file.ContentType.OrAndroidContentType(file.DisplayName);
+
     private static bool TryGetQuickViewIntent(DecryptedFileInfo file, [NotNullWhen(true)] out Intent? quickViewIntent)
     {
         quickViewIntent = null;
 
-        if (!file.ContentType.IsQuickViewContentType())
+        string contentType = GetContentType(file);
+        if (!contentType.IsQuickViewContentType())
         {
             return false;
         }
 
-        Intent intent = GetUri(file.FilePath).CreateQuickViewIntent(file.ContentType);
+        Intent intent = CreateQuickViewIntent(file, contentType);
         if (intent.HasExternalHandler())
         {
             quickViewIntent = intent;
@@ -125,9 +136,9 @@ internal class AndroidFileService : FileServiceBase
     {
         EnsureReadableFile(filePath);
 
-        string resolvedContentType = string.IsNullOrWhiteSpace(contentType)
+        string resolvedContentType = (string.IsNullOrWhiteSpace(contentType)
             ? ContentTypeDetector.DetectContentType(displayName)
-            : contentType;
+            : contentType).OrAndroidContentType(displayName);
         AndroidUri uri = FileProvider.GetUriForFile(
             Platform.AppContext,
             $"{Platform.AppContext.PackageName}.fileProvider",

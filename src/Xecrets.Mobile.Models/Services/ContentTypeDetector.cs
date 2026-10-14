@@ -36,7 +36,7 @@ namespace Xecrets.Mobile.Models.Services;
 
 public static class ContentTypeDetector
 {
-    private const string _unknownContentType = "application/octet-stream";
+    public const string UnknownContentType = "application/octet-stream";
 
     // The largest text file, in bytes, that the app's internal viewer/editor will handle. 
     internal const long MaxInlineTextSizeBytes = 100 * 1024;
@@ -178,7 +178,34 @@ public static class ContentTypeDetector
         { ".tif", "image/tiff" },
         { ".tiff", "image/tiff" },
         { ".svg", "image/svg+xml" },
+        { ".jfif", "image/jpeg" },
+        { ".heic", "image/heic" },
+        { ".heif", "image/heif" },
+        { ".avif", "image/avif" },
+        { ".ico", "image/x-icon" },
         { ".pdf", "application/pdf" },
+        { ".mp4", "video/mp4" },
+        { ".m4v", "video/mp4" },
+        { ".mov", "video/quicktime" },
+        { ".mkv", "video/x-matroska" },
+        { ".webm", "video/webm" },
+        { ".3gp", "video/3gpp" },
+        { ".avi", "video/x-msvideo" },
+        { ".mpg", "video/mpeg" },
+        { ".mpeg", "video/mpeg" },
+        { ".wmv", "video/x-ms-wmv" },
+        { ".mp3", "audio/mpeg" },
+        { ".m4a", "audio/mp4" },
+        { ".aac", "audio/aac" },
+        { ".wav", "audio/wav" },
+        { ".ogg", "audio/ogg" },
+        { ".oga", "audio/ogg" },
+        { ".opus", "audio/ogg" },
+        { ".flac", "audio/flac" },
+        { ".mid", "audio/midi" },
+        { ".midi", "audio/midi" },
+        { ".amr", "audio/amr" },
+        { ".wma", "audio/x-ms-wma" },
         { ".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document" },
         { ".xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" },
         { ".pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation" },
@@ -334,6 +361,11 @@ public static class ContentTypeDetector
         ".tif",
         ".tiff",
         ".svg",
+        ".jfif",
+        ".heic",
+        ".heif",
+        ".avif",
+        ".ico",
     };
 
     internal static DecryptedFileInfo CreateInfo(string filePath, string displayName)
@@ -344,7 +376,7 @@ public static class ContentTypeDetector
         string contentType = DetectContentType(fileName);
         PreviewKind kind = GetPreviewKind(fileName, contentType);
 
-        if (kind == PreviewKind.External && contentType == _unknownContentType && LooksLikeTextFile(filePath))
+        if (kind == PreviewKind.External && contentType == UnknownContentType && LooksLikeTextFile(filePath))
         {
             kind = PreviewKind.Text;
             contentType = "text/plain";
@@ -362,7 +394,7 @@ public static class ContentTypeDetector
     public static string DetectContentType(string fileName)
     {
         string extension = Path.GetExtension(fileName);
-        return _contentTypes.GetValueOrDefault(extension, _unknownContentType);
+        return _contentTypes.GetValueOrDefault(extension, UnknownContentType);
     }
 
     private static PreviewKind GetPreviewKind(string fileName, string contentType)

@@ -39,6 +39,9 @@ using Android.Content;
 using Android.Content.PM;
 using Android.Database;
 using Android.Provider;
+using Android.Webkit;
+
+using Xecrets.Mobile.Models.Services;
 
 using AndroidUri = Android.Net.Uri;
 
@@ -78,6 +81,12 @@ internal static class AndroidExtensions
         contentType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase);
 
     public static bool IsExternalStorage(this string? authority) => authority == AndroidFileLocation.ExternalStorageAuthority;
+
+    // Android's own table knows extensions that ContentTypeDetector does not, as file managers do.
+    public static string OrAndroidContentType(this string contentType, string fileName) =>
+        contentType == ContentTypeDetector.UnknownContentType
+            ? MimeTypeMap.Singleton!.GetMimeTypeFromExtension(Path.GetExtension(fileName).TrimStart('.').ToLowerInvariant()) ?? contentType
+            : contentType;
 
     extension(AndroidUri uri)
     {

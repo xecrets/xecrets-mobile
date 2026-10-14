@@ -139,6 +139,21 @@ public sealed class ContentTypeDetectorTests
         Assert.That(ContentTypeDetector.DetectContentType(fileName), Is.EqualTo(expectedContentType));
     }
 
+    [TestCase("clip.mp4", "video/mp4")]
+    [TestCase("clip.MOV", "video/quicktime")]
+    [TestCase("clip.webm", "video/webm")]
+    [TestCase("song.mp3", "audio/mpeg")]
+    [TestCase("song.m4a", "audio/mp4")]
+    [TestCase("song.flac", "audio/flac")]
+    [TestCase("photo.heic", "image/heic")]
+    [TestCase("photo.HEIF", "image/heif")]
+    [TestCase("photo.avif", "image/avif")]
+    [TestCase("photo.jfif", "image/jpeg")]
+    public void MediaExtensionsMapToTheirOwnContentType(string fileName, string expectedContentType)
+    {
+        Assert.That(ContentTypeDetector.DetectContentType(fileName), Is.EqualTo(expectedContentType));
+    }
+
     [Test]
     public void RecognizedBinaryOfficeExtensionIsNotReclassifiedAsText()
     {
