@@ -49,6 +49,7 @@ public partial class PreviewPageModel(
     IRecentFilesService recentFilesService,
     ICrashTestService crashTestService,
     IFlowContext flowContext,
+    ICrashLogService crashLogService,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
 {
@@ -136,6 +137,7 @@ public partial class PreviewPageModel(
         }
         catch (Exception ex)
         {
+            crashLogService.WriteSwallowedException(ex);
             StatusText = ex.FormatException();
         }
         finally
@@ -181,6 +183,7 @@ public partial class PreviewPageModel(
         }
         catch (Exception ex)
         {
+            crashLogService.WriteSwallowedException(ex);
             StatusText = ex.FormatException();
         }
         finally
@@ -215,6 +218,7 @@ public partial class PreviewPageModel(
         }
         catch (Exception ex)
         {
+            crashLogService.WriteSwallowedException(ex);
             StatusText = ex.FormatException();
         }
         finally
@@ -251,6 +255,7 @@ public partial class PreviewPageModel(
         }
         catch (Exception ex)
         {
+            crashLogService.WriteSwallowedException(ex);
             StatusText = ex.FormatException();
         }
         finally
@@ -286,6 +291,7 @@ public partial class PreviewPageModel(
         }
         catch (Exception ex)
         {
+            crashLogService.WriteSwallowedException(ex);
             StatusText = ex.FormatException();
         }
         finally

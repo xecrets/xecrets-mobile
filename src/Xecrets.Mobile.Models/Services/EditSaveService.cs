@@ -45,31 +45,78 @@ internal sealed class EditSaveService(
     FolderAccessWorkflow folderAccess,
     FileOperationWorkflow fileOperationWorkflow,
     IRecentFilesService recentFilesService,
-    IFlowContext flowContext)
+    IFlowContext flowContext,
+    ICrashLogService crashLogService)
     : IEditSaveService
 {
-    public async Task SaveAsync(string text)
+    /// <summary>
+    /// The source is kept under its backup name while the edits are saved under its own name, and is deleted once they
+    /// are. Should saving fail, the source gets its own name back, so that only the edits are lost.
+    /// </summary>
+    public async Task<bool> SaveAsync(string text)
     {
-        EncryptRequest request = await PrepareAsync(previewService.Current, text);
-
         // The source is reached through one of My folders, as it was when editing started.
         FileReference source = flowContext.Source!;
         string folderId = await fileAccess.GetFolderOfFileAsync(source.Id);
-        string savedId;
-        await using (IFileWriteSession destination =
-                     await fileAccess.OpenWriteInFolderAsync(folderId, source.Name, overwrite: true))
+        if (await fileAccess.FileExistsInFolderAsync(folderId, source.Name.ToBackupName()))
         {
+            return false;
+        }
+
+        EncryptRequest request = await PrepareAsync(previewService.Current, text);
+        string backupId = await fileAccess.RenameAsync(source.Id, source.Name.ToBackupName());
+        string savedId;
+        try
+        {
+            await using IFileWriteSession destination =
+                await fileAccess.OpenWriteInFolderAsync(folderId, source.Name, overwrite: false);
             await EncryptPreparedAsync(previewService.Current, request, destination.OutputStream);
             savedId = await destination.CommitAsync();
         }
+        catch
+        {
+            await TryRestoreAsync(backupId, source.Name);
+            throw;
+        }
 
-        // The file is replaced, which on some storage gives it a new id, while the old id refers to the replaced
+        await TryDeleteBackupAsync(backupId);
+
+        // The file is a new one, which on some storage gives it a new id, while the old id refers to the replaced
         // file. The saved file is the one saved over and listed from then on, in place of any entry for the
         // replaced file under any id, such as when it was viewed through a grant to the file itself.
         FileReference saved = source with { Id = savedId };
         flowContext.UpdateSource(saved);
         await recentFilesService.RemoveFileAsync(source.Id);
         await recentFilesService.AddFlowSourceAsync(RecentFileOperation.Edit);
+        return true;
+    }
+
+    // The failure to save is what is reported, and the source is then left under its backup name.
+    private async Task TryRestoreAsync(string backupId, string name)
+    {
+        try
+        {
+            await fileAccess.RenameAsync(backupId, name);
+        }
+        catch (Exception ex)
+        {
+            crashLogService.WriteSwallowedException(ex);
+        }
+    }
+
+    // The edits are saved, so a backup that is left is only logged. It is encrypted, and named after the source.
+    private async Task TryDeleteBackupAsync(string backupId)
+    {
+        try
+        {
+            IWritableFile backup = await fileAccess.OpenWriteAsync(backupId);
+            using IDisposable access = backup.AcquireAccess();
+            await backup.DeleteAsync();
+        }
+        catch (Exception ex)
+        {
+            crashLogService.WriteSwallowedException(ex);
+        }
     }
 
     public async Task<bool> SaveCopyAsync(string text)
@@ -125,27 +172,29 @@ internal sealed class EditSaveService(
         await coreServices.EncryptAsync(cleartext, encrypted, request);
     }
 
-    private static void TryClearReadOnly(string filePath)
+    private void TryClearReadOnly(string filePath)
     {
         try
         {
             File.SetAttributes(filePath, File.GetAttributes(filePath) & ~FileAttributes.ReadOnly);
         }
-        catch
+        catch (Exception ex)
         {
             // Best effort. The file write will report the real failure if this matters.
+            crashLogService.WriteSwallowedException(ex);
         }
     }
 
-    private static void TryMakeReadOnly(string filePath)
+    private void TryMakeReadOnly(string filePath)
     {
         try
         {
             File.SetAttributes(filePath, File.GetAttributes(filePath) | FileAttributes.ReadOnly);
         }
-        catch
+        catch (Exception ex)
         {
             // Best effort. Some mobile filesystems do not support this attribute.
+            crashLogService.WriteSwallowedException(ex);
         }
     }
 }

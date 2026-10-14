@@ -60,6 +60,8 @@ internal static class QuickLookFileViewer
     /// </summary>
     public static async Task ViewAsync(NSUrl item)
     {
+        ThreadGuard.ThrowIfNotMainThread();
+
         UIViewController presentingController = Platform.GetCurrentUIViewController()!;
         SingleItemQuickLookController previewController = new(item);
         TaskCompletionSource dismissed = new(TaskCreationOptions.RunContinuationsAsynchronously);

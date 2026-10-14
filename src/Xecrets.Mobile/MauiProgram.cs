@@ -63,6 +63,9 @@ internal static class MauiProgram
 
     public static MauiApp CreateMauiApp()
     {
+        // Each platform creates the app on its main thread.
+        ThreadGuard.SetMainThread(Environment.CurrentManagedThreadId);
+
         // AxCrypt 1.x files use Windows-1252 for the passphrase and the original file name.
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 

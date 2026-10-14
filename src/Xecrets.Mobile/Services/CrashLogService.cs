@@ -30,8 +30,10 @@
 
 using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Maui.ApplicationModel;
@@ -46,14 +48,21 @@ internal sealed class CrashLogService : ICrashLogService
 {
     private const string _crashLogDirectoryName = "XecretsCrashLogs";
 
-    private const string _crashLogFileName = "crashlog.txt";
+    private const string _crashLogName = "crashlog";
+
+    private const string _swallowedLogName = "swallowed";
+
+    // As for crash logs, the current log and the 9 before it are kept, one exception in each.
+    private const int _keptLogCount = 10;
+
+    private readonly Lock _swallowedLock = new();
 
     public bool HasPendingCrashLog => File.Exists(CurrentPath);
 
     private static string CurrentDirectory =>
         Path.Combine(FileSystem.Current.CacheDirectory, _crashLogDirectoryName);
 
-    private static string CurrentPath => Path.Combine(CurrentDirectory, _crashLogFileName);
+    private static string CurrentPath => GetCurrentPath(_crashLogName);
 
     public void RegisterHandlers()
     {
@@ -67,26 +76,32 @@ internal sealed class CrashLogService : ICrashLogService
     public string ReadCurrent()
     {
         string report = File.ReadAllText(CurrentPath);
-        Rotate();
+        Rotate(_crashLogName);
         return report;
     }
 
-    private static void Rotate()
+    private static string GetCurrentPath(string name) => Path.Combine(CurrentDirectory, $"{name}.txt");
+
+    // The current log, name.txt, becomes name.1.txt and so on, the oldest being removed.
+    private static void Rotate(string name)
     {
         string directory = CurrentDirectory;
-        string oldestPath = Path.Combine(directory, "crashlog.9.txt");
-        File.Delete(oldestPath);
+        File.Delete(Path.Combine(directory, $"{name}.{_keptLogCount - 1}.txt"));
 
-        for (int index = 8; index >= 1; index--)
+        for (int index = _keptLogCount - 2; index >= 1; index--)
         {
-            string sourcePath = Path.Combine(directory, $"crashlog.{index}.txt");
+            string sourcePath = Path.Combine(directory, $"{name}.{index}.txt");
             if (File.Exists(sourcePath))
             {
-                File.Move(sourcePath, Path.Combine(directory, $"crashlog.{index + 1}.txt"));
+                File.Move(sourcePath, Path.Combine(directory, $"{name}.{index + 1}.txt"));
             }
         }
 
-        File.Move(CurrentPath, Path.Combine(directory, "crashlog.1.txt"));
+        string currentPath = GetCurrentPath(name);
+        if (File.Exists(currentPath))
+        {
+            File.Move(currentPath, Path.Combine(directory, $"{name}.1.txt"));
+        }
     }
 
     public void WriteCrashLog(string source, object? crash)
@@ -105,5 +120,35 @@ internal sealed class CrashLogService : ICrashLogService
         report.AppendLine(crash?.ToString() ?? "No managed exception information was available.");
 
         File.WriteAllText(CurrentPath, report.ToString());
+    }
+
+    public void WriteSwallowedException(
+        Exception exception,
+        [CallerFilePath] string filePath = "",
+        [CallerMemberName] string memberName = "",
+        [CallerLineNumber] int lineNumber = 0)
+    {
+        // The path is that of the build machine, which may not use the separator of the device.
+        string fileName = filePath[(filePath.LastIndexOfAny(['/', '\\']) + 1)..];
+
+        StringBuilder report = new();
+        report.AppendLine($"Swallowed in {fileName}:{lineNumber} ({memberName})");
+        report.AppendLine($"UTC: {DateTimeOffset.UtcNow:O}");
+        report.AppendLine();
+        report.AppendLine(exception.ToString());
+
+        lock (_swallowedLock)
+        {
+            try
+            {
+                Directory.CreateDirectory(CurrentDirectory);
+                Rotate(_swallowedLogName);
+                File.WriteAllText(GetCurrentPath(_swallowedLogName), report.ToString());
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // Best effort - logging never changes what is done about the exception.
+            }
+        }
     }
 }

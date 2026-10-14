@@ -45,6 +45,7 @@ public partial class EncryptResultPageModel(
     FileOperationWorkflow fileOperationWorkflow,
     IRecentFilesService recentFilesService,
     IFlowContext flowContext,
+    ICrashLogService crashLogService,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
 {
@@ -115,6 +116,7 @@ public partial class EncryptResultPageModel(
         }
         catch (Exception ex)
         {
+            crashLogService.WriteSwallowedException(ex);
             StatusText = ex.FormatException();
         }
         finally
@@ -145,6 +147,7 @@ public partial class EncryptResultPageModel(
         }
         catch (Exception ex)
         {
+            crashLogService.WriteSwallowedException(ex);
             StatusText = ex.FormatException();
         }
         finally
@@ -180,7 +183,7 @@ public partial class EncryptResultPageModel(
     private bool CanUseCommand()
         => !IsBusy && Result != EncryptionPreparationResult.Empty;
 
-    private static void DeleteTemporaryFile(string filePath)
+    private void DeleteTemporaryFile(string filePath)
     {
         try
         {
@@ -195,9 +198,9 @@ public partial class EncryptResultPageModel(
                 Directory.Delete(directoryPath, recursive: true);
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // ignored
+            crashLogService.WriteSwallowedException(ex);
         }
     }
 

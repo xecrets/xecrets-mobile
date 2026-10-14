@@ -28,6 +28,8 @@
 
 #endregion Copyright and GPL License
 
+using Android.Content;
+using Android.Content.PM;
 using Android.Database;
 using Android.OS;
 using Android.Provider;
@@ -48,27 +50,40 @@ using Platform = Microsoft.Maui.ApplicationModel.Platform;
 
 namespace Xecrets.Mobile.Platforms.Android;
 
+/// <summary>
+/// The provider is called off the main thread, since the StrictMode policy of the calling thread goes with each call
+/// to it. A provider that reaches the network for a call, such as Dropbox when deleting, would otherwise fail with
+/// NetworkOnMainThreadException.
+/// </summary>
 [SupportedOSPlatform("android26.0")]
-internal sealed class AndroidWritableFile(AndroidUri uri) : IWritableFile
+internal sealed class AndroidWritableFile(AndroidUri uri, ICrashLogService crashLogService) : IWritableFile
 {
-    // A rename gives the document a new Uri, so the target of subsequent access/write/delete calls has
-    // to track it - hence a mutable field rather than the constructor parameter directly.
-    private AndroidUri _fileUri = uri;
+    private readonly AndroidUri _fileUri = uri;
 
     public string Id => _fileUri.ToString()!;
 
     public IDisposable AcquireAccess() => new EmptyAccessScope();
 
-    public Task<bool> CanWriteAsync() => Task.FromResult(Supports(_fileUri, DocumentContractFlags.SupportsWrite));
+    // A virtual document, such as a Google Docs document, has no contents of its own that can be written.
+    public Task<bool> CanWriteAsync() => Task.Run(() =>
+        IsGranted(_fileUri) &&
+        GetFlags(_fileUri) is { } flags &&
+        flags.HasFlag(DocumentContractFlags.SupportsWrite) &&
+        !flags.HasFlag(DocumentContractFlags.VirtualDocument));
 
-    public Task<bool> CanDeleteAsync() => Task.FromResult(Supports(_fileUri, DocumentContractFlags.SupportsDelete));
+    public Task<bool> CanDeleteAsync() => Task.Run(() =>
+        IsGranted(_fileUri) &&
+        GetFlags(_fileUri) is { } flags &&
+        flags.HasFlag(DocumentContractFlags.SupportsDelete));
 
-    public Task<long> GetLengthAsync() => Task.FromResult(GetLength(_fileUri));
+    public Task<long?> GetLengthAsync() => Task.Run(() => GetLength(_fileUri));
 
-    public Task<Stream> OpenWriteAsync() => Task.FromResult(OpenWrite(_fileUri));
+    public Task<Stream> OpenWriteAsync() => Task.Run(() => OpenWrite(_fileUri));
 
-    public Stream OpenWrite(AndroidUri fileUri)
+    private Stream OpenWrite(AndroidUri fileUri)
     {
+        ThreadGuard.ThrowIfMainThread();
+
         bool isProbablyLocal =
             fileUri.Authority is
                 "com.android.externalstorage.documents" or
@@ -83,9 +98,10 @@ internal sealed class AndroidWritableFile(AndroidUri uri) : IWritableFile
             {
                 pfd = Platform.AppContext.ContentResolver!.OpenFileDescriptor(fileUri, "rw");
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 // Ignore and try the next method.
+                crashLogService.WriteSwallowedException(ex);
             }
         }
 
@@ -108,48 +124,45 @@ internal sealed class AndroidWritableFile(AndroidUri uri) : IWritableFile
         }
     }
 
-    // The uri returned is the original one when the document keeps its id, and null when the rename failed.
-    public Task<bool> RenameIfPossibleAsync(string newFileName)
+    public async Task DeleteAsync()
     {
-        if (!Supports(_fileUri, DocumentContractFlags.SupportsRename))
+        if (!await _fileUri.DeleteDocumentAsync())
         {
-            return Task.FromResult(false);
+            throw new IOException("The file could not be deleted.");
         }
-
-        AndroidUri? renamedUri = DocumentsContract.RenameDocument(Platform.AppContext.ContentResolver!, _fileUri, newFileName);
-        if (renamedUri is null)
-        {
-            return Task.FromResult(false);
-        }
-
-        _fileUri = renamedUri;
-        return Task.FromResult(true);
     }
 
-    public Task DeleteAsync() =>
-        DocumentsContract.DeleteDocument(Platform.AppContext.ContentResolver!, _fileUri)
-            ? Task.CompletedTask
-            : throw new IOException("The selected file could not be deleted.");
-
-    private static long GetLength(AndroidUri uri)
+    // A provider need not tell the size, such as for a virtual document.
+    private static long? GetLength(AndroidUri uri)
     {
+        ThreadGuard.ThrowIfMainThread();
+
         using ICursor? cursor = Platform.AppContext.ContentResolver!.Query(uri, [IOpenableColumns.Size], null, null, null);
         if (cursor is null || !cursor.MoveToFirst())
         {
-            return 0;
+            return null;
         }
 
         int columnIndex = cursor.GetColumnIndex(IOpenableColumns.Size);
         if (columnIndex < 0 || cursor.IsNull(columnIndex))
         {
-            return 0;
+            return null;
         }
 
         return cursor.GetLong(columnIndex);
     }
 
-    private static bool Supports(AndroidUri uri, DocumentContractFlags capability)
+    // Both reading and writing are granted for a file the picker gave, as for one reached through a folder.
+    private static bool IsGranted(AndroidUri uri) =>
+        Platform.AppContext.CheckCallingOrSelfUriPermission(
+            uri,
+            ActivityFlags.GrantReadUriPermission | ActivityFlags.GrantWriteUriPermission) == Permission.Granted;
+
+    // Returns null when the provider does not tell.
+    private static DocumentContractFlags? GetFlags(AndroidUri uri)
     {
+        ThreadGuard.ThrowIfMainThread();
+
         using ICursor? cursor = Platform.AppContext.ContentResolver!.Query(
             uri,
             [DocumentsContract.Document.ColumnFlags],
@@ -158,12 +171,10 @@ internal sealed class AndroidWritableFile(AndroidUri uri) : IWritableFile
             null);
         if (cursor is null || !cursor.MoveToFirst())
         {
-            return false;
+            return null;
         }
 
         int columnIndex = cursor.GetColumnIndex(DocumentsContract.Document.ColumnFlags);
-
-        // ReSharper disable once BitwiseOperatorOnEnumWithoutFlags
-        return columnIndex >= 0 && (((DocumentContractFlags)cursor.GetLong(columnIndex) & capability) == capability);
+        return columnIndex >= 0 ? (DocumentContractFlags)cursor.GetLong(columnIndex) : null;
     }
 }

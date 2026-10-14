@@ -48,6 +48,7 @@ public partial class WorkFoldersPageModel(
     IFileAccess fileAccess,
     FolderAccessWorkflow folderAccess,
     FileOperationWorkflow fileOperations,
+    ICrashLogService crashLogService,
     IUserInterfaceService userInterfaceService) : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
 {
 
@@ -76,6 +77,11 @@ public partial class WorkFoldersPageModel(
     public string Description => MobileTexts.WorkFolderDescription;
 
     /// <summary>
+    /// The description, shown on the page itself while there are no folders, to make it easier to find.
+    /// </summary>
+    [ObservableProperty] public partial string NoFoldersText { get; set; } = string.Empty;
+
+    /// <summary>
     /// What is done with a file picked in a folder.
     /// </summary>
     public WorkFolderIntent Intent { get; private set; } = WorkFolderIntent.Auto;
@@ -83,6 +89,7 @@ public partial class WorkFoldersPageModel(
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(AddCommand))]
     [NotifyCanExecuteChangedFor(nameof(OpenCommand))]
+    [NotifyCanExecuteChangedFor(nameof(BrowseCommand))]
     [NotifyCanExecuteChangedFor(nameof(RemoveCommand))]
     [NotifyCanExecuteChangedFor(nameof(RenameCommand))]
     public partial bool IsBusy { get; set; }
@@ -118,6 +125,8 @@ public partial class WorkFoldersPageModel(
                 Folders.Add(CreateEntry(folder));
             }
 
+            UpdateNoFoldersText();
+
             if (_pendingIntentHint.Length > 0)
             {
                 string hint = _pendingIntentHint;
@@ -127,6 +136,7 @@ public partial class WorkFoldersPageModel(
         }
         catch (Exception ex)
         {
+            crashLogService.WriteSwallowedException(ex);
             StatusText = ex.FormatException();
         }
     }
@@ -154,6 +164,7 @@ public partial class WorkFoldersPageModel(
         }
         catch (Exception ex)
         {
+            crashLogService.WriteSwallowedException(ex);
             StatusText = ex.FormatException();
         }
         finally
@@ -163,7 +174,16 @@ public partial class WorkFoldersPageModel(
     }
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private async Task OpenAsync(WorkFolder folder)
+    private Task OpenAsync(WorkFolder folder) => RunBusyAsync(folder);
+
+    /// <summary>
+    /// Lets the user pick a file anywhere, which is changed through one of My folders if it is in one, and otherwise
+    /// replaced by a result saved where the user chooses.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanUseCommand))]
+    private Task BrowseAsync() => RunBusyAsync(null);
+
+    private async Task RunBusyAsync(WorkFolder? folder)
     {
         try
         {
@@ -177,7 +197,9 @@ public partial class WorkFoldersPageModel(
         }
     }
 
-    private async Task PickAndRunAsync(WorkFolder folder)
+    private void UpdateNoFoldersText() => NoFoldersText = Folders.Count == 0 ? Description : string.Empty;
+
+    private async Task PickAndRunAsync(WorkFolder? folder)
     {
         try
         {
@@ -189,6 +211,7 @@ public partial class WorkFoldersPageModel(
         }
         catch (Exception ex)
         {
+            crashLogService.WriteSwallowedException(ex);
             StatusText = ex.FormatException();
         }
         finally
@@ -211,9 +234,11 @@ public partial class WorkFoldersPageModel(
             StatusText = string.Empty;
             await storage.RemoveFolderAsync(folder);
             Folders.Remove(Folders.Single(entry => entry.Folder == folder));
+            UpdateNoFoldersText();
         }
         catch (Exception ex)
         {
+            crashLogService.WriteSwallowedException(ex);
             StatusText = ex.FormatException();
         }
         finally
@@ -245,6 +270,7 @@ public partial class WorkFoldersPageModel(
         }
         catch (Exception ex)
         {
+            crashLogService.WriteSwallowedException(ex);
             StatusText = ex.FormatException();
         }
         finally

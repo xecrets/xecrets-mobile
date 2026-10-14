@@ -47,8 +47,12 @@ internal class IOSFileService : FileServiceBase
     public override Task<bool> CanViewFileAsync(DecryptedFileInfo file) =>
         QuickLookFileViewer.CanViewAsync(file);
 
-    public override Task ViewFileAsync(DecryptedFileInfo file) =>
-        QuickLookFileViewer.ViewAsync(file);
+    public override Task ViewFileAsync(DecryptedFileInfo file)
+    {
+        ThreadGuard.ThrowIfNotMainThread();
+
+        return QuickLookFileViewer.ViewAsync(file);
+    }
 
     public override void ExcludeFromBackup(string path) =>
         NSUrl.FromFilename(path).ExcludeFromBackup();

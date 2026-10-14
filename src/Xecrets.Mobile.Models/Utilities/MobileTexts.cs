@@ -48,11 +48,9 @@ public static class MobileTexts
     // "Edit"
     public static string BreadcrumbEdit => EditContentTitle;
 
-    // "Decrypt"
-    public static string BreadcrumbDecrypt => ButtonDecrypt;
+    public static string BreadcrumbDecrypt => ButtonDecryptInPlace.StripEllipsis();
 
-    // "Encrypt"
-    public static string BreadcrumbEncrypt => ButtonEncrypt;
+    public static string BreadcrumbEncrypt => ButtonEncryptInPlace.StripEllipsis();
 
     public static string BreadcrumbEncryptedCopy => "Encrypted copy";
 
@@ -79,13 +77,19 @@ public static class MobileTexts
     // "Overwrite and delete"
     public static string BreadcrumbWipe => ButtonWipe;
 
-    public static string ButtonDecryptAs => "Decrypt and…";
+    public static string ButtonBrowseElsewhere => "Browse anywhere";
+
+    public static string ButtonDecryptAs => "Decrypt in app";
+
+    public static string ButtonDecryptInPlace => "Decrypt and replace";
 
     public static string ButtonDiscard => "Discard";
 
-    public static string ButtonEncryptAs => "Encrypt and…";
+    public static string ButtonEncryptAs => "Encrypt in app";
 
-    public static string ButtonEncryptToShare => "Encrypt to share…";
+    public static string ButtonEncryptInPlace => "Encrypt and replace";
+
+    public static string ButtonEncryptToShare => "Encrypt to share";
 
     public static string ButtonOpenIn => "Open in…";
 
@@ -107,11 +111,21 @@ public static class MobileTexts
 
     public static string CrashPageTitle => "Sorry, we crashed!";
 
+    public static string DialogTextAccessDenied => "Access denied.";
+
     public static string DialogTextAllowFolderAccessFormat => "Do you want to allow the app to access the folder where \"{0}\" is located?";
 
     public static string DialogTextAlreadyEncrypted => "This file is already encrypted.";
 
     public static string DialogTextConfirmOverwrite => "The file \"{0}\" already exists. Overwrite it?";
+
+    public static string DialogTextConfirmSaveAs => "Save as \"{0}\"?";
+
+    public static string DialogTextBackupNameInUse => "Not saved, since there is already a file named \"{0}\" in the same folder. Remove it, and save again.";
+
+    public static string DialogTextCouldNotDeleteFile => "Could not delete file \"{0}\".";
+
+    public static string DialogTextOriginalNotRemoved => "The operation finished, but the original could not be removed.";
 
     public static string DialogTextCopiedToClipboard => "Copied to the clipboard.";
 
@@ -128,6 +142,8 @@ public static class MobileTexts
     public static string DialogTextFileOverwritten => "The file was overwritten and deleted. It may still be recoverable.";
 
     public static string DialogTextFileSaved => "The file was saved.";
+
+    public static string DialogTextFileTypeNotAllowed => "This file type is not allowed.";
 
     public static string DialogTextFolderName => "Enter a label for this folder";
 
@@ -224,13 +240,13 @@ public static class MobileTexts
 
     public static string ViewDescription => "Shows the text or image in the file. Go back to choose something else to do with it.";
 
-    public static string WorkFolderDescription => "Add a folder to allow the app access to it, then click a folder button to encrypt or decrypt a file. Some folders are not supported.";
+    public static string WorkFolderDescription => "Add a folder to allow the app access to it, then click a folder button to encrypt or decrypt a file. Some folders are not supported. Use \"Browse anywhere\" for a file in any other place, and save the result where you choose.";
 
-    public static string WorkFolderIntentDecrypt => "Choose the folder of the file to decrypt.";
+    public static string WorkFolderIntentDecrypt => "Choose the file to decrypt.";
 
-    public static string WorkFolderIntentDelete => "Choose the folder of the file to overwrite and delete.";
+    public static string WorkFolderIntentDelete => "Choose the file to overwrite and delete.";
 
-    public static string WorkFolderIntentEncrypt => "Choose the folder of the file to encrypt.";
+    public static string WorkFolderIntentEncrypt => "Choose the file to encrypt.";
 
     public static string WorkFoldersContentTitle => "My folders";
 
@@ -254,7 +270,7 @@ public static class MobileTexts
 
         …and more! Get the desktop app too.
 
-        Note: Check the trash or other recovery options when deleting files!
+        Note: Check the trash or other recovery options when deleting cloud files!
         """;
 
     #endregion Untranslated texts

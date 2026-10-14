@@ -56,10 +56,12 @@ internal class AndroidWorkFolderFileLauncher : IWorkFolderFileLauncher
     /// app of the user's choice. That app is also allowed to write when the file is reached through one of My folders,
     /// so that an edited file is saved in place.
     /// </summary>
-    public Task<bool> OpenAsync(FileReference file, bool allowWrite)
+    public async Task<bool> OpenAsync(FileReference file, bool allowWrite)
     {
+        ThreadGuard.ThrowIfNotMainThread();
+
         AndroidUri uri = AndroidUri.Parse(file.Id)!;
-        string contentType = GetContentType(uri, file.Name);
+        string contentType = await Task.Run(() => GetContentType(uri, file.Name));
 
         if (contentType.IsQuickViewContentType())
         {
@@ -67,7 +69,7 @@ internal class AndroidWorkFolderFileLauncher : IWorkFolderFileLauncher
             if (quickViewIntent.HasExternalHandler())
             {
                 quickViewIntent.StartQuickView();
-                return Task.FromResult(true);
+                return true;
             }
 
             quickViewIntent.Dispose();
@@ -78,11 +80,13 @@ internal class AndroidWorkFolderFileLauncher : IWorkFolderFileLauncher
         viewIntent.AddFlags(ActivityFlags.GrantReadUriPermission |
                             (allowWrite ? ActivityFlags.GrantWriteUriPermission : 0));
 
-        return Task.FromResult(viewIntent.TryStartPreferredOrChooser(file.Name));
+        return viewIntent.TryStartPreferredOrChooser(file.Name);
     }
 
     public Task ShareAsync(FileReference file)
     {
+        ThreadGuard.ThrowIfNotMainThread();
+
         using Intent sendIntent = new(Intent.ActionSend);
         sendIntent.SetType(EncryptedFileType.ContentType);
         sendIntent.PutExtra(Intent.ExtraStream, AndroidUri.Parse(file.Id));
@@ -96,6 +100,8 @@ internal class AndroidWorkFolderFileLauncher : IWorkFolderFileLauncher
     // in which case we fallback to our own content type detector.
     private static string GetContentType(AndroidUri uri, string fileName)
     {
+        ThreadGuard.ThrowIfMainThread();
+
         string? contentType = Platform.AppContext.ContentResolver!.GetType(uri);
         return string.IsNullOrEmpty(contentType) || contentType == "application/octet-stream"
             ? ContentTypeDetector.DetectContentType(fileName).OrAndroidContentType(fileName)

@@ -44,6 +44,7 @@ public partial class EditPageModel(
     IPreviewService previewService,
     IEditSaveService editSaveService,
     IFlowContext flowContext,
+    ICrashLogService crashLogService,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
 {
@@ -156,7 +157,12 @@ public partial class EditPageModel(
             }
             else
             {
-                await editSaveService.SaveAsync(text);
+                if (!await editSaveService.SaveAsync(text))
+                {
+                    StatusText = string.Format(MobileTexts.DialogTextBackupNameInUse, flowContext.Source.Name.ToBackupName());
+                    return false;
+                }
+
                 await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextFileEncrypted);
             }
 
@@ -170,6 +176,7 @@ public partial class EditPageModel(
         }
         catch (Exception ex)
         {
+            crashLogService.WriteSwallowedException(ex);
             StatusText = ex.FormatException();
             return false;
         }

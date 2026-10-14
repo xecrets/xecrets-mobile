@@ -37,11 +37,11 @@ using Xecrets.Mobile.Models.Models;
 namespace Xecrets.Mobile.Models.Services;
 
 /// <summary>
-/// Wipes a file by renaming it to an obviously wiped name, replacing its contents with a notice and finally deleting
-/// it. Storage that keeps versions of a file, or only moves a deleted file to a trash, such as Google Drive, then keeps
-/// the notice under the wiped name, rather than the original.
+/// Wipes a file on the device by replacing its contents with a notice and then deleting it. A file elsewhere, such as in
+/// cloud storage or on removable media, is only deleted, since such storage typically keeps the replaced contents as
+/// another version, or moves a deleted file to a trash. The file keeps its name, so that it is found as itself there.
 /// </summary>
-internal sealed class FileWiper : IFileWiper
+internal sealed class FileWiper(ICrashLogService crashLogService) : IFileWiper
 {
     /// <summary>
     /// The notice left in a wiped file, for anyone who finds what storage keeps of it. Not translated, so that it reads
@@ -52,19 +52,26 @@ internal sealed class FileWiper : IFileWiper
     public async Task<bool> CanWipeAsync(IWritableFile file)
     {
         using IDisposable access = file.AcquireAccess();
-        return await HasRightsAsync(file);
+        return await file.CanDeleteAsync();
     }
 
     /// <summary>
     /// There are too many caveats with wiping a file that is on a mobile phone, or in cloud storage. Versions are created and many operations are not
-    /// supported. So this is really a best effort, and we only do any attempt to overwrite if the stream is seekable.
+    /// supported. So this is really a best effort, and we only do any attempt to overwrite if the file is on the device
+    /// and the stream is seekable.
     /// </summary>
-    public async Task<FileWipeStatus> WipeAsync(IWritableFile file)
+    public async Task<FileWipeStatus> WipeAsync(IWritableFile file, bool isOnDevice)
     {
         using IDisposable access = file.AcquireAccess();
-        if (!await HasRightsAsync(file))
+        if (!await file.CanDeleteAsync())
         {
             return FileWipeStatus.InsufficientRights;
+        }
+
+        if (!isOnDevice)
+        {
+            await file.DeleteAsync();
+            return FileWipeStatus.OnlyDelete;
         }
 
         bool result;
@@ -81,21 +88,24 @@ internal sealed class FileWiper : IFileWiper
         return result ? FileWipeStatus.Succeeded : FileWipeStatus.OnlyDelete;
     }
 
-    private static async Task<bool> HasRightsAsync(IWritableFile file) =>
-        await file.CanWriteAsync() && await file.CanDeleteAsync();
-
     /// <summary>
     /// On a stream that can seek, the notice is written first and the rest of the file is overwritten with random
     /// data, after which the file is cut down to the notice. A stream that cannot seek, as for some storage, is only
-    /// given the notice.
+    /// given the notice. A file that cannot be written is only deleted.
     /// </summary>
     /// <returns>
-    /// True if any meaningful wipe was done, false if the file was only renamed and deleted. The latter is the case for a stream that cannot seek.
+    /// True if any meaningful wipe was done, false if the file was only deleted. The latter is the case for a stream that
+    /// cannot seek, and for a file that cannot be written.
     /// </returns>
     private static async Task<bool> WipeCoreAsync(IWritableFile file)
     {
-        await file.RenameIfPossibleAsync($".xecrets-wiped-{Guid.NewGuid():N}.txt");
-        long length = await file.GetLengthAsync();
+        if (!await file.CanWriteAsync())
+        {
+            await file.DeleteAsync();
+            return false;
+        }
+
+        long length = await file.GetLengthAsync() ?? 0;
         bool canSeek;
         await using (Stream stream = await file.OpenWriteAsync())
         {
@@ -113,16 +123,16 @@ internal sealed class FileWiper : IFileWiper
         return canSeek;
     }
 
-    // The file keeps track of a rename, so this deletes it also when the wipe failed after renaming it.
-    private static async Task TryDeleteAsync(IWritableFile file)
+    private async Task TryDeleteAsync(IWritableFile file)
     {
         try
         {
             await file.DeleteAsync();
         }
-        catch
+        catch (Exception ex)
         {
             // Best effort - the failure of the wipe itself is what is reported.
+            crashLogService.WriteSwallowedException(ex);
         }
     }
 

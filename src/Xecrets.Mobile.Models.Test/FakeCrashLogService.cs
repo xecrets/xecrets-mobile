@@ -36,6 +36,8 @@ internal sealed class FakeCrashLogService : ICrashLogService
 {
     public bool HasPendingCrashLog => false;
 
+    public List<Exception> Swallowed { get; } = [];
+
     public void RegisterHandlers()
     {
     }
@@ -45,4 +47,7 @@ internal sealed class FakeCrashLogService : ICrashLogService
     public void WriteCrashLog(string source, object? crash)
     {
     }
+
+    public void WriteSwallowedException(Exception exception, string filePath = "", string memberName = "", int lineNumber = 0) =>
+        Swallowed.Add(exception);
 }

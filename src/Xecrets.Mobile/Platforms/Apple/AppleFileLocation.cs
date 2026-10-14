@@ -58,7 +58,7 @@ internal static partial class AppleFileLocation
     private const string _fileProviderStorageFolderName = "File Provider Storage";
 
     // Where a replicated File Provider keeps each of its domains, such as Dropbox does, in
-    // /var/mobile/Library/CloudStorage/<uuid>/.
+    // /var/mobile/Library/CloudStorage/<uuid>/ on iOS, and in ~/Library/CloudStorage/<name>/ on a Mac.
     private const string _cloudStorageFolderName = "CloudStorage";
 
     // The provider of On My iPhone, which keeps the folders as the user sees them.
@@ -136,16 +136,17 @@ internal static partial class AppleFileLocation
                     ? (GetDeviceRoot(), FoldersBelow(segments, index), index == last)
                     : (GetProviderRoot(provider), [], index == last);
             }
+        }
 
-            // Each domain, such as a Dropbox account, is a folder named by an id.
-            index = Array.IndexOf(segments, _cloudStorageFolderName);
-            if (index >= 1 && segments[index - 1] == "Library" && index + 1 <= last)
-            {
-                return (
-                    GetProviderRoot(isProviderAsked ? GetProvider(fileUrl) : null),
-                    FoldersBelow(segments, index + 1),
-                    index + 1 == last);
-            }
+        // Each domain, such as a Dropbox account, is a folder of its own, named by an id on iOS, and by the provider
+        // and account on a Mac, in ~/Library/CloudStorage.
+        index = Array.IndexOf(segments, _cloudStorageFolderName);
+        if (index >= 1 && segments[index - 1] == "Library" && index + 1 <= last)
+        {
+            return (
+                GetProviderRoot(isProviderAsked ? GetProvider(fileUrl) : null),
+                FoldersBelow(segments, index + 1),
+                index + 1 == last);
         }
 
         string[] folders = segments[..Math.Max(last, 0)];

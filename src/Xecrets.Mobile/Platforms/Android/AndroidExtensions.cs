@@ -33,14 +33,17 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.Versioning;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Android.Content;
 using Android.Content.PM;
 using Android.Database;
+using Android.OS;
 using Android.Provider;
 using Android.Webkit;
 
+using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Services;
 
 using AndroidUri = Android.Net.Uri;
@@ -69,24 +72,48 @@ internal static class AndroidExtensions
         Java.Lang.SecurityException or
         Java.Lang.UnsupportedOperationException;
 
-    // The system Quick Viewer (e.g. com.android.documentsui) commonly registers ACTION_QUICK_VIEW with
-    // mimeType="*/*", so HasExternalHandler(quickViewIntent) matches every content type even though the
-    // viewer only actually renders this narrower set - anything outside it launches fine but shows its
-    // own "Unable to preview file" screen.
-    public static bool IsQuickViewContentType(this string contentType) =>
+    /// <summary>
+    /// Waits for a call to a document provider for up to ten seconds, since storage such as Dropbox may never finish
+    /// renaming a document it has only just created. The call itself cannot be canceled, so should it fail after that,
+    /// it is logged, rather than left unobserved.
+    /// </summary>
+    /// <exception cref="TimeoutException">The call did not finish in time.</exception>
+    public static async Task<T> WaitForProviderAsync<T>(this Task<T> call, ICrashLogService crashLogService)
+    {
+        try
+        {
+            return await call.WaitAsync(TimeSpan.FromSeconds(10));
+        }
+        catch (TimeoutException) when (!call.IsCompleted)
+        {
+            _ = call.ContinueWith(
+                task => crashLogService.WriteSwallowedException(task.Exception!.GetBaseException()),
+                CancellationToken.None,
+                TaskContinuationOptions.OnlyOnFaulted,
+                TaskScheduler.Default);
+            throw;
+        }
+    }
+
+    extension(string contentType)
+    {
+        // The system Quick Viewer (e.g. com.android.documentsui) commonly registers ACTION_QUICK_VIEW with
+        // mimeType="*/*", so HasExternalHandler(quickViewIntent) matches every content type even though the
+        // viewer only actually renders this narrower set - anything outside it launches fine but shows its
+        // own "Unable to preview file" screen.
+        public bool IsQuickViewContentType() =>
         contentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase) ||
         contentType.Equals("text/plain", StringComparison.OrdinalIgnoreCase) ||
         contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) ||
         contentType.StartsWith("video/", StringComparison.OrdinalIgnoreCase) ||
         contentType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase);
 
-    public static bool IsExternalStorage(this string? authority) => authority == AndroidFileLocation.ExternalStorageAuthority;
-
-    // Android's own table knows extensions that ContentTypeDetector does not, as file managers do.
-    public static string OrAndroidContentType(this string contentType, string fileName) =>
-        contentType == ContentTypeDetector.UnknownContentType
-            ? MimeTypeMap.Singleton!.GetMimeTypeFromExtension(Path.GetExtension(fileName).TrimStart('.').ToLowerInvariant()) ?? contentType
-            : contentType;
+        // Android's own table knows extensions that ContentTypeDetector does not, as file managers do.
+        public string OrAndroidContentType(string fileName) =>
+            contentType == ContentTypeDetector.UnknownContentType
+                ? MimeTypeMap.Singleton!.GetMimeTypeFromExtension(Path.GetExtension(fileName).TrimStart('.').ToLowerInvariant()) ?? contentType
+                : contentType;
+    }
 
     extension(AndroidUri uri)
     {
@@ -102,47 +129,81 @@ internal static class AndroidExtensions
             return intent;
         }
 
+        public bool IsExternalStorage() => uri.Authority == "com.android.externalstorage.documents";
+
         public Stream OpenInputStream() => ContentResolver.OpenInputStream(uri)!;
 
         public AndroidUri RenameDocument(string name) =>
             DocumentsContract.RenameDocument(ContentResolver, uri, name) ??
             throw new IOException("The document could not be renamed.");
 
-        public AndroidUri? FindChild(string name)
-        {
-            string documentId = DocumentsContract.GetDocumentId(uri)!;
-            AndroidUri childrenUri = DocumentsContract.BuildChildDocumentsUriUsingTree(uri, documentId)!;
-            using ICursor cursor = ContentResolver.Query(
-                childrenUri,
-                [DocumentsContract.Document.ColumnDocumentId, DocumentsContract.Document.ColumnDisplayName],
-                null,
-                null,
-                null)!;
+        /// <summary>
+        /// Deletes the document, off the main thread. Storage such as Dropbox may not yet delete a document it has only
+        /// just created, so the deletion is retried for up to a second. Returns whether it was deleted.
+        /// </summary>
+        public Task<bool> DeleteDocumentAsync() =>
+            RetryAsync(() => DocumentsContract.DeleteDocument(ContentResolver, uri), TimeSpan.FromSeconds(1));
 
-            AndroidUri? child = null;
-            while (child is null && cursor.MoveToNext())
-            {
-                if (cursor.GetString(1) == name)
+        /// <summary>
+        /// Waits, off the main thread, until the document can be opened for reading, for up to three seconds. Storage
+        /// such as Dropbox does not yet know a document it has only just created, and then does not open it, may not
+        /// delete it, and may never finish renaming it. Returns whether it could be opened.
+        /// </summary>
+        public Task<bool> WaitUntilReadableAsync() =>
+            RetryAsync(() =>
                 {
-                    child = DocumentsContract.BuildDocumentUriUsingTree(uri, cursor.GetString(0)!);
+                    using Stream? input = ContentResolver.OpenInputStream(uri);
+                    return input is not null;
+                }, TimeSpan.FromSeconds(3));
+
+        /// <summary>
+        /// Finds the document with the name in the folder, once the provider has listed all of it.
+        /// </summary>
+        public async Task<AndroidUri?> FindChildAsync(string name) =>
+            (await uri.ListChildrenAsync(DocumentsContract.GetDocumentId(uri)!))
+                .FirstOrDefault(child => child.Name == name) is { } found
+                ? DocumentsContract.BuildDocumentUriUsingTree(uri, found.Id)
+                : null;
+
+        /// <summary>
+        /// Lists the documents in a folder, through the tree grant the uri is built on, off the main thread. A provider
+        /// still loading the folder, such as from the cloud, tells so with the listing, and notifies when it has loaded,
+        /// after which the folder is listed again, as the system document picker does. A provider that could not load
+        /// it tells why, which is thrown, since the folder is then not known to be listed completely. There is no
+        /// timeout, as reaching the storage is up to the provider.
+        /// </summary>
+        public Task<IReadOnlyList<DocumentChild>> ListChildrenAsync(string folderDocumentId) =>
+            Task.Run(async () =>
+            {
+                AndroidUri childrenUri = DocumentsContract.BuildChildDocumentsUriUsingTree(uri, folderDocumentId)!;
+                while (true)
+                {
+                    if (await ListChildrenAsync(childrenUri) is { } children)
+                    {
+                        return children;
+                    }
                 }
-            }
+            });
 
-            cursor.Close(); // Dispose does not call Java close()
-            return child;
-        }
-
-        public string GetDisplayName()
+        public string? GetDisplayName()
         {
-            using ICursor cursor = ContentResolver.Query(
+            ThreadGuard.ThrowIfMainThread();
+
+            using ICursor? cursor = ContentResolver.Query(
                 uri,
                 [DocumentsContract.Document.ColumnDisplayName],
                 null, null, null)!;
+
+            if (cursor is null)
+            {
+                return null;
+            }
+
             cursor.MoveToFirst();
             string displayName = cursor.GetString(0)!;
-            cursor.Close();
+            cursor.Close(); // Dispose does not call Java close()
 
-            return displayName; // Dispose does not call Java close()
+            return displayName;
         }
     }
 
@@ -225,5 +286,101 @@ internal static class AndroidExtensions
                 [new ComponentName(Platform.AppContext, Java.Lang.Class.FromType(typeof(MainActivity)))]);
             Platform.CurrentActivity!.StartActivity(chooser);
         }
+    }
+
+    // Runs the attempt off the main thread until it succeeds, retrying it the given number of times, since storage such
+    // as Dropbox may not yet handle a document it has only just created. Returns whether it succeeded.
+    private static async Task<bool> RetryAsync(Func<bool> attempt, TimeSpan timeout)
+    {
+        while (true)
+        {
+            try
+            {
+                if (await Task.Run(attempt))
+                {
+                    return true;
+                }
+            }
+            catch (Exception ex) when (ex is IOException || ex.IsDocumentProviderFailure())
+            {
+                // Retry
+            }
+
+            timeout -= TimeSpan.FromMilliseconds(250);
+            if (timeout <= TimeSpan.Zero)
+            {
+                return false;
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(250));
+        }
+    }
+
+    // Returns null when the provider is still loading the folder, after it has told that it has loaded, or after a
+    // while.
+    private static async Task<IReadOnlyList<DocumentChild>?> ListChildrenAsync(AndroidUri childrenUri)
+    {
+        ThreadGuard.ThrowIfMainThread();
+
+        using ICursor cursor = ContentResolver.Query(
+            childrenUri,
+            [
+                DocumentsContract.Document.ColumnDocumentId,
+                DocumentsContract.Document.ColumnDisplayName,
+                DocumentsContract.Document.ColumnMimeType,
+            ],
+            null, null, null) ?? throw new IOException("The folder could not be listed.");
+
+        try
+        {
+            Bundle? extras = cursor.Extras;
+            if (extras?.GetString(DocumentsContract.ExtraError) is { Length: > 0 } error)
+            {
+                throw new IOException(error);
+            }
+
+            if (extras?.GetBoolean(DocumentsContract.ExtraLoading) == true)
+            {
+                using ChangeObserver observer = new();
+                cursor.RegisterContentObserver(observer);
+                try
+                {
+                    await Task.WhenAny(observer.Changed, Task.Delay(TimeSpan.FromMilliseconds(250)));
+                }
+                finally
+                {
+                    cursor.UnregisterContentObserver(observer);
+                }
+
+                return null;
+            }
+
+            List<DocumentChild> children = [];
+            while (cursor.MoveToNext())
+            {
+                children.Add(new DocumentChild(cursor.GetString(0)!, cursor.GetString(1) ?? "", cursor.GetString(2)));
+            }
+
+            return children;
+        }
+        finally
+        {
+            cursor.Close(); // Dispose does not call Java close()
+        }
+    }
+
+    private sealed class ChangeObserver : ContentObserver
+    {
+        private readonly TaskCompletionSource _changed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        // Without a handler, the change is told on a binder thread, which only completes the task.
+        public ChangeObserver()
+            : base(null)
+        {
+        }
+
+        public Task Changed => _changed.Task;
+
+        public override void OnChange(bool selfChange) => _changed.TrySetResult();
     }
 }

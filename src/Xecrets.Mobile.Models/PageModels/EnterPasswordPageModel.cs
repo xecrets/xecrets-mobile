@@ -74,9 +74,7 @@ public partial class EnterPasswordPageModel(
 
             bool isWorkFolderRequest = workFolderOperationService.HasPendingPasswordRequest;
             PreviewPreparationStatus status = isWorkFolderRequest
-                ? await workFolderOperationService.DecryptWithPasswordAsync(Password) is not null
-                    ? PreviewPreparationStatus.Prepared
-                    : PreviewPreparationStatus.WrongPassword
+                ? ToPreparationStatus(await workFolderOperationService.DecryptPendingWithPasswordAsync(Password))
                 : await previewService.PrepareWithPasswordAsync(Password);
             if (status == PreviewPreparationStatus.Cancelled)
             {
@@ -95,7 +93,6 @@ public partial class EnterPasswordPageModel(
             if (isWorkFolderRequest)
             {
                 await UserInterfaceService.GoBackAsync(null);
-                await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextFileDecrypted);
             }
             else
             {
@@ -113,6 +110,16 @@ public partial class EnterPasswordPageModel(
     }
 
     private bool CanSubmit() => !IsBusy && Password.Length > 0;
+
+    // A file that was not decrypted, although the password was right, is left as it was, and the user has been told
+    // why, as when the user cancels choosing where to save it.
+    private static PreviewPreparationStatus ToPreparationStatus(FileOperationOutcome outcome) => outcome.Status switch
+    {
+        FileOperationStatus.Completed => PreviewPreparationStatus.Prepared,
+        FileOperationStatus.AwaitingPassword => PreviewPreparationStatus.WrongPassword,
+        FileOperationStatus.NotDone => PreviewPreparationStatus.Cancelled,
+        _ => throw new ArgumentOutOfRangeException(nameof(outcome), outcome.Status, @"Unknown file operation status."),
+    };
 
     public void CancelWorkFolderRequest() => workFolderOperationService.CancelPasswordRequest();
 }

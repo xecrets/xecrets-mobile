@@ -39,74 +39,95 @@ using Xecrets.Mobile.Models.Abstractions;
 namespace Xecrets.Mobile.Platforms.Apple;
 
 /// <summary>
-/// A file in one of My folders, which has no access of its own, and is accessed through the grant of the folder.
+/// A file accessed through a grant: that of one of My folders containing it, or, for a file in none of them, the url
+/// a picker gave for it.
 /// </summary>
-internal sealed class AppleWritableFile(NSUrl url, NSUrl folderGrant) : IWritableFile
+internal sealed class AppleWritableFile(NSUrl url, NSUrl grant) : IWritableFile
 {
-    // A rename gives the file a new NSUrl (a new path in the same directory), so the target of
-    // subsequent access/write/delete calls has to track it - hence a mutable field.
-    private NSUrl _fileUrl = url;
+    private readonly NSUrl _fileUrl = url;
 
     public string Id => _fileUrl.AbsoluteString!;
 
-    public IDisposable AcquireAccess() => new AppleSecurityScope(folderGrant);
+    public IDisposable AcquireAccess() => new AppleSecurityScope(grant);
 
-    public Task<bool> CanWriteAsync() => Task.FromResult(IsWritable(_fileUrl));
-
-    public Task<bool> CanDeleteAsync() => Task.FromResult(IsWritable(_fileUrl));
-
-    public Task<long> GetLengthAsync() => Task.FromResult(new FileInfo(_fileUrl.Path!).Length);
-
-    public Task<Stream> OpenWriteAsync() =>
-        Task.FromResult<Stream>(new FileStream(_fileUrl.Path!, FileMode.Open, FileAccess.Write, FileShare.None));
+    // Called while accessing the grant, as by the wiper.
+    public Task<bool> CanWriteAsync() => Task.FromResult(
+        NSFileManager.DefaultManager.IsReadableFile(_fileUrl.Path!) &&
+        NSFileManager.DefaultManager.IsWritableFile(_fileUrl.Path!));
 
     /// <summary>
-    /// Renames the file within its folder by setting its name, which is a writable resource value.
+    /// Whether a file can be deleted is told by whether its folder can be written. For a file granted by itself, the
+    /// folder is always reported as not writable, but the grant still allows deleting the file, as measured with all
+    /// providers. Then whether the file itself can be written is checked instead.
     /// </summary>
-    public Task<bool> RenameIfPossibleAsync(string newFileName)
-    {
-        if (!_fileUrl.SetResource(NSUrl.NameKey, new NSString(newFileName), out NSError _))
-        {
-            return Task.FromResult(false);
-        }
+    public Task<bool> CanDeleteAsync() => Task.FromResult(
+        _fileUrl.AbsoluteString == grant.AbsoluteString
+            ? NSFileManager.DefaultManager.IsWritableFile(_fileUrl.Path!)
+            : NSFileManager.DefaultManager.IsDeletableFile(_fileUrl.Path!));
 
-        _fileUrl = _fileUrl.RemoveLastPathComponent().Append(newFileName, false);
-        return Task.FromResult(true);
+    public Task<long?> GetLengthAsync() => Task.FromResult<long?>(new FileInfo(_fileUrl.Path!).Length);
+
+    /// <summary>
+    /// The file is written within a coordinated write, which lasts until the stream is disposed.
+    /// </summary>
+    public async Task<Stream> OpenWriteAsync()
+    {
+        AppleCoordinatedWrite coordination = await AppleCoordinatedWrite.BeginAsync(_fileUrl, default);
+        try
+        {
+            return new OwningStream(
+                new FileStream(coordination.Url.Path!, FileMode.Open, FileAccess.Write, FileShare.None),
+                coordination);
+        }
+        catch
+        {
+            coordination.Dispose();
+            throw;
+        }
     }
 
     /// <summary>
     /// Removes the other versions of the file that the storage keeps, such as iCloud does, and then the file itself,
-    /// coordinated with any other process presenting it.
+    /// coordinated with any other process presenting it. An error may not pass through the native coordinator, so it is
+    /// set as the result instead.
     /// </summary>
-    public Task DeleteAsync()
+    public async Task DeleteAsync()
     {
-        NSUrl fileUrl = _fileUrl;
-        NSError? removeError = null;
-        using NSFileCoordinator coordinator = new();
-        coordinator.CoordinateWrite(
-            fileUrl,
-            NSFileCoordinatorWritingOptions.ForDeleting,
-            out NSError coordinationError,
-            coordinatedUrl =>
-            {
-                // There are no other versions to remove for most storage, which is reported as an error.
-                NSFileVersion.RemoveOtherVersions(coordinatedUrl, out NSError _);
-                NSFileManager.DefaultManager.Remove(coordinatedUrl, out NSError error);
-                removeError = error;
-            });
-        if ((coordinationError ?? removeError) is { } failure)
+        TaskCompletionSource deleted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        NSFileAccessIntent intent =
+            NSFileAccessIntent.CreateWritingIntent(_fileUrl, NSFileCoordinatorWritingOptions.ForDeleting);
+        NSFileCoordinator coordinator = new();
+        coordinator.CoordinateAccess([intent], new NSOperationQueue(), error =>
         {
-            throw new NSErrorException(failure);
-        }
+            try
+            {
+                if (error != null!)
+                {
+                    deleted.SetException(new NSErrorException(error));
+                    return;
+                }
 
-        if (File.Exists(fileUrl.Path!))
+                // There are no other versions to remove for most storage, which is reported as an error.
+                NSFileVersion.RemoveOtherVersions(intent.Url, out NSError _);
+                if (!NSFileManager.DefaultManager.Remove(intent.Url, out NSError removeError))
+                {
+                    deleted.SetException(new NSErrorException(removeError));
+                    return;
+                }
+
+                deleted.SetResult();
+            }
+            finally
+            {
+                // The coordinator is kept until the access it coordinates is done.
+                GC.KeepAlive(coordinator);
+            }
+        });
+        await deleted.Task;
+
+        if (File.Exists(_fileUrl.Path!))
         {
             throw new IOException("The file could not be deleted.");
         }
-
-        return Task.CompletedTask;
     }
-
-    private static bool IsWritable(NSUrl url) =>
-        url.TryGetResource(NSUrl.IsWritableKey, out NSObject value, out NSError _) && ((NSNumber)value).BoolValue;
 }

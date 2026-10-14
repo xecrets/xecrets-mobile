@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Decrypted files are only quick viewed from FileServiceBase.CacheDirectory. -->
+<!-- Decrypted files are only quick viewed from FileServiceBase.CacheDirectory, and the crash logs from CrashLogService. -->
 <paths>
     <cache-path name="cache" path="XecretsEz/" />
+    <cache-path name="crashlogs" path="XecretsCrashLogs/" />
 </paths>

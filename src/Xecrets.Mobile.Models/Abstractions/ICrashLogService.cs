@@ -28,6 +28,8 @@
 
 #endregion Copyright and GPL License
 
+using System.Runtime.CompilerServices;
+
 namespace Xecrets.Mobile.Models.Abstractions;
 
 public interface ICrashLogService
@@ -39,4 +41,14 @@ public interface ICrashLogService
     string ReadCurrent();
 
     void WriteCrashLog(string source, object? crash);
+
+    /// <summary>
+    /// Silently logs an exception that is handled without being passed on, such as when reported to the user only as a
+    /// status, for troubleshooting. Unlike a crash log, nothing is shown to the user, and a failure to log is ignored.
+    /// </summary>
+    void WriteSwallowedException(
+        Exception exception,
+        [CallerFilePath] string filePath = "",
+        [CallerMemberName] string memberName = "",
+        [CallerLineNumber] int lineNumber = 0);
 }

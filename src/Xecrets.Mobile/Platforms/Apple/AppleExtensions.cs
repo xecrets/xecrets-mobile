@@ -117,20 +117,55 @@ internal static class AppleExtensions
         /// </summary>
         public async Task<Stream> OpenScopedReadAsync(NSUrl fileUrl)
         {
-            bool isAccessing = url.StartAccessingSecurityScopedResource();
+            AppleSecurityScope access = new(url);
             try
             {
-                return new SecurityScopedStream(await OpenCoordinatedReadAsync(fileUrl), url, isAccessing);
+                return new OwningStream(await OpenCoordinatedReadAsync(fileUrl), access);
             }
             catch
             {
-                if (isAccessing)
-                {
-                    url.StopAccessingSecurityScopedResource();
-                }
-
+                access.Dispose();
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Moves the file through a file coordinator, as for writing, which fails if there already is a file where it
+        /// is moved to. An error may not pass through the native coordinator, so it is set as the result instead.
+        /// </summary>
+        public Task MoveCoordinatedAsync(NSUrl destinationUrl)
+        {
+            TaskCompletionSource moved = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            NSFileAccessIntent source = NSFileAccessIntent.CreateWritingIntent(url, NSFileCoordinatorWritingOptions.ForMoving);
+            NSFileAccessIntent destination =
+                NSFileAccessIntent.CreateWritingIntent(destinationUrl, NSFileCoordinatorWritingOptions.ForReplacing);
+            NSFileCoordinator coordinator = new();
+            coordinator.CoordinateAccess([source, destination], new NSOperationQueue(), error =>
+            {
+                try
+                {
+                    if (error != null!)
+                    {
+                        moved.SetException(new NSErrorException(error));
+                        return;
+                    }
+
+                    if (!NSFileManager.DefaultManager.Move(source.Url, destination.Url, out NSError moveError))
+                    {
+                        moved.SetException(new NSErrorException(moveError));
+                        return;
+                    }
+
+                    coordinator.ItemMoved(source.Url, destination.Url);
+                    moved.SetResult();
+                }
+                finally
+                {
+                    // The coordinator is kept until the access it coordinates is done.
+                    GC.KeepAlive(coordinator);
+                }
+            });
+            return moved.Task;
         }
 
         public void SaveGrant() => url.SaveGrant(url.AbsoluteString!);
@@ -197,8 +232,9 @@ internal static class AppleExtensions
             {
                 return File.Exists(id.GetGrantPath()) ? id.ResolveGrant() : null;
             }
-            catch (NSErrorException)
+            catch (NSErrorException ex)
             {
+                MauiProgram.CrashLog.WriteSwallowedException(ex);
                 return null;
             }
         }
@@ -285,60 +321,5 @@ internal static class AppleExtensions
 
         public override void WasCancelled(UIDocumentPickerViewController controller) =>
             Completion.SetResult(null);
-    }
-
-    private sealed class SecurityScopedStream(Stream stream, NSUrl accessUrl, bool isAccessing) : Stream
-    {
-        private bool _isAccessing = isAccessing;
-
-        public override bool CanRead => stream.CanRead;
-
-        public override bool CanSeek => stream.CanSeek;
-
-        public override bool CanWrite => stream.CanWrite;
-
-        public override long Length => stream.Length;
-
-        public override long Position
-        {
-            get => stream.Position;
-            set => stream.Position = value;
-        }
-
-        public override void Flush() => stream.Flush();
-
-        public override int Read(byte[] buffer, int offset, int count) => stream.Read(buffer, offset, count);
-
-        public override long Seek(long offset, SeekOrigin origin) => stream.Seek(offset, origin);
-
-        public override void SetLength(long value) => stream.SetLength(value);
-
-        public override void Write(byte[] buffer, int offset, int count) => stream.Write(buffer, offset, count);
-
-        protected override void Dispose(bool disposing)
-        {
-            try
-            {
-                if (disposing)
-                {
-                    try
-                    {
-                        stream.Dispose();
-                    }
-                    finally
-                    {
-                        if (_isAccessing)
-                        {
-                            accessUrl.StopAccessingSecurityScopedResource();
-                            _isAccessing = false;
-                        }
-                    }
-                }
-            }
-            finally
-            {
-                base.Dispose(disposing);
-            }
-        }
     }
 }

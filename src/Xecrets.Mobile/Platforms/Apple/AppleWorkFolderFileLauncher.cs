@@ -56,6 +56,8 @@ internal class AppleWorkFolderFileLauncher(AppleFileGrants grants) : IWorkFolder
     /// </summary>
     public async Task<bool> OpenAsync(FileReference file, bool allowWrite)
     {
+        ThreadGuard.ThrowIfNotMainThread();
+
         ResolvedUrl resolved =
             await grants.ResolveAccessAsync(file.Id) ?? throw new FileNotAccessibleException();
         using IDisposable access = new AppleSecurityScope(resolved.AccessUrl);
@@ -67,6 +69,8 @@ internal class AppleWorkFolderFileLauncher(AppleFileGrants grants) : IWorkFolder
 
     public async Task ShareAsync(FileReference file)
     {
+        ThreadGuard.ThrowIfNotMainThread();
+
         ResolvedUrl resolved =
             await grants.ResolveAccessAsync(file.Id) ?? throw new FileNotAccessibleException();
         using IDisposable access = new AppleSecurityScope(resolved.AccessUrl);

@@ -39,23 +39,45 @@ using Xecrets.Mobile.Models.Services;
 
 namespace Xecrets.Mobile.Platforms.Apple;
 
+/// <summary>
+/// Writes the destination file in place within a coordinated write, which lasts until the session is disposed, so that
+/// the file provider, such as Dropbox, takes the file only once it is written, or removed.
+/// </summary>
 internal sealed class AppleFileWriteSession : IFileWriteSession
 {
     private readonly IDisposable _access;
+    private readonly IDisposable _coordination;
     private readonly IFileWriteSession _session;
     private readonly string _destinationId;
 
-    public AppleFileWriteSession(NSUrl folderUrl, string name, bool overwrite, NSUrl folderGrant)
+    private AppleFileWriteSession(string destinationId, IDisposable access, IDisposable coordination, IFileWriteSession session)
     {
-        _destinationId = folderUrl.Append(name, false).AbsoluteString!;
-        _access = new AppleSecurityScope(folderGrant);
+        _destinationId = destinationId;
+        _access = access;
+        _coordination = coordination;
+        _session = session;
+    }
+
+    public static async Task<AppleFileWriteSession> CreateAsync(NSUrl folderUrl, string name, bool overwrite, NSUrl folderGrant)
+    {
+        NSUrl fileUrl = folderUrl.Append(name, false);
+        AppleSecurityScope access = new(folderGrant);
+        AppleCoordinatedWrite? coordination = null;
         try
         {
-            _session = new LocalFileWriteSession(folderUrl.Path!, name, overwrite);
+            coordination = await AppleCoordinatedWrite.BeginAsync(
+                fileUrl,
+                overwrite ? NSFileCoordinatorWritingOptions.ForReplacing : default);
+            return new AppleFileWriteSession(
+                fileUrl.AbsoluteString!,
+                access,
+                coordination,
+                new LocalFileWriteSession(Path.GetDirectoryName(coordination.Url.Path!)!, name, overwrite));
         }
         catch
         {
-            _access.Dispose();
+            coordination?.Dispose();
+            access.Dispose();
             throw;
         }
     }
@@ -76,6 +98,7 @@ internal sealed class AppleFileWriteSession : IFileWriteSession
         }
         finally
         {
+            _coordination.Dispose();
             _access.Dispose();
         }
     }

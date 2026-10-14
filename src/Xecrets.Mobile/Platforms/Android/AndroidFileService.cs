@@ -67,6 +67,8 @@ internal class AndroidFileService : FileServiceBase
 
     public override Task ViewFileAsync(DecryptedFileInfo file)
     {
+        ThreadGuard.ThrowIfNotMainThread();
+
         CreateQuickViewIntent(file, GetContentType(file)).StartQuickView();
         return Task.CompletedTask;
     }
@@ -107,6 +109,8 @@ internal class AndroidFileService : FileServiceBase
 
     public override Task<bool> OpenInAsync(string filePath, string displayName)
     {
+        ThreadGuard.ThrowIfNotMainThread();
+
         (AndroidUri uri, string resolvedContentType) = PrepareHandoff(filePath, displayName, string.Empty);
 
         using Intent viewIntent = new(Intent.ActionView);
@@ -118,6 +122,8 @@ internal class AndroidFileService : FileServiceBase
 
     public override Task SendToAsync(string filePath, string displayName, string contentType)
     {
+        ThreadGuard.ThrowIfNotMainThread();
+
         (AndroidUri uri, string resolvedContentType) = PrepareHandoff(filePath, displayName, contentType);
 
         using Intent sendIntent = new(Intent.ActionSend);

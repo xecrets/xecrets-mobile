@@ -118,8 +118,9 @@ public class MainActivity : MauiAppCompatActivity, IActivityResultCallback
         {
             await HandleIncomingIntentCoreAsync(intent);
         }
-        catch (Java.Lang.SecurityException)
+        catch (Java.Lang.SecurityException ex)
         {
+            MauiProgram.CrashLog.WriteSwallowedException(ex);
             await MauiProgram.Services!.GetRequiredService<IIncomingFileService>()
                 .ReceiveMessageAsync(MobileTexts.DialogTextIncomingFileAccessDenied);
         }
@@ -152,9 +153,15 @@ public class MainActivity : MauiAppCompatActivity, IActivityResultCallback
             return;
         }
 
-        string displayName = GetDisplayName(uri);
-        string contentType = contentResolver.GetType(uri) ?? ContentTypeDetector.DetectContentType(displayName);
-        Stream? inputStream = contentResolver.OpenInputStream(uri);
+        // The provider is called off the main thread, as for the writable file.
+        (string displayName, string contentType, Stream? inputStream) = await Task.Run(() =>
+        {
+            string name = GetDisplayName(uri);
+            return (
+                name,
+                contentResolver.GetType(uri) ?? ContentTypeDetector.DetectContentType(name),
+                contentResolver.OpenInputStream(uri));
+        });
         if (inputStream is null)
         {
             return;
@@ -204,6 +211,8 @@ public class MainActivity : MauiAppCompatActivity, IActivityResultCallback
 
     private string GetDisplayName(AndroidUri uri)
     {
+        ThreadGuard.ThrowIfMainThread();
+
         if (!string.Equals(uri.Scheme, ContentResolver.SchemeContent, StringComparison.OrdinalIgnoreCase))
         {
             return FallbackName();

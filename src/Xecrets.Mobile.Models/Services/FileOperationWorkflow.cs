@@ -49,40 +49,31 @@ public sealed class FileOperationWorkflow(
     ICoreServices coreServices,
     IFileWiper fileWiper,
     IRecentFilesService recentFilesService,
+    ICrashLogService crashLogService,
     IUserInterfaceService userInterfaceService)
 {
     /// <summary>
-    /// Lets the user pick a file in the folder, and does what is intended with it. Without a given operation, the name
-    /// of the file decides whether it is encrypted or decrypted.
+    /// Lets the user pick a file, starting in the folder, or where the platform decides without one, and does what is
+    /// intended with it. Without a given operation, the name of the file decides whether it is encrypted or decrypted.
+    /// A file in one of My folders is changed where it is, through the folder. A file in none of them, elsewhere, is
+    /// changed by the access to the file itself, with the result saved where the user chooses.
     /// </summary>
-    public async Task PickAndRunAsync(WorkFolderIntent intent, WorkFolder folder)
+    public async Task PickAndRunAsync(WorkFolderIntent intent, WorkFolder? folder)
     {
         FilePickerKind pickerKind = intent == WorkFolderIntent.Decrypt ? FilePickerKind.Encrypted : FilePickerKind.Any;
-        FileReference? file = await folderAccess.PickWritableFileAsync(folder, pickerKind);
-        if (file is null)
+        FileReference? picked = await fileAccess.PickFileAsync(folder?.Id ?? string.Empty, pickerKind);
+        if (picked is null)
         {
             return;
         }
 
-        switch (intent)
+        if (await folderAccess.FindInFoldersAsync(picked) is { } file)
         {
-            case WorkFolderIntent.Delete:
-                await WipeAsync(file);
-                return;
-
-            case WorkFolderIntent.Encrypt:
-                await TransformAsync(file, WorkFolderOperation.Encrypt, FlowOrigin.MyFolders);
-                return;
-
-            case WorkFolderIntent.Decrypt:
-                await TransformAsync(file, WorkFolderOperation.Decrypt, FlowOrigin.MyFolders);
-                return;
+            await RunAsync(intent, file, isElsewhere: false);
+            return;
         }
 
-        await TransformAsync(
-            file,
-            file.Name.IsEncrypted() ? WorkFolderOperation.Decrypt : WorkFolderOperation.Encrypt,
-            FlowOrigin.MyFolders);
+        await RunAsync(intent, picked, isElsewhere: true);
     }
 
     /// <summary>
@@ -103,10 +94,55 @@ public sealed class FileOperationWorkflow(
     /// unless the file can be wiped afterwards. A file named or found to be encrypted is not encrypted, and a file not
     /// found to be encrypted is not decrypted, but the user is told so.
     /// </summary>
-    public async Task<FileOperationOutcome> TransformAsync(
+    public Task<FileOperationOutcome> TransformAsync(
         FileReference file,
         WorkFolderOperation operation,
-        FlowOrigin origin)
+        FlowOrigin origin) =>
+        TransformAsync(file, operation, origin, isElsewhere: false);
+
+    /// <summary>
+    /// Securely deletes a file in one of My folders, once the user confirms it, and removes it from the recent files.
+    /// </summary>
+    public Task WipeAsync(FileReference file) => WipeAsync(file, isElsewhere: false);
+
+    private async Task RunAsync(WorkFolderIntent intent, FileReference file, bool isElsewhere)
+    {
+        switch (intent)
+        {
+            case WorkFolderIntent.Delete:
+                await WipeAsync(file, isElsewhere);
+                return;
+
+            case WorkFolderIntent.Encrypt:
+                await TransformAsync(file, WorkFolderOperation.Encrypt, FlowOrigin.MyFolders, isElsewhere);
+                return;
+
+            case WorkFolderIntent.Decrypt:
+                await TransformAsync(file, WorkFolderOperation.Decrypt, FlowOrigin.MyFolders, isElsewhere);
+                return;
+
+            case WorkFolderIntent.Auto:
+                await TransformAsync(
+                    file,
+                    file.Name.IsEncrypted() ? WorkFolderOperation.Decrypt : WorkFolderOperation.Encrypt,
+                    FlowOrigin.MyFolders,
+                    isElsewhere);
+                return;
+
+            default:
+                throw new ArgumentOutOfRangeException(nameof(intent), intent, @"Unknown work folder intent.");
+        }
+    }
+
+    /// <summary>
+    /// A file elsewhere is replaced by a result saved where the user chooses, and the user is told when the access to
+    /// it does not allow that.
+    /// </summary>
+    private async Task<FileOperationOutcome> TransformAsync(
+        FileReference file,
+        WorkFolderOperation operation,
+        FlowOrigin origin,
+        bool isElsewhere)
     {
         if (operation == WorkFolderOperation.Encrypt && await IsFileOrNameEncryptedAsync(file))
         {
@@ -120,23 +156,26 @@ public sealed class FileOperationWorkflow(
             return FileOperationOutcome.NotDone;
         }
 
-        if (!await fileWiper.CanWipeAsync(await fileAccess.OpenWritableAsync(file.Id)))
+        if (!await fileWiper.CanWipeAsync(await fileAccess.OpenWriteAsync(file.Id)))
         {
-            await userInterfaceService.DisplayMessageAsync(MobileTexts.DialogTextInsufficientRights);
+            await userInterfaceService.DisplayMessageAsync(
+                isElsewhere ? MobileTexts.DialogTextAccessDenied : MobileTexts.DialogTextInsufficientRights);
             return FileOperationOutcome.NotDone;
         }
 
         flowContext.Begin(origin);
+        if (isElsewhere)
+        {
+            return await TransformElsewhereAsync(file, operation);
+        }
+
         if (operation == WorkFolderOperation.Encrypt)
         {
-            FileReference encrypted = await operationService.EncryptAsync(file);
-            await userInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextFileEncrypted);
-            return FileOperationOutcome.Completed(encrypted);
+            return FileOperationOutcome.Completed(await operationService.EncryptAsync(file));
         }
 
         if (await operationService.DecryptWithKnownPasswordsAsync(file) is { } decrypted)
         {
-            await userInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextFileDecrypted);
             return FileOperationOutcome.Completed(decrypted);
         }
 
@@ -144,20 +183,63 @@ public sealed class FileOperationWorkflow(
         return FileOperationOutcome.AwaitingPassword;
     }
 
-    /// <summary>
-    /// Securely deletes a file in one of My folders, once the user confirms it, and removes it from the recent files.
-    /// </summary>
-    public async Task WipeAsync(FileReference file)
+    private async Task<FileOperationOutcome> TransformElsewhereAsync(FileReference file, WorkFolderOperation operation)
     {
+        FileOperationOutcome outcome = operation == WorkFolderOperation.Encrypt
+            ? await operationService.EncryptElsewhereAsync(file)
+            : await operationService.DecryptElsewhereWithKnownPasswordsAsync(file);
+        switch (outcome.Status)
+        {
+            case FileOperationStatus.Completed:
+                break;
+
+            case FileOperationStatus.AwaitingPassword:
+                await userInterfaceService.NavigateToAsync(AppDestination.EnterPassword);
+                break;
+
+            case FileOperationStatus.NotDone:
+                break;
+
+            default:
+                throw new ArgumentOutOfRangeException(nameof(outcome), outcome.Status, @"Unknown file operation status.");
+        }
+
+        return outcome;
+    }
+
+    /// <summary>
+    /// A file elsewhere is checked before the user is asked. Any failure to wipe it is reported as denied access,
+    /// which is what it typically is.
+    /// </summary>
+    private async Task WipeAsync(FileReference file, bool isElsewhere)
+    {
+        IWritableFile writable = await fileAccess.OpenWriteAsync(file.Id);
+        if (isElsewhere && !await fileWiper.CanWipeAsync(writable))
+        {
+            await userInterfaceService.DisplayMessageAsync(MobileTexts.DialogTextAccessDenied);
+            return;
+        }
+
         if (!await userInterfaceService.DisplayConfirmationAsync(MobileTexts.MessageTextConfirmWipe))
         {
             return;
         }
 
-        FileWipeStatus status = await fileWiper.WipeAsync(await fileAccess.OpenWritableAsync(file.Id));
+        FileWipeStatus status;
+        try
+        {
+            status = await fileWiper.WipeAsync(writable, file.Root.IsOnDevice());
+        }
+        catch (Exception ex) when (isElsewhere && ex is not OperationCanceledException)
+        {
+            crashLogService.WriteSwallowedException(ex);
+            status = FileWipeStatus.InsufficientRights;
+        }
+
         if (status == FileWipeStatus.InsufficientRights)
         {
-            await userInterfaceService.DisplayMessageAsync(MobileTexts.DialogTextInsufficientRights);
+            await userInterfaceService.DisplayMessageAsync(
+                isElsewhere ? MobileTexts.DialogTextAccessDenied : MobileTexts.DialogTextInsufficientRights);
             return;
         }
 
