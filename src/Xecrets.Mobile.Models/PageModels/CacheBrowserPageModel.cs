@@ -115,6 +115,53 @@ public partial class CacheBrowserPageModel : PageModelBase
     }
 
     [RelayCommand]
+    private async Task ClearAsync()
+    {
+        string status = string.Empty;
+        try
+        {
+            foreach (CacheBrowserEntry entry in Entries)
+            {
+                if (entry.IsDirectory)
+                {
+                    foreach (string file in Directory.EnumerateFiles(entry.FilePath, "*", SearchOption.AllDirectories))
+                    {
+                        File.SetAttributes(file, FileAttributes.Normal);
+                    }
+
+                    Directory.Delete(entry.FilePath, recursive: true);
+                }
+                else
+                {
+                    File.SetAttributes(entry.FilePath, FileAttributes.Normal);
+                    File.Delete(entry.FilePath);
+                }
+            }
+
+            if (!string.Equals(_currentDirectory, _cacheDirectory, StringComparison.Ordinal))
+            {
+                string parentDirectory = Directory.GetParent(_currentDirectory)!.FullName;
+                Directory.Delete(_currentDirectory);
+                _currentDirectory = parentDirectory;
+            }
+        }
+        catch (Exception ex)
+        {
+            status = ex.FormatException();
+        }
+        finally
+        {
+            await LoadAsync();
+        }
+
+        // After the reload, which clears the status.
+        if (status.Length > 0)
+        {
+            StatusText = status;
+        }
+    }
+
+    [RelayCommand]
     private async Task OpenAsync(CacheBrowserEntry entry)
     {
         try

@@ -56,13 +56,16 @@
                    Style="{StaticResource Title1}" />
             <Label Text="{Binding CurrentPath}"
                    Style="{StaticResource Body2}" />
-            <Grid ColumnDefinitions="*,*"
+            <Grid ColumnDefinitions="*,*,*"
                   ColumnSpacing="{StaticResource LayoutSpacing}">
                 <Button Text="Up"
                         Command="{Binding UpCommand}" />
                 <Button Grid.Column="1"
                         Text="Refresh"
                         Command="{Binding LoadCommand}" />
+                <Button Grid.Column="2"
+                        Text="Clear"
+                        Command="{Binding ClearCommand}" />
             </Grid>
             <Label Text="{Binding StatusText}"
                    IsVisible="{Binding StatusText, Converter={StaticResource StringNotEmptyConverter}}"
