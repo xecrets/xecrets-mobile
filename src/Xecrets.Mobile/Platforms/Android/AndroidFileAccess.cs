@@ -37,7 +37,6 @@ using System.Text;
 using System.Threading.Tasks;
 
 using Android.Content;
-using Android.Database;
 using Android.Provider;
 
 using Microsoft.Maui.ApplicationModel;
@@ -101,7 +100,7 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
 
         Intent? result = await StartPickerAsync(intent);
         AndroidUri? fileUri = result?.Data;
-        return fileUri is null ? null : await LocateAsync(fileUri, "");
+        return fileUri is null ? null : await LocateOffMainThreadAsync(fileUri, "");
     }
 
     /// <summary>
@@ -155,9 +154,8 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
     }
 
     /// <summary>
-    /// A file referred to through the grant of a folder is in it, which is told without asking the provider, so that a
-    /// file that is gone, or cannot be reached now, is still found to be in its folder. Other files are looked for in
-    /// the folders by the provider, or by their path on local storage.
+    /// Get the folder of a file referred to through the grant of the folder it is in. If it's not in a folder with
+    /// a grant, we look in the work folders list.
     /// </summary>
     public Task<WorkFolder?> FindFolderAsync(string fileId) =>
         Task.Run(async () =>
@@ -352,6 +350,20 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
             }
         });
 
+    public async Task<byte[]> ReadStartAsync(string fileId, int count)
+    {
+        await using Stream stream = await OpenReadAsync(fileId);
+        byte[] buffer = new byte[count];
+        return buffer[..await stream.ReadAtLeastAsync(buffer, count, throwOnEndOfStream: false)];
+    }
+
+    public async Task CheckReachableAsync(string fileId)
+    {
+        await using (await OpenReadAsync(fileId))
+        {
+        }
+    }
+
     public Task<IWritableFile> OpenWriteAsync(string fileId) =>
         Task.FromResult<IWritableFile>(new AndroidWritableFile(AndroidUri.Parse(fileId)!, crashLogService));
 
@@ -378,12 +390,20 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
     public async Task<bool> FileExistsInFolderAsync(string folderId, string name) =>
         await AndroidUri.Parse(folderId)!.FindChildAsync(name) is not null;
 
-    public async Task<IFileWriteSession> OpenWriteInFolderAsync(string folderId, string name, bool overwrite) =>
-        await AndroidFileWriteSession.CreateAsync(
-            AndroidUri.Parse(folderId)!,
-            name,
-            GetCreateDocumentType(name),
-            overwrite);
+    /// <summary>
+    /// Replaces an existing document with the name, when allowed, and otherwise creates it. The provider is called off
+    /// the main thread, as for the writable file.
+    /// </summary>
+    public Task<string> SaveInFolderAsync(string folderId, string name, string completedFilePath, bool overwrite) =>
+        Task.Run(async () =>
+        {
+            AndroidUri folderUri = AndroidUri.Parse(folderId)!;
+            AndroidUri fileUri =
+                (overwrite ? await folderUri.FindChildAsync(name) : null) ??
+                await CreateDocumentAsync(folderUri, name, GetCreateDocumentType(name));
+            await WriteDocumentAsync(fileUri, completedFilePath);
+            return fileUri.ToString()!;
+        });
 
     /// <summary>
     /// Storage such as Dropbox may never finish renaming a document, so the renaming is only waited for a while. A
@@ -412,7 +432,7 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
             return renamedUri.ToString()!;
         });
 
-    public async Task<FileReference?> SaveAsAsync(string fileName, Stream content)
+    public async Task<FileReference?> SaveAsAsync(string initialFolder, string fileName, string completedFilePath)
     {
         ThreadGuard.ThrowIfNotMainThread();
 
@@ -420,6 +440,10 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
         intent.AddCategory(Intent.CategoryOpenable);
         intent.SetType(GetCreateDocumentType(fileName));
         intent.PutExtra(Intent.ExtraTitle, fileName);
+        if (initialFolder.Length > 0)
+        {
+            intent.PutExtra(DocumentsContract.ExtraInitialUri, AndroidUri.Parse(initialFolder));
+        }
 
         Intent? result = await StartPickerAsync(intent);
         AndroidUri? fileUri = result?.Data;
@@ -430,36 +454,49 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
 
         return await Task.Run(async () =>
         {
-            await using (Stream output = ContentResolver.OpenOutputStream(fileUri, "w")!)
-            {
-                await content.CopyToAsync(output);
-            }
-
+            await WriteDocumentAsync(fileUri, completedFilePath);
             return Locate(fileUri, GetName(fileUri, fileName));
         });
     }
 
     /// <summary>
-    /// The provider creates the document, giving it another name when the one chosen is taken. The grant is not
-    /// persisted, so the file is only reached while the app runs.
+    /// A document that could not be completely written is removed, so that what is left of it is not taken for the
+    /// result. A document that was replaced is then lost. Storage such as Dropbox does not truncate when only opened for
+    /// writing, so it is asked to.
     /// </summary>
-    public async Task<FileReference?> CreateFileAsync(string initialFolder, string fallbackName)
+    private static async Task WriteDocumentAsync(AndroidUri fileUri, string completedFilePath)
     {
-        ThreadGuard.ThrowIfNotMainThread();
+        ThreadGuard.ThrowIfMainThread();
 
-        Intent intent = new(Intent.ActionCreateDocument);
-        intent.AddCategory(Intent.CategoryOpenable);
-        intent.SetType(GetCreateDocumentType(fallbackName));
-        intent.PutExtra(Intent.ExtraTitle, fallbackName);
-        if (initialFolder.Length > 0)
+        try
         {
-            intent.PutExtra(DocumentsContract.ExtraInitialUri, AndroidUri.Parse(initialFolder));
+            await using FileStream input = File.OpenRead(completedFilePath);
+            await using Stream output = ContentResolver.OpenOutputStream(fileUri, "wt")!;
+            await input.CopyToAsync(output);
+        }
+        catch
+        {
+            await fileUri.DeleteDocumentAsync();
+            throw;
+        }
+    }
+
+    private static async Task<AndroidUri> CreateDocumentAsync(AndroidUri folderUri, string name, string contentType)
+    {
+        ThreadGuard.ThrowIfMainThread();
+
+        AndroidUri fileUri =
+            DocumentsContract.CreateDocument(ContentResolver, folderUri, contentType, name) ??
+            throw new IOException("The file could not be created.");
+
+        // The provider may give the document another name when the one specified already exists.
+        if (fileUri.GetDisplayName() != name)
+        {
+            await fileUri.DeleteDocumentAsync();
+            throw new IOException("The destination file name is already in use or could not be determined.");
         }
 
-        Intent? result = await StartPickerAsync(intent);
-        AndroidUri? fileUri = result?.Data;
-
-        return fileUri is null ? null : await LocateAsync(fileUri, fallbackName);
+        return fileUri;
     }
 
     // Android knows neither the encrypted type nor .axx, so a provider giving the file another name when the one chosen
@@ -474,7 +511,7 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
         ((MainActivity)Platform.CurrentActivity!).StartDocumentPickerAsync(intent);
 
     // The provider is asked off the main thread, as for the writable file.
-    private Task<FileReference> LocateAsync(AndroidUri uri, string fallbackName) =>
+    private Task<FileReference> LocateOffMainThreadAsync(AndroidUri uri, string fallbackName) =>
         Task.Run(() => Locate(uri, GetName(uri, fallbackName)));
 
     /// <summary>
@@ -753,7 +790,8 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
             string renamedName = $".xecrets-probe-{Guid.NewGuid():N}";
             try
             {
-                probeUri = await Task.Run(() => probeUri.RenameDocument(renamedName))
+                AndroidUri uri = probeUri;
+                probeUri = await Task.Run(() => uri.RenameDocument(renamedName))
                     .WaitForProviderAsync(crashLogService);
             }
             catch (TimeoutException)
@@ -842,8 +880,7 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
     private static bool HasPersistedGrant(WorkFolder folder) =>
         ContentResolver.PersistedUriPermissions.Any(permission =>
             permission.Uri?.ToString() == folder.GrantId &&
-            permission.IsReadPermission &&
-            permission.IsWritePermission);
+            permission is { IsReadPermission: true, IsWritePermission: true });
 
     private static AndroidUri GetTreeDocumentUri(AndroidUri treeUri) =>
         DocumentsContract.BuildDocumentUriUsingTree(treeUri, DocumentsContract.GetTreeDocumentId(treeUri)!)!;
@@ -852,20 +889,18 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
     // tell the path of a document, such as some with opaque document ids.
     private string? FindParentInPath(AndroidUri fileUri) =>
         TryFindDocumentPath(fileUri) is { Count: >= 2 } documentIds
-            ? documentIds[documentIds.Count - 2]
+            ? documentIds[^2]
             : null;
 
     private int GetDocumentDepth(WorkFolder folder)
     {
         AndroidUri folderUri = GetFolderDocumentUri(folder);
         IList<string>? documentIds = TryFindDocumentPath(folderUri);
-        return documentIds is not null
-            ? documentIds.Count
-            : folderUri.IsExternalStorage()
-                ? DocumentsContract.GetDocumentId(folderUri)!
-                    .Split([':', '/'], StringSplitOptions.RemoveEmptyEntries)
-                    .Length
-                : 0;
+        return documentIds?.Count ?? (folderUri.IsExternalStorage()
+            ? DocumentsContract.GetDocumentId(folderUri)!
+                .Split([':', '/'], StringSplitOptions.RemoveEmptyEntries)
+                .Length
+            : 0);
     }
 
     private static AndroidUri GetFolderDocumentUri(WorkFolder folder) =>

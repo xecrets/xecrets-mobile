@@ -30,14 +30,16 @@
 
 using System;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace Xecrets.Mobile.Platforms.Apple;
 
 /// <summary>
-/// A stream that holds what it needs, such as the access to its file or a coordinated write of it, until it is
-/// disposed.
+/// A stream on a file the app made for it, which is released, such as wiped, once the stream is disposed
+/// asynchronously. A stream disposed synchronously leaves the file to be wiped with the other transient files, since a
+/// wipe cannot be waited for then.
 /// </summary>
-internal sealed class OwningStream(Stream stream, IDisposable owned) : Stream
+internal sealed class OwningStream(Stream stream, Func<Task> releaseAsync) : Stream
 {
     private bool _isOwning = true;
 
@@ -65,24 +67,25 @@ internal sealed class OwningStream(Stream stream, IDisposable owned) : Stream
 
     public override void Write(byte[] buffer, int offset, int count) => stream.Write(buffer, offset, count);
 
+    public override async ValueTask DisposeAsync()
+    {
+        await stream.DisposeAsync();
+        if (_isOwning)
+        {
+            _isOwning = false;
+            await releaseAsync();
+        }
+
+        await base.DisposeAsync();
+    }
+
     protected override void Dispose(bool disposing)
     {
         try
         {
             if (disposing)
             {
-                try
-                {
-                    stream.Dispose();
-                }
-                finally
-                {
-                    if (_isOwning)
-                    {
-                        owned.Dispose();
-                        _isOwning = false;
-                    }
-                }
+                stream.Dispose();
             }
         }
         finally

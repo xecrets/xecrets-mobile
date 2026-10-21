@@ -69,9 +69,9 @@ internal static class AppleExtensions
     /// </summary>
     public static void ExcludeFromBackup(this NSUrl fileUrl)
     {
-        if (!fileUrl.SetResource(NSUrl.IsExcludedFromBackupKey, NSNumber.FromBoolean(true), out NSError? error))
+        if (!fileUrl.SetResource(NSUrl.IsExcludedFromBackupKey, NSNumber.FromBoolean(true), out NSError error))
         {
-            throw new NSErrorException(error!);
+            throw new NSErrorException(error);
         }
     }
 
@@ -113,20 +113,37 @@ internal static class AppleExtensions
         }
 
         /// <summary>
-        /// Opens the file for reading, holding the access to this url until the stream is disposed.
+        /// Reads the file through a file coordinator, with all the reading done by the action, given the url,
+        /// since the access lasts only while the accessor runs. The file provider
+        /// makes the file available first, which may include a download. Some providers, such as Google Drive, do not
+        /// keep a file at its path until it is asked for this way. A provider that cannot provide the file yet, such as
+        /// OneDrive with a file it has not finished syncing, tells that the feature is not supported. An error may not
+        /// pass through the native coordinator, so it is set as the result instead.
         /// </summary>
-        public async Task<Stream> OpenScopedReadAsync(NSUrl fileUrl)
+        public Task<T> ReadCoordinatedAsync<T>(Func<NSUrl, T> read)
         {
-            AppleSecurityScope access = new(url);
-            try
+            TaskCompletionSource<T> done = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            NSFileAccessIntent intent = NSFileAccessIntent.CreateReadingIntent(url, default);
+            new NSFileCoordinator().CoordinateAccess([intent], new NSOperationQueue(), error =>
             {
-                return new OwningStream(await OpenCoordinatedReadAsync(fileUrl), access);
-            }
-            catch
-            {
-                access.Dispose();
-                throw;
-            }
+                if (error != null!)
+                {
+                    done.SetException(error.Domain == NSError.CocoaErrorDomain && error.Code == _featureUnsupportedError
+                        ? new IOException(MobileTexts.DialogTextFileNotAccessibleNow, new NSErrorException(error))
+                        : new NSErrorException(error));
+                    return;
+                }
+
+                try
+                {
+                    done.SetResult(read(intent.Url));
+                }
+                catch (Exception ex)
+                {
+                    done.SetException(ex);
+                }
+            });
+            return done.Task;
         }
 
         /// <summary>
@@ -142,30 +159,52 @@ internal static class AppleExtensions
             NSFileCoordinator coordinator = new();
             coordinator.CoordinateAccess([source, destination], new NSOperationQueue(), error =>
             {
-                try
+                if (error != null!)
                 {
-                    if (error != null!)
-                    {
-                        moved.SetException(new NSErrorException(error));
-                        return;
-                    }
-
-                    if (!NSFileManager.DefaultManager.Move(source.Url, destination.Url, out NSError moveError))
-                    {
-                        moved.SetException(new NSErrorException(moveError));
-                        return;
-                    }
-
-                    coordinator.ItemMoved(source.Url, destination.Url);
-                    moved.SetResult();
+                    moved.SetException(new NSErrorException(error));
+                    return;
                 }
-                finally
+
+                if (!NSFileManager.DefaultManager.Move(source.Url, destination.Url, out NSError moveError))
                 {
-                    // The coordinator is kept until the access it coordinates is done.
-                    GC.KeepAlive(coordinator);
+                    moved.SetException(new NSErrorException(moveError));
+                    return;
                 }
+
+                coordinator.ItemMoved(source.Url, destination.Url);
+                moved.SetResult();
             });
             return moved.Task;
+        }
+
+        /// <summary>
+        /// Writes the file through a file coordinator, with all the writing done by the action, given the url to write
+        /// at as told by the coordinator, since the access lasts only while the accessor runs. An error may not pass
+        /// through the native coordinator, so it is set as the result instead.
+        /// </summary>
+        public Task WriteCoordinatedAsync(NSFileCoordinatorWritingOptions options, Action<NSUrl> write)
+        {
+            TaskCompletionSource written = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            NSFileAccessIntent intent = NSFileAccessIntent.CreateWritingIntent(url, options);
+            new NSFileCoordinator().CoordinateAccess([intent], new NSOperationQueue(), error =>
+            {
+                if (error != null!)
+                {
+                    written.SetException(new NSErrorException(error));
+                    return;
+                }
+
+                try
+                {
+                    write(intent.Url);
+                    written.SetResult();
+                }
+                catch (Exception ex)
+                {
+                    written.SetException(ex);
+                }
+            });
+            return written.Task;
         }
 
         public void SaveGrant() => url.SaveGrant(url.AbsoluteString!);
@@ -269,47 +308,6 @@ internal static class AppleExtensions
         {
             File.Delete(path);
         }
-    }
-
-    /// <summary>
-    /// Opens the file for reading through a file coordinator, which has the file provider make it available first.
-    /// Some providers, such as Google Drive, do not keep a file at its path until it is asked for this way. The wait,
-    /// which may include a download, is asynchronous, and the accessor runs on a background queue with the url the
-    /// file is at then. An open stream remains valid after the coordinated read has ended. An exception may not pass
-    /// through the native coordinator, so it is caught in the accessor and set as the result instead. A provider that
-    /// cannot provide the file yet, such as OneDrive with a file it has not finished syncing, tells that the feature is
-    /// not supported.
-    /// </summary>
-    private static Task<Stream> OpenCoordinatedReadAsync(NSUrl fileUrl)
-    {
-        TaskCompletionSource<Stream> opened = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        NSFileAccessIntent intent = NSFileAccessIntent.CreateReadingIntent(fileUrl, default);
-        NSFileCoordinator coordinator = new();
-        coordinator.CoordinateAccess([intent], new NSOperationQueue(), error =>
-        {
-            try
-            {
-                if (error != null!)
-                {
-                    opened.SetException(error.Domain == NSError.CocoaErrorDomain && error.Code == _featureUnsupportedError
-                        ? new IOException(MobileTexts.DialogTextFileNotAccessibleNow, new NSErrorException(error))
-                        : new NSErrorException(error));
-                    return;
-                }
-
-                opened.SetResult(File.OpenRead(intent.Url.Path!));
-            }
-            catch (Exception ex)
-            {
-                opened.SetException(ex);
-            }
-            finally
-            {
-                // The coordinator is kept until the access it coordinates is done.
-                GC.KeepAlive(coordinator);
-            }
-        });
-        return opened.Task;
     }
 
     private sealed class PickerDelegate : UIDocumentPickerDelegate

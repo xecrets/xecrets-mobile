@@ -55,8 +55,6 @@ public sealed class FileWiperTests
 
         public Func<Task> Delete { get; init; } = () => throw new AssertionException("The file should not be deleted.");
 
-        public string Id => "file";
-
         public IDisposable AcquireAccess() => Access();
 
         public Task<bool> CanWriteAsync() => CanWrite();
@@ -65,7 +63,11 @@ public sealed class FileWiperTests
 
         public Task<long?> GetLengthAsync() => GetLength();
 
-        public Task<Stream> OpenWriteAsync() => OpenWrite();
+        public async Task OverwriteAsync(Action<Stream> overwrite)
+        {
+            await using Stream stream = await OpenWrite();
+            overwrite(stream);
+        }
 
         public Task DeleteAsync() => Delete();
     }
@@ -161,7 +163,7 @@ public sealed class FileWiperTests
             OpenWrite = () =>
             {
                 wasOpened = true;
-                return Task.FromResult<Stream>(Stream.Null);
+                return Task.FromResult(Stream.Null);
             },
             Delete = () =>
             {

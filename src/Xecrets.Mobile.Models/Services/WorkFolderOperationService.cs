@@ -41,7 +41,8 @@ namespace Xecrets.Mobile.Models.Services;
 internal sealed class WorkFolderOperationService(
     ICoreServices coreServices,
     IProfileService profileService,
-    EncryptRequestFactory encryptRequestFactory,
+    IEncryptionPreparationService encryptionPreparationService,
+    ITransientFileService transientFileService,
     IRecentFilesService recentFilesService,
     IFileAccess fileAccess,
     IFileWiper fileWiper,
@@ -56,22 +57,24 @@ internal sealed class WorkFolderOperationService(
 
     public bool HasPendingPasswordRequest => _pendingFile is not null;
 
+    /// <summary>
+    /// The result is encrypted to a temporary file, which is wiped once it is saved in the folder of the file, or not.
+    /// </summary>
     public async Task<FileReference> EncryptAsync(FileReference file)
     {
-        string destinationName = file.Name.ToEncryptedName(string.Empty);
+        string destinationName = file.Name.ToEncryptedName("");
         string folderId = await fileAccess.GetFolderOfFileAsync(file.Id);
         bool overwrite = await ConfirmOverwriteAsync(folderId, destinationName);
-        EncryptRequest request = encryptRequestFactory.ForCurrentProfile(file.Name);
+        EncryptionPreparationResult encrypted = await encryptionPreparationService.EncryptForCurrentProfileAsync(
+            new ReferencedReadableFile(fileAccess, file));
         string resultId;
-
-        await using (Stream cleartext = await fileAccess.OpenReadAsync(file.Id))
+        try
         {
-            await using IFileWriteSession destination = await fileAccess.OpenWriteInFolderAsync(
-                folderId,
-                destinationName,
-                overwrite);
-            await coreServices.EncryptAsync(cleartext, destination.OutputStream, request);
-            resultId = await destination.CommitAsync();
+            resultId = await fileAccess.SaveInFolderAsync(folderId, destinationName, encrypted.FilePath, overwrite);
+        }
+        finally
+        {
+            await transientFileService.WipeTransientFileAsync(encrypted.FilePath);
         }
 
         FileReference result = file with { Id = resultId, Name = destinationName };
@@ -88,24 +91,20 @@ internal sealed class WorkFolderOperationService(
     {
         try
         {
-            PickedDestination? destination = await CreateDestinationAsync(
-                file,
-                file.Name.ToEncryptedName(string.Empty),
-                isEncrypted: true);
-            if (destination is null)
+            EncryptionPreparationResult encrypted = await encryptionPreparationService.EncryptForCurrentProfileAsync(
+                new ReferencedReadableFile(fileAccess, file));
+            try
             {
-                return FileOperationOutcome.NotDone;
+                return await ExportResultAsync(
+                    file,
+                    encrypted.FilePath,
+                    encrypted.DisplayName,
+                    MobileTexts.DialogTextFileEncrypted);
             }
-
-            EncryptRequest request = encryptRequestFactory.ForCurrentProfile(file.Name);
-            await using (Stream cleartext = await fileAccess.OpenReadAsync(file.Id))
+            finally
             {
-                await WriteDestinationAsync(
-                    destination.File,
-                    output => coreServices.EncryptAsync(cleartext, output, request));
+                await transientFileService.WipeTransientFileAsync(encrypted.FilePath);
             }
-
-            return await CompleteElsewhereAsync(file, destination.Reference, MobileTexts.DialogTextFileEncrypted);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -165,45 +164,42 @@ internal sealed class WorkFolderOperationService(
         return FileOperationOutcome.AwaitingPassword;
     }
 
-    // Returns null when the file cannot be decrypted with the identity.
+    // Returns null when the file cannot be decrypted with the identity. As for encryption, once the operation elsewhere
+    // has started any failure is reported as denied access.
     private async Task<FileOperationOutcome?> TryDecryptAsync(FileReference file, Identity identity, bool isElsewhere)
     {
-        if (isElsewhere)
+        if (!isElsewhere)
         {
-            return await TryDecryptElsewhereAsync(file, identity);
+            return await TryDecryptAndSaveAsync(file, identity, isElsewhere);
         }
 
-        FileReference result;
-        await using (Stream encrypted = await fileAccess.OpenReadAsync(file.Id))
-        {
-            using IDecryptionSession session = await OpenDecryptionAsync(encrypted, identity);
-            if (!session.IsDecryptable)
-            {
-                return null;
-            }
-
-            string folderId = await fileAccess.GetFolderOfFileAsync(file.Id);
-            bool overwrite = await ConfirmOverwriteAsync(folderId, session.OriginalFileName);
-
-            await using IFileWriteSession destination = await fileAccess.OpenWriteInFolderAsync(
-                folderId,
-                session.OriginalFileName,
-                overwrite);
-            await session.DecryptAsync(destination.OutputStream);
-            string resultId = await destination.CommitAsync();
-            result = file with { Id = resultId, Name = session.OriginalFileName };
-        }
-
-        await CompleteAsync(file, result, MobileTexts.DialogTextFileDecrypted);
-        return FileOperationOutcome.Completed(result);
-    }
-
-    // As for encryption, once the operation has started any failure is reported as denied access.
-    private async Task<FileOperationOutcome?> TryDecryptElsewhereAsync(FileReference file, Identity identity)
-    {
         try
         {
-            PickedDestination? destination;
+            return await TryDecryptAndSaveAsync(file, identity, isElsewhere);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            crashLogService.WriteSwallowedException(ex);
+            return await ReportAsync(DestinationStatus.AccessDenied);
+        }
+    }
+
+    /// <summary>
+    /// The result is decrypted to a temporary file, as for a decrypted copy, which is wiped once it is saved, or not. In
+    /// one of My folders, replacing a file of the same name is confirmed before decrypting. The source is closed before
+    /// the result is saved, since it is wiped once it has been.
+    /// </summary>
+    private async Task<FileOperationOutcome?> TryDecryptAndSaveAsync(
+        FileReference file,
+        Identity identity,
+        bool isElsewhere)
+    {
+        string resultPath = "";
+        try
+        {
+            string resultName;
+            string folderId = "";
+            bool overwrite = false;
             await using (Stream encrypted = await fileAccess.OpenReadAsync(file.Id))
             {
                 using IDecryptionSession session = await OpenDecryptionAsync(encrypted, identity);
@@ -212,22 +208,64 @@ internal sealed class WorkFolderOperationService(
                     return null;
                 }
 
-                destination = await CreateDestinationAsync(file, session.OriginalFileName, isEncrypted: false);
-                if (destination is null)
+                resultName = session.OriginalFileName;
+                if (!isElsewhere)
                 {
-                    return FileOperationOutcome.NotDone;
+                    folderId = await fileAccess.GetFolderOfFileAsync(file.Id);
+                    overwrite = await ConfirmOverwriteAsync(folderId, resultName);
                 }
 
-                await WriteDestinationAsync(destination.File, session.DecryptAsync);
+                resultPath = transientFileService.CreateHandoffPath(resultName);
+                await using FileStream decrypted = File.Create(resultPath);
+                await session.DecryptAsync(decrypted);
             }
 
-            return await CompleteElsewhereAsync(file, destination.Reference, MobileTexts.DialogTextFileDecrypted);
+            if (isElsewhere)
+            {
+                return await ExportResultAsync(file, resultPath, resultName, MobileTexts.DialogTextFileDecrypted);
+            }
+
+            string resultId = await fileAccess.SaveInFolderAsync(folderId, resultName, resultPath, overwrite);
+            FileReference result = file with { Id = resultId, Name = resultName };
+            await CompleteAsync(file, result, MobileTexts.DialogTextFileDecrypted);
+            return FileOperationOutcome.Completed(result);
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        finally
         {
-            crashLogService.WriteSwallowedException(ex);
-            return await ReportAsync(DestinationStatus.AccessDenied);
+            if (resultPath.Length > 0)
+            {
+                await transientFileService.WipeTransientFileAsync(resultPath);
+            }
         }
+    }
+
+    /// <summary>
+    /// Lets the user choose where to save a complete result, starting in the folder of the source, and completes the
+    /// operation once it is saved. A name the user chose in the picker is not told, while one the storage changed from
+    /// the name chosen, such as when it is taken, is told to the user, since the result is then already saved. The saved
+    /// file is not opened again.
+    /// </summary>
+    private async Task<FileOperationOutcome> ExportResultAsync(
+        FileReference source,
+        string resultPath,
+        string suggestedName,
+        string completedText)
+    {
+        FileReference? saved = await fileAccess.SaveAsAsync(
+            await fileAccess.GetParentFolderAsync(source.Id),
+            suggestedName,
+            resultPath);
+        if (saved is null)
+        {
+            return await ReportAsync(DestinationStatus.Canceled);
+        }
+
+        if (IsProbablyChangedByOsFromSuggestion(suggestedName, saved.Name))
+        {
+            await userInterfaceService.DisplayMessageAsync(string.Format(MobileTexts.DialogTextSavedAs, saved.Name));
+        }
+
+        return await CompleteElsewhereAsync(source, saved, completedText);
     }
 
     private Task<IDecryptionSession> OpenDecryptionAsync(Stream encrypted, Identity identity) =>
@@ -290,124 +328,10 @@ internal sealed class WorkFolderOperationService(
         }
     }
 
-    /// <summary>
-    /// Lets the user choose where to save the result, and checks that the file chosen can be used for it. A file that
-    /// cannot is removed again only when it is empty, such as when just created, since it may be an existing file the
-    /// user chose to replace. Returns null, once the user has been told why, when there is no file to save it in.
-    /// </summary>
-    private async Task<PickedDestination?> CreateDestinationAsync(FileReference source, string name, bool isEncrypted)
-    {
-        FileReference? picked = await fileAccess.CreateFileAsync(await fileAccess.GetParentFolderAsync(source.Id), name);
-        if (picked is null)
-        {
-            await ReportAsync(DestinationStatus.Canceled);
-            return null;
-        }
-
-        IWritableFile file = await fileAccess.OpenWriteAsync(picked.Id);
-        DestinationStatus status = await CheckDestinationAsync(picked, name, isEncrypted);
-        if (status != DestinationStatus.Ready)
-        {
-            if (await file.GetLengthAsync() == 0)
-            {
-                await DeleteCreatedAsync(file, picked.Name);
-            }
-
-            await ReportAsync(status);
-            return null;
-        }
-
-        return new PickedDestination(picked, file);
-    }
-
-    /// <summary>
-    /// The user is told when the file could not be deleted, since it is left where the user chose to save it. Storage
-    /// such as Dropbox may not yet delete a file it has only just created, which the platform retries for a while.
-    /// </summary>
-    private async Task DeleteCreatedAsync(IWritableFile file, string name)
-    {
-        try
-        {
-            using IDisposable access = file.AcquireAccess();
-            await file.DeleteAsync();
-        }
-        catch (Exception ex)
-        {
-            crashLogService.WriteSwallowedException(ex);
-            await userInterfaceService.DisplayMessageAsync(string.Format(MobileTexts.DialogTextCouldNotDeleteFile, name));
-        }
-    }
-
-    /// <summary>
-    /// The rights to the file are not checked, since storage such as Dropbox cannot tell them for a file it has only
-    /// just created, and does not tell that a file can be written even when it can. Writing it tells, and a failure to
-    /// write it is reported as denied access.
-    /// <para>
-    /// A name changed from the one suggested, by something added before the extension, is confirmed by the user. It is
-    /// typically the storage giving the file another name since the one chosen is taken, such as Dropbox does, where
-    /// an existing file cannot be chosen to be replaced.
-    /// </para>
-    /// </summary>
-    private async Task<DestinationStatus> CheckDestinationAsync(FileReference picked, string suggestedName, bool isEncrypted)
-    {
-        if (picked.Name.IsEncrypted() != isEncrypted)
-        {
-            return DestinationStatus.FileTypeNotAllowed;
-        }
-
-        if (IsProbablyChangedByOsFromSuggestion(suggestedName, picked.Name) &&
-            !await userInterfaceService.DisplayConfirmationAsync(
-                string.Format(MobileTexts.DialogTextConfirmSaveAs, picked.Name)))
-        {
-            return DestinationStatus.Canceled;
-        }
-
-        return DestinationStatus.Ready;
-    }
-
     private static bool IsProbablyChangedByOsFromSuggestion(string suggestedName, string name) =>
         name.Length > suggestedName.Length &&
         name.StartsWith(Path.GetFileNameWithoutExtension(suggestedName), StringComparison.OrdinalIgnoreCase) &&
         name.EndsWith(Path.GetExtension(suggestedName), StringComparison.OrdinalIgnoreCase);
-
-    // A result that could not be written is removed, so that what is left of it is not taken for the result. A file
-    // that could not even be opened is left as it is. The file may be an existing one that is replaced, and is only
-    // truncated at the end, where the stream allows it, since a stream that cannot seek is truncated when opened.
-    private async Task WriteDestinationAsync(IWritableFile destination, Func<Stream, Task> writeAsync)
-    {
-        using IDisposable access = destination.AcquireAccess();
-        Stream output = await destination.OpenWriteAsync();
-        try
-        {
-            await using (output)
-            {
-                await writeAsync(output);
-                if (output.CanSeek)
-                {
-                    output.SetLength(output.Position);
-                }
-            }
-        }
-        catch
-        {
-            await TryDeleteAsync(destination);
-            throw;
-        }
-    }
-
-    private async Task TryDeleteAsync(IWritableFile file)
-    {
-        try
-        {
-            using IDisposable access = file.AcquireAccess();
-            await file.DeleteAsync();
-        }
-        catch (Exception ex)
-        {
-            // Best effort - what made the file unusable is what is reported.
-            crashLogService.WriteSwallowedException(ex);
-        }
-    }
 
     private async Task<FileOperationOutcome> ReportAsync(DestinationStatus status)
     {
@@ -418,14 +342,9 @@ internal sealed class WorkFolderOperationService(
                 break;
 
             case DestinationStatus.AccessDenied:
-                await userInterfaceService.DisplayMessageAsync(MobileTexts.DialogTextAccessDenied);
+                await userInterfaceService.DisplayMessageAsync(MobileTexts.DialogTextAccessDeniedOrNotSupported);
                 break;
 
-            case DestinationStatus.FileTypeNotAllowed:
-                await userInterfaceService.DisplayMessageAsync(MobileTexts.DialogTextFileTypeNotAllowed);
-                break;
-
-            case DestinationStatus.Ready:
             default:
                 throw new ArgumentOutOfRangeException(nameof(status), status, @"Not a reason for not being done.");
         }
@@ -449,6 +368,4 @@ internal sealed class WorkFolderOperationService(
 
         return true;
     }
-
-    private sealed record PickedDestination(FileReference Reference, IWritableFile File);
 }

@@ -111,7 +111,7 @@ public static class MobileTexts
 
     public static string CrashPageTitle => "Sorry, we crashed!";
 
-    public static string DialogTextAccessDenied => "Access denied.";
+    public static string DialogTextAccessDeniedOrNotSupported => "Access denied or not supported.";
 
     public static string DialogTextAllowFolderAccessFormat => "Do you want to allow the app to access the folder where \"{0}\" is located?";
 
@@ -119,11 +119,7 @@ public static class MobileTexts
 
     public static string DialogTextConfirmOverwrite => "The file \"{0}\" already exists. Overwrite it?";
 
-    public static string DialogTextConfirmSaveAs => "Save as \"{0}\"?";
-
     public static string DialogTextBackupNameInUse => "Not saved, since there is already a file named \"{0}\" in the same folder. Remove it, and save again.";
-
-    public static string DialogTextCouldNotDeleteFile => "Could not delete file \"{0}\".";
 
     public static string DialogTextOriginalNotRemoved => "The operation finished, but the original could not be removed.";
 
@@ -143,7 +139,7 @@ public static class MobileTexts
 
     public static string DialogTextFileSaved => "The file was saved.";
 
-    public static string DialogTextFileTypeNotAllowed => "This file type is not allowed.";
+    public static string DialogTextSavedAs => "The file was saved as \"{0}\".";
 
     public static string DialogTextFolderName => "Enter a label for this folder";
 
@@ -292,7 +288,7 @@ public static class MobileTexts
             }
         }
 
-        return new WelcomeLine(string.Empty, line);
+        return new WelcomeLine("", line);
     }
 
     #region Translated texts

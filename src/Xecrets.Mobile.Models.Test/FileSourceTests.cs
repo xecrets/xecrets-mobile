@@ -56,8 +56,7 @@ public sealed class FileSourceTests
         string path = Path.Combine(_directory, "stored.txt");
         const string displayName = "display.txt";
         byte[] content = Encoding.UTF8.GetBytes("content");
-        FakeFileAccess fileAccess = new(null!);
-        fileAccess.Files[path] = content;
+        FakeFileAccess fileAccess = new(null!) { Files = { [path] = content } };
         await File.WriteAllBytesAsync(path, content);
         IReadableFile source = referenced
             ? new ReferencedReadableFile(fileAccess, new FileReference(path, displayName))
@@ -94,7 +93,7 @@ public sealed class FileSourceTests
         Assert.That(imported, Is.EqualTo(new IncomingFileInfo(outputPath, "display.txt", "text/plain")));
         Assert.That(await File.ReadAllTextAsync(outputPath), Is.EqualTo("content"));
         Assert.That(input.CanRead, Is.True);
-        using FileStream exclusive = File.Open(outputPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+        await using FileStream exclusive = File.Open(outputPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
     }
 
     private sealed class TestTransientFileService(string incomingPath) : ITransientFileService
@@ -103,6 +102,7 @@ public sealed class FileSourceTests
         public string CreateHandoffPath(string originalFileName) => throw new NotSupportedException();
         public string CreateEncryptedInputPath(string originalFileName) => throw new NotSupportedException();
         public string CreateEncryptedOutputPath(string originalFileName) => throw new NotSupportedException();
+        public Task WipeTransientFileAsync(string filePath) => throw new NotSupportedException();
         public Task RunExclusiveAsync(Func<Task> operation) => throw new NotSupportedException();
         public Task MaybeWipeTrackedFilesAsync() => throw new NotSupportedException();
     }

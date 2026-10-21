@@ -60,6 +60,27 @@ public sealed class TransientFileService(IFileService fileService, IFileWiper fi
         return Path.Combine(sessionDirectory, fileName);
     }
 
+    public async Task WipeTransientFileAsync(string filePath)
+    {
+        if (File.Exists(filePath))
+        {
+            await TryWipeAsync(filePath);
+        }
+
+        try
+        {
+            string? directoryPath = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrWhiteSpace(directoryPath) && Directory.Exists(directoryPath))
+            {
+                Directory.Delete(directoryPath, recursive: true);
+            }
+        }
+        catch (Exception ex)
+        {
+            crashLogService.WriteSwallowedException(ex);
+        }
+    }
+
     public async Task RunExclusiveAsync(Func<Task> operation)
     {
         await _gate.WaitAsync();

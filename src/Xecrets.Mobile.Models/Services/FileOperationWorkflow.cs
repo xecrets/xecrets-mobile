@@ -52,6 +52,9 @@ public sealed class FileOperationWorkflow(
     ICrashLogService crashLogService,
     IUserInterfaceService userInterfaceService)
 {
+    // The core tells an encrypted file by its format id at the start, which is far shorter than this.
+    private const int _encryptedStartLength = 512;
+
     /// <summary>
     /// Lets the user pick a file, starting in the folder, or where the platform decides without one, and does what is
     /// intended with it. Without a given operation, the name of the file decides whether it is encrypted or decrypted.
@@ -61,7 +64,7 @@ public sealed class FileOperationWorkflow(
     public async Task PickAndRunAsync(WorkFolderIntent intent, WorkFolder? folder)
     {
         FilePickerKind pickerKind = intent == WorkFolderIntent.Decrypt ? FilePickerKind.Encrypted : FilePickerKind.Any;
-        FileReference? picked = await fileAccess.PickFileAsync(folder?.Id ?? string.Empty, pickerKind);
+        FileReference? picked = await fileAccess.PickFileAsync(folder?.Id ?? "", pickerKind);
         if (picked is null)
         {
             return;
@@ -77,10 +80,12 @@ public sealed class FileOperationWorkflow(
     }
 
     /// <summary>
-    /// Whether the contents of the file show that it is encrypted, whatever its name.
+    /// Whether the contents of the file show that it is encrypted, whatever its name. Only the start of the file is
+    /// read, which is all that tells it.
     /// </summary>
     public Task<bool> IsFileEncryptedAsync(FileReference file) =>
-        coreServices.IsEncryptedAsync(() => fileAccess.OpenReadAsync(file.Id));
+        coreServices.IsEncryptedAsync(async () =>
+            new MemoryStream(await fileAccess.ReadStartAsync(file.Id, _encryptedStartLength)));
 
     /// <summary>
     /// Whether the file is not to be encrypted, since its contents or its name show that it is encrypted already.
@@ -91,7 +96,7 @@ public sealed class FileOperationWorkflow(
     /// <summary>
     /// Encrypts or decrypts a file in one of My folders, returning the file it is replaced by, that nothing was done, or
     /// that the user was sent on to enter a password for it. The file is replaced by the result, so nothing is done
-    /// unless the file can be wiped afterwards. A file named or found to be encrypted is not encrypted, and a file not
+    /// unless the file can be wiped afterward. A file named or found to be encrypted is not encrypted, and a file not
     /// found to be encrypted is not decrypted, but the user is told so.
     /// </summary>
     public Task<FileOperationOutcome> TransformAsync(
@@ -159,7 +164,7 @@ public sealed class FileOperationWorkflow(
         if (!await fileWiper.CanWipeAsync(await fileAccess.OpenWriteAsync(file.Id)))
         {
             await userInterfaceService.DisplayMessageAsync(
-                isElsewhere ? MobileTexts.DialogTextAccessDenied : MobileTexts.DialogTextInsufficientRights);
+                isElsewhere ? MobileTexts.DialogTextAccessDeniedOrNotSupported : MobileTexts.DialogTextInsufficientRights);
             return FileOperationOutcome.NotDone;
         }
 
@@ -216,7 +221,7 @@ public sealed class FileOperationWorkflow(
         IWritableFile writable = await fileAccess.OpenWriteAsync(file.Id);
         if (isElsewhere && !await fileWiper.CanWipeAsync(writable))
         {
-            await userInterfaceService.DisplayMessageAsync(MobileTexts.DialogTextAccessDenied);
+            await userInterfaceService.DisplayMessageAsync(MobileTexts.DialogTextAccessDeniedOrNotSupported);
             return;
         }
 
@@ -239,7 +244,7 @@ public sealed class FileOperationWorkflow(
         if (status == FileWipeStatus.InsufficientRights)
         {
             await userInterfaceService.DisplayMessageAsync(
-                isElsewhere ? MobileTexts.DialogTextAccessDenied : MobileTexts.DialogTextInsufficientRights);
+                isElsewhere ? MobileTexts.DialogTextAccessDeniedOrNotSupported : MobileTexts.DialogTextInsufficientRights);
             return;
         }
 
@@ -272,11 +277,12 @@ public sealed class FileOperationWorkflow(
     }
 
     /// <summary>
-    /// Lets the user save a copy anywhere. Returns null when the user cancels, and otherwise the saved file.
+    /// Lets the user save a copy of the complete file anywhere. Returns null when the user cancels, and otherwise the
+    /// saved file.
     /// </summary>
-    public async Task<FileReference?> SaveAsAsync(string fileName, Stream content)
+    public async Task<FileReference?> SaveAsAsync(string fileName, string completedFilePath)
     {
-        FileReference? file = await fileAccess.SaveAsAsync(fileName, content);
+        FileReference? file = await fileAccess.SaveAsAsync("", fileName, completedFilePath);
         if (file is not null)
         {
             await userInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextFileSaved);

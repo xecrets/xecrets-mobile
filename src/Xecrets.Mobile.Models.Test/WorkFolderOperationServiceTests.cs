@@ -51,7 +51,7 @@ public sealed class WorkFolderOperationServiceTests
         app.AddFile("docs/a.txt");
         app.AddRecent("docs/a.txt", RecentFileOperation.InPlace, "a.txt");
         app.AddRecent("other.txt", RecentFileOperation.InPlace);
-        string encryptedName = "a.txt".ToEncryptedName(string.Empty);
+        string encryptedName = "a.txt".ToEncryptedName("");
 
         FileReference result = await app.OperationService.EncryptAsync(new FileReference("docs/a.txt", "a.txt"));
 
@@ -60,6 +60,23 @@ public sealed class WorkFolderOperationServiceTests
         Assert.That(app.Wiper.Wiped, Is.EqualTo(["docs/a.txt"]));
         Assert.That(app.Store.Files.Select(file => (file.Id, file.Name)),
             Is.EqualTo([($"docs/{encryptedName}", encryptedName), ("other.txt", "")]));
+        Assert.That(app.Transient.RemainingFiles(), Is.Empty);
+    }
+
+    [Test]
+    public void ResultThatCannotBeSavedLeavesTheSourceAndNoTemporaryFile()
+    {
+        TestApp app = new();
+        app.AddFile("docs/a.txt");
+        app.Access.FailingWrites.Add($"docs/{"a.txt".ToEncryptedName("")}");
+
+        Assert.That(
+            async () => await app.OperationService.EncryptAsync(new FileReference("docs/a.txt", "a.txt")),
+            Throws.TypeOf<IOException>());
+
+        Assert.That(app.Access.Files.Keys, Is.EquivalentTo(["docs/a.txt"]));
+        Assert.That(app.Wiper.Wiped, Is.Empty);
+        Assert.That(app.Transient.RemainingFiles(), Is.Empty);
     }
 
     /// <summary>
@@ -74,7 +91,7 @@ public sealed class WorkFolderOperationServiceTests
         app.AddRecent("grant:docs|docs/a.txt", RecentFileOperation.InPlace, "a.txt");
         app.AddRecent("docs/a.txt", RecentFileOperation.EncryptCopySaveAs, "a.txt");
         app.AddRecent("docs/b.txt", RecentFileOperation.InPlace, "b.txt");
-        string encryptedName = "a.txt".ToEncryptedName(string.Empty);
+        string encryptedName = "a.txt".ToEncryptedName("");
 
         await app.OperationService.EncryptAsync(new FileReference("grant:docs|docs/a.txt", "a.txt"));
 
@@ -93,6 +110,7 @@ public sealed class WorkFolderOperationServiceTests
         Assert.That(result, Is.EqualTo(new FileReference("grant:docs|docs/a.txt", "a.txt")));
         Assert.That(app.Access.Files.Keys, Is.EquivalentTo(["docs/a.txt"]));
         Assert.That(app.RecentIds(), Is.EqualTo(["grant:docs|docs/a.txt"]));
+        Assert.That(app.Transient.RemainingFiles(), Is.Empty);
     }
 
     [Test]
@@ -124,8 +142,7 @@ public sealed class WorkFolderOperationServiceTests
     [Test]
     public async Task FileThatCannotBeDecryptedIsKeptForAPassword()
     {
-        TestApp app = new();
-        app.Core.Password = "other";
+        TestApp app = new() { Core = { Password = "other" } };
         app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
 
         FileReference? result = await app.OperationService.DecryptWithKnownPasswordsAsync(
@@ -180,7 +197,7 @@ public sealed class WorkFolderOperationServiceTests
     public async Task FolderOfTheFileIsFoundOnceForAnOperation()
     {
         TestApp app = new();
-        string encryptedName = "a.txt".ToEncryptedName(string.Empty);
+        string encryptedName = "a.txt".ToEncryptedName("");
         app.AddFile("docs/a.txt");
         app.AddFile($"docs/{encryptedName}", "existing");
         app.UserInterface.Answers.Enqueue(true);
@@ -195,7 +212,7 @@ public sealed class WorkFolderOperationServiceTests
     public void ExistingResultIsOnlyOverwrittenWhenTheUserConfirms()
     {
         TestApp app = new();
-        string encryptedName = "a.txt".ToEncryptedName(string.Empty);
+        string encryptedName = "a.txt".ToEncryptedName("");
         app.AddFile("docs/a.txt");
         app.AddFile($"docs/{encryptedName}", "existing");
 

@@ -28,44 +28,36 @@
 
 #endregion Copyright and GPL License
 
-using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Models.Services;
 
 /// <summary>
-/// Writes the destination file in place. A new file is created only if there is none with the name, so that an
-/// existing file is never replaced unless that is allowed.
+/// Saves a complete file at a path, written in place. A new file is created only if there is none with the name, so
+/// that an existing file is never replaced unless that is allowed.
 /// </summary>
-public sealed class LocalFileWriteSession(string folderPath, string name, bool overwrite) : IFileWriteSession
+public static class LocalFileSaver
 {
-    private readonly string _destinationPath = Path.Combine(folderPath, name);
-    private bool _isCommitted;
-
-    public Stream OutputStream { get; } = new FileStream(
-        Path.Combine(folderPath, name),
-        overwrite ? FileMode.Create : FileMode.CreateNew,
-        FileAccess.Write,
-        FileShare.None);
-
-    public async Task<string> CommitAsync()
+    /// <summary>
+    /// A file that could not be completely written is removed, so that what is left of it is not taken for the result.
+    /// A file that was replaced is then lost.
+    /// </summary>
+    public static void Save(string completedFilePath, string destinationPath, bool overwrite)
     {
-        await OutputStream.DisposeAsync();
-        _isCommitted = true;
-        return _destinationPath;
-    }
-
-    public async ValueTask DisposeAsync()
-    {
+        using FileStream input = File.OpenRead(completedFilePath);
+        using FileStream output = new(
+            destinationPath,
+            overwrite ? FileMode.Create : FileMode.CreateNew,
+            FileAccess.Write,
+            FileShare.None);
         try
         {
-            await OutputStream.DisposeAsync();
+            input.CopyTo(output);
         }
-        finally
+        catch
         {
-            if (!_isCommitted)
-            {
-                File.Delete(_destinationPath);
-            }
+            output.Close();
+            File.Delete(destinationPath);
+            throw;
         }
     }
 }

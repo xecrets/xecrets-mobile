@@ -41,7 +41,7 @@ namespace Xecrets.Mobile.Models.Test;
 [TestFixture]
 public sealed class TransientFileServiceTests
 {
-    private string _cacheDirectory = string.Empty;
+    private string _cacheDirectory = "";
 
     [SetUp]
     public void SetUp() => _cacheDirectory = Directory.CreateTempSubdirectory().FullName;
@@ -106,7 +106,7 @@ public sealed class TransientFileServiceTests
             return new IncomingFileInfo(path, "new.txt", "text/plain");
         }));
 
-        // The gate is held by the in-flight receive; wipe must not wait for it - it skips immediately,
+        // The gate is held by the in-flight "receive"; wipe must not wait for it - it skips immediately,
         // leaving cleanup for another opportunity, so it can never end up deadlocked behind a caller that
         // holds the gate across navigation.
         await transient.MaybeWipeTrackedFilesAsync().WaitAsync(TimeSpan.FromSeconds(5));
@@ -149,8 +149,8 @@ public sealed class TransientFileServiceTests
         await transient.MaybeWipeTrackedFilesAsync().WaitAsync(TimeSpan.FromSeconds(5));
         Assert.That(wipeCount, Is.EqualTo(2));
 
-        // Even though the overwrite itself failed for both files, they must still have been removed - the wipe
-        // always tries to delete, not just when the overwrite succeeded.
+        // Even though overwrite itself failed for both files, they must still have been removed - the wipe
+        // always tries to delete, not just when overwrite succeeded.
         Assert.That(Directory.Exists(Path.Combine(_cacheDirectory, "XecretsHandoff")), Is.False);
 
         await transient.RunExclusiveAsync(() => Task.CompletedTask).WaitAsync(TimeSpan.FromSeconds(5));
@@ -264,15 +264,14 @@ public sealed class TransientFileServiceTests
     private sealed class OverwriteHookFile(IWritableFile file, Func<IWritableFile, Task> onOverwriteAsync)
         : IWritableFile
     {
-        public string Id => file.Id;
         public IDisposable AcquireAccess() => file.AcquireAccess();
         public Task<bool> CanWriteAsync() => file.CanWriteAsync();
         public Task<bool> CanDeleteAsync() => file.CanDeleteAsync();
         public Task<long?> GetLengthAsync() => file.GetLengthAsync();
-        public async Task<Stream> OpenWriteAsync()
+        public async Task OverwriteAsync(Action<Stream> overwrite)
         {
             await onOverwriteAsync(file);
-            return await file.OpenWriteAsync();
+            await file.OverwriteAsync(overwrite);
         }
         public Task DeleteAsync() => file.DeleteAsync();
     }

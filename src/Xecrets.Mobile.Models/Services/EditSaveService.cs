@@ -45,13 +45,15 @@ internal sealed class EditSaveService(
     FolderAccessWorkflow folderAccess,
     FileOperationWorkflow fileOperationWorkflow,
     IRecentFilesService recentFilesService,
+    ITransientFileService transientFileService,
     IFlowContext flowContext,
     ICrashLogService crashLogService)
     : IEditSaveService
 {
     /// <summary>
-    /// The source is kept under its backup name while the edits are saved under its own name, and is deleted once they
-    /// are. Should saving fail, the source gets its own name back, so that only the edits are lost.
+    /// The edits are encrypted to a temporary file first, which is wiped once saved, or not. The source is then kept
+    /// under its backup name while the edits are saved under its own name, and is deleted once they are. Should saving
+    /// fail, the source gets its own name back, so that only the edits are lost.
     /// </summary>
     public async Task<bool> SaveAsync(string text)
     {
@@ -63,23 +65,27 @@ internal sealed class EditSaveService(
             return false;
         }
 
-        EncryptRequest request = await PrepareAsync(previewService.Current, text);
-        string backupId = await fileAccess.RenameAsync(source.Id, source.Name.ToBackupName());
+        string encryptedPath = await EncryptToTransientAsync(previewService.Current, text);
         string savedId;
         try
         {
-            await using IFileWriteSession destination =
-                await fileAccess.OpenWriteInFolderAsync(folderId, source.Name, overwrite: false);
-            await EncryptPreparedAsync(previewService.Current, request, destination.OutputStream);
-            savedId = await destination.CommitAsync();
-        }
-        catch
-        {
-            await TryRestoreAsync(backupId, source.Name);
-            throw;
-        }
+            string backupId = await fileAccess.RenameAsync(source.Id, source.Name.ToBackupName());
+            try
+            {
+                savedId = await fileAccess.SaveInFolderAsync(folderId, source.Name, encryptedPath, overwrite: false);
+            }
+            catch
+            {
+                await TryRestoreAsync(backupId, source.Name);
+                throw;
+            }
 
-        await TryDeleteBackupAsync(backupId);
+            await TryDeleteBackupAsync(backupId);
+        }
+        finally
+        {
+            await transientFileService.WipeTransientFileAsync(encryptedPath);
+        }
 
         // The file is a new one, which on some storage gives it a new id, while the old id refers to the replaced
         // file. The saved file is the one saved over and listed from then on, in place of any entry for the
@@ -121,14 +127,17 @@ internal sealed class EditSaveService(
 
     public async Task<bool> SaveCopyAsync(string text)
     {
-        IPreviewState state = previewService.Current;
-        EncryptRequest request = await PrepareAsync(state, text);
-        await using MemoryStream encrypted = new();
-        await EncryptPreparedAsync(state, request, encrypted);
-        encrypted.Position = 0;
-
-        string fileName = previewService.Current.OriginalFileName.ToEncryptedName(string.Empty);
-        FileReference? savedCopy = await fileOperationWorkflow.SaveAsAsync(fileName, encrypted);
+        string encryptedPath = await EncryptToTransientAsync(previewService.Current, text);
+        FileReference? savedCopy;
+        try
+        {
+            string fileName = previewService.Current.OriginalFileName.ToEncryptedName("");
+            savedCopy = await fileOperationWorkflow.SaveAsAsync(fileName, encryptedPath);
+        }
+        finally
+        {
+            await transientFileService.WipeTransientFileAsync(encryptedPath);
+        }
 
         if (savedCopy is null)
         {
@@ -136,7 +145,7 @@ internal sealed class EditSaveService(
         }
 
         // The saved copy holds the edits, so it is the one saved over and listed from then on, if it was saved in
-        // one of My folders. Otherwise it cannot be changed, and each save is a new copy.
+        // one of My folders. Otherwise, it cannot be changed, and each save is a new copy.
         FileReference? reachable = await folderAccess.FindInFoldersAsync(savedCopy);
         if (reachable is null)
         {
@@ -166,10 +175,18 @@ internal sealed class EditSaveService(
         return encryptRequestFactory.ForCurrentProfile(state.OriginalFileName);
     }
 
-    private async Task EncryptPreparedAsync(IPreviewState state, EncryptRequest request, Stream encrypted)
+    /// <summary>
+    /// Writes the text as for <see cref="PrepareAsync"/>, and encrypts it to a temporary file, returning its path.
+    /// </summary>
+    private async Task<string> EncryptToTransientAsync(IPreviewState state, string text)
     {
+        EncryptRequest request = await PrepareAsync(state, text);
+        string encryptedPath =
+            transientFileService.CreateEncryptedOutputPath(state.OriginalFileName.ToEncryptedName(""));
         await using FileStream cleartext = File.OpenRead(state.DecryptedPath);
+        await using FileStream encrypted = File.Create(encryptedPath);
         await coreServices.EncryptAsync(cleartext, encrypted, request);
+        return encryptedPath;
     }
 
     private void TryClearReadOnly(string filePath)

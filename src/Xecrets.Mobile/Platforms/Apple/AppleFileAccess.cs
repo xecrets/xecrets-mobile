@@ -40,7 +40,6 @@ using Foundation;
 using UniformTypeIdentifiers;
 
 using Xecrets.Common.Models;
-using Xecrets.Mobile.Models;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
@@ -52,7 +51,12 @@ namespace Xecrets.Mobile.Platforms.Apple;
 /// gives the access to the files in it, and a file only read has a bookmark of its own. A url a picker gave carries
 /// the access to the file until the app ends.
 /// </summary>
-internal sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants grants, ICrashLogService crashLogService) : IFileAccess
+internal sealed class AppleFileAccess(
+    WorkFolderStorage storage,
+    AppleFileGrants grants,
+    ITransientFileService transientFileService,
+    ICrashLogService crashLogService)
+    : IFileAccess
 {
     /// <summary>
     /// Any file can be picked, also when an encrypted one is wanted, which is checked once it is read. A file provider
@@ -67,7 +71,7 @@ internal sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants
         UTType contentType = UTTypes.Data;
         NSUrl? initialUrl = await GetInitialUrlAsync(initialFolder);
         NSUrl? fileUrl;
-        using (IDisposable access = new AppleSecurityScope(initialUrl))
+        using (IDisposable _ = new AppleSecurityScope(initialUrl))
         {
             fileUrl = await contentType.PickUrlAsync(initialUrl);
         }
@@ -133,7 +137,7 @@ internal sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants
     public Task<FileReference> GetFileInFolderAsync(WorkFolder folder, FileReference file) => Task.FromResult(file);
 
     public Task<string> GetParentFolderAsync(string fileId) =>
-        Task.FromResult(NSUrl.FromString(fileId)?.RemoveLastPathComponent().AbsoluteString ?? string.Empty);
+        Task.FromResult(NSUrl.FromString(fileId)?.RemoveLastPathComponent().AbsoluteString ?? "");
 
     public IReadOnlyList<string> GetPathSegments(string id, string rememberedName)
     {
@@ -203,13 +207,55 @@ internal sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// The access lasts only while the coordinator reads the file, so the file is copied to a temporary file then,
+    /// which on APFS is a clone that copies no data, and the copy is read. The copy is wiped once the stream is
+    /// disposed.
+    /// </summary>
     public async Task<Stream> OpenReadAsync(string fileId)
     {
-        ResolvedUrl resolved =
-            await grants.ResolveAccessAsync(fileId) ?? throw new FileNotAccessibleException();
+        string copyPath = transientFileService.CreateHandoffPath(NSUrl.FromString(fileId)!.LastPathComponent!);
         try
         {
-            return await resolved.AccessUrl.OpenScopedReadAsync(resolved.FileUrl);
+            await ReadResolvedAsync(fileId, coordinatedUrl =>
+                NSFileManager.DefaultManager.Copy(coordinatedUrl, NSUrl.FromFilename(copyPath), out NSError copyError)
+                    ? true
+                    : throw new NSErrorException(copyError));
+            return new OwningStream(
+                File.OpenRead(copyPath),
+                () => transientFileService.WipeTransientFileAsync(copyPath));
+        }
+        catch
+        {
+            await transientFileService.WipeTransientFileAsync(copyPath);
+            throw;
+        }
+    }
+
+    public Task<byte[]> ReadStartAsync(string fileId, int count) =>
+        ReadResolvedAsync(fileId, coordinatedUrl =>
+        {
+            using FileStream stream = File.OpenRead(coordinatedUrl.Path!);
+            byte[] buffer = new byte[count];
+            return buffer[..stream.ReadAtLeast(buffer, count, throwOnEndOfStream: false)];
+        });
+
+    public Task CheckReachableAsync(string fileId) => ReadResolvedAsync(fileId, _ => true);
+
+    /// <summary>
+    /// Reads the file within one coordinated read, through the access resolved for it, held meanwhile. A file that is
+    /// not there when the coordinator has made it available is not accessible.
+    /// </summary>
+    private async Task<T> ReadResolvedAsync<T>(string fileId, Func<NSUrl, T> read)
+    {
+        ResolvedUrl resolved = await grants.ResolveAccessAsync(fileId) ?? throw new FileNotAccessibleException();
+        using IDisposable access = new AppleSecurityScope(resolved.AccessUrl);
+        try
+        {
+            return await resolved.FileUrl.ReadCoordinatedAsync(coordinatedUrl =>
+                File.Exists(coordinatedUrl.Path!)
+                    ? read(coordinatedUrl)
+                    : throw new FileNotFoundException("The file was not found.", coordinatedUrl.Path));
         }
         catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
         {
@@ -242,14 +288,19 @@ internal sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants
         return File.Exists(Path.Combine(folderUrl.Path!, name));
     }
 
-    public async Task<IFileWriteSession> OpenWriteInFolderAsync(
-        string folderId,
-        string name,
-        bool overwrite)
+    /// <summary>
+    /// The complete file is saved within one coordinated write, so that the file provider, such as Dropbox, takes the
+    /// file only once it is written, or removed.
+    /// </summary>
+    public async Task<string> SaveInFolderAsync(string folderId, string name, string completedFilePath, bool overwrite)
     {
-        NSUrl folderUrl = NSUrl.FromString(folderId)!;
-        return await AppleFileWriteSession.CreateAsync(folderUrl, name, overwrite,
+        NSUrl fileUrl = NSUrl.FromString(folderId)!.Append(name, false);
+        using IDisposable access = new AppleSecurityScope(
             await grants.GetFolderGrantAsync(folderId, isFolderItself: true));
+        await fileUrl.WriteCoordinatedAsync(
+            overwrite ? NSFileCoordinatorWritingOptions.ForReplacing : default,
+            coordinatedUrl => LocalFileSaver.Save(completedFilePath, coordinatedUrl.Path!, overwrite));
+        return fileUrl.AbsoluteString!;
     }
 
     /// <summary>
@@ -266,11 +317,12 @@ internal sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants
     }
 
     /// <summary>
-    /// The picker moves a file to where the user chooses, so the content is first written to a temporary file. Moving
-    /// it, rather than exporting a copy, gives access to the saved file while the app runs. Where the saved file is,
-    /// is only told by its path, since the provider may lose track of a file just saved when asked about it.
+    /// The picker moves a file to where the user chooses, so the complete file is first copied under the name, which on
+    /// APFS is a clone that copies no data. Moving it, rather than exporting a copy, gives access to the saved file
+    /// while the app runs. Where the saved file is, is only told by its path, since the provider may lose track of a
+    /// file just saved when asked about it.
     /// </summary>
-    public async Task<FileReference?> SaveAsAsync(string fileName, Stream content)
+    public async Task<FileReference?> SaveAsAsync(string initialFolder, string fileName, string completedFilePath)
     {
         ThreadGuard.ThrowIfNotMainThread();
 
@@ -279,46 +331,37 @@ internal sealed class AppleFileAccess(WorkFolderStorage storage, AppleFileGrants
         NSUrl? fileUrl;
         try
         {
-            string temporaryPath = Path.Combine(directory, fileName);
-            await using (FileStream output = File.Create(temporaryPath))
+            NSUrl copyUrl = NSUrl.FromFilename(Path.Combine(directory, fileName));
+            if (!NSFileManager.DefaultManager.Copy(NSUrl.FromFilename(completedFilePath), copyUrl, out NSError copyError))
             {
-                await content.CopyToAsync(output);
+                throw new NSErrorException(copyError);
             }
 
-            fileUrl = await NSUrl.FromFilename(temporaryPath).SaveUrlAsync(null);
+            fileUrl = await copyUrl.SaveUrlAsync(await GetInitialUrlAsync(initialFolder));
         }
         finally
         {
             Directory.Delete(directory, true);
         }
 
-        return fileUrl is null ? null : AppleFileLocation.Locate(grants.Add(fileUrl), isProviderAsked: false);
+        if (fileUrl is null)
+        {
+            return null;
+        }
+
+        FileReference saved = AppleFileLocation.Locate(grants.Add(fileUrl), isProviderAsked: false);
+        return IsUnnamedPlaceholder(fileUrl) ? saved with { Name = fileName } : saved;
     }
 
     /// <summary>
-    /// The picker can only move or copy a file that exists, so an empty file is moved to where the user chooses, which
-    /// gives access to it while the app runs. The picker asks the user before replacing a file of the same name.
+    /// OneDrive tells a file just saved by a url to a placeholder of its own, such as
+    /// ".../File Provider Storage/temp|1|&lt;guid&gt;/file", which does not tell the name the file is saved under. The file
+    /// is saved under its proper name all the same, so the name given to the picker stands in for it, as if the url had
+    /// told it. A name the user changed it to in the picker is then not known.
     /// </summary>
-    public async Task<FileReference?> CreateFileAsync(string initialFolder, string fileName)
-    {
-        ThreadGuard.ThrowIfNotMainThread();
-
-        string directory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(directory);
-        NSUrl? fileUrl;
-        try
-        {
-            string temporaryPath = Path.Combine(directory, fileName);
-            await File.WriteAllBytesAsync(temporaryPath, []);
-            fileUrl = await NSUrl.FromFilename(temporaryPath).SaveUrlAsync(await GetInitialUrlAsync(initialFolder));
-        }
-        finally
-        {
-            Directory.Delete(directory, true);
-        }
-
-        return fileUrl is null ? null : AppleFileLocation.Locate(grants.Add(fileUrl), isProviderAsked: false);
-    }
+    private static bool IsUnnamedPlaceholder(NSUrl fileUrl) =>
+        fileUrl.LastPathComponent == "file" &&
+        fileUrl.RemoveLastPathComponent().LastPathComponent?.StartsWith("temp|", StringComparison.Ordinal) == true;
 
     // The initial folder is reached through the grant of one of My folders, when it is one of them.
     private async Task<NSUrl?> GetInitialUrlAsync(string initialFolder)

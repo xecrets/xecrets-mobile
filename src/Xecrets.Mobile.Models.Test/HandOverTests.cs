@@ -57,7 +57,7 @@ public sealed class HandOverTests
         TestApp app = new();
         app.Flow.Begin(FlowOrigin.Home);
         string path = CreateFile(Path.Combine(_directory, "result"), "a.txt.axx");
-        EncryptResultPageModel page = new(null!, app.Operations, app.Recent, app.Flow, app.CrashLog, app.UserInterface);
+        EncryptResultPageModel page = new(null!, app.Operations, app.Recent, app.Transient, app.Flow, app.CrashLog, app.UserInterface);
         page.Initialize(new EncryptionPreparationResult(path, "a.txt.axx", "application/octet-stream", 4, false));
         app.Access.PickedFiles.Enqueue("a.txt.axx");
 
@@ -73,7 +73,7 @@ public sealed class HandOverTests
         TestApp app = new();
         app.Flow.Begin(FlowOrigin.Home);
         string path = CreateFile(Path.Combine(_directory, "result"), "a.txt.axx");
-        EncryptResultPageModel page = new(null!, app.Operations, app.Recent, app.Flow, app.CrashLog, app.UserInterface);
+        EncryptResultPageModel page = new(null!, app.Operations, app.Recent, app.Transient, app.Flow, app.CrashLog, app.UserInterface);
         page.Initialize(new EncryptionPreparationResult(path, "a.txt.axx", "application/octet-stream", 4, false));
         app.Access.PickedFiles.Enqueue(null);
 

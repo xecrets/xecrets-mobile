@@ -37,8 +37,6 @@ namespace Xecrets.Mobile.Models.Services;
 /// </summary>
 public sealed class LocalWritableFile(string path) : IWritableFile
 {
-    public string Id => path;
-
     public IDisposable AcquireAccess() => new EmptyAccessScope();
 
     public Task<bool> CanWriteAsync() => Task.FromResult(IsWritable());
@@ -47,8 +45,12 @@ public sealed class LocalWritableFile(string path) : IWritableFile
 
     public Task<long?> GetLengthAsync() => Task.FromResult<long?>(new FileInfo(path).Length);
 
-    public Task<Stream> OpenWriteAsync() =>
-        Task.FromResult<Stream>(new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.None));
+    public Task OverwriteAsync(Action<Stream> overwrite) =>
+        Task.Run(() =>
+        {
+            using FileStream stream = new(path, FileMode.Open, FileAccess.Write, FileShare.None);
+            overwrite(stream);
+        });
 
     public Task DeleteAsync()
     {

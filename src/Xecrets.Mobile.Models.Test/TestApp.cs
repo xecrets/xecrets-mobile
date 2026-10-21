@@ -55,7 +55,8 @@ internal sealed class TestApp
         OperationService = new WorkFolderOperationService(
             Core,
             profile,
-            new EncryptRequestFactory(profile),
+            new EncryptionPreparationService(new EncryptRequestFactory(profile), Transient, Core),
+            Transient,
             Recent,
             Access,
             Wiper,
@@ -80,15 +81,16 @@ internal sealed class TestApp
             FolderAccess,
             Operations,
             Recent,
+            Transient,
             Flow,
             CrashLog);
     }
 
     public FakeUserDataStore Store { get; } = new();
 
-    public ProfileSession Session { get; } = new();
+    private ProfileSession Session { get; } = new();
 
-    public WorkFolderStorage Storage { get; }
+    private WorkFolderStorage Storage { get; }
 
     public FakeFileAccess Access { get; }
 
@@ -101,6 +103,8 @@ internal sealed class TestApp
     public FakeCrashLogService CrashLog { get; } = new();
 
     public FakePreviewService Preview { get; } = new();
+
+    public FakeTransientFileService Transient { get; } = new();
 
     public FakeFileLauncher Launcher { get; } = new();
 

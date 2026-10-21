@@ -64,9 +64,9 @@ public partial class RecentFilesPageModel(
     public string Breadcrumb =>
         string.Join(MobileTexts.BreadcrumbSeparator, MobileTexts.BreadcrumbHome, MobileTexts.BreadcrumbRecentFiles);
 
-    [ObservableProperty] public partial string MessageText { get; set; } = string.Empty;
+    [ObservableProperty] public partial string MessageText { get; set; } = "";
 
-    [ObservableProperty] public partial string StatusText { get; set; } = string.Empty;
+    [ObservableProperty] public partial string StatusText { get; set; } = "";
 
     public string Description => MobileTexts.RecentFilesDescription;
 
@@ -125,7 +125,7 @@ public partial class RecentFilesPageModel(
         try
         {
             IsBusy = true;
-            StatusText = string.Empty;
+            StatusText = "";
             WorkFolder? folder = (await workFolderStorage.LoadFoldersAsync()).FirstOrDefault();
             FileReference? file = await folderAccess.PickWritableFileAsync(folder, FilePickerKind.Any);
             if (file is null)
@@ -162,7 +162,7 @@ public partial class RecentFilesPageModel(
         try
         {
             IsBusy = true;
-            StatusText = string.Empty;
+            StatusText = "";
             await RunOnFileAsync(entry, isChanged: false, file => OpenFileAsync(entry, file));
         }
         catch (Exception ex)
@@ -178,7 +178,7 @@ public partial class RecentFilesPageModel(
 
     private async Task OpenFileAsync(RecentFileEntry entry, FileReference file)
     {
-        if (entry.IsViewed || entry.IsInPlace && entry.IsNameEncrypted)
+        if (entry.IsViewed || entry is { IsInPlace: true, IsNameEncrypted: true })
         {
             if (!await fileOperations.PreviewAsync(file, FlowOrigin.RecentFiles))
             {
@@ -221,7 +221,7 @@ public partial class RecentFilesPageModel(
         try
         {
             IsBusy = true;
-            StatusText = string.Empty;
+            StatusText = "";
             foreach (RecentFileEntry entry in entries)
             {
                 FileOperationOutcome? outcome = null;
@@ -257,7 +257,7 @@ public partial class RecentFilesPageModel(
         try
         {
             IsBusy = true;
-            StatusText = string.Empty;
+            StatusText = "";
             await RemoveEntryAsync(entry.Id);
         }
         catch (Exception ex)
@@ -274,7 +274,7 @@ public partial class RecentFilesPageModel(
     private bool CanUseCommand() => !IsBusy;
 
     /// <summary>
-    /// Runs the action on the file of a row, once there is access to it and it can be reached.
+    /// Runs the action on the file of a row, once there is access to it, and it can be reached.
     /// </summary>
     private async Task RunOnFileAsync(RecentFileEntry entry, bool isChanged, Func<FileReference, Task> action)
     {
@@ -329,9 +329,7 @@ public partial class RecentFilesPageModel(
 
         try
         {
-            await using (await fileAccess.OpenReadAsync(file.Id))
-            {
-            }
+            await fileAccess.CheckReachableAsync(file.Id);
         }
         catch (FileNotAccessibleException ex)
         {
@@ -365,8 +363,8 @@ public partial class RecentFilesPageModel(
 
     private bool IsShown(RecentFileEntry entry) => SelectedState switch
     {
-        SelectedFileState.Encrypted => entry.IsInPlace && entry.IsNameEncrypted,
-        SelectedFileState.Decrypted => entry.IsInPlace && !entry.IsNameEncrypted,
+        SelectedFileState.Encrypted => entry is { IsInPlace: true, IsNameEncrypted: true },
+        SelectedFileState.Decrypted => entry is { IsInPlace: true, IsNameEncrypted: false },
         SelectedFileState.Other => !entry.IsInPlace,
         SelectedFileState.All => true,
         _ => throw new InvalidOperationException($"Unknown file state {SelectedState}."),

@@ -31,12 +31,10 @@
 namespace Xecrets.Mobile.Models.Models;
 
 /// <summary>
-/// Whether a file picked to save the result of an operation in can be used for it.
+/// Why the result of an operation was not saved where the user chooses.
 /// </summary>
 internal enum DestinationStatus
 {
-    Ready,
     Canceled,
     AccessDenied,
-    FileTypeNotAllowed,
 }

@@ -43,7 +43,7 @@ internal sealed class FakeFileWiper(FakeFileAccess access) : IFileWiper
     public HashSet<string> Denied { get; } = [];
 
     public Task<bool> CanWipeAsync(IWritableFile file) =>
-        Task.FromResult(!Denied.Contains(FakeFileAccess.PathOf(file.Id)));
+        Task.FromResult(!Denied.Contains(FakeFileAccess.PathOf(IdOf(file))));
 
     public Task<FileWipeStatus> WipeAsync(IWritableFile file, bool isOnDevice)
     {
@@ -52,8 +52,11 @@ internal sealed class FakeFileWiper(FakeFileAccess access) : IFileWiper
             throw new IOException("Wipe failed.");
         }
 
-        Wiped.Add(file.Id);
-        access.Files.Remove(FakeFileAccess.PathOf(file.Id));
+        Wiped.Add(IdOf(file));
+        access.Files.Remove(FakeFileAccess.PathOf(IdOf(file)));
         return Task.FromResult(FileWipeStatus.Succeeded);
     }
+
+    // The files to wipe are those of the fake file access.
+    private static string IdOf(IWritableFile file) => ((FakeFileAccess.FakeWritableFile)file).Id;
 }

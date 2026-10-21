@@ -40,6 +40,11 @@ public interface ITransientFileService
 
     string CreateEncryptedOutputPath(string originalFileName);
 
+    /// <summary>
+    /// Wipes a file created at one of the paths given, and deletes the folder made for it.
+    /// </summary>
+    Task WipeTransientFileAsync(string filePath);
+
     Task RunExclusiveAsync(Func<Task> operation);
 
     Task MaybeWipeTrackedFilesAsync();

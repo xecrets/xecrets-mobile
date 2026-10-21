@@ -75,7 +75,7 @@ internal sealed class FakeFileAccess(WorkFolderStorage storage) : IFileAccess
 
     public static string PathOf(string id) => id.Contains('|') ? id[(id.IndexOf('|') + 1)..] : id;
 
-    public static string NameOf(string path) => path[(path.LastIndexOf('/') + 1)..];
+    private static string NameOf(string path) => path[(path.LastIndexOf('/') + 1)..];
 
     public static WorkFolderResult Folder(string path) =>
         WorkFolderResult.Valid(new WorkFolder(path, NameOf(path), $"grant:{path}"));
@@ -108,7 +108,7 @@ internal sealed class FakeFileAccess(WorkFolderStorage storage) : IFileAccess
     private static string GetParentFolder(string fileId)
     {
         string path = PathOf(fileId);
-        return path.Contains('/') ? path[..path.LastIndexOf('/')] : string.Empty;
+        return path.Contains('/') ? path[..path.LastIndexOf('/')] : "";
     }
 
     // An id that cannot be made sense of, such as from an earlier version, starts with "bad:".
@@ -153,13 +153,28 @@ internal sealed class FakeFileAccess(WorkFolderStorage storage) : IFileAccess
         return Task.CompletedTask;
     }
 
-    public Task<Stream> OpenReadAsync(string fileId)
+    public Task<Stream> OpenReadAsync(string fileId) => Task.FromResult<Stream>(new MemoryStream(Read(fileId)));
+
+    public Task<byte[]> ReadStartAsync(string fileId, int count)
+    {
+        byte[] content = Read(fileId);
+        return Task.FromResult(content[..Math.Min(count, content.Length)]);
+    }
+
+    public Task CheckReachableAsync(string fileId)
+    {
+        Read(fileId);
+        return Task.CompletedTask;
+    }
+
+    // Each way of reading the file counts as reading it.
+    private byte[] Read(string fileId)
     {
         ReadCount++;
         string path = PathOf(fileId);
         return Offline.Contains(path) || !Files.TryGetValue(path, out byte[]? content)
             ? throw new FileNotAccessibleException()
-            : Task.FromResult<Stream>(new MemoryStream(content));
+            : content;
     }
 
     public Task<IWritableFile> OpenWriteAsync(string fileId) =>
@@ -187,10 +202,17 @@ internal sealed class FakeFileAccess(WorkFolderStorage storage) : IFileAccess
         Task.FromResult(Files.ContainsKey(PathIn(folderId, name)));
 
     // As for local storage, a new file is not created where there already is one.
-    public Task<IFileWriteSession> OpenWriteInFolderAsync(string folderId, string name, bool overwrite) =>
-        !overwrite && Files.ContainsKey(PathIn(folderId, name))
-            ? throw new IOException("The file already exists.")
-            : Task.FromResult<IFileWriteSession>(new FakeFileWriteSession(this, folderId, name));
+    public async Task<string> SaveInFolderAsync(string folderId, string name, string completedFilePath, bool overwrite)
+    {
+        string path = PathIn(folderId, name);
+        if (!overwrite && Files.ContainsKey(path))
+        {
+            throw new IOException("The file already exists.");
+        }
+
+        await SaveAsync(path, completedFilePath);
+        return folderId.Contains('|') ? $"{folderId[..folderId.IndexOf('|')]}|{path}" : path;
+    }
 
     // The paths of files that cannot be renamed.
     public HashSet<string> FailingRenames { get; } = [];
@@ -210,46 +232,37 @@ internal sealed class FakeFileAccess(WorkFolderStorage storage) : IFileAccess
         return Task.FromResult(fileId.Contains('|') ? $"{fileId[..fileId.IndexOf('|')]}|{renamedPath}" : renamedPath);
     }
 
-    public async Task<FileReference?> SaveAsAsync(string fileName, Stream content)
+    public List<string> SaveAsStarts { get; } = [];
+
+    public async Task<FileReference?> SaveAsAsync(string initialFolder, string fileName, string completedFilePath)
     {
+        SaveAsStarts.Add(initialFolder);
         string? path = PickedFiles.Dequeue();
         if (path is null)
         {
             return null;
         }
 
-        MemoryStream output = new();
-        await content.CopyToAsync(output);
-        Files[path] = output.ToArray();
+        await SaveAsync(path, completedFilePath);
         return new FileReference(path, NameOf(path));
     }
-
-    public List<string> CreateFileStarts { get; } = [];
 
     // The paths of files that fail to be written, such as when the storage is full.
     public HashSet<string> FailingWrites { get; } = [];
 
-    // The paths of files that cannot be opened for writing.
-    public HashSet<string> FailingOpens { get; } = [];
-
-    // The paths of files whose length the storage does not tell.
-    public HashSet<string> UnknownLengths { get; } = [];
-
     // The paths of files that cannot be deleted.
-    public HashSet<string> FailingDeletes { get; } = [];
+    // ReSharper disable once CollectionNeverUpdated.Local
+    private HashSet<string> FailingDeletes { get; } = [];
 
-    // An existing file picked is one the user chose to replace, and is kept as it is.
-    public Task<FileReference?> CreateFileAsync(string initialFolder, string fileName)
+    // The file gets the complete file, unless it fails to write.
+    private async Task SaveAsync(string path, string completedFilePath)
     {
-        CreateFileStarts.Add(initialFolder);
-        string? path = PickedFiles.Dequeue();
-        if (path is null)
+        if (FailingWrites.Contains(path))
         {
-            return Task.FromResult<FileReference?>(null);
+            throw new IOException("The file could not be written.");
         }
 
-        Files.TryAdd(path, []);
-        return Task.FromResult<FileReference?>(new FileReference(path, NameOf(path)));
+        Files[path] = await File.ReadAllBytesAsync(completedFilePath);
     }
 
     private static string PathIn(string folderId, string name)
@@ -258,55 +271,29 @@ internal sealed class FakeFileAccess(WorkFolderStorage storage) : IFileAccess
         return folder.Length > 0 ? $"{folder}/{name}" : name;
     }
 
-    private sealed class FakeFileWriteSession(FakeFileAccess fileAccess, string folderId, string name) : IFileWriteSession
-    {
-        private readonly MemoryStream _output = new();
-
-        public Stream OutputStream => _output;
-
-        // The file gets what was written when committed, unless it fails to write.
-        public async Task<string> CommitAsync()
-        {
-            await _output.DisposeAsync();
-            string path = PathIn(folderId, name);
-            if (fileAccess.FailingWrites.Contains(path))
-            {
-                throw new IOException("The file could not be written.");
-            }
-
-            fileAccess.Files[path] = _output.ToArray();
-            return folderId.Contains('|') ? $"{folderId[..folderId.IndexOf('|')]}|{path}" : path;
-        }
-
-        public ValueTask DisposeAsync() => _output.DisposeAsync();
-    }
-
-    private sealed class FakeWritableFile(FakeFileAccess fileAccess, string id) : IWritableFile
+    internal sealed class FakeWritableFile(FakeFileAccess fileAccess, string id) : IWritableFile
     {
         public string Id => id;
         public IDisposable AcquireAccess() => new EmptyAccessScope();
         public Task<bool> CanWriteAsync() => throw new NotSupportedException();
         public Task<bool> CanDeleteAsync() => throw new NotSupportedException();
-        public Task<long?> GetLengthAsync() =>
-            Task.FromResult<long?>(
-                fileAccess.UnknownLengths.Contains(PathOf(id)) ? null : fileAccess.Files[PathOf(id)].Length);
+        public Task<long?> GetLengthAsync() => Task.FromResult<long?>(fileAccess.Files[PathOf(id)].Length);
 
-        // The file gets what was written when the stream is closed, unless it fails to write. As for local storage,
-        // the stream starts with the contents of the file, which are not truncated when opened.
-        public Task<Stream> OpenWriteAsync()
+        // The file gets what was written, unless it fails to write. As for local storage, the stream starts with the
+        // contents of the file, which are not truncated when opened.
+        public Task OverwriteAsync(Action<Stream> overwrite)
         {
-            if (fileAccess.FailingOpens.Contains(PathOf(id)))
-            {
-                throw new IOException("The file could not be opened.");
-            }
-
-            FakeWriteStream stream = new(contents => fileAccess.Files[PathOf(id)] = contents)
-            {
-                FailsAfterWriting = fileAccess.FailingWrites.Contains(PathOf(id)),
-            };
+            using MemoryStream stream = new();
             stream.Write(fileAccess.Files[PathOf(id)]);
             stream.Position = 0;
-            return Task.FromResult<Stream>(stream);
+            overwrite(stream);
+            if (fileAccess.FailingWrites.Contains(PathOf(id)))
+            {
+                throw new IOException("The file could not be written.");
+            }
+
+            fileAccess.Files[PathOf(id)] = stream.ToArray();
+            return Task.CompletedTask;
         }
 
         public Task DeleteAsync()
@@ -318,22 +305,6 @@ internal sealed class FakeFileAccess(WorkFolderStorage storage) : IFileAccess
 
             fileAccess.Files.Remove(PathOf(id));
             return Task.CompletedTask;
-        }
-    }
-
-    private sealed class FakeWriteStream(Action<byte[]> close) : MemoryStream
-    {
-        public bool FailsAfterWriting { get; init; }
-
-        public override async ValueTask DisposeAsync()
-        {
-            if (FailsAfterWriting)
-            {
-                throw new IOException("The file could not be written.");
-            }
-
-            close(ToArray());
-            await base.DisposeAsync();
         }
     }
 }

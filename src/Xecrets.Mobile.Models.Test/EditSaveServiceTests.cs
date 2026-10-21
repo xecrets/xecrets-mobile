@@ -40,7 +40,7 @@ namespace Xecrets.Mobile.Models.Test;
 [TestFixture]
 public sealed class EditSaveServiceTests
 {
-    private string _directory = string.Empty;
+    private string _directory = "";
 
     [SetUp]
     public void SetUp() => _directory = Directory.CreateTempSubdirectory().FullName;
@@ -73,6 +73,7 @@ public sealed class EditSaveServiceTests
         Assert.That(app.Flow.Source, Is.EqualTo(source));
         Assert.That(app.Store.Files.Select(file => (file.Id, file.Operation)),
             Is.EqualTo([("grant:docs|docs/x.axx", RecentFileOperation.Edit)]));
+        Assert.That(app.Transient.RemainingFiles(), Is.Empty);
     }
 
     [Test]
@@ -116,6 +117,7 @@ public sealed class EditSaveServiceTests
 
         Assert.That(app.Access.Files.Keys, Is.EqualTo(["docs/x.axx"]));
         Assert.That(Encoding.UTF8.GetString(app.Access.Files["docs/x.axx"]), Is.EqualTo("ENC:a.txt\ntext"));
+        Assert.That(app.Transient.RemainingFiles(), Is.Empty);
     }
 
     [Test]

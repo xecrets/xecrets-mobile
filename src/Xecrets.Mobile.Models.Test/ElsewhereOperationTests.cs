@@ -30,6 +30,8 @@
 
 using NUnit.Framework;
 
+using System.Text;
+
 using Xecrets.Common.Models;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.PageModels;
@@ -40,12 +42,13 @@ namespace Xecrets.Mobile.Models.Test;
 
 /// <summary>
 /// A file in none of My folders, elsewhere, is replaced by a result saved where the user chooses, whether it was
-/// picked starting in one of My folders or by browsing elsewhere.
+/// picked starting in one of My folders or by browsing elsewhere. The result is complete when the user chooses where to
+/// save it, starting in the folder of the file.
 /// </summary>
 [TestFixture]
 public sealed class ElsewhereOperationTests
 {
-    private static readonly string _encryptedName = "a.txt".ToEncryptedName(string.Empty);
+    private static readonly string _encryptedName = "a.txt".ToEncryptedName("");
 
     [Test]
     public async Task FileInMyFoldersPickedByBrowsingIsChangedWhereItIs()
@@ -57,8 +60,8 @@ public sealed class ElsewhereOperationTests
 
         await app.Operations.PickAndRunAsync(WorkFolderIntent.Encrypt, null);
 
-        Assert.That(app.Access.FilePickerStarts, Is.EqualTo([string.Empty]));
-        Assert.That(app.Access.CreateFileStarts, Is.Empty);
+        Assert.That(app.Access.FilePickerStarts, Is.EqualTo([""]));
+        Assert.That(app.Access.SaveAsStarts, Is.Empty);
         Assert.That(app.Access.Files.Keys, Is.EquivalentTo([$"docs/{_encryptedName}"]));
         Assert.That(app.RecentIds(), Is.EqualTo([$"docs/{_encryptedName}"]));
     }
@@ -75,7 +78,7 @@ public sealed class ElsewhereOperationTests
         await app.Operations.PickAndRunAsync(WorkFolderIntent.Encrypt, docs);
 
         Assert.That(app.UserInterface.Confirmations, Is.Empty);
-        Assert.That(app.Access.CreateFileStarts, Is.EqualTo(["other"]));
+        Assert.That(app.Access.SaveAsStarts, Is.EqualTo(["other"]));
         Assert.That(app.Access.Files.Keys, Is.EquivalentTo([$"saved/{_encryptedName}"]));
         Assert.That(app.Access.Files[$"saved/{_encryptedName}"], Is.EqualTo("ENC:a.txt\ntext"u8.ToArray()));
         Assert.That(app.Wiper.Wiped, Is.EqualTo(["other/a.txt"]));
@@ -124,7 +127,7 @@ public sealed class ElsewhereOperationTests
         await app.Operations.PickAndRunAsync(WorkFolderIntent.Decrypt, null);
 
         Assert.That(app.UserInterface.Destinations, Is.EqualTo([AppDestination.EnterPassword]));
-        Assert.That(app.Access.CreateFileStarts, Is.Empty);
+        Assert.That(app.Access.SaveAsStarts, Is.Empty);
 
         app.Access.PickedFiles.Enqueue("other/a.txt");
         FileOperationOutcome wrong = await app.OperationService.DecryptPendingWithPasswordAsync("wrong");
@@ -136,9 +139,12 @@ public sealed class ElsewhereOperationTests
         Assert.That(app.OperationService.HasPendingPasswordRequest, Is.False);
     }
 
+    /// <summary>
+    /// The name is the user's choice, also when it is of the other type, so it is not told.
+    /// </summary>
     [TestCase(WorkFolderIntent.Encrypt, "other/a.txt", "other/b.txt")]
     [TestCase(WorkFolderIntent.Decrypt, "other/x.axx", "other/b.axx")]
-    public async Task ResultSavedAsTheWrongFileTypeIsRemovedAndNothingIsDone(
+    public async Task ResultSavedUnderANameTheUserChoseIsNotTold(
         WorkFolderIntent intent,
         string source,
         string saved)
@@ -150,9 +156,9 @@ public sealed class ElsewhereOperationTests
 
         await app.Operations.PickAndRunAsync(intent, null);
 
-        Assert.That(app.UserInterface.Messages, Is.EqualTo([MobileTexts.DialogTextFileTypeNotAllowed]));
-        Assert.That(app.Access.Files.Keys, Is.EquivalentTo([source]));
-        Assert.That(app.Wiper.Wiped, Is.Empty);
+        Assert.That(app.UserInterface.Messages, Is.Empty);
+        Assert.That(app.Access.Files.Keys, Is.EquivalentTo([saved]));
+        Assert.That(app.Wiper.Wiped, Is.EqualTo([source]));
     }
 
     [Test]
@@ -170,68 +176,6 @@ public sealed class ElsewhereOperationTests
         Assert.That(app.Wiper.Wiped, Is.Empty);
     }
 
-    /// <summary>
-    /// Storage such as Dropbox gives the file another name when the one chosen is taken, which the user confirms.
-    /// </summary>
-    [Test]
-    public async Task ResultSavedUnderAChangedNameIsSavedWhenConfirmed()
-    {
-        TestApp app = new();
-        string changedName = $"{Path.GetFileNameWithoutExtension(_encryptedName)}_123{Path.GetExtension(_encryptedName)}";
-        app.AddFile("other/a.txt");
-        app.Access.PickedFiles.Enqueue("other/a.txt");
-        app.Access.PickedFiles.Enqueue($"saved/{changedName}");
-        app.UserInterface.Answers.Enqueue(true);
-
-        await app.Operations.PickAndRunAsync(WorkFolderIntent.Encrypt, null);
-
-        Assert.That(
-            app.UserInterface.Confirmations,
-            Is.EqualTo([string.Format(MobileTexts.DialogTextConfirmSaveAs, changedName)]));
-        Assert.That(app.Access.Files.Keys, Is.EquivalentTo([$"saved/{changedName}"]));
-        Assert.That(app.Wiper.Wiped, Is.EqualTo(["other/a.txt"]));
-        Assert.That(app.UserInterface.TransientMessages, Is.EqualTo([MobileTexts.DialogTextFileEncrypted]));
-    }
-
-    [Test]
-    public async Task ResultSavedUnderAChangedNameIsRemovedAndNothingIsDoneWhenNotConfirmed()
-    {
-        TestApp app = new();
-        string changedName = $"{Path.GetFileNameWithoutExtension(_encryptedName)}_123{Path.GetExtension(_encryptedName)}";
-        app.AddFile("other/a.txt");
-        app.Access.PickedFiles.Enqueue("other/a.txt");
-        app.Access.PickedFiles.Enqueue($"saved/{changedName}");
-
-        await app.Operations.PickAndRunAsync(WorkFolderIntent.Encrypt, null);
-
-        Assert.That(
-            app.UserInterface.Confirmations,
-            Is.EqualTo([string.Format(MobileTexts.DialogTextConfirmSaveAs, changedName)]));
-        Assert.That(app.Access.Files.Keys, Is.EquivalentTo(["other/a.txt"]));
-        Assert.That(app.Wiper.Wiped, Is.Empty);
-        Assert.That(app.UserInterface.TransientMessages, Is.EqualTo([MobileTexts.DialogTextOperationNotCompleted]));
-    }
-
-    [Test]
-    public async Task ResultNotConfirmedThatCannotBeDeletedIsToldAbout()
-    {
-        TestApp app = new();
-        string changedName = $"{Path.GetFileNameWithoutExtension(_encryptedName)}_123{Path.GetExtension(_encryptedName)}";
-        app.AddFile("other/a.txt");
-        app.Access.PickedFiles.Enqueue("other/a.txt");
-        app.Access.PickedFiles.Enqueue($"saved/{changedName}");
-        app.Access.FailingDeletes.Add($"saved/{changedName}");
-
-        await app.Operations.PickAndRunAsync(WorkFolderIntent.Encrypt, null);
-
-        Assert.That(app.Access.Files.Keys, Is.EquivalentTo(["other/a.txt", $"saved/{changedName}"]));
-        Assert.That(
-            app.UserInterface.Messages,
-            Is.EqualTo([string.Format(MobileTexts.DialogTextCouldNotDeleteFile, changedName)]));
-        Assert.That(app.UserInterface.TransientMessages, Is.EqualTo([MobileTexts.DialogTextOperationNotCompleted]));
-        Assert.That(app.CrashLog.Swallowed, Has.Count.EqualTo(1));
-    }
-
     [Test]
     public async Task ResultSavedUnderAnotherNameIsSavedWithoutAsking()
     {
@@ -243,23 +187,22 @@ public sealed class ElsewhereOperationTests
         await app.Operations.PickAndRunAsync(WorkFolderIntent.Encrypt, null);
 
         Assert.That(app.UserInterface.Confirmations, Is.Empty);
+        Assert.That(app.UserInterface.Messages, Is.Empty);
         Assert.That(app.Access.Files.Keys, Is.EquivalentTo(["saved/other.axx"]));
     }
 
     [Test]
-    public async Task DecryptedResultSavedUnderAChangedNameIsSavedWhenConfirmed()
+    public async Task DecryptedResultSavedUnderAChangedNameIsToldWithoutAsking()
     {
         TestApp app = new();
         app.AddFile("other/x.axx", "ENC:a.txt\ntext");
         app.Access.PickedFiles.Enqueue("other/x.axx");
         app.Access.PickedFiles.Enqueue("other/a (1).txt");
-        app.UserInterface.Answers.Enqueue(true);
 
         await app.Operations.PickAndRunAsync(WorkFolderIntent.Decrypt, null);
 
-        Assert.That(
-            app.UserInterface.Confirmations,
-            Is.EqualTo([string.Format(MobileTexts.DialogTextConfirmSaveAs, "a (1).txt")]));
+        Assert.That(app.UserInterface.Confirmations, Is.Empty);
+        Assert.That(app.UserInterface.Messages, Is.EqualTo([string.Format(MobileTexts.DialogTextSavedAs, "a (1).txt")]));
         Assert.That(app.Access.Files.Keys, Is.EquivalentTo(["other/a (1).txt"]));
         Assert.That(app.Access.Files["other/a (1).txt"], Is.EqualTo("text"u8.ToArray()));
     }
@@ -274,8 +217,8 @@ public sealed class ElsewhereOperationTests
 
         await app.Operations.PickAndRunAsync(WorkFolderIntent.Encrypt, null);
 
-        Assert.That(app.UserInterface.Messages, Is.EqualTo([MobileTexts.DialogTextAccessDenied]));
-        Assert.That(app.Access.CreateFileStarts, Is.Empty);
+        Assert.That(app.UserInterface.Messages, Is.EqualTo([MobileTexts.DialogTextAccessDeniedOrNotSupported]));
+        Assert.That(app.Access.SaveAsStarts, Is.Empty);
         Assert.That(app.Access.Files.Keys, Is.EquivalentTo(["other/a.txt"]));
     }
 
@@ -310,63 +253,8 @@ public sealed class ElsewhereOperationTests
 
         await app.Operations.PickAndRunAsync(WorkFolderIntent.Encrypt, null);
 
-        Assert.That(app.UserInterface.Messages, Is.EqualTo([MobileTexts.DialogTextAccessDenied]));
+        Assert.That(app.UserInterface.Messages, Is.EqualTo([MobileTexts.DialogTextAccessDeniedOrNotSupported]));
         Assert.That(app.Access.Files.Keys, Is.EquivalentTo(["other/a.txt"]));
-        Assert.That(app.Wiper.Wiped, Is.Empty);
-    }
-
-    [TestCase(false)]
-    [TestCase(true)]
-    public async Task ExistingFileSavedAsTheWrongFileTypeIsKept(bool isLengthUnknown)
-    {
-        TestApp app = new();
-        app.AddFile("other/a.txt");
-        app.AddFile("saved/b.txt", "existing");
-        if (isLengthUnknown)
-        {
-            app.Access.UnknownLengths.Add("saved/b.txt");
-        }
-
-        app.Access.PickedFiles.Enqueue("other/a.txt");
-        app.Access.PickedFiles.Enqueue("saved/b.txt");
-
-        await app.Operations.PickAndRunAsync(WorkFolderIntent.Encrypt, null);
-
-        Assert.That(app.UserInterface.Messages, Is.EqualTo([MobileTexts.DialogTextFileTypeNotAllowed]));
-        Assert.That(app.Access.Files.Keys, Is.EquivalentTo(["other/a.txt", "saved/b.txt"]));
-        Assert.That(app.Access.Files["saved/b.txt"], Is.EqualTo("existing"u8.ToArray()));
-    }
-
-    [Test]
-    public async Task ExistingFileSavedWhereItCannotBeWrittenIsKept()
-    {
-        TestApp app = new();
-        app.AddFile("other/a.txt");
-        app.AddFile($"saved/{_encryptedName}", "existing");
-        app.Access.FailingOpens.Add($"saved/{_encryptedName}");
-        app.Access.PickedFiles.Enqueue("other/a.txt");
-        app.Access.PickedFiles.Enqueue($"saved/{_encryptedName}");
-
-        await app.Operations.PickAndRunAsync(WorkFolderIntent.Encrypt, null);
-
-        Assert.That(app.UserInterface.Messages, Is.EqualTo([MobileTexts.DialogTextAccessDenied]));
-        Assert.That(app.Access.Files.Keys, Is.EquivalentTo(["other/a.txt", $"saved/{_encryptedName}"]));
-    }
-
-    [Test]
-    public async Task ResultThatCannotBeOpenedIsKeptAndTheFileLeftAsItIs()
-    {
-        TestApp app = new();
-        app.AddFile("other/a.txt");
-        app.AddFile($"saved/{_encryptedName}", "existing");
-        app.Access.FailingOpens.Add($"saved/{_encryptedName}");
-        app.Access.PickedFiles.Enqueue("other/a.txt");
-        app.Access.PickedFiles.Enqueue($"saved/{_encryptedName}");
-
-        await app.Operations.PickAndRunAsync(WorkFolderIntent.Encrypt, null);
-
-        Assert.That(app.UserInterface.Messages, Is.EqualTo([MobileTexts.DialogTextAccessDenied]));
-        Assert.That(app.Access.Files[$"saved/{_encryptedName}"], Is.EqualTo("existing"u8.ToArray()));
         Assert.That(app.Wiper.Wiped, Is.Empty);
     }
 
@@ -417,7 +305,7 @@ public sealed class ElsewhereOperationTests
         await app.Operations.PickAndRunAsync(WorkFolderIntent.Delete, null);
 
         Assert.That(app.UserInterface.Confirmations, Is.EqualTo([MobileTexts.MessageTextConfirmWipe]));
-        Assert.That(app.Access.CreateFileStarts, Is.Empty);
+        Assert.That(app.Access.SaveAsStarts, Is.Empty);
         Assert.That(app.Access.Files, Is.Empty);
         Assert.That(app.UserInterface.TransientMessages, Is.EqualTo([MobileTexts.DialogTextFileOverwritten]));
     }
@@ -433,7 +321,7 @@ public sealed class ElsewhereOperationTests
         await app.Operations.PickAndRunAsync(WorkFolderIntent.Delete, null);
 
         Assert.That(app.UserInterface.Confirmations, Is.Empty);
-        Assert.That(app.UserInterface.Messages, Is.EqualTo([MobileTexts.DialogTextAccessDenied]));
+        Assert.That(app.UserInterface.Messages, Is.EqualTo([MobileTexts.DialogTextAccessDeniedOrNotSupported]));
         Assert.That(app.Access.Files.Keys, Is.EquivalentTo(["other/a.txt"]));
     }
 
@@ -463,6 +351,90 @@ public sealed class ElsewhereOperationTests
 
         await page.BrowseCommand.ExecuteAsync(null);
 
-        Assert.That(app.Access.FilePickerStarts, Is.EqualTo([string.Empty]));
+        Assert.That(app.Access.FilePickerStarts, Is.EqualTo([""]));
+    }
+
+    [TestCase(WorkFolderIntent.Encrypt, "other/a.txt", "text", "ENC:a.txt\ntext", nameof(MobileTexts.DialogTextFileEncrypted))]
+    [TestCase(WorkFolderIntent.Decrypt, "other/x.axx", "ENC:a.txt\ntext", "text", nameof(MobileTexts.DialogTextFileDecrypted))]
+    public async Task ResultIsSavedWhereChosenAndTheFileWipedLeavingNoTemporaryFile(
+        WorkFolderIntent intent,
+        string source,
+        string content,
+        string result,
+        string completedTextName)
+    {
+        TestApp app = new();
+        using IDisposable cleanup = app.Transient;
+        string saved = intent == WorkFolderIntent.Encrypt ? $"saved/{_encryptedName}" : "saved/a.txt";
+        app.AddFile(source, content);
+        app.Access.PickedFiles.Enqueue(source);
+        app.Access.PickedFiles.Enqueue(saved);
+
+        await app.Operations.PickAndRunAsync(intent, null);
+
+        Assert.That(app.Access.SaveAsStarts, Is.EqualTo(["other"]));
+        Assert.That(app.Access.Files.Keys, Is.EquivalentTo([saved]));
+        Assert.That(app.Access.Files[saved], Is.EqualTo(Encoding.UTF8.GetBytes(result)));
+        Assert.That(app.Wiper.Wiped, Is.EqualTo([source]));
+        Assert.That(app.UserInterface.Confirmations, Is.Empty);
+        string completedText = completedTextName switch
+        {
+            nameof(MobileTexts.DialogTextFileEncrypted) => MobileTexts.DialogTextFileEncrypted,
+            nameof(MobileTexts.DialogTextFileDecrypted) => MobileTexts.DialogTextFileDecrypted,
+            _ => throw new ArgumentOutOfRangeException(nameof(completedTextName), completedTextName, @"Unexpected text."),
+        };
+        Assert.That(app.UserInterface.TransientMessages, Is.EqualTo([completedText]));
+        Assert.That(app.Transient.RemainingFiles(), Is.Empty);
+    }
+
+    [TestCase(WorkFolderIntent.Encrypt, "other/a.txt", "text", null)]
+    [TestCase(WorkFolderIntent.Decrypt, "other/x.axx", "ENC:a.txt\ntext", null)]
+    [TestCase(WorkFolderIntent.Encrypt, "other/a.txt", "text", "saved/x.axx")]
+    [TestCase(WorkFolderIntent.Decrypt, "other/x.axx", "ENC:a.txt\ntext", "saved/a.txt")]
+    public async Task ResultNotSavedLeavesTheFileAsItIsAndNoTemporaryFile(
+        WorkFolderIntent intent,
+        string source,
+        string content,
+        string? failing)
+    {
+        TestApp app = new();
+        using IDisposable cleanup = app.Transient;
+        app.AddFile(source, content);
+        app.Access.PickedFiles.Enqueue(source);
+        app.Access.PickedFiles.Enqueue(failing);
+        if (failing is not null)
+        {
+            app.Access.FailingWrites.Add(failing);
+        }
+
+        await app.Operations.PickAndRunAsync(intent, null);
+
+        Assert.That(app.Access.Files.Keys, Is.EquivalentTo([source]));
+        Assert.That(app.Wiper.Wiped, Is.Empty);
+        Assert.That(app.Transient.RemainingFiles(), Is.Empty);
+    }
+
+    /// <summary>
+    /// The storage may give the file another name when the one suggested is taken. The file is already saved by then,
+    /// so the user is only told where.
+    /// </summary>
+    [Test]
+    public async Task ResultSavedUnderAChangedNameIsToldWithoutAsking()
+    {
+        TestApp app = new();
+        string changedName = $"{Path.GetFileNameWithoutExtension(_encryptedName)} 2{Path.GetExtension(_encryptedName)}";
+        app.AddFile("other/a.txt");
+        app.Access.PickedFiles.Enqueue("other/a.txt");
+        app.Access.PickedFiles.Enqueue($"saved/{changedName}");
+
+        await app.Operations.PickAndRunAsync(WorkFolderIntent.Encrypt, null);
+
+        Assert.That(app.UserInterface.Confirmations, Is.Empty);
+        Assert.That(
+            app.UserInterface.Messages,
+            Is.EqualTo([string.Format(MobileTexts.DialogTextSavedAs, changedName)]));
+        Assert.That(app.Access.Files.Keys, Is.EquivalentTo([$"saved/{changedName}"]));
+        Assert.That(app.Wiper.Wiped, Is.EqualTo(["other/a.txt"]));
+        Assert.That(app.UserInterface.TransientMessages, Is.EqualTo([MobileTexts.DialogTextFileEncrypted]));
     }
 }

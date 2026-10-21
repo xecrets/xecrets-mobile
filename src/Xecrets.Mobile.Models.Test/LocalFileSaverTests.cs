@@ -28,17 +28,14 @@
 
 #endregion Copyright and GPL License
 
-using System.Text;
-
 using NUnit.Framework;
 
-using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Services;
 
 namespace Xecrets.Mobile.Models.Test;
 
 [TestFixture]
-public sealed class LocalFileWriteSessionTests
+public sealed class LocalFileSaverTests
 {
     private string _directory = "";
 
@@ -50,71 +47,54 @@ public sealed class LocalFileWriteSessionTests
 
     [TestCase(false)]
     [TestCase(true)]
-    public async Task CommitLeavesCompleteContentsAndClosesStream(bool overwrite)
+    public async Task SaveLeavesCompleteContents(bool overwrite)
     {
+        string completed = await CreateCompletedAsync("replacement");
         string path = Path.Combine(_directory, "output.txt");
         if (overwrite)
         {
             await File.WriteAllTextAsync(path, "original contents");
         }
 
-        await using (IFileWriteSession session = new LocalFileWriteSession(_directory, "output.txt", overwrite))
-        {
-            await session.OutputStream.WriteAsync(Encoding.UTF8.GetBytes("replacement"));
+        LocalFileSaver.Save(completed, path, overwrite);
 
-            Assert.That(await session.CommitAsync(), Is.EqualTo(path));
-            Assert.That(session.OutputStream.CanWrite, Is.False);
-            Assert.That(await File.ReadAllTextAsync(path), Is.EqualTo("replacement"));
-        }
-
-        Assert.That(Directory.GetFiles(_directory), Is.EqualTo((string[])[path]));
-    }
-
-    /// <summary>
-    /// A partly written file is removed, so that it is not taken for the result. A file that was replaced is then lost.
-    /// </summary>
-    [TestCase(false, false)]
-    [TestCase(false, true)]
-    [TestCase(true, false)]
-    [TestCase(true, true)]
-    public async Task AbandonedWriteRemovesDestination(bool fail, bool overwrite)
-    {
-        if (overwrite)
-        {
-            await File.WriteAllTextAsync(Path.Combine(_directory, "output.txt"), "original");
-        }
-
-        async Task WriteAsync()
-        {
-            await using IFileWriteSession session = new LocalFileWriteSession(_directory, "output.txt", overwrite);
-            await session.OutputStream.WriteAsync(Encoding.UTF8.GetBytes("partial"));
-            if (fail)
-            {
-                throw new IOException("Encryption failed.");
-            }
-        }
-
-        if (fail)
-        {
-            await Assert.ThatAsync(WriteAsync, Throws.TypeOf<IOException>());
-        }
-        else
-        {
-            await WriteAsync();
-        }
-
-        Assert.That(Directory.GetFiles(_directory), Is.Empty);
+        Assert.That(await File.ReadAllTextAsync(path), Is.EqualTo("replacement"));
+        Assert.That(await File.ReadAllTextAsync(completed), Is.EqualTo("replacement"));
     }
 
     [Test]
-    public async Task NewFileIsNotCreatedOverExistingFile()
+    public async Task NewFileIsNotSavedOverExistingFile()
     {
+        string completed = await CreateCompletedAsync("replacement");
         string path = Path.Combine(_directory, "output.txt");
         await File.WriteAllTextAsync(path, "original");
 
-        Assert.That(() => new LocalFileWriteSession(_directory, "output.txt", false), Throws.TypeOf<IOException>());
+        Assert.That(() => LocalFileSaver.Save(completed, path, overwrite: false), Throws.TypeOf<IOException>());
 
         Assert.That(await File.ReadAllTextAsync(path), Is.EqualTo("original"));
-        Assert.That(Directory.GetFiles(_directory), Is.EqualTo((string[])[path]));
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task MissingCompletedFileLeavesDestinationAsItIs(bool overwrite)
+    {
+        string path = Path.Combine(_directory, "output.txt");
+        if (overwrite)
+        {
+            await File.WriteAllTextAsync(path, "original");
+        }
+
+        Assert.That(
+            () => LocalFileSaver.Save(Path.Combine(_directory, "missing.txt"), path, overwrite),
+            Throws.InstanceOf<IOException>());
+
+        Assert.That(File.Exists(path), Is.EqualTo(overwrite));
+    }
+
+    private async Task<string> CreateCompletedAsync(string contents)
+    {
+        string completed = Path.Combine(_directory, "completed.tmp");
+        await File.WriteAllTextAsync(completed, contents);
+        return completed;
     }
 }

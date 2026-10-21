@@ -44,6 +44,7 @@ public partial class EncryptResultPageModel(
     IFileService fileService,
     FileOperationWorkflow fileOperationWorkflow,
     IRecentFilesService recentFilesService,
+    ITransientFileService transientFileService,
     IFlowContext flowContext,
     ICrashLogService crashLogService,
     IUserInterfaceService userInterfaceService)
@@ -63,16 +64,16 @@ public partial class EncryptResultPageModel(
     private partial EncryptionPreparationResult Result { get; set; } = EncryptionPreparationResult.Empty;
 
     [ObservableProperty]
-    public partial string FileNameText { get; set; } = string.Empty;
+    public partial string FileNameText { get; set; } = "";
 
     [ObservableProperty]
-    public partial string MetadataText { get; set; } = string.Empty;
+    public partial string MetadataText { get; set; } = "";
 
     [ObservableProperty]
-    public partial string MessageText { get; set; } = string.Empty;
+    public partial string MessageText { get; set; } = "";
 
     [ObservableProperty]
-    public partial string StatusText { get; set; } = string.Empty;
+    public partial string StatusText { get; set; } = "";
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SaveAsCommand))]
@@ -84,7 +85,7 @@ public partial class EncryptResultPageModel(
         Result = result;
         FileNameText = result.DisplayName;
         MetadataText = CreateMetadataText(result);
-        StatusText = string.Empty;
+        StatusText = "";
     }
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
@@ -93,13 +94,10 @@ public partial class EncryptResultPageModel(
         try
         {
             IsBusy = true;
-            StatusText = string.Empty;
+            StatusText = "";
             EncryptionPreparationResult encryptionResult = Result;
-            FileReference? saved;
-            await using (FileStream content = File.OpenRead(encryptionResult.FilePath))
-            {
-                saved = await fileOperationWorkflow.SaveAsAsync(encryptionResult.DisplayName, content);
-            }
+            FileReference? saved =
+                await fileOperationWorkflow.SaveAsAsync(encryptionResult.DisplayName, encryptionResult.FilePath);
 
             if (saved is not null)
             {
@@ -112,7 +110,7 @@ public partial class EncryptResultPageModel(
         }
         catch (OperationCanceledException)
         {
-            StatusText = string.Empty;
+            StatusText = "";
         }
         catch (Exception ex)
         {
@@ -131,7 +129,7 @@ public partial class EncryptResultPageModel(
         try
         {
             IsBusy = true;
-            StatusText = string.Empty;
+            StatusText = "";
             EncryptionPreparationResult result = Result;
             await fileService.SendToAsync(
                 result.FilePath,
@@ -143,7 +141,7 @@ public partial class EncryptResultPageModel(
         }
         catch (OperationCanceledException)
         {
-            StatusText = string.Empty;
+            StatusText = "";
         }
         catch (Exception ex)
         {
@@ -159,7 +157,7 @@ public partial class EncryptResultPageModel(
     [RelayCommand]
     private async Task Close()
     {
-        ClearResult();
+        await ClearResultAsync();
         await UserInterfaceService.GoBackAsync(null);
     }
 
@@ -170,39 +168,19 @@ public partial class EncryptResultPageModel(
     /// </summary>
     private async Task GoHomeAsync()
     {
-        ClearResult();
+        await ClearResultAsync();
         await UserInterfaceService.NavigateToAsync(AppDestination.Home);
     }
 
-    private void ClearResult()
+    private async Task ClearResultAsync()
     {
-        DeleteTemporaryFile(Result.FilePath);
+        string filePath = Result.FilePath;
         Result = EncryptionPreparationResult.Empty;
+        await transientFileService.WipeTransientFileAsync(filePath);
     }
 
     private bool CanUseCommand()
         => !IsBusy && Result != EncryptionPreparationResult.Empty;
-
-    private void DeleteTemporaryFile(string filePath)
-    {
-        try
-        {
-            if (File.Exists(filePath))
-            {
-                File.Delete(filePath);
-            }
-
-            string? directoryPath = Path.GetDirectoryName(filePath);
-            if (!string.IsNullOrWhiteSpace(directoryPath) && Directory.Exists(directoryPath))
-            {
-                Directory.Delete(directoryPath, recursive: true);
-            }
-        }
-        catch (Exception ex)
-        {
-            crashLogService.WriteSwallowedException(ex);
-        }
-    }
 
     private static string CreateMetadataText(EncryptionPreparationResult result)
     {

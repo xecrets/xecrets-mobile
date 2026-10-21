@@ -30,15 +30,10 @@
 
 namespace Xecrets.Mobile.Models.Abstractions;
 
-// A file to write to and eventually remove, wrapping whatever platform-specific handle (content Uri, security-scoped
+// A file to overwrite and eventually remove, wrapping whatever platform-specific handle (content Uri, security-scoped
 // NSUrl, path) is needed for it. Each platform provides its own implementation through IFileAccess.
 public interface IWritableFile
 {
-    /// <summary>
-    /// The platform reference to the file.
-    /// </summary>
-    string Id { get; }
-
     IDisposable AcquireAccess();
 
     Task<bool> CanWriteAsync();
@@ -50,7 +45,11 @@ public interface IWritableFile
     /// </summary>
     Task<long?> GetLengthAsync();
 
-    Task<Stream> OpenWriteAsync();
+    /// <summary>
+    /// Overwrites the file in place, with all the writing done by the action, which is given the stream to write. The
+    /// file is written as one operation, coordinated with other processes where the platform does so.
+    /// </summary>
+    Task OverwriteAsync(Action<Stream> overwrite);
 
     /// <summary>
     /// Deletes the file, together with any other versions of it that the platform keeps where it can remove them.

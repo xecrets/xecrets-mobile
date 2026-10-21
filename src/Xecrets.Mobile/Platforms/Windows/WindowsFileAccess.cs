@@ -147,6 +147,20 @@ internal sealed class WindowsFileAccess(WorkFolderStorage storage, ICrashLogServ
         }
     }
 
+    public async Task<byte[]> ReadStartAsync(string fileId, int count)
+    {
+        await using Stream stream = await OpenReadAsync(fileId);
+        byte[] buffer = new byte[count];
+        return buffer[..await stream.ReadAtLeastAsync(buffer, count, throwOnEndOfStream: false)];
+    }
+
+    public async Task CheckReachableAsync(string fileId)
+    {
+        await using (await OpenReadAsync(fileId))
+        {
+        }
+    }
+
     public Task<IWritableFile> OpenWriteAsync(string fileId) =>
         Task.FromResult<IWritableFile>(new LocalWritableFile(fileId));
 
@@ -155,8 +169,13 @@ internal sealed class WindowsFileAccess(WorkFolderStorage storage, ICrashLogServ
     public Task<bool> FileExistsInFolderAsync(string folderId, string name) =>
         Task.FromResult(File.Exists(Path.Combine(folderId, name)));
 
-    public Task<IFileWriteSession> OpenWriteInFolderAsync(string folderId, string name, bool overwrite) =>
-        Task.FromResult<IFileWriteSession>(new LocalFileWriteSession(folderId, name, overwrite));
+    public Task<string> SaveInFolderAsync(string folderId, string name, string completedFilePath, bool overwrite) =>
+        Task.Run(() =>
+        {
+            string destinationPath = Path.Combine(folderId, name);
+            LocalFileSaver.Save(completedFilePath, destinationPath, overwrite);
+            return destinationPath;
+        });
 
     public Task<string> RenameAsync(string fileId, string newName)
     {
@@ -165,38 +184,12 @@ internal sealed class WindowsFileAccess(WorkFolderStorage storage, ICrashLogServ
         return Task.FromResult(renamedPath);
     }
 
-    public async Task<FileReference?> SaveAsAsync(string fileName, Stream content)
+    // A file that could not be completely written is removed, so that what is left of it is not taken for the result.
+    public async Task<FileReference?> SaveAsAsync(string initialFolder, string fileName, string completedFilePath)
     {
         ThreadGuard.ThrowIfNotMainThread();
 
         // The picker requires a file type, and "." stands for a name without an extension.
-        string extension = Path.GetExtension(fileName);
-        FileSavePicker picker = new()
-        {
-            SuggestedFileName = Path.GetFileNameWithoutExtension(fileName),
-        };
-        picker.FileTypeChoices.Add(extension.Length > 0 ? extension : ".", [extension.Length > 0 ? extension : "."]);
-        InitializeWithWindow.Initialize(picker, GetWindowHandle());
-        StorageFile? file = await picker.PickSaveFileAsync();
-        if (file is null)
-        {
-            return null;
-        }
-
-        await using (Stream output = await file.OpenStreamForWriteAsync())
-        {
-            output.SetLength(0);
-            await content.CopyToAsync(output);
-        }
-
-        return WindowsFileLocation.Locate(file);
-    }
-
-    // The picker leaves an existing file as it is, so it is emptied to be written as new.
-    public async Task<FileReference?> CreateFileAsync(string initialFolder, string fileName)
-    {
-        ThreadGuard.ThrowIfNotMainThread();
-
         string extension = Path.GetExtension(fileName);
         FileSavePicker picker = new()
         {
@@ -211,10 +204,17 @@ internal sealed class WindowsFileAccess(WorkFolderStorage storage, ICrashLogServ
             return null;
         }
 
-        // An existing file the user chose to replace is left as it is until the result is written to it.
-        if (!File.Exists(file.Path))
+        try
         {
-            await File.WriteAllBytesAsync(file.Path, []);
+            await using FileStream input = File.OpenRead(completedFilePath);
+            await using Stream output = await file.OpenStreamForWriteAsync();
+            output.SetLength(0);
+            await input.CopyToAsync(output);
+        }
+        catch
+        {
+            await file.DeleteAsync(StorageDeleteOption.PermanentDelete);
+            throw;
         }
 
         return WindowsFileLocation.Locate(file);

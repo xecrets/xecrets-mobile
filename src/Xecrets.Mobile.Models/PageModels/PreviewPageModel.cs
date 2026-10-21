@@ -57,16 +57,16 @@ public partial class PreviewPageModel(
         BreadcrumbFormatter.Format(flowContext.Origin, MobileTexts.BreadcrumbPreview);
 
     [ObservableProperty]
-    public partial string FileNameText { get; set; } = string.Empty;
+    public partial string FileNameText { get; set; } = "";
 
     [ObservableProperty]
-    public partial string MessageText { get; set; } = string.Empty;
+    public partial string MessageText { get; set; } = "";
 
     [ObservableProperty]
-    public partial string StatusText { get; set; } = string.Empty;
+    public partial string StatusText { get; set; } = "";
 
     [ObservableProperty]
-    public partial string MetadataText { get; set; } = string.Empty;
+    public partial string MetadataText { get; set; } = "";
 
     public bool CanView => !IsBusy && ViewMode != FileViewMode.Unavailable;
 
@@ -99,7 +99,7 @@ public partial class PreviewPageModel(
             ? MobileTexts.DisplayNameProgram
             : state.OriginalFileName;
         MetadataText = PreviewMetadataFormatter.Format(state);
-        StatusText = string.Empty;
+        StatusText = "";
         ViewMode = await decryptedFileViewer.GetViewModeAsync(state.File!);
     }
 
@@ -126,14 +126,14 @@ public partial class PreviewPageModel(
         try
         {
             IsBusy = true;
-            StatusText = string.Empty;
+            StatusText = "";
 
             await decryptedFileViewer.ViewAsync(file);
             await recentFilesService.AddFlowSourceAsync(RecentFileOperation.View);
         }
         catch (OperationCanceledException)
         {
-            StatusText = string.Empty;
+            StatusText = "";
         }
         catch (Exception ex)
         {
@@ -162,7 +162,7 @@ public partial class PreviewPageModel(
         try
         {
             IsBusy = true;
-            StatusText = string.Empty;
+            StatusText = "";
             if (flowContext.Source is { } source)
             {
                 FileReference? reachable = await folderAccess.EnsureFolderAccessAsync(source);
@@ -179,7 +179,7 @@ public partial class PreviewPageModel(
         }
         catch (OperationCanceledException)
         {
-            StatusText = string.Empty;
+            StatusText = "";
         }
         catch (Exception ex)
         {
@@ -206,7 +206,7 @@ public partial class PreviewPageModel(
         try
         {
             IsBusy = true;
-            StatusText = string.Empty;
+            StatusText = "";
             if (await fileService.OpenInAsync(file.FilePath, file.DisplayName))
             {
                 await recentFilesService.AddFlowSourceAsync(RecentFileOperation.DecryptCopyOpenIn);
@@ -214,7 +214,7 @@ public partial class PreviewPageModel(
         }
         catch (OperationCanceledException)
         {
-            StatusText = string.Empty;
+            StatusText = "";
         }
         catch (Exception ex)
         {
@@ -241,9 +241,8 @@ public partial class PreviewPageModel(
         try
         {
             IsBusy = true;
-            StatusText = string.Empty;
-            await using FileStream content = File.OpenRead(file.FilePath);
-            if (await fileOperationWorkflow.SaveAsAsync(file.DisplayName, content) is not null)
+            StatusText = "";
+            if (await fileOperationWorkflow.SaveAsAsync(file.DisplayName, file.FilePath) is not null)
             {
                 await recentFilesService.AddFlowSourceAsync(RecentFileOperation.DecryptCopySaveAs);
                 await GoHomeIfStartedThereAsync();
@@ -251,7 +250,7 @@ public partial class PreviewPageModel(
         }
         catch (OperationCanceledException)
         {
-            StatusText = string.Empty;
+            StatusText = "";
         }
         catch (Exception ex)
         {
@@ -278,16 +277,16 @@ public partial class PreviewPageModel(
         try
         {
             IsBusy = true;
-            StatusText = string.Empty;
+            StatusText = "";
             await fileService.SendToAsync(
                 file.FilePath,
                 file.DisplayName,
-                string.Empty);
+                "");
             await recentFilesService.AddFlowSourceAsync(RecentFileOperation.DecryptCopySendTo);
         }
         catch (OperationCanceledException)
         {
-            StatusText = string.Empty;
+            StatusText = "";
         }
         catch (Exception ex)
         {

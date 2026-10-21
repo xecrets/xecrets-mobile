@@ -57,8 +57,8 @@ internal sealed class FileWiper(ICrashLogService crashLogService) : IFileWiper
 
     /// <summary>
     /// There are too many caveats with wiping a file that is on a mobile phone, or in cloud storage. Versions are created and many operations are not
-    /// supported. So this is really a best effort, and we only do any attempt to overwrite if the file is on the device
-    /// and the stream is seekable.
+    /// supported. So this is really the best effort, and we only do any attempt to overwrite if the file is on the device
+    /// and the stream supports seeking.
     /// </summary>
     public async Task<FileWipeStatus> WipeAsync(IWritableFile file, bool isOnDevice)
     {
@@ -106,18 +106,18 @@ internal sealed class FileWiper(ICrashLogService crashLogService) : IFileWiper
         }
 
         long length = await file.GetLengthAsync() ?? 0;
-        bool canSeek;
-        await using (Stream stream = await file.OpenWriteAsync())
+        bool canSeek = false;
+        await file.OverwriteAsync(stream =>
         {
             canSeek = stream.CanSeek;
             byte[] notice = Encoding.UTF8.GetBytes(DeletedNotice);
-            await stream.WriteAsync(notice);
+            stream.Write(notice);
             if (canSeek)
             {
-                await OverwriteAsync(stream, length - notice.Length);
+                Overwrite(stream, length - notice.Length);
                 stream.SetLength(notice.Length);
             }
-        }
+        });
 
         await file.DeleteAsync();
         return canSeek;
@@ -136,7 +136,7 @@ internal sealed class FileWiper(ICrashLogService crashLogService) : IFileWiper
         }
     }
 
-    private static async Task OverwriteAsync(Stream stream, long length)
+    private static void Overwrite(Stream stream, long length)
     {
         byte[] buffer = ArrayPool<byte>.Shared.Rent(81920);
         try
@@ -146,7 +146,7 @@ internal sealed class FileWiper(ICrashLogService crashLogService) : IFileWiper
             {
                 int toWrite = (int)Math.Min(buffer.Length, remaining);
                 RandomNumberGenerator.Fill(buffer.AsSpan(0, toWrite));
-                await stream.WriteAsync(buffer.AsMemory(0, toWrite));
+                stream.Write(buffer.AsSpan(0, toWrite));
                 remaining -= toWrite;
             }
         }

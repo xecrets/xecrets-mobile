@@ -58,27 +58,28 @@ namespace Xecrets.Mobile.Platforms.Android;
 [SupportedOSPlatform("android26.0")]
 internal sealed class AndroidWritableFile(AndroidUri uri, ICrashLogService crashLogService) : IWritableFile
 {
-    private readonly AndroidUri _fileUri = uri;
-
-    public string Id => _fileUri.ToString()!;
-
     public IDisposable AcquireAccess() => new EmptyAccessScope();
 
     // A virtual document, such as a Google Docs document, has no contents of its own that can be written.
     public Task<bool> CanWriteAsync() => Task.Run(() =>
-        IsGranted(_fileUri) &&
-        GetFlags(_fileUri) is { } flags &&
+        IsGranted(uri) &&
+        GetFlags(uri) is { } flags &&
         flags.HasFlag(DocumentContractFlags.SupportsWrite) &&
         !flags.HasFlag(DocumentContractFlags.VirtualDocument));
 
     public Task<bool> CanDeleteAsync() => Task.Run(() =>
-        IsGranted(_fileUri) &&
-        GetFlags(_fileUri) is { } flags &&
+        IsGranted(uri) &&
+        GetFlags(uri) is { } flags &&
         flags.HasFlag(DocumentContractFlags.SupportsDelete));
 
-    public Task<long?> GetLengthAsync() => Task.Run(() => GetLength(_fileUri));
+    public Task<long?> GetLengthAsync() => Task.Run(() => GetLength(uri));
 
-    public Task<Stream> OpenWriteAsync() => Task.Run(() => OpenWrite(_fileUri));
+    public Task OverwriteAsync(Action<Stream> overwrite) =>
+        Task.Run(() =>
+        {
+            using Stream stream = OpenWrite(uri);
+            overwrite(stream);
+        });
 
     private Stream OpenWrite(AndroidUri fileUri)
     {
@@ -107,7 +108,7 @@ internal sealed class AndroidWritableFile(AndroidUri uri, ICrashLogService crash
 
         if (pfd is null)
         {
-            return Platform.AppContext.ContentResolver!.OpenOutputStream(_fileUri, "wt")!;
+            return Platform.AppContext.ContentResolver!.OpenOutputStream(uri, "wt")!;
         }
 
         try
@@ -126,7 +127,7 @@ internal sealed class AndroidWritableFile(AndroidUri uri, ICrashLogService crash
 
     public async Task DeleteAsync()
     {
-        if (!await _fileUri.DeleteDocumentAsync())
+        if (!await uri.DeleteDocumentAsync())
         {
             throw new IOException("The file could not be deleted.");
         }

@@ -34,6 +34,7 @@ using System.Threading.Tasks;
 
 using Foundation;
 
+using Xecrets.Common.Models;
 using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Platforms.Apple;
@@ -44,90 +45,99 @@ namespace Xecrets.Mobile.Platforms.Apple;
 /// </summary>
 internal sealed class AppleWritableFile(NSUrl url, NSUrl grant) : IWritableFile
 {
-    private readonly NSUrl _fileUrl = url;
-
-    public string Id => _fileUrl.AbsoluteString!;
+    private string Path => url.Path!;
 
     public IDisposable AcquireAccess() => new AppleSecurityScope(grant);
 
     // Called while accessing the grant, as by the wiper.
     public Task<bool> CanWriteAsync() => Task.FromResult(
-        NSFileManager.DefaultManager.IsReadableFile(_fileUrl.Path!) &&
-        NSFileManager.DefaultManager.IsWritableFile(_fileUrl.Path!));
+        NSFileManager.DefaultManager.IsReadableFile(Path) &&
+        NSFileManager.DefaultManager.IsWritableFile(Path));
 
     /// <summary>
     /// Whether a file can be deleted is told by whether its folder can be written. For a file granted by itself, the
     /// folder is always reported as not writable, but the grant still allows deleting the file, as measured with all
-    /// providers. Then whether the file itself can be written is checked instead.
+    /// providers. Then whether the file itself can be written is checked instead. A file that is moved to the trash
+    /// may not be on the device yet, as with OneDrive and Google Drive, and then tells nothing, so it is only seen
+    /// whether it can be when it is.
     /// </summary>
     public Task<bool> CanDeleteAsync() => Task.FromResult(
-        _fileUrl.AbsoluteString == grant.AbsoluteString
-            ? NSFileManager.DefaultManager.IsWritableFile(_fileUrl.Path!)
-            : NSFileManager.DefaultManager.IsDeletableFile(_fileUrl.Path!));
+        !IsDeletedByRemoving() ||
+        (url.AbsoluteString == grant.AbsoluteString
+            ? NSFileManager.DefaultManager.IsWritableFile(Path)
+            : NSFileManager.DefaultManager.IsDeletableFile(Path)));
 
-    public Task<long?> GetLengthAsync() => Task.FromResult<long?>(new FileInfo(_fileUrl.Path!).Length);
+    public Task<long?> GetLengthAsync() => Task.FromResult<long?>(new FileInfo(Path).Length);
 
     /// <summary>
-    /// The file is written within a coordinated write, which lasts until the stream is disposed.
+    /// The whole file is written within one coordinated write.
     /// </summary>
-    public async Task<Stream> OpenWriteAsync()
-    {
-        AppleCoordinatedWrite coordination = await AppleCoordinatedWrite.BeginAsync(_fileUrl, default);
-        try
+    public Task OverwriteAsync(Action<Stream> overwrite) =>
+        url.WriteCoordinatedAsync(default, coordinatedUrl =>
         {
-            return new OwningStream(
-                new FileStream(coordination.Url.Path!, FileMode.Open, FileAccess.Write, FileShare.None),
-                coordination);
-        }
-        catch
-        {
-            coordination.Dispose();
-            throw;
-        }
-    }
+            using FileStream stream = new(coordinatedUrl.Path!, FileMode.Open, FileAccess.Write, FileShare.None);
+            overwrite(stream);
+        });
 
     /// <summary>
     /// Removes the other versions of the file that the storage keeps, such as iCloud does, and then the file itself,
     /// coordinated with any other process presenting it. An error may not pass through the native coordinator, so it is
-    /// set as the result instead.
+    /// set as the result instead. Storage where removing the file was not verified to actually delete it is asked to
+    /// move it to its trash instead. OneDrive and Google Drive report a removed file as deleted, but keep it,
+    /// while they do delete a file moved to the trash.
     /// </summary>
     public async Task DeleteAsync()
     {
+        if (!IsDeletedByRemoving())
+        {
+            if (!NSFileManager.DefaultManager.TrashItem(url, out NSUrl _, out NSError trashError))
+            {
+                throw new NSErrorException(trashError);
+            }
+
+            return;
+        }
+
         TaskCompletionSource deleted = new(TaskCreationOptions.RunContinuationsAsynchronously);
         NSFileAccessIntent intent =
-            NSFileAccessIntent.CreateWritingIntent(_fileUrl, NSFileCoordinatorWritingOptions.ForDeleting);
+            NSFileAccessIntent.CreateWritingIntent(url, NSFileCoordinatorWritingOptions.ForDeleting);
         NSFileCoordinator coordinator = new();
         coordinator.CoordinateAccess([intent], new NSOperationQueue(), error =>
         {
-            try
+            if (error != null!)
             {
-                if (error != null!)
-                {
-                    deleted.SetException(new NSErrorException(error));
-                    return;
-                }
-
-                // There are no other versions to remove for most storage, which is reported as an error.
-                NSFileVersion.RemoveOtherVersions(intent.Url, out NSError _);
-                if (!NSFileManager.DefaultManager.Remove(intent.Url, out NSError removeError))
-                {
-                    deleted.SetException(new NSErrorException(removeError));
-                    return;
-                }
-
-                deleted.SetResult();
+                deleted.SetException(new NSErrorException(error));
+                return;
             }
-            finally
+
+            // There are no other versions to remove for most storage, which is reported as an error, so we
+            // ignore that.
+            NSFileVersion.RemoveOtherVersions(intent.Url, out NSError _);
+
+            if (!NSFileManager.DefaultManager.Remove(intent.Url, out NSError removeError))
             {
-                // The coordinator is kept until the access it coordinates is done.
-                GC.KeepAlive(coordinator);
+                deleted.SetException(new NSErrorException(removeError));
+                return;
             }
+
+            deleted.SetResult();
         });
         await deleted.Task;
 
-        if (File.Exists(_fileUrl.Path!))
+        if (File.Exists(Path))
         {
             throw new IOException("The file could not be deleted.");
         }
     }
+
+    // Checks if removing the file works, otherwise we need to fall back to trashing it. This is only
+    // empirically verified, since the various implementations are inconsistent. These are the ones that
+    // we have verified to delete the file when removing it with NSFileManager.DefaultManager.Remove().
+    private bool IsDeletedByRemoving() => AppleFileLocation.Locate(url).Root is
+        RootProvider.ICloudDrive or
+        RootProvider.Dropbox or
+        RootProvider.IPhone or
+        RootProvider.IPad or
+        RootProvider.Mac or
+        RootProvider.None;
 }
