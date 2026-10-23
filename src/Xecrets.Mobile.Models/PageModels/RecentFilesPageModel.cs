@@ -70,6 +70,11 @@ public partial class RecentFilesPageModel(
 
     public string Description => MobileTexts.RecentFilesDescription;
 
+    /// <summary>
+    /// The description, shown on the page itself while no files are listed, to make it easier to find.
+    /// </summary>
+    [ObservableProperty] public partial string NoFilesText { get; set; } = string.Empty;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsReverseAllVisible))]
     [NotifyPropertyChangedFor(nameof(ReverseAllEncrypts))]
@@ -359,6 +364,8 @@ public partial class RecentFilesPageModel(
         {
             Files.Add(entry);
         }
+
+        NoFilesText = Files.Count == 0 ? Description : string.Empty;
     }
 
     private bool IsShown(RecentFileEntry entry) => SelectedState switch

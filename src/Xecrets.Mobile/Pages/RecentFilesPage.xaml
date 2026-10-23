@@ -33,6 +33,7 @@
              xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
              xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
              xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
+             xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="Xecrets.Mobile.Pages.RecentFilesPage"
              x:ClassModifier="internal"
@@ -40,6 +41,7 @@
              x:DataType="pageModels:RecentFilesPageModel">
     <ContentPage.Resources>
         <ResourceDictionary>
+            <utilities:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
             <FontImageSource x:Key="IconEncryptFile"
                              Glyph="{x:Static f:FluentUI.lock_closed_28_regular}"
                              FontFamily="{x:Static f:FluentUI.FontFamily}"
@@ -102,6 +104,16 @@
                               Padding="{StaticResource IconRowBodyPadding}"
                               InputTransparent="{Binding IsBusy}">
                             <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
+                                <!-- Without any files, the page information is shown. -->
+                                <Border Margin="{StaticResource IconRowBodyContentMargin}"
+                                        IsVisible="{Binding NoFilesText, Converter={StaticResource StringNotEmptyConverter}}"
+                                        BackgroundColor="{AppThemeBinding Light={StaticResource LightOutline}, Dark={StaticResource DarkOutline}}"
+                                        Stroke="{AppThemeBinding Light={StaticResource LightOutline}, Dark={StaticResource DarkOutline}}"
+                                        StrokeShape="RoundRectangle 4"
+                                        Padding="10,6">
+                                    <Label Text="{Binding NoFilesText}"
+                                           FontSize="13" />
+                                </Border>
                                 <pageControls:PageMessages Margin="{StaticResource IconRowBodyContentMargin}"
                                                            MessageText="{Binding MessageText}"
                                                            StatusText="{Binding StatusText}" />

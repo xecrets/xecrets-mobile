@@ -59,25 +59,28 @@
                                 <VerticalStackLayout x:Name="ActionButtonStack"
                                                      HorizontalOptions="Center"
                                                      Spacing="{StaticResource LayoutSpacing}">
-                                    <Button Text="{x:Static modelUtilities:MobileTexts.WorkFoldersContentTitle}"
-                                            Command="{Binding MyFoldersCommand}" />
-                                    <Button Text="{x:Static modelUtilities:MobileTexts.RecentFilesContentTitle}"
-                                            Command="{Binding RecentFilesCommand}" />
-                                    <Button Text="{x:Static modelUtilities:MobileTexts.ButtonEncryptInPlace}"
-                                            Command="{Binding EncryptCommand}" />
-                                    <Button Text="{x:Static modelUtilities:MobileTexts.ButtonDecryptInPlace}"
-                                            Command="{Binding DecryptCommand}" />
+                                    <controls:ActionButton Title="{x:Static modelUtilities:MobileTexts.RecentFilesContentTitle}"
+                                                           Description="{x:Static modelUtilities:MobileTexts.HomeDetailRecentFiles}"
+                                                           Icon="{StaticResource IconRecentFilesButton}"
+                                                           Command="{Binding RecentFilesCommand}" />
                                     <BoxView Style="{StaticResource ActionDividerStyle}" />
-                                    <Button Text="{x:Static modelUtilities:MobileTexts.ButtonDecryptAs}"
-                                            Command="{Binding DecryptAsCommand}" />
-                                    <Button Text="{x:Static modelUtilities:MobileTexts.ButtonEncryptAs}"
-                                            Command="{Binding EncryptAsCommand}" />
+                                    <controls:ActionButton Title="{x:Static modelUtilities:MobileTexts.HomeButtonEncryptDecryptOriginal}"
+                                                           Description="{x:Static modelUtilities:MobileTexts.HomeDetailReplace}"
+                                                           Icon="{StaticResource IconReplaceButton}"
+                                                           Command="{Binding MyFoldersCommand}" />
+                                    <controls:ActionButton Title="{x:Static modelUtilities:MobileTexts.HomeButtonEncryptDecryptCopy}"
+                                                           Description="{x:Static modelUtilities:MobileTexts.HomeDetailCopy}"
+                                                           Icon="{StaticResource IconCopyButton}"
+                                                           Command="{Binding InAppCommand}" />
+                                    <controls:ActionButton Title="{x:Static modelUtilities:MobileTexts.ButtonEncryptToShare}"
+                                                           Description="{x:Static modelUtilities:MobileTexts.HomeDetailShare}"
+                                                           Icon="{StaticResource IconShareButton}"
+                                                           Command="{Binding EncryptToShareCommand}" />
                                     <BoxView Style="{StaticResource ActionDividerStyle}" />
-                                    <Button Text="{x:Static modelUtilities:MobileTexts.ButtonEncryptToShare}"
-                                            Command="{Binding EncryptToShareCommand}" />
-                                    <BoxView Style="{StaticResource ActionDividerStyle}" />
-                                    <Button Text="{x:Static modelUtilities:MobileTexts.ButtonWipe}"
-                                            Command="{Binding WipeCommand}" />
+                                    <controls:ActionButton Title="{x:Static modelUtilities:MobileTexts.HomeButtonDelete}"
+                                                           Description="{x:Static modelUtilities:MobileTexts.HomeDetailDelete}"
+                                                           Icon="{StaticResource IconDeleteButton}"
+                                                           Command="{Binding WipeCommand}" />
                                 </VerticalStackLayout>
                             </VerticalStackLayout>
                         </Grid>

@@ -47,12 +47,12 @@ public sealed class WorkFoldersPageTests
     {
         TestApp app = new();
         WorkFoldersPageModel page = app.CreateWorkFoldersPage();
-        page.Initialize(WorkFolderIntent.Encrypt);
+        page.Initialize(WorkFolderIntent.Delete);
 
         await page.LoadCommand.ExecuteAsync(null);
         await page.LoadCommand.ExecuteAsync(null);
 
-        Assert.That(app.UserInterface.TransientMessages, Is.EqualTo([MobileTexts.WorkFolderIntentEncrypt]));
+        Assert.That(app.UserInterface.TransientMessages, Is.EqualTo([MobileTexts.WorkFolderIntentDelete]));
         Assert.That(page.MessageText, Is.Empty);
     }
 
@@ -63,13 +63,14 @@ public sealed class WorkFoldersPageTests
         app.AddFile("docs/a.txt");
         app.Access.PickedFolders.Enqueue(FakeFileAccess.Folder("docs"));
         app.Access.PickedFiles.Enqueue("docs/a.txt");
+        app.UserInterface.Answers.Enqueue(true);
         WorkFoldersPageModel page = app.CreateWorkFoldersPage();
-        page.Initialize(WorkFolderIntent.Encrypt);
+        page.Initialize(WorkFolderIntent.Delete);
 
         await page.AddCommand.ExecuteAsync(null);
 
         Assert.That(app.Access.FilePickerStarts, Is.EqualTo(["docs"]));
-        Assert.That(app.Access.Files.Keys, Is.EquivalentTo([$"docs/{"a.txt".ToEncryptedName(string.Empty)}"]));
+        Assert.That(app.Access.Files, Is.Empty);
     }
 
     [Test]

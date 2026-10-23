@@ -166,6 +166,31 @@
                 FontFamily="{x:Static f:FluentUI.FontFamily}"
                 Color="{StaticResource White}"
                 Size="{StaticResource size240}" />
+    <FontImageSource x:Key="IconRecentFilesButton"
+                Glyph="{x:Static f:FluentUI.history_24_regular}"
+                FontFamily="{x:Static f:FluentUI.FontFamily}"
+                Color="{StaticResource White}"
+                Size="{StaticResource size240}" />
+    <FontImageSource x:Key="IconReplaceButton"
+                Glyph="{x:Static f:FluentUI.document_sync_24_regular}"
+                FontFamily="{x:Static f:FluentUI.FontFamily}"
+                Color="{StaticResource White}"
+                Size="{StaticResource size240}" />
+    <FontImageSource x:Key="IconCopyButton"
+                Glyph="{x:Static f:FluentUI.document_copy_24_regular}"
+                FontFamily="{x:Static f:FluentUI.FontFamily}"
+                Color="{StaticResource White}"
+                Size="{StaticResource size240}" />
+    <FontImageSource x:Key="IconShareButton"
+                Glyph="{x:Static f:FluentUI.people_lock_24_regular}"
+                FontFamily="{x:Static f:FluentUI.FontFamily}"
+                Color="{StaticResource White}"
+                Size="{StaticResource size240}" />
+    <FontImageSource x:Key="IconDeleteButton"
+                Glyph="{x:Static f:FluentUI.delete_dismiss_24_regular}"
+                FontFamily="{x:Static f:FluentUI.FontFamily}"
+                Color="{StaticResource White}"
+                Size="{StaticResource size240}" />
     <FontImageSource x:Key="IconLight"
                 Glyph="{x:Static f:FluentUI.weather_sunny_28_regular}"
                 FontFamily="{x:Static f:FluentUI.FontFamily}"
@@ -405,6 +430,10 @@
          a button is exactly as tall as a plain action button. The minimum height overrides the 44 of the
          implicit ImageButton style, which would otherwise win over HeightRequest. -->
     <x:Double x:Key="ActionButtonHeight">40</x:Double>
+
+    <!-- The minimum height of an action button with a description below the title. -->
+    <x:Double x:Key="OneLineActionButtonHeight">44</x:Double>
+    <x:Double x:Key="TwoLineActionButtonHeight">60</x:Double>
 
     <Style x:Key="ActionRowIconButtonStyle"
            TargetType="ImageButton">

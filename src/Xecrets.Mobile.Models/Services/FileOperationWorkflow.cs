@@ -57,14 +57,13 @@ public sealed class FileOperationWorkflow(
 
     /// <summary>
     /// Lets the user pick a file, starting in the folder, or where the platform decides without one, and does what is
-    /// intended with it. Without a given operation, the name of the file decides whether it is encrypted or decrypted.
+    /// intended with it. Unless it is deleted, the name of the file decides whether it is encrypted or decrypted.
     /// A file in one of My folders is changed where it is, through the folder. A file in none of them, elsewhere, is
     /// changed by the access to the file itself, with the result saved where the user chooses.
     /// </summary>
     public async Task PickAndRunAsync(WorkFolderIntent intent, WorkFolder? folder)
     {
-        FilePickerKind pickerKind = intent == WorkFolderIntent.Decrypt ? FilePickerKind.Encrypted : FilePickerKind.Any;
-        FileReference? picked = await fileAccess.PickFileAsync(folder?.Id ?? "", pickerKind);
+        FileReference? picked = await fileAccess.PickFileAsync(folder?.Id ?? "", FilePickerKind.Any);
         if (picked is null)
         {
             return;
@@ -116,14 +115,6 @@ public sealed class FileOperationWorkflow(
         {
             case WorkFolderIntent.Delete:
                 await WipeAsync(file, isElsewhere);
-                return;
-
-            case WorkFolderIntent.Encrypt:
-                await TransformAsync(file, WorkFolderOperation.Encrypt, FlowOrigin.MyFolders, isElsewhere);
-                return;
-
-            case WorkFolderIntent.Decrypt:
-                await TransformAsync(file, WorkFolderOperation.Decrypt, FlowOrigin.MyFolders, isElsewhere);
                 return;
 
             case WorkFolderIntent.Auto:

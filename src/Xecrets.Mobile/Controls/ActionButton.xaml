@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    Xecrets Ez Mobile - Copyright © 2026 Svante Seleborg, All Rights Reserved.
+
+    This code file is part of Xecrets Ez Mobile, an application that uses the Xecrets.Net library, parts of which in turn
+    are derived from AxCrypt as licensed under GPL v3 or later. This code is not derived from AxCrypt. It is separately
+    authored and copyrighted, and licensed only as follows unless explicitly licensed otherwise.
+
+    Xecrets Ez Mobile is free software: you can redistribute it and/or modify it under the terms of the GNU General
+    Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+    later version.
+
+    No additional permission is granted beyond that license. If you incorporate this code into a larger work and
+    distribute that work to others, you are responsible for complying with the GNU General Public License version 3 or
+    later. See https://www.gnu.org/licenses/ for more information.
+
+    Xecrets Ez Mobile is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+    implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+    details.
+
+    You should have received a copy of the GNU General Public License along with Xecrets Ez Mobile. If not, see
+    <https://www.gnu.org/licenses/>.
+
+    The source repository can be found at https://github.com/xecrets/xecrets-mobile please go there for more information,
+    suggestions and contributions. You may also visit https://www.axantum.com for more information about the author.
+-->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
+             xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
+             x:Class="Xecrets.Mobile.Controls.ActionButton"
+             x:ClassModifier="internal"
+             x:DataType="controls:ActionButton"
+             x:Name="Root">
+    <!-- The labels are drawn on a shape with the colors of the other buttons, and a transparent button without text
+         covers it all, so that the whole button takes the click. Labels over a button take part of it on Windows. The
+         button has no style, since the disabled state of the implicit one would paint over the labels. -->
+    <Grid BindingContext="{x:Reference Root}"
+          MinimumHeightRequest="{StaticResource TwoLineActionButtonHeight}">
+        <Grid.Triggers>
+            <DataTrigger TargetType="Grid"
+                         Binding="{Binding Description}"
+                         Value="">
+                <Setter Property="MinimumHeightRequest" Value="{StaticResource OneLineActionButtonHeight}" />
+            </DataTrigger>
+        </Grid.Triggers>
+        <Border StrokeThickness="0"
+                Padding="0"
+                StrokeShape="RoundRectangle 12"
+                BackgroundColor="{StaticResource Primary}">
+            <Border.Triggers>
+                <DataTrigger TargetType="Border"
+                             Binding="{Binding Source={x:Reference CommandButton}, Path=IsEnabled, x:DataType=Button}"
+                             Value="False">
+                    <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}" />
+                </DataTrigger>
+            </Border.Triggers>
+            <VerticalStackLayout Padding="50,8,18,8"
+                                 Spacing="4"
+                                 VerticalOptions="Center">
+                <Label Text="{Binding Title}"
+                       TextColor="{StaticResource White}"
+                       utilities:Typography.FontWeight="Semibold"
+                       FontSize="16"
+                       LineHeight="1"
+                       LineBreakMode="MiddleTruncation">
+                    <Label.Triggers>
+                        <DataTrigger TargetType="Label"
+                                     Binding="{Binding Source={x:Reference CommandButton}, Path=IsEnabled, x:DataType=Button}"
+                                     Value="False">
+                            <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray300}}" />
+                        </DataTrigger>
+                    </Label.Triggers>
+                </Label>
+                <Label Text="{Binding Description}"
+                       TextColor="{StaticResource White}"
+                       FontSize="12"
+                       LineHeight="1">
+                    <Label.Triggers>
+                        <DataTrigger TargetType="Label"
+                                     Binding="{Binding Source={x:Reference CommandButton}, Path=IsEnabled, x:DataType=Button}"
+                                     Value="False">
+                            <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray300}}" />
+                        </DataTrigger>
+                        <DataTrigger TargetType="Label"
+                                     Binding="{Binding Description}"
+                                     Value="">
+                            <Setter Property="IsVisible" Value="False" />
+                        </DataTrigger>
+                    </Label.Triggers>
+                </Label>
+            </VerticalStackLayout>
+        </Border>
+        <Image Source="{Binding Icon}"
+               HorizontalOptions="Start"
+               VerticalOptions="Center"
+               Margin="18,0,0,0"
+               WidthRequest="24"
+               HeightRequest="24"
+               InputTransparent="True" />
+        <Button x:Name="CommandButton"
+                Style="{x:Null}"
+                BackgroundColor="Transparent"
+                BorderWidth="0"
+                CornerRadius="12"
+                Command="{Binding Command}"
+                CommandParameter="{Binding CommandParameter}"
+                SemanticProperties.Description="{Binding Title}"
+                SemanticProperties.Hint="{Binding Description}" />
+    </Grid>
+</ContentView>

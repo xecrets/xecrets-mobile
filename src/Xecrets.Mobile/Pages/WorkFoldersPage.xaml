@@ -102,20 +102,12 @@
                                                                  Size="28" />
                                             </ImageButton.Source>
                                         </ImageButton>
-                                        <Grid Grid.Column="1" VerticalOptions="Center">
-                                            <Button Text="{Binding ListDisplayName}"
-                                                    Padding="50,8"
-                                                    LineBreakMode="MiddleTruncation"
-                                                    Command="{Binding OpenCommand}"
-                                                    CommandParameter="{Binding Folder}" />
-                                            <Image Source="{StaticResource IconOpenFolderButton}"
-                                                   HorizontalOptions="Start"
-                                                   VerticalOptions="Center"
-                                                   Margin="18,0,0,0"
-                                                   WidthRequest="24"
-                                                   HeightRequest="24"
-                                                   InputTransparent="True" />
-                                        </Grid>
+                                        <pageControls:ActionButton Grid.Column="1"
+                                                               VerticalOptions="Center"
+                                                               Title="{Binding ListDisplayName}"
+                                                               Icon="{StaticResource IconOpenFolderButton}"
+                                                               Command="{Binding OpenCommand}"
+                                                               CommandParameter="{Binding Folder}" />
                                         <ImageButton Grid.Column="2"
                                                      Style="{StaticResource ActionRowIconButtonStyle}"
                                                      Command="{Binding RemoveCommand}"
@@ -132,18 +124,10 @@
                             </BindableLayout.ItemTemplate>
                             </VerticalStackLayout>
                             <BoxView Style="{StaticResource ActionDividerStyle}" />
-                            <Grid Margin="{StaticResource IconRowActionButtonMargin}">
-                                <Button Text="{x:Static modelUtilities:MobileTexts.ButtonBrowseElsewhere}"
-                                        Padding="50,8"
-                                        Command="{Binding BrowseCommand}" />
-                                <Image Source="{StaticResource IconOpenFolderButton}"
-                                       HorizontalOptions="Start"
-                                       VerticalOptions="Center"
-                                       Margin="18,0,0,0"
-                                       WidthRequest="24"
-                                       HeightRequest="24"
-                                       InputTransparent="True" />
-                            </Grid>
+                            <pageControls:ActionButton Margin="{StaticResource IconRowActionButtonMargin}"
+                                                   Title="{x:Static modelUtilities:MobileTexts.ButtonBrowseElsewhere}"
+                                                   Icon="{StaticResource IconOpenFolderButton}"
+                                                   Command="{Binding BrowseCommand}" />
                             </VerticalStackLayout>
                             </VerticalStackLayout>
                         </Grid>

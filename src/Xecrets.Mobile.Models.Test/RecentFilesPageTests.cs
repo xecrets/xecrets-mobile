@@ -466,6 +466,20 @@ public sealed class RecentFilesPageTests
     }
 
     [Test]
+    public async Task DescriptionIsShownOnThePageOnlyWhileNoFilesAreListed()
+    {
+        TestApp app = new();
+        app.AddRecent("docs/a.txt", RecentFileOperation.InPlace);
+        RecentFilesPageModel page = await LoadedPageAsync(app);
+        string withFiles = page.NoFilesText;
+
+        await page.RemoveCommand.ExecuteAsync(page.Files[0]);
+
+        Assert.That(withFiles, Is.Empty);
+        Assert.That(page.NoFilesText, Is.EqualTo(MobileTexts.RecentFilesDescription));
+    }
+
+    [Test]
     public async Task FileListedByAnUnknownOperationIsNotShown()
     {
         TestApp app = new();
