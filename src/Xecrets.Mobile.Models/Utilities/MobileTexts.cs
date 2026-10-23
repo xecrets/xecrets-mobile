@@ -48,10 +48,6 @@ public static class MobileTexts
     // "Edit"
     public static string BreadcrumbEdit => EditContentTitle;
 
-    public static string BreadcrumbDecrypt => ButtonDecryptInPlace.StripEllipsis();
-
-    public static string BreadcrumbEncrypt => ButtonEncryptInPlace.StripEllipsis();
-
     public static string BreadcrumbEncryptedCopy => "Encrypted copy";
 
     public static string BreadcrumbEncryptToShare => ButtonEncryptToShare.StripEllipsis();
@@ -79,15 +75,7 @@ public static class MobileTexts
 
     public static string ButtonBrowseElsewhere => "Browse anywhere";
 
-    public static string ButtonDecryptAs => "Decrypt in app";
-
-    public static string ButtonDecryptInPlace => "Decrypt and replace";
-
     public static string ButtonDiscard => "Discard";
-
-    public static string ButtonEncryptAs => "Encrypt in app";
-
-    public static string ButtonEncryptInPlace => "Encrypt and replace";
 
     public static string ButtonEncryptToShare => "Encrypt to share";
 
@@ -186,9 +174,24 @@ public static class MobileTexts
 
     public static string GitHubUrl => "https://github.com/xecrets/xecrets-mobile";
 
+    public static string HomeButtonDelete => "Delete";
+
+    // "Encrypt / Decrypt"
+    public static string HomeButtonEncryptDecrypt => $"{ButtonEncrypt} / {ButtonDecrypt}";
+
     public static string HomeContentTitle => "Actions";
 
-    public static string HomeDescription => "Choose an action. Work with files where they are stored in \"My folders\". Work with copies in the app and select what to do next. Encrypt a file with a new password to share.";
+    public static string HomeDescription => "Choose an action. Encrypt or decrypt a file where it is stored, replacing the original, or work with a temporary copy in the app and select what to do next. Encrypt a file with a new password to share.";
+
+    public static string HomeDetailCopy => "Create temporary copy";
+
+    public static string HomeDetailDelete => "When supported also overwrite";
+
+    public static string HomeDetailRecentFiles => "Quick access to recent operations";
+
+    public static string HomeDetailReplace => "Replace the original file";
+
+    public static string HomeDetailShare => "Share a file with a password";
 
     public static string LabelContinue => "Continue";
 
@@ -238,11 +241,7 @@ public static class MobileTexts
 
     public static string WorkFolderDescription => "Add a folder to allow the app access to it, then click a folder button to encrypt or decrypt a file. Some folders are not supported. Use \"Browse anywhere\" for a file in any other place, and save the result where you choose.";
 
-    public static string WorkFolderIntentDecrypt => "Choose the file to decrypt.";
-
     public static string WorkFolderIntentDelete => "Choose the file to overwrite and delete.";
-
-    public static string WorkFolderIntentEncrypt => "Choose the file to encrypt.";
 
     public static string WorkFoldersContentTitle => "My folders";
 

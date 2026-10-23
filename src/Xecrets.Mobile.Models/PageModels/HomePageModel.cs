@@ -34,6 +34,7 @@ using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
 using Xecrets.Mobile.Models.Utilities;
+using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
@@ -63,11 +64,8 @@ public partial class HomePageModel(
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(MyFoldersCommand))]
     [NotifyCanExecuteChangedFor(nameof(RecentFilesCommand))]
-    [NotifyCanExecuteChangedFor(nameof(EncryptCommand))]
-    [NotifyCanExecuteChangedFor(nameof(DecryptCommand))]
-    [NotifyCanExecuteChangedFor(nameof(EncryptAsCommand))]
+    [NotifyCanExecuteChangedFor(nameof(InAppCommand))]
     [NotifyCanExecuteChangedFor(nameof(EncryptToShareCommand))]
-    [NotifyCanExecuteChangedFor(nameof(DecryptAsCommand))]
     [NotifyCanExecuteChangedFor(nameof(WipeCommand))]
     [NotifyCanExecuteChangedFor(nameof(SignOutCommand))]
     public partial bool IsBusy { get; set; }
@@ -78,21 +76,18 @@ public partial class HomePageModel(
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private Task RecentFilesAsync() => UserInterfaceService.NavigateToAsync(AppDestination.RecentFiles);
 
-    // Files are changed where they are, so they are picked from one of My folders.
-    [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private Task Encrypt() => UserInterfaceService.NavigateToAsync(AppDestination.WorkFolders, WorkFolderIntent.Encrypt);
-
-    [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private Task Decrypt() => UserInterfaceService.NavigateToAsync(AppDestination.WorkFolders, WorkFolderIntent.Decrypt);
-
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private Task Wipe() => UserInterfaceService.NavigateToAsync(AppDestination.WorkFolders, WorkFolderIntent.Delete);
 
+    // The name of the picked file decides whether it is decrypted to a preview, or encrypted to a copy.
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private async Task EncryptAs()
+    private async Task InApp()
     {
         flowContext.Begin(FlowOrigin.Home);
+
+        // Before anything is caught, so that an armed crash is not swallowed.
         crashTestService.CrashIfArmed(CrashTestOperation.Encrypt);
+        crashTestService.CrashIfArmed(CrashTestOperation.Decrypt);
         try
         {
             IsBusy = true;
@@ -103,16 +98,14 @@ public partial class HomePageModel(
                 return;
             }
 
-            if (await fileOperationWorkflow.IsFileOrNameEncryptedAsync(file))
+            if (file.Name.IsEncrypted())
             {
-                await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextAlreadyEncrypted);
-                return;
+                await DecryptInAppAsync(file);
             }
-
-            flowContext.UpdateSource(file);
-            EncryptionPreparationResult result = await encryptionPreparationService.EncryptForCurrentProfileAsync(
-                new ReferencedReadableFile(fileAccess, file));
-            await UserInterfaceService.NavigateToAsync(AppDestination.EncryptResult, result);
+            else
+            {
+                await EncryptInAppAsync(file);
+            }
         }
         catch (OperationCanceledException)
         {
@@ -137,50 +130,37 @@ public partial class HomePageModel(
     }
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private async Task DecryptAs()
-    {
-        flowContext.Begin(FlowOrigin.Home);
-        crashTestService.CrashIfArmed(CrashTestOperation.Decrypt);
-        try
-        {
-            IsBusy = true;
-            StatusText = string.Empty;
-            FileReference? file = await fileAccess.PickFileAsync(string.Empty, FilePickerKind.Encrypted);
-            if (file is null)
-            {
-                return;
-            }
-
-            // The picker may offer any file, since not all storage tells which files are encrypted.
-            if (!await fileOperationWorkflow.IsFileEncryptedAsync(file))
-            {
-                await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextNotEncrypted);
-                return;
-            }
-
-            if (!await fileOperationWorkflow.PreviewAsync(file, FlowOrigin.Home))
-            {
-                StatusText = MobileTexts.DialogTextWrongPasswordOpen;
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            StatusText = string.Empty;
-        }
-        catch (Exception ex)
-        {
-            crashLogService.WriteSwallowedException(ex);
-            StatusText = ex.FormatException();
-        }
-        finally
-        {
-            IsBusy = false;
-        }
-    }
-
-    [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private Task SignOut() => sessionExitService.ExitAsync();
 
     private bool CanUseCommand()
         => !IsBusy;
+
+    private async Task EncryptInAppAsync(FileReference file)
+    {
+        if (await fileOperationWorkflow.IsFileOrNameEncryptedAsync(file))
+        {
+            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextAlreadyEncrypted);
+            return;
+        }
+
+        flowContext.UpdateSource(file);
+        EncryptionPreparationResult result = await encryptionPreparationService.EncryptForCurrentProfileAsync(
+            new ReferencedReadableFile(fileAccess, file));
+        await UserInterfaceService.NavigateToAsync(AppDestination.EncryptResult, result);
+    }
+
+    private async Task DecryptInAppAsync(FileReference file)
+    {
+        // The name alone does not make the file encrypted.
+        if (!await fileOperationWorkflow.IsFileEncryptedAsync(file))
+        {
+            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextNotEncrypted);
+            return;
+        }
+
+        if (!await fileOperationWorkflow.PreviewAsync(file, FlowOrigin.Home))
+        {
+            StatusText = MobileTexts.DialogTextWrongPasswordOpen;
+        }
+    }
 }

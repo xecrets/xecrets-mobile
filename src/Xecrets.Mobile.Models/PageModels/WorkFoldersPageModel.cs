@@ -64,8 +64,6 @@ public partial class WorkFoldersPageModel(
         Intent switch
         {
             WorkFolderIntent.Auto => MobileTexts.BreadcrumbMyFolders,
-            WorkFolderIntent.Encrypt => MobileTexts.BreadcrumbEncrypt,
-            WorkFolderIntent.Decrypt => MobileTexts.BreadcrumbDecrypt,
             WorkFolderIntent.Delete => MobileTexts.BreadcrumbWipe,
             _ => throw new ArgumentOutOfRangeException(nameof(Intent), Intent, @"Unknown work folder intent."),
         });
@@ -100,10 +98,9 @@ public partial class WorkFoldersPageModel(
         OnPropertyChanged(nameof(Breadcrumb));
         _pendingIntentHint = intent switch
         {
-            WorkFolderIntent.Encrypt => MobileTexts.WorkFolderIntentEncrypt,
-            WorkFolderIntent.Decrypt => MobileTexts.WorkFolderIntentDecrypt,
+            WorkFolderIntent.Auto => string.Empty,
             WorkFolderIntent.Delete => MobileTexts.WorkFolderIntentDelete,
-            _ => string.Empty,
+            _ => throw new ArgumentOutOfRangeException(nameof(intent), intent, @"Unknown work folder intent."),
         };
     }
 

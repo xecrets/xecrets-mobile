@@ -63,7 +63,7 @@ public sealed class BreadcrumbTests
         app.Access.PickedFiles.Enqueue("docs/x.axx");
         app.Core.Password = "unknown";
 
-        await app.Operations.PickAndRunAsync(WorkFolderIntent.Decrypt, docs);
+        await app.Operations.PickAndRunAsync(WorkFolderIntent.Auto, docs);
 
         EnterPasswordPageModel page = new(app.Preview, app.OperationService, app.Flow, app.UserInterface);
         Assert.That(app.UserInterface.Destinations, Is.EqualTo([AppDestination.EnterPassword]));
@@ -75,8 +75,6 @@ public sealed class BreadcrumbTests
     }
 
     [TestCase(WorkFolderIntent.Auto, nameof(MobileTexts.BreadcrumbMyFolders))]
-    [TestCase(WorkFolderIntent.Encrypt, nameof(MobileTexts.BreadcrumbEncrypt))]
-    [TestCase(WorkFolderIntent.Decrypt, nameof(MobileTexts.BreadcrumbDecrypt))]
     [TestCase(WorkFolderIntent.Delete, nameof(MobileTexts.BreadcrumbWipe))]
     public void MyFoldersIsNamedForTheOperationItWasOpenedFor(WorkFolderIntent intent, string pageTextName)
     {
@@ -88,8 +86,6 @@ public sealed class BreadcrumbTests
         string pageText = pageTextName switch
         {
             nameof(MobileTexts.BreadcrumbMyFolders) => MobileTexts.BreadcrumbMyFolders,
-            nameof(MobileTexts.BreadcrumbEncrypt) => MobileTexts.BreadcrumbEncrypt,
-            nameof(MobileTexts.BreadcrumbDecrypt) => MobileTexts.BreadcrumbDecrypt,
             nameof(MobileTexts.BreadcrumbWipe) => MobileTexts.BreadcrumbWipe,
             _ => throw new ArgumentOutOfRangeException(nameof(pageTextName), pageTextName, @"Unexpected page text."),
         };

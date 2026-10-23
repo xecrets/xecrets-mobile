@@ -406,6 +406,9 @@
          implicit ImageButton style, which would otherwise win over HeightRequest. -->
     <x:Double x:Key="ActionButtonHeight">40</x:Double>
 
+    <!-- The minimum height of an action button with a description below the title. -->
+    <x:Double x:Key="TwoLineActionButtonHeight">60</x:Double>
+
     <Style x:Key="ActionRowIconButtonStyle"
            TargetType="ImageButton">
         <Setter Property="Background" Value="Transparent" />

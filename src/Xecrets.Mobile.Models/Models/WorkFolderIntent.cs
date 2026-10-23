@@ -39,7 +39,5 @@ public enum WorkFolderIntent
     /// The file is decrypted if it is encrypted, and encrypted otherwise.
     /// </summary>
     Auto,
-    Encrypt,
-    Decrypt,
     Delete,
 }
