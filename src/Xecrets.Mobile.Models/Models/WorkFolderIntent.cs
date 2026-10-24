@@ -40,4 +40,15 @@ public enum WorkFolderIntent
     /// </summary>
     Auto,
     Delete,
+
+    /// <summary>
+    /// A copy of the file is decrypted to a preview if it is encrypted, and encrypted otherwise. The file is not
+    /// changed.
+    /// </summary>
+    Copy,
+
+    /// <summary>
+    /// A copy of the file is encrypted with a new password, to share it. The file is not changed.
+    /// </summary>
+    Share,
 }

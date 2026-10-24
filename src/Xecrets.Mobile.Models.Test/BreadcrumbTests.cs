@@ -76,6 +76,8 @@ public sealed class BreadcrumbTests
 
     [TestCase(WorkFolderIntent.Auto, nameof(MobileTexts.BreadcrumbMyFolders))]
     [TestCase(WorkFolderIntent.Delete, nameof(MobileTexts.BreadcrumbWipe))]
+    [TestCase(WorkFolderIntent.Copy, nameof(MobileTexts.BreadcrumbCopy))]
+    [TestCase(WorkFolderIntent.Share, nameof(MobileTexts.BreadcrumbEncryptToShare))]
     public void MyFoldersIsNamedForTheOperationItWasOpenedFor(WorkFolderIntent intent, string pageTextName)
     {
         TestApp app = new();
@@ -87,6 +89,8 @@ public sealed class BreadcrumbTests
         {
             nameof(MobileTexts.BreadcrumbMyFolders) => MobileTexts.BreadcrumbMyFolders,
             nameof(MobileTexts.BreadcrumbWipe) => MobileTexts.BreadcrumbWipe,
+            nameof(MobileTexts.BreadcrumbCopy) => MobileTexts.BreadcrumbCopy,
+            nameof(MobileTexts.BreadcrumbEncryptToShare) => MobileTexts.BreadcrumbEncryptToShare,
             _ => throw new ArgumentOutOfRangeException(nameof(pageTextName), pageTextName, @"Unexpected page text."),
         };
         Assert.That(page.Breadcrumb, Is.EqualTo(string.Join(

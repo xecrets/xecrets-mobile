@@ -45,6 +45,9 @@ public static class MobileTexts
     // BreadcrumbSeparator to form the trail shown at the top of the pages that are shared between
     // the encrypted and decrypt flows.
 
+    // "Encrypt / Decrypt: Copy"
+    public static string BreadcrumbCopy => HomeButtonEncryptDecryptCopy;
+
     // "Edit"
     public static string BreadcrumbEdit => EditContentTitle;
 
@@ -240,9 +243,15 @@ public static class MobileTexts
 
     public static string ViewDescription => "Shows the text or image in the file. Go back to choose something else to do with it.";
 
+    public static string WorkFolderCopyDescription => "Click a folder button to choose a file starting there, or use \"Browse anywhere\" for a file in any other place. The original file is not changed.";
+
     public static string WorkFolderDescription => "Add a folder to allow the app access to it, then click a folder button to encrypt or decrypt a file. Some folders are not supported. Use \"Browse anywhere\" for a file in any other place, and save the result where you choose.";
 
+    public static string WorkFolderIntentCopy => "Choose the file to encrypt or decrypt a copy of.";
+
     public static string WorkFolderIntentDelete => "Choose the file to overwrite and delete.";
+
+    public static string WorkFolderIntentShare => "Choose the file to encrypt a copy of with a new password.";
 
     public static string WorkFoldersContentTitle => "My folders";
 

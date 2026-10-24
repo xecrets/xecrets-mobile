@@ -41,15 +41,20 @@ namespace Xecrets.Mobile.Models.PageModels;
 public partial class EncryptToSharePageModel(
     IProfileService profileService,
     IFileAccess fileAccess,
-    FileOperationWorkflow fileOperationWorkflow,
     IEncryptionPreparationService encryptionPreparationService,
     IFlowContext flowContext,
     ICrashLogService crashLogService,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
 {
-    public string Breadcrumb =>
-        BreadcrumbFormatter.Format(flowContext.Origin, MobileTexts.BreadcrumbEncryptToShare);
+    // The file a copy of is encrypted with the password, chosen on the page before.
+    private FileReference _file = new("", "");
+
+    // The file has been chosen on the page before, which is named for sharing.
+    public string Breadcrumb => BreadcrumbFormatter.Format(
+        flowContext.Origin,
+        MobileTexts.BreadcrumbEncryptToShare,
+        MobileTexts.BreadcrumbPassword);
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SubmitCommand))]
@@ -65,9 +70,11 @@ public partial class EncryptToSharePageModel(
     [NotifyCanExecuteChangedFor(nameof(SubmitCommand))]
     public partial bool IsBusy { get; set; }
 
-    public void Initialize()
+    public void Initialize(FileReference file)
     {
+        _file = file;
         StatusText = string.Empty;
+        OnPropertyChanged(nameof(Breadcrumb));
     }
 
     [RelayCommand(CanExecute = nameof(CanSubmit))]
@@ -79,21 +86,8 @@ public partial class EncryptToSharePageModel(
             StatusText = string.Empty;
 
             string password = Password;
-            FileReference? file = await fileAccess.PickFileAsync(string.Empty, FilePickerKind.Any);
-            if (file is null)
-            {
-                return;
-            }
-
-            if (await fileOperationWorkflow.IsFileOrNameEncryptedAsync(file))
-            {
-                await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextAlreadyEncrypted);
-                return;
-            }
-
-            flowContext.UpdateSource(file);
             EncryptionPreparationResult result = await encryptionPreparationService.EncryptForPasswordAsync(
-                new ReferencedReadableFile(fileAccess, file),
+                new ReferencedReadableFile(fileAccess, _file),
                 password);
             await profileService.RecordExtraPasswordUseAsync(password);
 
@@ -117,4 +111,5 @@ public partial class EncryptToSharePageModel(
     }
 
     private bool CanSubmit()
-        => !IsBusy && Password.Length > 0;}
+        => !IsBusy && Password.Length > 0;
+}

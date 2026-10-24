@@ -299,6 +299,7 @@ public sealed class ElsewhereOperationTests
     {
         TestApp app = new();
         app.AddFile("other/a.txt");
+        app.Access.PickedRoot = RootProvider.AndroidPhone;
         app.Access.PickedFiles.Enqueue("other/a.txt");
         app.UserInterface.Answers.Enqueue(true);
 

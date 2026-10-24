@@ -190,6 +190,12 @@ internal static class Extensions
     };
 
     /// <summary>
+    /// Tells if wiping a file in the root is known to leave nothing to recover. On the device the file is overwritten,
+    /// and iCloud Drive removes all versions of it. Other storage may keep versions or a trash.
+    /// </summary>
+    public static bool IsWipedForGood(this RootProvider root) => root.IsOnDevice() || root == RootProvider.ICloudDrive;
+
+    /// <summary>
     /// Combines a user-facing message with the exception detail, for display as status text.
     /// </summary>
     public static string FormatException(this Exception exception)

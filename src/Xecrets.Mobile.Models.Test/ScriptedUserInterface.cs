@@ -50,6 +50,10 @@ internal sealed class ScriptedUserInterface : IUserInterfaceService
 
     public List<AppDestination> Destinations { get; } = [];
 
+    public List<object> Payloads { get; } = [];
+
+    public int BackCount { get; private set; }
+
     public bool IsShellAvailable => true;
     public bool CanProcessIncomingFiles => true;
     public bool CanReceiveIncomingFiles => true;
@@ -88,9 +92,19 @@ internal sealed class ScriptedUserInterface : IUserInterfaceService
         return Task.CompletedTask;
     }
 
-    public Task NavigateToAsync(AppDestination destination, object parameter) => NavigateToAsync(destination);
+    public Task NavigateToAsync(AppDestination destination, object parameter)
+    {
+        Payloads.Add(parameter);
+        return NavigateToAsync(destination);
+    }
+
     public Task NavigateReplacingAsync(AppDestination destination, object parameter) => NavigateToAsync(destination);
-    public Task GoBackAsync(object? parameter) => throw new NotSupportedException();
+    public Task GoBackAsync(object? parameter)
+    {
+        BackCount++;
+        return Task.CompletedTask;
+    }
+
     public Task OpenBrowserAsync(string url) => throw new NotSupportedException();
     public Task SetClipboardTextAsync(string text) => throw new NotSupportedException();
 }

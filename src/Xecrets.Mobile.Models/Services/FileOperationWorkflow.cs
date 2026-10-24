@@ -49,6 +49,8 @@ public sealed class FileOperationWorkflow(
     ICoreServices coreServices,
     IFileWiper fileWiper,
     IRecentFilesService recentFilesService,
+    IEncryptionPreparationService encryptionPreparationService,
+    ICrashTestService crashTestService,
     ICrashLogService crashLogService,
     IUserInterfaceService userInterfaceService)
 {
@@ -57,16 +59,42 @@ public sealed class FileOperationWorkflow(
 
     /// <summary>
     /// Lets the user pick a file, starting in the folder, or where the platform decides without one, and does what is
-    /// intended with it. Unless it is deleted, the name of the file decides whether it is encrypted or decrypted.
-    /// A file in one of My folders is changed where it is, through the folder. A file in none of them, elsewhere, is
-    /// changed by the access to the file itself, with the result saved where the user chooses.
+    /// intended with it. Unless it is deleted or shared, the name of the file decides whether it is encrypted or
+    /// decrypted. A file in one of My folders is changed where it is, through the folder. A file in none of them,
+    /// elsewhere, is changed by the access to the file itself, with the result saved where the user chooses. A copy is
+    /// made of the file as picked, wherever it is, and the file is not changed.
     /// </summary>
     public async Task PickAndRunAsync(WorkFolderIntent intent, WorkFolder? folder)
     {
+        // Before anything is caught, so that an armed crash is not swallowed.
+        if (intent == WorkFolderIntent.Copy)
+        {
+            crashTestService.CrashIfArmed(CrashTestOperation.Encrypt);
+            crashTestService.CrashIfArmed(CrashTestOperation.Decrypt);
+        }
+
         FileReference? picked = await fileAccess.PickFileAsync(folder?.Id ?? "", FilePickerKind.Any);
         if (picked is null)
         {
             return;
+        }
+
+        switch (intent)
+        {
+            case WorkFolderIntent.Copy:
+                await CopyAsync(picked);
+                return;
+
+            case WorkFolderIntent.Share:
+                await ShareAsync(picked);
+                return;
+
+            case WorkFolderIntent.Auto:
+            case WorkFolderIntent.Delete:
+                break;
+
+            default:
+                throw new ArgumentOutOfRangeException(nameof(intent), intent, @"Unknown work folder intent.");
         }
 
         if (await folderAccess.FindInFoldersAsync(picked) is { } file)
@@ -125,9 +153,64 @@ public sealed class FileOperationWorkflow(
                     isElsewhere);
                 return;
 
+            case WorkFolderIntent.Copy:
+            case WorkFolderIntent.Share:
             default:
                 throw new ArgumentOutOfRangeException(nameof(intent), intent, @"Unknown work folder intent.");
         }
+    }
+
+    /// <summary>
+    /// The name of the file decides whether it is decrypted to a preview, or encrypted to a copy.
+    /// </summary>
+    private async Task CopyAsync(FileReference file)
+    {
+        if (!file.Name.IsEncrypted())
+        {
+            await EncryptCopyAsync(file);
+            return;
+        }
+
+        // The name alone does not make the file encrypted.
+        if (!await IsFileEncryptedAsync(file))
+        {
+            await userInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextNotEncrypted);
+            return;
+        }
+
+        if (!await PreviewAsync(file, FlowOrigin.Home))
+        {
+            await userInterfaceService.DisplayMessageAsync(MobileTexts.DialogTextWrongPasswordOpen);
+        }
+    }
+
+    private async Task EncryptCopyAsync(FileReference file)
+    {
+        if (await IsFileOrNameEncryptedAsync(file))
+        {
+            await userInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextAlreadyEncrypted);
+            return;
+        }
+
+        flowContext.Begin(FlowOrigin.Home, file);
+        EncryptionPreparationResult result = await encryptionPreparationService.EncryptForCurrentProfileAsync(
+            new ReferencedReadableFile(fileAccess, file));
+        await userInterfaceService.NavigateToAsync(AppDestination.EncryptResult, result);
+    }
+
+    /// <summary>
+    /// The user is sent on to enter the password to encrypt a copy of the file with, unless it is encrypted already.
+    /// </summary>
+    private async Task ShareAsync(FileReference file)
+    {
+        if (await IsFileOrNameEncryptedAsync(file))
+        {
+            await userInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextAlreadyEncrypted);
+            return;
+        }
+
+        flowContext.Begin(FlowOrigin.Home, file);
+        await userInterfaceService.NavigateToAsync(AppDestination.EncryptToShare, file);
     }
 
     /// <summary>
@@ -204,7 +287,8 @@ public sealed class FileOperationWorkflow(
     }
 
     /// <summary>
-    /// A file elsewhere is checked before the user is asked. Any failure to wipe it is reported as denied access,
+    /// A file elsewhere is checked before the user is asked. The user is only asked to confirm when the file cannot be
+    /// recovered afterwards, since other storage may still keep it as versions or in a trash. Any failure to wipe it is reported as denied access,
     /// which is what it typically is.
     /// </summary>
     private async Task WipeAsync(FileReference file, bool isElsewhere)
@@ -216,7 +300,8 @@ public sealed class FileOperationWorkflow(
             return;
         }
 
-        if (!await userInterfaceService.DisplayConfirmationAsync(MobileTexts.MessageTextConfirmWipe))
+        if (file.Root.IsWipedForGood() &&
+            !await userInterfaceService.DisplayConfirmationAsync(MobileTexts.MessageTextConfirmWipe))
         {
             return;
         }

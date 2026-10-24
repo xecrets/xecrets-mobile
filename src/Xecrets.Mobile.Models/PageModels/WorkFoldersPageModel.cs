@@ -42,6 +42,7 @@ namespace Xecrets.Mobile.Models.PageModels;
 /// <summary>
 /// My folders, the folders the user has given the app access to. Files are changed where they are by picking them in
 /// one of these, for the operation the page was opened for, or by default to encrypt or decrypt them as they are.
+/// Opened to make a copy, the folders are only where to start looking for the file, which is not changed.
 /// </summary>
 public partial class WorkFoldersPageModel(
     WorkFolderStorage storage,
@@ -65,6 +66,8 @@ public partial class WorkFoldersPageModel(
         {
             WorkFolderIntent.Auto => MobileTexts.BreadcrumbMyFolders,
             WorkFolderIntent.Delete => MobileTexts.BreadcrumbWipe,
+            WorkFolderIntent.Copy => MobileTexts.BreadcrumbCopy,
+            WorkFolderIntent.Share => MobileTexts.BreadcrumbEncryptToShare,
             _ => throw new ArgumentOutOfRangeException(nameof(Intent), Intent, @"Unknown work folder intent."),
         });
 
@@ -72,7 +75,15 @@ public partial class WorkFoldersPageModel(
 
     [ObservableProperty] public partial string StatusText { get; set; } = string.Empty;
 
-    public string Description => MobileTexts.WorkFolderDescription;
+    // Making a copy, the folders are only where to start looking for the file.
+    public string Description => Intent switch
+    {
+        WorkFolderIntent.Auto => MobileTexts.WorkFolderDescription,
+        WorkFolderIntent.Delete => MobileTexts.WorkFolderDescription,
+        WorkFolderIntent.Copy => MobileTexts.WorkFolderCopyDescription,
+        WorkFolderIntent.Share => MobileTexts.WorkFolderCopyDescription,
+        _ => throw new ArgumentOutOfRangeException(nameof(Intent), Intent, @"Unknown work folder intent."),
+    };
 
     /// <summary>
     /// The description, shown on the page itself while there are no folders, to make it easier to find.
@@ -96,10 +107,13 @@ public partial class WorkFoldersPageModel(
     {
         Intent = intent;
         OnPropertyChanged(nameof(Breadcrumb));
+        OnPropertyChanged(nameof(Description));
         _pendingIntentHint = intent switch
         {
             WorkFolderIntent.Auto => string.Empty,
             WorkFolderIntent.Delete => MobileTexts.WorkFolderIntentDelete,
+            WorkFolderIntent.Copy => MobileTexts.WorkFolderIntentCopy,
+            WorkFolderIntent.Share => MobileTexts.WorkFolderIntentShare,
             _ => throw new ArgumentOutOfRangeException(nameof(intent), intent, @"Unknown work folder intent."),
         };
     }
@@ -175,7 +189,7 @@ public partial class WorkFoldersPageModel(
 
     /// <summary>
     /// Lets the user pick a file anywhere, which is changed through one of My folders if it is in one, and otherwise
-    /// replaced by a result saved where the user chooses.
+    /// replaced by a result saved where the user chooses. A copy is made of the file wherever it is.
     /// </summary>
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private Task BrowseAsync() => RunBusyAsync(null);

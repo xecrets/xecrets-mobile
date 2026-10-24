@@ -46,6 +46,7 @@ public sealed class FileOperationWorkflowTests
         WorkFolder docs = app.AddFolder("docs");
         app.AddFile("docs/a.txt");
         app.AddRecent("docs/a.txt", RecentFileOperation.InPlace);
+        app.Access.PickedRoot = RootProvider.AndroidPhone;
         app.Access.PickedFiles.Enqueue("docs/a.txt");
         app.UserInterface.Answers.Enqueue(true);
 
@@ -78,11 +79,48 @@ public sealed class FileOperationWorkflowTests
         TestApp app = new();
         WorkFolder docs = app.AddFolder("docs");
         app.AddFile("docs/a.txt");
+        app.Access.PickedRoot = RootProvider.AndroidPhone;
         app.Access.PickedFiles.Enqueue("docs/a.txt");
 
         await app.Operations.PickAndRunAsync(WorkFolderIntent.Delete, docs);
 
         Assert.That(app.Access.Files.Keys, Is.EquivalentTo(["docs/a.txt"]));
+    }
+
+    [TestCase(RootProvider.AndroidPhone)]
+    [TestCase(RootProvider.ICloudDrive)]
+    public async Task SecureDeleteIsConfirmedWhereTheFileCannotBeRecovered(RootProvider root)
+    {
+        TestApp app = new();
+        WorkFolder docs = app.AddFolder("docs");
+        app.AddFile("docs/a.txt");
+        app.Access.PickedRoot = root;
+        app.Access.PickedFiles.Enqueue("docs/a.txt");
+        app.UserInterface.Answers.Enqueue(true);
+
+        await app.Operations.PickAndRunAsync(WorkFolderIntent.Delete, docs);
+
+        Assert.That(app.UserInterface.Confirmations, Is.EqualTo([MobileTexts.MessageTextConfirmWipe]));
+        Assert.That(app.Access.Files, Is.Empty);
+    }
+
+    [TestCase(RootProvider.Unknown)]
+    [TestCase(RootProvider.GoogleDrive)]
+    [TestCase(RootProvider.OneDrive)]
+    [TestCase(RootProvider.Dropbox)]
+    [TestCase(RootProvider.RemovableStorage)]
+    public async Task SecureDeleteIsNotConfirmedWhereTheFileMayBeRecovered(RootProvider root)
+    {
+        TestApp app = new();
+        WorkFolder docs = app.AddFolder("docs");
+        app.AddFile("docs/a.txt");
+        app.Access.PickedRoot = root;
+        app.Access.PickedFiles.Enqueue("docs/a.txt");
+
+        await app.Operations.PickAndRunAsync(WorkFolderIntent.Delete, docs);
+
+        Assert.That(app.UserInterface.Confirmations, Is.Empty);
+        Assert.That(app.Access.Files, Is.Empty);
     }
 
     [Test]

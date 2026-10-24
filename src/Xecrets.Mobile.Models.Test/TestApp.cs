@@ -52,10 +52,11 @@ internal sealed class TestApp
         FolderAccess = new FolderAccessWorkflow(Access, Storage, UserInterface);
         Wiper = new FakeFileWiper(Access);
         FakeProfileService profile = new();
+        Encryption = new EncryptionPreparationService(new EncryptRequestFactory(profile), Transient, Core);
         OperationService = new WorkFolderOperationService(
             Core,
             profile,
-            new EncryptionPreparationService(new EncryptRequestFactory(profile), Transient, Core),
+            Encryption,
             Transient,
             Recent,
             Access,
@@ -71,6 +72,8 @@ internal sealed class TestApp
             Core,
             Wiper,
             Recent,
+            Encryption,
+            new FakeCrashTestService(),
             CrashLog,
             UserInterface);
         EditSave = new EditSaveService(
@@ -115,6 +118,8 @@ internal sealed class TestApp
     public FolderAccessWorkflow FolderAccess { get; }
 
     public WorkFolderOperationService OperationService { get; }
+
+    public EncryptionPreparationService Encryption { get; }
 
     public FileOperationWorkflow Operations { get; }
 

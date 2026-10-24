@@ -166,6 +166,11 @@
                 FontFamily="{x:Static f:FluentUI.FontFamily}"
                 Color="{StaticResource White}"
                 Size="{StaticResource size240}" />
+    <FontImageSource x:Key="IconMyFolderButton"
+                Glyph="{x:Static f:FluentUI.folder_link_24_regular}"
+                FontFamily="{x:Static f:FluentUI.FontFamily}"
+                Color="{StaticResource White}"
+                Size="{StaticResource size240}" />
     <FontImageSource x:Key="IconRecentFilesButton"
                 Glyph="{x:Static f:FluentUI.history_24_regular}"
                 FontFamily="{x:Static f:FluentUI.FontFamily}"

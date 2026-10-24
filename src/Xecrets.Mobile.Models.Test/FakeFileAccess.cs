@@ -58,6 +58,9 @@ internal sealed class FakeFileAccess(WorkFolderStorage storage) : IFileAccess
     // The paths the user picks in turn, null for canceling.
     public Queue<string?> PickedFiles { get; } = new();
 
+    // Where the picked files are told to be stored.
+    public RootProvider PickedRoot { get; set; } = RootProvider.Unknown;
+
     public Queue<WorkFolderResult> PickedFolders { get; } = new();
 
     public List<string> FilePickerStarts { get; } = [];
@@ -84,7 +87,7 @@ internal sealed class FakeFileAccess(WorkFolderStorage storage) : IFileAccess
     {
         FilePickerStarts.Add(initialFolder);
         string? path = PickedFiles.Dequeue();
-        return Task.FromResult(path is null ? null : new FileReference(path, NameOf(path)));
+        return Task.FromResult(path is null ? null : new FileReference(path, NameOf(path)) { Root = PickedRoot });
     }
 
     public Task<WorkFolderResult> PickFolderAsync(string initialFolder)

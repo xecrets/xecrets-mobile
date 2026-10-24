@@ -105,7 +105,7 @@
                                         <pageControls:ActionButton Grid.Column="1"
                                                                VerticalOptions="Center"
                                                                Title="{Binding ListDisplayName}"
-                                                               Icon="{StaticResource IconOpenFolderButton}"
+                                                               Icon="{StaticResource IconMyFolderButton}"
                                                                Command="{Binding OpenCommand}"
                                                                CommandParameter="{Binding Folder}" />
                                         <ImageButton Grid.Column="2"

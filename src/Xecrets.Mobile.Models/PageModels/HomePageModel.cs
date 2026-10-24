@@ -34,19 +34,12 @@ using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
 using Xecrets.Mobile.Models.Utilities;
-using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
 public partial class HomePageModel(
     IProfileService profileService,
-    IFileAccess fileAccess,
-    FileOperationWorkflow fileOperationWorkflow,
-    IEncryptionPreparationService encryptionPreparationService,
-    ICrashTestService crashTestService,
     SessionExitService sessionExitService,
-    IFlowContext flowContext,
-    ICrashLogService crashLogService,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
 {
@@ -79,88 +72,16 @@ public partial class HomePageModel(
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private Task Wipe() => UserInterfaceService.NavigateToAsync(AppDestination.WorkFolders, WorkFolderIntent.Delete);
 
-    // The name of the picked file decides whether it is decrypted to a preview, or encrypted to a copy.
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private async Task InApp()
-    {
-        flowContext.Begin(FlowOrigin.Home);
-
-        // Before anything is caught, so that an armed crash is not swallowed.
-        crashTestService.CrashIfArmed(CrashTestOperation.Encrypt);
-        crashTestService.CrashIfArmed(CrashTestOperation.Decrypt);
-        try
-        {
-            IsBusy = true;
-            StatusText = string.Empty;
-            FileReference? file = await fileAccess.PickFileAsync(string.Empty, FilePickerKind.Any);
-            if (file is null)
-            {
-                return;
-            }
-
-            if (file.Name.IsEncrypted())
-            {
-                await DecryptInAppAsync(file);
-            }
-            else
-            {
-                await EncryptInAppAsync(file);
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            StatusText = string.Empty;
-        }
-        catch (Exception ex)
-        {
-            crashLogService.WriteSwallowedException(ex);
-            StatusText = ex.FormatException();
-        }
-        finally
-        {
-            IsBusy = false;
-        }
-    }
+    private Task InApp() => UserInterfaceService.NavigateToAsync(AppDestination.WorkFolders, WorkFolderIntent.Copy);
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private async Task EncryptToShare()
-    {
-        flowContext.Begin(FlowOrigin.Home);
-        await UserInterfaceService.NavigateToAsync(AppDestination.EncryptToShare);
-    }
+    private Task EncryptToShare() =>
+        UserInterfaceService.NavigateToAsync(AppDestination.WorkFolders, WorkFolderIntent.Share);
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private Task SignOut() => sessionExitService.ExitAsync();
 
     private bool CanUseCommand()
         => !IsBusy;
-
-    private async Task EncryptInAppAsync(FileReference file)
-    {
-        if (await fileOperationWorkflow.IsFileOrNameEncryptedAsync(file))
-        {
-            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextAlreadyEncrypted);
-            return;
-        }
-
-        flowContext.UpdateSource(file);
-        EncryptionPreparationResult result = await encryptionPreparationService.EncryptForCurrentProfileAsync(
-            new ReferencedReadableFile(fileAccess, file));
-        await UserInterfaceService.NavigateToAsync(AppDestination.EncryptResult, result);
-    }
-
-    private async Task DecryptInAppAsync(FileReference file)
-    {
-        // The name alone does not make the file encrypted.
-        if (!await fileOperationWorkflow.IsFileEncryptedAsync(file))
-        {
-            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextNotEncrypted);
-            return;
-        }
-
-        if (!await fileOperationWorkflow.PreviewAsync(file, FlowOrigin.Home))
-        {
-            StatusText = MobileTexts.DialogTextWrongPasswordOpen;
-        }
-    }
 }

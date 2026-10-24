@@ -28,13 +28,18 @@
 
 #endregion Copyright and GPL License
 
+using System.Collections.Generic;
+
+using Microsoft.Maui.Controls;
+
 using Xecrets.Mobile.Abstractions;
+using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.PageModels;
 using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
-internal partial class EncryptToSharePage
+internal partial class EncryptToSharePage : IQueryAttributable
 {
     public EncryptToSharePage(
         EncryptToSharePageModel model,
@@ -47,10 +52,10 @@ internal partial class EncryptToSharePage
         pageHeaderService.ApplyStandardHeader(this);
     }
 
-    protected override void OnAppearing()
+    public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
-        base.OnAppearing();
-        ((EncryptToSharePageModel)BindingContext).Initialize();
+        ((EncryptToSharePageModel)BindingContext).Initialize(
+            (FileReference)query[nameof(NavigationParameter.Payload)]);
     }
 
     protected override void OnSizeAllocated(double width, double height)
