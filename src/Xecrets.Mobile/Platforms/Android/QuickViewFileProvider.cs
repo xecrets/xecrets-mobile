@@ -29,15 +29,23 @@
 #endregion Copyright and GPL License
 
 using System;
+using System.Collections.Concurrent;
+using System.IO;
 using System.Linq;
 using System.Runtime.Versioning;
+using System.Text;
+using System.Threading.Tasks;
 
 using Android.App;
 using Android.Content;
+using Android.Content.Res;
 using Android.Database;
+using Android.OS;
 using Android.Provider;
 
 using AndroidX.Core.Content;
+
+using Microsoft.Win32.SafeHandles;
 
 using AndroidUri = Android.Net.Uri;
 
@@ -66,6 +74,87 @@ public class QuickViewFileProvider : FileProvider
         DocumentsContract.Document.ColumnFlags,
     ];
 
+    // Query and OpenAssetFile both need the UTF-8 size, and may be called on different binder threads.
+    private readonly ConcurrentDictionary<string, (DateTime LastWriteTimeUtc, long Size)> _utf8Sizes = new();
+
+    /// <summary>
+    /// Viewers ignore a charset parameter, so text in UTF-16 or UTF-32 is converted to UTF-8 as it is read, through a
+    /// pipe rather than a converted copy. Other files are opened as is. A pipe has no size of its own, and viewers such
+    /// as Google Drive's fail without one, so the size is declared.
+    /// </summary>
+    public override AssetFileDescriptor? OpenAssetFile(AndroidUri uri, string mode)
+    {
+        if (mode != "r" || GetSourceEncoding(uri) is not Encoding encoding)
+        {
+            return base.OpenAssetFile(uri, mode);
+        }
+
+        long size = GetUtf8Size(uri, encoding);
+        ParcelFileDescriptor[] pipe = ParcelFileDescriptor.CreatePipe()!;
+        _ = Task.Run(() => WriteUtf8(uri, encoding, pipe[1]));
+        return new AssetFileDescriptor(pipe[0], 0, size);
+    }
+
+    // The encoding to convert from, or null if the file is not text, or already UTF-8 or of an unknown charset.
+    private Encoding? GetSourceEncoding(AndroidUri uri)
+    {
+        if (!base.GetType(uri)!.StartsWith("text/", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        using StreamReader reader = new(OpenSource(uri), Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+        reader.Peek();
+        return reader.CurrentEncoding is UTF8Encoding ? null : reader.CurrentEncoding;
+    }
+
+    private FileStream OpenSource(AndroidUri uri) =>
+        new(new SafeFileHandle(base.OpenFile(uri, "r")!.DetachFd(), ownsHandle: true), FileAccess.Read);
+
+    // The UTF-8 stream starts with a BOM too, converted from the source's BOM, which tells the viewer the charset.
+    private static Stream OpenUtf8(Stream source, Encoding encoding) =>
+        Encoding.CreateTranscodingStream(source, encoding, Encoding.UTF8);
+
+    private void WriteUtf8(AndroidUri uri, Encoding encoding, ParcelFileDescriptor sink)
+    {
+        try
+        {
+            using Stream utf8 = OpenUtf8(OpenSource(uri), encoding);
+            using FileStream output = new(new SafeFileHandle(sink.DetachFd(), ownsHandle: true), FileAccess.Write);
+            utf8.CopyTo(output);
+        }
+        catch (IOException ex)
+        {
+            // The viewer may close its end before reading everything.
+            MauiProgram.CrashLog.WriteSwallowedException(ex);
+        }
+    }
+
+    // Only the app writes the files, so an unchanged last write time means an unchanged size.
+    private long GetUtf8Size(AndroidUri uri, Encoding encoding)
+    {
+        using FileStream source = OpenSource(uri);
+        DateTime lastWriteTimeUtc = File.GetLastWriteTimeUtc(source.SafeFileHandle);
+        string key = uri.ToString()!;
+        if (_utf8Sizes.TryGetValue(key, out (DateTime LastWriteTimeUtc, long Size) cached) &&
+            cached.LastWriteTimeUtc == lastWriteTimeUtc)
+        {
+            return cached.Size;
+        }
+
+        using Stream utf8 = OpenUtf8(source, encoding);
+        byte[] buffer = new byte[81920];
+        long size = 0;
+        int bytesRead;
+        while ((bytesRead = utf8.Read(buffer)) > 0)
+        {
+            size += bytesRead;
+        }
+
+        _utf8Sizes[key] = (lastWriteTimeUtc, size);
+        return size;
+    }
+
     public override ICursor Query(
         AndroidUri? uri,
         string[]? projection,
@@ -90,6 +179,12 @@ public class QuickViewFileProvider : FileProvider
             size = fileCursor.GetLong(1);
 
             fileCursor.Close(); // Dispose does not call Java close()
+        }
+
+        // The size of what OpenAssetFile returns.
+        if (GetSourceEncoding(uri!) is Encoding encoding)
+        {
+            size = GetUtf8Size(uri!, encoding);
         }
 
         // Flags stay 0: SUPPORTS_WRITE and SUPPORTS_DELETE would enable more actions in Drive's viewer.
