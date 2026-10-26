@@ -28,6 +28,11 @@
 
 #endregion Copyright and GPL License
 
+using Android.Content;
+using Android.Provider;
+
+using Microsoft.Maui.Devices;
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -36,13 +41,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using Android.Content;
-using Android.Provider;
-
-using Microsoft.Maui.ApplicationModel;
-using Microsoft.Maui.Devices;
-
 using Xecrets.Common.Models;
+using Xecrets.Core.Public;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
@@ -50,6 +50,7 @@ using Xecrets.Mobile.Models.Utilities;
 using Xecrets.Texts;
 
 using AndroidUri = Android.Net.Uri;
+using Platform = Microsoft.Maui.ApplicationModel.Platform;
 
 namespace Xecrets.Mobile.Platforms.Android;
 
@@ -505,7 +506,7 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
     private static string GetCreateDocumentType(string fileName) =>
         fileName.IsEncrypted()
             ? "application/octet-stream"
-            : ContentTypeDetector.DetectContentType(fileName).OrAndroidContentType(fileName);
+            : FileTypeClassifier.DetectContentType(fileName).OrAndroidContentType(fileName);
 
     private static Task<Intent?> StartPickerAsync(Intent intent) =>
         ((MainActivity)Platform.CurrentActivity!).StartDocumentPickerAsync(intent);

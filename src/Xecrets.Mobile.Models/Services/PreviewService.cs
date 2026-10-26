@@ -166,7 +166,7 @@ internal sealed class PreviewService(
 
         TryMakeReadOnly(decryptedPath);
 
-        DecryptedFileInfo file = ContentTypeDetector.CreateInfo(decryptedPath, session.OriginalFileName);
+        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(decryptedPath, session.OriginalFileName);
         if (file.Kind == PreviewKind.Image)
         {
             previewState.SetImage(file);

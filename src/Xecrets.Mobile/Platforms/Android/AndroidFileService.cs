@@ -36,6 +36,7 @@ using Android.Content;
 
 using AndroidX.Core.Content;
 
+using Xecrets.Core.Public;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
 using Xecrets.Mobile.Services;
@@ -143,7 +144,7 @@ internal class AndroidFileService : FileServiceBase
         EnsureReadableFile(filePath);
 
         string resolvedContentType = (string.IsNullOrWhiteSpace(contentType)
-            ? ContentTypeDetector.DetectContentType(displayName)
+            ? FileTypeClassifier.DetectContentType(displayName)
             : contentType).OrAndroidContentType(displayName);
         AndroidUri uri = FileProvider.GetUriForFile(
             Platform.AppContext,

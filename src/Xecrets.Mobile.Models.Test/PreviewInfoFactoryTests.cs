@@ -38,7 +38,7 @@ using Xecrets.Mobile.Models.Services;
 namespace Xecrets.Mobile.Models.Test;
 
 [TestFixture]
-public sealed class ContentTypeDetectorTests
+public sealed class PreviewInfoFactoryTests
 {
     private string _directory = null!;
 
@@ -67,7 +67,7 @@ public sealed class ContentTypeDetectorTests
         string filePath = Path.Combine(_directory, "document.pdf");
         File.WriteAllText(filePath, "%PDF-1.4\n1 0 obj << /Type /Catalog >>\nendobj\n", Encoding.ASCII);
 
-        DecryptedFileInfo file = ContentTypeDetector.CreateInfo(filePath, "document.pdf");
+        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(filePath, "document.pdf");
 
         Assert.That(file.ContentType, Is.EqualTo("application/pdf"));
         Assert.That(file.Kind, Is.EqualTo(PreviewKind.External));
@@ -81,7 +81,7 @@ public sealed class ContentTypeDetectorTests
         string filePath = Path.Combine(_directory, "notes.xyz");
         File.WriteAllText(filePath, "Just some plain text notes.", Encoding.ASCII);
 
-        DecryptedFileInfo file = ContentTypeDetector.CreateInfo(filePath, "notes.xyz");
+        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(filePath, "notes.xyz");
 
         Assert.That(file.ContentType, Is.EqualTo("text/plain"));
         Assert.That(file.Kind, Is.EqualTo(PreviewKind.Text));
@@ -93,7 +93,7 @@ public sealed class ContentTypeDetectorTests
         string filePath = Path.Combine(_directory, "blob.xyz");
         File.WriteAllBytes(filePath, [0x00, 0x01, 0x02, 0xFF, 0xFE, 0xFD]);
 
-        DecryptedFileInfo file = ContentTypeDetector.CreateInfo(filePath, "blob.xyz");
+        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(filePath, "blob.xyz");
 
         Assert.That(file.ContentType, Is.EqualTo("application/octet-stream"));
         Assert.That(file.Kind, Is.EqualTo(PreviewKind.External));
@@ -107,9 +107,9 @@ public sealed class ContentTypeDetectorTests
         // not size) leave it alone. Nothing is truncated: the whole file is decrypted to disk as usual, Open In and
         // Save As are unaffected.
         string filePath = Path.Combine(_directory, "large.txt");
-        File.WriteAllText(filePath, new string('a', (int)ContentTypeDetector.MaxInlineTextSizeBytes + 1), Encoding.ASCII);
+        File.WriteAllText(filePath, new string('a', (int)PreviewInfoFactory.MaxInlineTextSizeBytes + 1), Encoding.ASCII);
 
-        DecryptedFileInfo file = ContentTypeDetector.CreateInfo(filePath, "large.txt");
+        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(filePath, "large.txt");
 
         Assert.That(file.ContentType, Is.EqualTo("text/plain"));
         Assert.That(file.Kind, Is.EqualTo(PreviewKind.External));
@@ -119,39 +119,12 @@ public sealed class ContentTypeDetectorTests
     public void TextFileAtOrUnderTheSizeCapStaysText()
     {
         string filePath = Path.Combine(_directory, "small.txt");
-        File.WriteAllText(filePath, new string('a', (int)ContentTypeDetector.MaxInlineTextSizeBytes), Encoding.ASCII);
+        File.WriteAllText(filePath, new string('a', (int)PreviewInfoFactory.MaxInlineTextSizeBytes), Encoding.ASCII);
 
-        DecryptedFileInfo file = ContentTypeDetector.CreateInfo(filePath, "small.txt");
+        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(filePath, "small.txt");
 
         Assert.That(file.ContentType, Is.EqualTo("text/plain"));
         Assert.That(file.Kind, Is.EqualTo(PreviewKind.Text));
-    }
-
-    [TestCase("report.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")]
-    [TestCase("report.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")]
-    [TestCase("report.pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation")]
-    [TestCase("report.doc", "application/msword")]
-    [TestCase("report.xls", "application/vnd.ms-excel")]
-    [TestCase("report.ppt", "application/vnd.ms-powerpoint")]
-    [TestCase("report.odt", "application/vnd.oasis.opendocument.text")]
-    public void OfficeAndOpenDocumentExtensionsMapToTheirOwnContentType(string fileName, string expectedContentType)
-    {
-        Assert.That(ContentTypeDetector.DetectContentType(fileName), Is.EqualTo(expectedContentType));
-    }
-
-    [TestCase("clip.mp4", "video/mp4")]
-    [TestCase("clip.MOV", "video/quicktime")]
-    [TestCase("clip.webm", "video/webm")]
-    [TestCase("song.mp3", "audio/mpeg")]
-    [TestCase("song.m4a", "audio/mp4")]
-    [TestCase("song.flac", "audio/flac")]
-    [TestCase("photo.heic", "image/heic")]
-    [TestCase("photo.HEIF", "image/heif")]
-    [TestCase("photo.avif", "image/avif")]
-    [TestCase("photo.jfif", "image/jpeg")]
-    public void MediaExtensionsMapToTheirOwnContentType(string fileName, string expectedContentType)
-    {
-        Assert.That(ContentTypeDetector.DetectContentType(fileName), Is.EqualTo(expectedContentType));
     }
 
     [Test]
@@ -163,7 +136,7 @@ public sealed class ContentTypeDetectorTests
         string filePath = Path.Combine(_directory, "report.docx");
         File.WriteAllBytes(filePath, [0x50, 0x4B, 0x03, 0x04, 0x00, 0x00, 0x00, 0x00]);
 
-        DecryptedFileInfo file = ContentTypeDetector.CreateInfo(filePath, "report.docx");
+        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(filePath, "report.docx");
 
         Assert.That(file.ContentType, Is.EqualTo("application/vnd.openxmlformats-officedocument.wordprocessingml.document"));
         Assert.That(file.Kind, Is.EqualTo(PreviewKind.External));

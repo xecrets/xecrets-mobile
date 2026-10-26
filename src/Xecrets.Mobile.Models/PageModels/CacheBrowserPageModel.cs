@@ -33,6 +33,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
+using Xecrets.Core.Public;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
@@ -176,7 +177,7 @@ public partial class CacheBrowserPageModel : PageModelBase
             await _fileService.ViewFileAsync(new DecryptedFileInfo(
                 entry.FilePath,
                 entry.DisplayName,
-                ContentTypeDetector.DetectContentType(entry.DisplayName),
+                FileTypeClassifier.DetectContentType(entry.DisplayName),
                 entry.Size,
                 PreviewKind.External));
         }

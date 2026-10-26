@@ -36,6 +36,7 @@ using Foundation;
 
 using Microsoft.Extensions.DependencyInjection;
 
+using Xecrets.Core.Public;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
@@ -96,7 +97,7 @@ internal static class AppleIncomingFileHandler
             }
 
             string displayName = Path.GetFileName(sourcePath);
-            string contentType = ContentTypeDetector.DetectContentType(displayName);
+            string contentType = FileTypeClassifier.DetectContentType(displayName);
             await incomingFileService.ReceiveAsync(
                 new PathIncomingFileSource(sourcePath, displayName, contentType, transientFileStore));
         }

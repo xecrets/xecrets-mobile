@@ -43,6 +43,7 @@ using Android.OS;
 using Android.Provider;
 using Android.Webkit;
 
+using Xecrets.Core.Public;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Services;
 
@@ -108,9 +109,9 @@ internal static class AndroidExtensions
         contentType.StartsWith("video/", StringComparison.OrdinalIgnoreCase) ||
         contentType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase);
 
-        // Android's own table knows extensions that ContentTypeDetector does not, as file managers do.
+        // Android's own table knows extensions that FileTypeClassifier does not, as file managers do.
         public string OrAndroidContentType(string fileName) =>
-            contentType == ContentTypeDetector.UnknownContentType
+            contentType == FileTypeClassifier.UnknownContentType
                 ? MimeTypeMap.Singleton!.GetMimeTypeFromExtension(Path.GetExtension(fileName).TrimStart('.').ToLowerInvariant()) ?? contentType
                 : contentType;
     }
