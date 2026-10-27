@@ -79,8 +79,13 @@
                             <Label Text="{Binding MetadataText}"
                                    Style="{StaticResource ExtraFileInfo}" />
                         </VerticalStackLayout>
-                        <Editor Grid.Row="1"
-                                Text="{Binding Text, Mode=TwoWay}" />
+                        <!-- The scroll view scrolls the text, since the editor's own scrolling does not fling. -->
+                        <ScrollView Grid.Row="1"
+                                    BackgroundColor="{AppThemeBinding Light={StaticResource LightSecondaryBackground}, Dark={StaticResource DarkSecondaryBackground}}">
+                            <Editor Text="{Binding Text, Mode=TwoWay}"
+                                    AutoSize="TextChanges"
+                                    BackgroundColor="Transparent" />
+                        </ScrollView>
                         <controls:PageMessages Grid.Row="2"
                                                MessageText="{Binding MessageText}"
                                                StatusText="{Binding StatusText}" />
