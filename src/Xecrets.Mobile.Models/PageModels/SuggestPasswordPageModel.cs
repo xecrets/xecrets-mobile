@@ -82,7 +82,7 @@ public partial class SuggestPasswordPageModel(
             _ => throw new InvalidOperationException($"Unknown command parameter '{cp}'.")
         };
 
-        return UserInterfaceService.SetClipboardTextAsync(pw);
+        return UserInterfaceService.SetSensitiveClipboardTextAsync(pw, confirm: true);
     }
 
     [RelayCommand]

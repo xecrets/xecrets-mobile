@@ -32,8 +32,6 @@ using System.Threading.Tasks;
 
 using CommunityToolkit.Mvvm.Input;
 
-using Microsoft.Maui.ApplicationModel.DataTransfer;
-
 using Xecrets.Mobile.Abstractions;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.PageModels;
@@ -76,7 +74,8 @@ internal partial class CrashPage
         _initialized = true;
         string report = _crashLogService.ReadCurrent();
         CrashReportEditor.Text = report;
-        await Clipboard.Default.SetTextAsync(report);
+        // The page itself tells the user that the report was copied.
+        await _userInterfaceService.SetSensitiveClipboardTextAsync(report, confirm: false);
     }
 
     [RelayCommand]

@@ -31,18 +31,24 @@
 using System;
 using System.Threading.Tasks;
 
-using Microsoft.Maui.ApplicationModel.DataTransfer;
-
 using Xecrets.Mobile.Models.Abstractions;
+using Xecrets.Mobile.Models.Utilities;
 using Xecrets.Mobile.Services;
+
+using Platform = Microsoft.Maui.ApplicationModel.Platform;
 
 namespace Xecrets.Mobile.Platforms.Android;
 
 internal class AndroidUserInterfaceService(IBuildInformation buildInformation) : DefaultUserInterfaceService(buildInformation)
 {
-    // Android 13 (API 33) and later show their own confirmation of what was copied.
-    public override Task SetClipboardTextAsync(string text) =>
-        OperatingSystem.IsAndroidVersionAtLeast(33)
-            ? Clipboard.Default.SetTextAsync(text)
-            : base.SetClipboardTextAsync(text);
+    public override async Task SetSensitiveClipboardTextAsync(string text, bool confirm)
+    {
+        Platform.AppContext.CopySensitiveText(text);
+
+        // Android 13 (API 33) and later show their own confirmation of what was copied.
+        if (confirm && !OperatingSystem.IsAndroidVersionAtLeast(33))
+        {
+            await DisplayTransientMessageAsync(MobileTexts.DialogTextCopiedToClipboard);
+        }
+    }
 }

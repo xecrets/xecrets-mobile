@@ -77,5 +77,9 @@ public interface IUserInterfaceService
 
     Task OpenBrowserAsync(string url);
 
-    Task SetClipboardTextAsync(string text);
+    /// <summary>
+    /// Copies text, such as a password or a crash report, to the clipboard, marked as sensitive where the platform
+    /// supports it. With <paramref name="confirm"/>, the user is told it was copied, unless the platform does so.
+    /// </summary>
+    Task SetSensitiveClipboardTextAsync(string text, bool confirm);
 }

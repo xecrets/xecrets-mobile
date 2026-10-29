@@ -185,10 +185,13 @@ internal class DefaultUserInterfaceService(IBuildInformation buildInformation) :
     public Task OpenBrowserAsync(string url) => Launcher.Default.OpenAsync(
         url.ToSite(buildInformation.IsDebug || buildInformation.IsBeta));
 
-    public virtual async Task SetClipboardTextAsync(string text)
+    public virtual async Task SetSensitiveClipboardTextAsync(string text, bool confirm)
     {
         await Clipboard.Default.SetTextAsync(text);
-        await DisplayTransientMessageAsync(MobileTexts.DialogTextCopiedToClipboard);
+        if (confirm)
+        {
+            await DisplayTransientMessageAsync(MobileTexts.DialogTextCopiedToClipboard);
+        }
     }
 
     private static Task NavigateToRouteAsync(string route) => Shell.Current.GoToAsync(route);

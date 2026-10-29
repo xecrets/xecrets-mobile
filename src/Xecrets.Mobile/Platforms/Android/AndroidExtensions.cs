@@ -208,6 +208,24 @@ internal static class AndroidExtensions
         }
     }
 
+    extension(Context context)
+    {
+        /// <summary>
+        /// Copies text to the clipboard marked as sensitive, so the system's own confirmation of the copy, on Android
+        /// 13 and later, does not show it.
+        /// </summary>
+        public void CopySensitiveText(string text)
+        {
+            ClipData clip = ClipData.NewPlainText(null, text)!;
+            PersistableBundle extras = new();
+
+            // ClipDescription.ExtraIsSensitive only exists from Android 13, but earlier versions accept the same key.
+            extras.PutBoolean("android.content.extra.IS_SENSITIVE", true);
+            clip.Description!.Extras = extras;
+            ((ClipboardManager)context.GetSystemService(Context.ClipboardService)!).PrimaryClip = clip;
+        }
+    }
+
     extension(Intent quickViewIntent)
     {
         public void StartQuickView()

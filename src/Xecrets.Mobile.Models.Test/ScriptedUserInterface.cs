@@ -106,5 +106,5 @@ internal sealed class ScriptedUserInterface : IUserInterfaceService
     }
 
     public Task OpenBrowserAsync(string url) => throw new NotSupportedException();
-    public Task SetClipboardTextAsync(string text) => throw new NotSupportedException();
+    public Task SetSensitiveClipboardTextAsync(string text, bool confirm) => throw new NotSupportedException();
 }
