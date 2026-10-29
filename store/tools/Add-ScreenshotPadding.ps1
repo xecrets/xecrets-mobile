@@ -79,7 +79,10 @@ if (-not (Test-Path -LiteralPath $OutputDirectory)) {
 function Add-Padding {
     param([string] $SourcePath, [string] $DestinationPath)
 
-    $source = [System.Drawing.Bitmap]::new($SourcePath)
+    # Load via a memory stream: a Bitmap opened from a path keeps the file locked until
+    # disposed, so saving over it (InputPath = OutputDirectory) fails with a GDI+ error.
+    $stream = [System.IO.MemoryStream]::new([System.IO.File]::ReadAllBytes($SourcePath))
+    $source = [System.Drawing.Bitmap]::new($stream)
     try {
         $width = $source.Width
         $height = $source.Height
@@ -87,7 +90,9 @@ function Add-Padding {
 
         if ($targetWidth -le $width) {
             Write-Host "$(Split-Path -Leaf $SourcePath): already at or narrower than 9:16, copied unchanged."
-            Copy-Item -LiteralPath $SourcePath -Destination $DestinationPath -Force
+            if ([System.IO.Path]::GetFullPath($SourcePath) -ne [System.IO.Path]::GetFullPath($DestinationPath)) {
+                Copy-Item -LiteralPath $SourcePath -Destination $DestinationPath -Force
+            }
             return
         }
 
@@ -113,6 +118,7 @@ function Add-Padding {
         Write-Host "$(Split-Path -Leaf $SourcePath): $($width)x$($height) -> $([int]$targetWidth)x$($height)."
     } finally {
         $source.Dispose()
+        $stream.Dispose()
     }
 }
 

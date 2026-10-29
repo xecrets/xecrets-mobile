@@ -23,6 +23,12 @@ is encrypted with the profile password, which is never stored alongside it and n
 leaves the device. The app itself still makes no network connections of its own; the
 backup is performed by the operating system, under the user's platform settings.
 
+## Security Design Decisions
+
+The [security design decisions](docs/security-decisions.md) document accepted risks,
+intended behavior. Check these decisions when assessing the app against general
+security checklists.
+
 ## Reporting a Vulnerability
 
 Please do **not** report security vulnerabilities through public GitHub issues, discussions,
