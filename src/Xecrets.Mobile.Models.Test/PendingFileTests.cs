@@ -399,6 +399,9 @@ public sealed class PendingFileTests
         public PublicKey GetPublicKey() => null!;
         public Task<bool> ShouldShowAsync(DontShowAgain notice) => throw new NotSupportedException();
         public Task SetDontShowAgainAsync(DontShowAgain notice) => throw new NotSupportedException();
+        public Task<TextEditor> GetTextEditorSettingsAsync() => throw new NotSupportedException();
+        public Task SetTextEditorFontSizeAsync(double fontSize) => throw new NotSupportedException();
+        public Task SetTextEditorProportionalFontAsync(bool proportionalFont) => throw new NotSupportedException();
     }
 
     private sealed class TestCoreServices(Exception? decryptionFailure = null) : ICoreServices

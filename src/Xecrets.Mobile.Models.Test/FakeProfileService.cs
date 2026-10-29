@@ -54,4 +54,20 @@ internal sealed class FakeProfileService : IProfileService
     public PublicKey GetPublicKey() => null!;
     public Task<bool> ShouldShowAsync(DontShowAgain notice) => throw new NotSupportedException();
     public Task SetDontShowAgainAsync(DontShowAgain notice) => throw new NotSupportedException();
+
+    public TextEditor TextEditor { get; } = new();
+
+    public Task<TextEditor> GetTextEditorSettingsAsync() => Task.FromResult(TextEditor);
+
+    public Task SetTextEditorFontSizeAsync(double fontSize)
+    {
+        TextEditor.FontSize = fontSize;
+        return Task.CompletedTask;
+    }
+
+    public Task SetTextEditorProportionalFontAsync(bool proportionalFont)
+    {
+        TextEditor.ProportionalFont = proportionalFont;
+        return Task.CompletedTask;
+    }
 }

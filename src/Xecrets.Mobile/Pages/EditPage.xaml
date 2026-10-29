@@ -43,25 +43,30 @@
         </ResourceDictionary>
     </ContentPage.Resources>
     <Grid>
-        <!-- The same layout as the view page. The card fills the page, and only the text scrolls, below the title
-             and the file. -->
+        <!-- The same layout as the view page. The card holds the file and the buttons, with no title since the
+             breadcrumb names the page. The messages below it take no space when there are none, and the text below
+             them spans the full page width, and is all that scrolls. -->
         <Grid RowDefinitions="Auto,*"
-              Padding="{StaticResource ContentTitleLayoutPadding}"
               RowSpacing="{StaticResource LayoutSpacing}">
-            <controls:PageBreadcrumb Text="{Binding Breadcrumb}" />
-            <Border Grid.Row="1"
-                    Style="{StaticResource PageInformationCardStyle}">
-                <Grid RowDefinitions="Auto,*"
-                      RowSpacing="{StaticResource CardTitleSpacing}">
-                    <Grid Grid.Row="0"
-                          ColumnDefinitions="*,Auto">
-                        <Label Text="{x:Static modelUtilities:MobileTexts.EditContentTitle}"
-                               Style="{StaticResource CardTitleStyle}" />
+            <VerticalStackLayout Padding="{StaticResource FullWidthTextHeaderPadding}"
+                                 Spacing="{StaticResource LayoutSpacing}">
+                <controls:PageBreadcrumb Text="{Binding Breadcrumb}" />
+                <Border Style="{StaticResource PageInformationCardStyle}">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout Margin="{StaticResource IconRowBodyLeadingMargin}"
+                                             VerticalOptions="Center">
+                            <Label Text="{Binding FileNameText}"
+                                   Style="{StaticResource FileName}" />
+                            <Label Text="{Binding MetadataText}"
+                                   Style="{StaticResource ExtraFileInfo}" />
+                        </VerticalStackLayout>
                         <HorizontalStackLayout Grid.Column="1"
-                                               VerticalOptions="Center">
+                                               VerticalOptions="Start">
+                            <controls:TextFontButtons BindingContext="{Binding Font}" />
                             <ImageButton VerticalOptions="Center"
                                          Background="Transparent"
-                                         Padding="8"
+                                         MinimumWidthRequest="36"
+                                         Padding="6,8"
                                          Source="{StaticResource IconSave}"
                                          Command="{Binding SaveCommand}" />
                             <controls:PageInformationButton Style="{StaticResource PageInformationButtonCorner}"
@@ -69,29 +74,27 @@
                                                             Message="{x:Static modelUtilities:MobileTexts.EditDescription}" />
                         </HorizontalStackLayout>
                     </Grid>
-                    <Grid Grid.Row="1"
-                          RowDefinitions="Auto,*,Auto"
-                          RowSpacing="{StaticResource LayoutSpacing}"
-                          Padding="{StaticResource PageInformationBodyPadding}">
-                        <VerticalStackLayout>
-                            <Label Text="{Binding FileNameText}"
-                                   Style="{StaticResource FileName}" />
-                            <Label Text="{Binding MetadataText}"
-                                   Style="{StaticResource ExtraFileInfo}" />
-                        </VerticalStackLayout>
-                        <!-- The scroll view scrolls the text, since the editor's own scrolling does not fling. -->
-                        <ScrollView Grid.Row="1"
-                                    BackgroundColor="{AppThemeBinding Light={StaticResource LightSecondaryBackground}, Dark={StaticResource DarkSecondaryBackground}}">
-                            <Editor Text="{Binding Text, Mode=TwoWay}"
-                                    AutoSize="TextChanges"
-                                    BackgroundColor="Transparent" />
-                        </ScrollView>
-                        <controls:PageMessages Grid.Row="2"
-                                               MessageText="{Binding MessageText}"
-                                               StatusText="{Binding StatusText}" />
-                    </Grid>
-                </Grid>
-            </Border>
+                </Border>
+                <controls:PageMessages MessageText="{Binding MessageText}"
+                                       StatusText="{Binding StatusText}" />
+            </VerticalStackLayout>
+            <!-- The scroll view scrolls the text, since the editor's own scrolling does not fling. -->
+            <ScrollView Grid.Row="1"
+                        BackgroundColor="{AppThemeBinding Light={StaticResource LightSecondaryBackground}, Dark={StaticResource DarkSecondaryBackground}}">
+                <Editor Text="{Binding Text, Mode=TwoWay}"
+                        AutoSize="TextChanges"
+                        BackgroundColor="Transparent"
+                        FontSize="{Binding Font.FontSize}">
+                    <Editor.Triggers>
+                        <DataTrigger TargetType="Editor"
+                                     Binding="{Binding Font.IsProportionalFont}"
+                                     Value="False">
+                            <Setter Property="FontFamily"
+                                    Value="{StaticResource MonospaceFontFamily}" />
+                        </DataTrigger>
+                    </Editor.Triggers>
+                </Editor>
+            </ScrollView>
         </Grid>
         <ActivityIndicator IsRunning="{Binding IsBusy}"
                            IsVisible="{Binding IsBusy}"

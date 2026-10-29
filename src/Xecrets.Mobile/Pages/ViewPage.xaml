@@ -32,50 +32,63 @@
              x:Class="Xecrets.Mobile.Pages.ViewPage"
              x:ClassModifier="internal"
              x:DataType="pageModels:ViewPageModel">
-    <!-- The same layout as the edit page. The card fills the page, and only the contents scroll, below the
-         title and the file. -->
+    <!-- The same layout as the edit page. The card holds the file and the buttons, with no title since the
+         breadcrumb names the page. The messages below it take no space when there are none, and the contents below
+         them span the full page width, and are all that scrolls. -->
     <Grid RowDefinitions="Auto,*"
-          Padding="{StaticResource ContentTitleLayoutPadding}"
           RowSpacing="{StaticResource LayoutSpacing}">
-        <controls:PageBreadcrumb Text="{Binding Breadcrumb}" />
-        <Border Grid.Row="1"
-                Style="{StaticResource PageInformationCardStyle}">
-            <Grid RowDefinitions="Auto,*"
-                  RowSpacing="{StaticResource CardTitleSpacing}">
-                <Grid Grid.Row="0"
-                      ColumnDefinitions="*,Auto">
-                    <Label Text="{x:Static modelUtilities:MobileTexts.ViewContentTitle}"
-                           Style="{StaticResource CardTitleStyle}" />
-                    <controls:PageInformationButton Grid.Column="1"
-                                                    Style="{StaticResource PageInformationButtonCorner}"
-                                                    Title="{x:Static modelUtilities:MobileTexts.ViewContentTitle}"
-                                                    Message="{x:Static modelUtilities:MobileTexts.ViewDescription}" />
-                </Grid>
-                <Grid Grid.Row="1"
-                      RowDefinitions="Auto,*"
-                      RowSpacing="{StaticResource LayoutSpacing}"
-                      Padding="{StaticResource PageInformationBodyPadding}">
-                    <VerticalStackLayout>
+        <VerticalStackLayout Padding="{StaticResource FullWidthTextHeaderPadding}"
+                             Spacing="{StaticResource LayoutSpacing}">
+            <controls:PageBreadcrumb Text="{Binding Breadcrumb}" />
+            <Border Style="{StaticResource PageInformationCardStyle}">
+                <Grid ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout Margin="{StaticResource IconRowBodyLeadingMargin}"
+                                         VerticalOptions="Center">
                         <Label Text="{Binding FileNameText}"
                                Style="{StaticResource FileName}" />
                         <Label Text="{Binding MetadataText}"
                                Style="{StaticResource ExtraFileInfo}" />
                     </VerticalStackLayout>
-                    <Image Grid.Row="1"
-                           IsVisible="{Binding IsImageVisible}"
-                           Aspect="AspectFit">
-                        <Image.Source>
-                            <FileImageSource File="{Binding ImageFilePath}" />
-                        </Image.Source>
-                    </Image>
-                    <Editor Grid.Row="1"
-                            Text="{Binding Text, Mode=OneWay}"
-                            IsReadOnly="True"
-                            IsVisible="{Binding IsTextVisible}"
-                            BackgroundColor="Transparent"
-                            FontSize="15" />
+                    <HorizontalStackLayout Grid.Column="1"
+                                           VerticalOptions="Start">
+                        <controls:TextFontButtons BindingContext="{Binding Font}"
+                                                  IsVisible="{Binding IsVisible, Source={x:Reference TextContent}, x:DataType=ScrollView}" />
+                        <controls:PageInformationButton Style="{StaticResource PageInformationButtonCorner}"
+                                                        Title="{x:Static modelUtilities:MobileTexts.ViewContentTitle}"
+                                                        Message="{x:Static modelUtilities:MobileTexts.ViewDescription}" />
+                    </HorizontalStackLayout>
                 </Grid>
-            </Grid>
-        </Border>
+            </Border>
+            <controls:PageMessages MessageText="{Binding MessageText}"
+                                   StatusText="{Binding StatusText}" />
+        </VerticalStackLayout>
+        <Image Grid.Row="1"
+               IsVisible="{Binding IsImageVisible}"
+               Aspect="AspectFit">
+            <Image.Source>
+                <FileImageSource File="{Binding ImageFilePath}" />
+            </Image.Source>
+        </Image>
+        <!-- As on the edit page, the scroll view scrolls the text, since the editor's own scrolling does not fling.
+             It also keeps the start of the text in view, where the editor's own scrolling on Android follows the
+             cursor, which is put at the end of the text when it is set. -->
+        <ScrollView x:Name="TextContent"
+                    Grid.Row="1"
+                    IsVisible="{Binding IsTextVisible}"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource LightSecondaryBackground}, Dark={StaticResource DarkSecondaryBackground}}">
+            <controls:ReadOnlyEditor Text="{Binding Text, Mode=OneWay}"
+                                     AutoSize="TextChanges"
+                                     BackgroundColor="Transparent"
+                                     FontSize="{Binding Font.FontSize}">
+                <controls:ReadOnlyEditor.Triggers>
+                    <DataTrigger TargetType="controls:ReadOnlyEditor"
+                                 Binding="{Binding Font.IsProportionalFont}"
+                                 Value="False">
+                        <Setter Property="FontFamily"
+                                Value="{StaticResource MonospaceFontFamily}" />
+                    </DataTrigger>
+                </controls:ReadOnlyEditor.Triggers>
+            </controls:ReadOnlyEditor>
+        </ScrollView>
     </Grid>
 </ContentPage>

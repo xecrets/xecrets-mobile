@@ -82,6 +82,14 @@
         <OnIdiom.Desktop>32,12,32,32</OnIdiom.Desktop>
     </OnIdiom>
 
+    <!-- ContentTitleLayoutPadding above a text that spans the full page width and down to the bottom of the page,
+         for the breadcrumb, the card and the messages. -->
+    <OnIdiom x:Key="FullWidthTextHeaderPadding"
+             x:TypeArguments="Thickness"
+             Default="16,8,16,0">
+        <OnIdiom.Desktop>32,12,32,0</OnIdiom.Desktop>
+    </OnIdiom>
+
     <OnIdiom x:Key="LayoutSpacing"
              x:TypeArguments="x:Double"
              Default="12">
@@ -396,10 +404,14 @@
     </Style>
 
     <!-- The name of a file, such as in the recent files list or at the top of a file's card. -->
+    <!-- The line height overrides the body text line height of the implicit Label style, which spreads out the
+         lines of a file name that wraps. -->
     <Style x:Key="FileName"
            TargetType="Label">
         <Setter Property="FontSize"
                 Value="13" />
+        <Setter Property="LineHeight"
+                Value="1" />
     </Style>
 
     <!-- Information shown below a file name, such as its location or its metadata. -->
@@ -480,28 +492,28 @@
         <Setter Property="MinimumHeightRequest" Value="52" />
     </Style>
 
-    <Style TargetType="Editor">
+    <!-- Applied to derived types too, such as ReadOnlyEditor. -->
+    <Style TargetType="Editor"
+           ApplyToDerivedTypes="True">
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource LightSecondaryBackground}, Dark={StaticResource DarkSecondaryBackground}}" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}" />
         <Setter Property="FontSize" Value="16" />
     </Style>
 
     <!-- Error and status text, selectable. -->
-    <Style TargetType="Editor" x:Key="StatusTextStyle">
+    <Style TargetType="controls:ReadOnlyEditor" x:Key="StatusTextStyle">
         <Setter Property="TextColor" Value="Red" />
         <Setter Property="BackgroundColor" Value="Transparent" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="AutoSize" Value="TextChanges" />
-        <Setter Property="IsReadOnly" Value="True" />
     </Style>
 
     <!-- Informational text, selectable, visually distinct from errors. -->
-    <Style TargetType="Editor" x:Key="MessageTextStyle">
+    <Style TargetType="controls:ReadOnlyEditor" x:Key="MessageTextStyle">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}" />
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource LightOutline}, Dark={StaticResource DarkOutline}}" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="AutoSize" Value="TextChanges" />
-        <Setter Property="IsReadOnly" Value="True" />
     </Style>
 
     <Style TargetType="BoxView" x:Key="ShimmerCustomViewStyle">

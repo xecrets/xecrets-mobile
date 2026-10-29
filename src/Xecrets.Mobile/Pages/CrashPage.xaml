@@ -26,6 +26,7 @@
 -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
              xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
              xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
              xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
@@ -60,8 +61,7 @@
             <Label Text="{Binding PlatformAdditionalInformation}"
                    IsVisible="{Binding PlatformAdditionalInformation, Converter={StaticResource StringNotEmptyConverter}}" />
         </VerticalStackLayout>
-        <Editor x:Name="CrashReportEditor"
-                Grid.Row="2"
-                IsReadOnly="True" />
+        <controls:ReadOnlyEditor x:Name="CrashReportEditor"
+                                 Grid.Row="2" />
     </Grid>
 </ContentPage>

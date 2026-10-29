@@ -37,10 +37,10 @@
     </ContentView.Resources>
     <VerticalStackLayout BindingContext="{x:Reference Root}"
                          Spacing="{StaticResource LayoutSpacing}">
-        <Editor Text="{Binding MessageText, Mode=OneWay}"
+        <controls:ReadOnlyEditor Text="{Binding MessageText, Mode=OneWay}"
                 IsVisible="{Binding MessageText, Converter={StaticResource StringNotEmptyConverter}}"
                 Style="{StaticResource MessageTextStyle}" />
-        <Editor Text="{Binding StatusText, Mode=OneWay}"
+        <controls:ReadOnlyEditor Text="{Binding StatusText, Mode=OneWay}"
                 IsVisible="{Binding StatusText, Converter={StaticResource StringNotEmptyConverter}}"
                 Style="{StaticResource StatusTextStyle}" />
     </VerticalStackLayout>

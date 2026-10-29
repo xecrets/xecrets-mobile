@@ -67,4 +67,10 @@ public interface IProfileService
     Task<bool> ShouldShowAsync(DontShowAgain notice);
 
     Task SetDontShowAgainAsync(DontShowAgain notice);
+
+    Task<TextEditor> GetTextEditorSettingsAsync();
+
+    Task SetTextEditorFontSizeAsync(double fontSize);
+
+    Task SetTextEditorProportionalFontAsync(bool proportionalFont);
 }

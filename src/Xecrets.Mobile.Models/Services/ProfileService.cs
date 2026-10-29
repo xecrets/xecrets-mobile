@@ -178,4 +178,19 @@ internal sealed class ProfileService(
             (await session.UserStore!.LoadDeviceSettingsAsync()).BeginEdit();
         settings.Value.SetDontShowAgain(notice);
     }
+
+    public async Task<TextEditor> GetTextEditorSettingsAsync() =>
+        (await session.UserStore!.LoadSettingsAsync()).Value.TextEditor;
+
+    public async Task SetTextEditorFontSizeAsync(double fontSize)
+    {
+        await using IEditScope<UserSettings> settings = (await session.UserStore!.LoadSettingsAsync()).BeginEdit();
+        settings.Value.TextEditor.FontSize = fontSize;
+    }
+
+    public async Task SetTextEditorProportionalFontAsync(bool proportionalFont)
+    {
+        await using IEditScope<UserSettings> settings = (await session.UserStore!.LoadSettingsAsync()).BeginEdit();
+        settings.Value.TextEditor.ProportionalFont = proportionalFont;
+    }
 }

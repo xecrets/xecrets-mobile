@@ -37,12 +37,17 @@ internal sealed class DecryptedFileViewer(IFileService fileService) : IDecrypted
 {
     public async Task<FileViewMode> GetViewModeAsync(DecryptedFileInfo file)
     {
+        if (file.Kind == PreviewKind.Text)
+        {
+            return FileViewMode.Internal;
+        }
+
         if (await fileService.CanViewFileAsync(file))
         {
             return FileViewMode.Platform;
         }
 
-        return file.Kind is PreviewKind.Text or PreviewKind.Image
+        return file.Kind == PreviewKind.Image
             ? FileViewMode.Internal
             : FileViewMode.Unavailable;
     }

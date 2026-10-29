@@ -315,6 +315,9 @@ public sealed class TransientFileServiceTests
         public PublicKey GetPublicKey() => throw new NotSupportedException();
         public Task<bool> ShouldShowAsync(DontShowAgain notice) => throw new NotSupportedException();
         public Task SetDontShowAgainAsync(DontShowAgain notice) => throw new NotSupportedException();
+        public Task<TextEditor> GetTextEditorSettingsAsync() => throw new NotSupportedException();
+        public Task SetTextEditorFontSizeAsync(double fontSize) => throw new NotSupportedException();
+        public Task SetTextEditorProportionalFontAsync(bool proportionalFont) => throw new NotSupportedException();
     }
 
     private sealed class TestFileService(string cacheDirectory) : IFileService

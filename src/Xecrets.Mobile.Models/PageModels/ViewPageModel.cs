@@ -40,9 +40,12 @@ namespace Xecrets.Mobile.Models.PageModels;
 public partial class ViewPageModel(
     IPreviewService previewService,
     IFlowContext flowContext,
+    IProfileService profileService,
     IUserInterfaceService userInterfaceService)
-    : PageModelBase(userInterfaceService), IBreadcrumbPageModel
+    : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
 {
+    public TextEditorFontModel Font { get; } = new(profileService);
+
     public string Breadcrumb => BreadcrumbFormatter.Format(
         flowContext.Origin,
         MobileTexts.BreadcrumbPreview,
@@ -53,6 +56,12 @@ public partial class ViewPageModel(
 
     [ObservableProperty]
     public partial string MetadataText { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string MessageText { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string StatusText { get; set; } = string.Empty;
 
     [ObservableProperty]
     public partial string Text { get; set; } = string.Empty;
@@ -86,5 +95,6 @@ public partial class ViewPageModel(
         Text = state.Text;
         IsImageVisible = state.Kind == PreviewKind.Image;
         IsTextVisible = state.Kind == PreviewKind.Text;
+        await Font.LoadAsync();
     }
 }

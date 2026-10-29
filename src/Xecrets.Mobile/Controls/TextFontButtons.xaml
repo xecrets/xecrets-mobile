@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    Xecrets Ez Mobile - Copyright © 2026 Svante Seleborg, All Rights Reserved.
+
+    This code file is part of Xecrets Ez Mobile, an application that uses the Xecrets.Net library, parts of which in turn
+    are derived from AxCrypt as licensed under GPL v3 or later. This code is not derived from AxCrypt. It is separately
+    authored and copyrighted, and licensed only as follows unless explicitly licensed otherwise.
+
+    Xecrets Ez Mobile is free software: you can redistribute it and/or modify it under the terms of the GNU General
+    Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+    later version.
+
+    No additional permission is granted beyond that license. If you incorporate this code into a larger work and
+    distribute that work to others, you are responsible for complying with the GNU General Public License version 3 or
+    later. See https://www.gnu.org/licenses/ for more information.
+
+    Xecrets Ez Mobile is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+    implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+    details.
+
+    You should have received a copy of the GNU General Public License along with Xecrets Ez Mobile. If not, see
+    <https://www.gnu.org/licenses/>.
+
+    The source repository can be found at https://github.com/xecrets/xecrets-mobile please go there for more information,
+    suggestions and contributions. You may also visit https://www.axantum.com for more information about the author.
+-->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:f="clr-namespace:Fonts"
+             xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
+             x:Class="Xecrets.Mobile.Controls.TextFontButtons"
+             x:ClassModifier="internal"
+             x:DataType="pageModels:TextEditorFontModel">
+    <ContentView.Resources>
+        <ResourceDictionary>
+            <FontImageSource x:Key="IconFontDecrease"
+                             Glyph="{x:Static f:FluentUI.font_decrease_24_regular}"
+                             FontFamily="{x:Static f:FluentUI.FontFamily}"
+                             Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                             Size="24" />
+            <FontImageSource x:Key="IconFontIncrease"
+                             Glyph="{x:Static f:FluentUI.font_increase_24_regular}"
+                             FontFamily="{x:Static f:FluentUI.FontFamily}"
+                             Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                             Size="24" />
+            <FontImageSource x:Key="IconProportionalFont"
+                             Glyph="{x:Static f:FluentUI.text_font_24_regular}"
+                             FontFamily="{x:Static f:FluentUI.FontFamily}"
+                             Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                             Size="24" />
+        </ResourceDictionary>
+    </ContentView.Resources>
+    <HorizontalStackLayout VerticalOptions="Center">
+        <!-- The same as the save button. Narrower than the usual 44, so that the row of icons is not too spread out. -->
+        <ImageButton VerticalOptions="Center"
+                     Background="Transparent"
+                     MinimumWidthRequest="36"
+                     Padding="6,8"
+                     Source="{StaticResource IconFontDecrease}"
+                     Command="{Binding DecreaseFontSizeCommand}" />
+        <ImageButton VerticalOptions="Center"
+                     Background="Transparent"
+                     MinimumWidthRequest="36"
+                     Padding="6,8"
+                     Source="{StaticResource IconFontIncrease}"
+                     Command="{Binding IncreaseFontSizeCommand}" />
+        <!-- A subtle background shows that the proportional font is on. It is drawn behind the button, just around
+             the glyph, since the button's own background fills the whole tap area. -->
+        <Grid VerticalOptions="Center">
+            <Border WidthRequest="32"
+                    HeightRequest="32"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center"
+                    Padding="0"
+                    StrokeThickness="0"
+                    StrokeShape="RoundRectangle 6"
+                    Background="Transparent"
+                    InputTransparent="True">
+                <Border.Triggers>
+                    <DataTrigger TargetType="Border"
+                                 Binding="{Binding IsProportionalFont}"
+                                 Value="True">
+                        <Setter Property="Background"
+                                Value="{AppThemeBinding Light={StaticResource LightOutline}, Dark={StaticResource DarkOutline}}" />
+                    </DataTrigger>
+                </Border.Triggers>
+            </Border>
+            <ImageButton VerticalOptions="Center"
+                         Background="Transparent"
+                         MinimumWidthRequest="36"
+                         Padding="6,8"
+                         Source="{StaticResource IconProportionalFont}"
+                         Command="{Binding ToggleProportionalFontCommand}" />
+        </Grid>
+    </HorizontalStackLayout>
+</ContentView>

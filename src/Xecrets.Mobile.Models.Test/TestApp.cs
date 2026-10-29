@@ -51,11 +51,10 @@ internal sealed class TestApp
         Recent = new RecentFilesService(Session, Flow, Access, CrashLog);
         FolderAccess = new FolderAccessWorkflow(Access, Storage, UserInterface);
         Wiper = new FakeFileWiper(Access);
-        FakeProfileService profile = new();
-        Encryption = new EncryptionPreparationService(new EncryptRequestFactory(profile), Transient, Core);
+        Encryption = new EncryptionPreparationService(new EncryptRequestFactory(Profile), Transient, Core);
         OperationService = new WorkFolderOperationService(
             Core,
-            profile,
+            Profile,
             Encryption,
             Transient,
             Recent,
@@ -78,7 +77,7 @@ internal sealed class TestApp
             UserInterface);
         EditSave = new EditSaveService(
             Preview,
-            new EncryptRequestFactory(profile),
+            new EncryptRequestFactory(Profile),
             Core,
             Access,
             FolderAccess,
@@ -92,6 +91,8 @@ internal sealed class TestApp
     public FakeUserDataStore Store { get; } = new();
 
     private ProfileSession Session { get; } = new();
+
+    public FakeProfileService Profile { get; } = new();
 
     private WorkFolderStorage Storage { get; }
 
@@ -143,7 +144,7 @@ internal sealed class TestApp
     public WorkFoldersPageModel CreateWorkFoldersPage() =>
         new(Storage, Access, FolderAccess, Operations, CrashLog, UserInterface);
 
-    public EditPageModel CreateEditPage() => new(Preview, EditSave, Flow, CrashLog, UserInterface);
+    public EditPageModel CreateEditPage() => new(Preview, EditSave, Flow, CrashLog, Profile, UserInterface);
 
     public List<string> RecentIds() => [.. Store.Files.Select(file => file.Id)];
 

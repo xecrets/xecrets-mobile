@@ -47,7 +47,11 @@ internal static class MauiAppBuilderExtensions
         builder.Services.AddSingleton<IWorkFolderFileLauncher, AndroidWorkFolderFileLauncher>();
         builder.Services.AddSingleton<IUserInterfaceService, AndroidUserInterfaceService>();
         builder.Services.AddSingleton<IPlatformServices, AndroidServices>();
-        builder.ConfigureMauiHandlers(handlers => handlers.AddHandler<FileStateSelector, AndroidFileStateSelectorHandler>());
+        builder.ConfigureMauiHandlers(handlers =>
+        {
+            handlers.AddHandler<FileStateSelector, AndroidFileStateSelectorHandler>();
+            handlers.AddHandler<ReadOnlyEditor, AndroidReadOnlyEditorHandler>();
+        });
         return builder;
     }
 }

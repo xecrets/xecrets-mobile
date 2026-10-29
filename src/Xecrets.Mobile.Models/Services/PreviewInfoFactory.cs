@@ -35,8 +35,9 @@ namespace Xecrets.Mobile.Models.Services;
 
 internal static class PreviewInfoFactory
 {
-    // The largest text file, in bytes, that the app's internal viewer/editor will handle. 
-    public const long MaxInlineTextSizeBytes = 100 * 1024;
+    // The largest text file, in bytes, that the app's internal viewer/editor will handle. Larger text files are
+    // viewed externally, if possible.
+    public const long MaxInlineTextSizeBytes = 2 * 1024 * 1024;
 
     private const int TextSampleSizeBytes = 4096;
 

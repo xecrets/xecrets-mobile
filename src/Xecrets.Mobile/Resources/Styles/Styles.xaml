@@ -96,7 +96,9 @@
         </Setter>
     </Style>
 
-    <Style TargetType="Editor">
+    <!-- Applied to derived types too, such as ReadOnlyEditor. -->
+    <Style TargetType="Editor"
+           ApplyToDerivedTypes="True">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
         <Setter Property="FontSize" Value="14" />

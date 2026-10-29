@@ -45,9 +45,12 @@ public partial class EditPageModel(
     IEditSaveService editSaveService,
     IFlowContext flowContext,
     ICrashLogService crashLogService,
+    IProfileService profileService,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
 {
+    public TextEditorFontModel Font { get; } = new(profileService);
+
     // A hash rather than a copy of the saved text, so that no more copies of the plaintext are kept than needed.
     private byte[] _savedTextHash = [];
 
@@ -94,6 +97,7 @@ public partial class EditPageModel(
         Text = state.Text;
         _savedTextHash = HashText(Text);
         StatusText = string.Empty;
+        await Font.LoadAsync();
     }
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
