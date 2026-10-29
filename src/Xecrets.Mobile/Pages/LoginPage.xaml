@@ -41,40 +41,26 @@
     <Grid x:Name="ContentRoot"
           Padding="{StaticResource LayoutPadding}"
           RowSpacing="{StaticResource LayoutSpacing}">
-        <Border x:Name="ContentColumn"
-                VerticalOptions="Start"
-                HorizontalOptions="Center"
-                Style="{StaticResource PageInformationCardStyle}">
-            <Grid RowDefinitions="Auto,*" RowSpacing="{StaticResource CardTitleSpacing}">
-                <ScrollView Grid.Row="1">
-                    <Grid x:Name="ContentBody" Padding="{StaticResource IconRowBodyPadding}">
-                        <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
-                        <controls:PasswordEntry Margin="{StaticResource IconRowBodyLeadingMargin}" x:Name="PasswordEntryControl"
-                                                Text="{Binding Password, Mode=TwoWay}"
-                                                Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkPassword}"
-                                                ReturnType="Go" />
-                        <Label Margin="{StaticResource IconRowBodyContentMargin}" Text="{Binding ErrorText}"
-                               TextColor="Red"
-                               IsVisible="{Binding ErrorText, Converter={StaticResource StringNotEmptyConverter}}"
-                               Style="{StaticResource Caption1}" />
-                        <VerticalStackLayout x:Name="ActionButtonStack" Margin="{StaticResource IconRowBodyContentMargin}"
-                                             HorizontalOptions="Center"
-                                             Spacing="{StaticResource LayoutSpacing}">
-                            <Button Text="{x:Static modelUtilities:MobileTexts.ButtonOk}"
-                                    Command="{Binding LoginCommand}" />
-                        </VerticalStackLayout>
-                        </VerticalStackLayout>
-                    </Grid>
-                </ScrollView>
-                <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-                    <Label Text="{Binding Heading}"
-                           Style="{StaticResource CardTitleStyle}" />
-                    <controls:PageInformationButton Grid.Column="1"
-                                                    Style="{StaticResource PageInformationButtonCorner}"
-                                                    Title="{Binding Heading}"
-                                                    Message="{Binding Information}" />
-                </Grid>
-            </Grid>
-        </Border>
+        <controls:PageCard x:Name="Card"
+                           Title="{Binding Heading}"
+                           Information="{Binding Information}"
+                           BodyPadding="{StaticResource IconRowBodyPadding}">
+            <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
+                <controls:PasswordEntry Margin="{StaticResource IconRowBodyLeadingMargin}" x:Name="PasswordEntryControl"
+                                        Text="{Binding Password, Mode=TwoWay}"
+                                        Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkPassword}"
+                                        ReturnType="Go" />
+                <Label Margin="{StaticResource IconRowBodyContentMargin}" Text="{Binding ErrorText}"
+                       TextColor="Red"
+                       IsVisible="{Binding ErrorText, Converter={StaticResource StringNotEmptyConverter}}"
+                       Style="{StaticResource Caption1}" />
+                <VerticalStackLayout x:Name="ActionButtonStack" Margin="{StaticResource IconRowBodyContentMargin}"
+                                     HorizontalOptions="Center"
+                                     Spacing="{StaticResource LayoutSpacing}">
+                    <Button Text="{x:Static modelUtilities:MobileTexts.ButtonOk}"
+                            Command="{Binding LoginCommand}" />
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+        </controls:PageCard>
     </Grid>
 </ContentPage>

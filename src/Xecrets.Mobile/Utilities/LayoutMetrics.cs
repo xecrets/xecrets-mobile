@@ -30,8 +30,9 @@
 
 using System;
 
-using Microsoft.Maui;
 using Microsoft.Maui.Controls;
+
+using Xecrets.Mobile.Controls;
 
 namespace Xecrets.Mobile.Utilities;
 
@@ -44,9 +45,8 @@ internal static class LayoutMetrics
     public static void UpdateCenteredContentLayout(
         double pageWidth,
         Layout contentRoot,
-        Border contentColumn,
+        PageCard card,
         View actionButtonStack,
-        Thickness? contentPadding = null,
         double actionButtonStackMaximumWidth = _actionButtonStackMaximumWidth)
     {
         double availableContentWidth = pageWidth - contentRoot.Padding.Left - contentRoot.Padding.Right;
@@ -56,16 +56,12 @@ internal static class LayoutMetrics
         }
 
         double contentColumnWidth = Math.Min(availableContentWidth, _contentColumnMaximumWidth);
-        contentColumn.WidthRequest = contentColumnWidth;
+        card.WidthRequest = contentColumnWidth;
 
         // The button stack sits inside the card body, so it has to fit that content box, not the card's
-        // outer width. The card body can supply its own padding when the card also has an unpadded header.
-        // Sizing it to the outer width overflows the card by its padding and stroke, which
+        // outer width. Sizing it to the outer width overflows the card by its padding and stroke, which
         // iOS hides by clipping to the border and Android shows as buttons running off the screen edge.
-        double cardContentWidth = contentColumnWidth
-            - (contentPadding ?? contentColumn.Padding).HorizontalThickness
-            - (2 * contentColumn.StrokeThickness)
-            - actionButtonStack.Margin.HorizontalThickness;
+        double cardContentWidth = card.BodyWidth(contentColumnWidth) - actionButtonStack.Margin.HorizontalThickness;
         UpdateActionButtonStackWidth(cardContentWidth, actionButtonStack, actionButtonStackMaximumWidth);
     }
 

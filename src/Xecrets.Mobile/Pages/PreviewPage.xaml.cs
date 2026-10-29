@@ -60,6 +60,6 @@ internal partial class PreviewPage
 
     private void UpdateCenteredContentLayout(double pageWidth)
     {
-        LayoutMetrics.UpdateCenteredContentLayout(pageWidth, ContentRoot, ContentColumn, ActionButtonStack, ContentBody.Padding);
+        LayoutMetrics.UpdateCenteredContentLayout(pageWidth, ContentRoot, Card, ActionButtonStack);
     }
 }

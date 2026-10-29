@@ -92,181 +92,161 @@
               Padding="{StaticResource ContentTitleLayoutPadding}"
               RowSpacing="{StaticResource LayoutSpacing}">
             <pageControls:PageBreadcrumb Text="{Binding Breadcrumb}" />
-            <Border x:Name="ContentColumn"
-                    Grid.Row="1"
-                    VerticalOptions="Start"
-                    HorizontalOptions="Center"
-                    Style="{StaticResource PageInformationCardStyle}">
-                <Grid RowDefinitions="Auto,*"
-                      RowSpacing="{StaticResource CardTitleSpacing}">
-                    <ScrollView Grid.Row="1">
-                        <Grid x:Name="ContentBody"
-                              Padding="{StaticResource IconRowBodyPadding}"
-                              InputTransparent="{Binding IsBusy}">
-                            <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
-                                <!-- Without any files, the page information is shown. -->
-                                <Border Margin="{StaticResource IconRowBodyContentMargin}"
-                                        IsVisible="{Binding NoFilesText, Converter={StaticResource StringNotEmptyConverter}}"
-                                        BackgroundColor="{AppThemeBinding Light={StaticResource LightOutline}, Dark={StaticResource DarkOutline}}"
-                                        Stroke="{AppThemeBinding Light={StaticResource LightOutline}, Dark={StaticResource DarkOutline}}"
-                                        StrokeShape="RoundRectangle 4"
-                                        Padding="10,6">
-                                    <Label Text="{Binding NoFilesText}"
-                                           FontSize="13" />
-                                </Border>
-                                <pageControls:PageMessages Margin="{StaticResource IconRowBodyContentMargin}"
-                                                           MessageText="{Binding MessageText}"
-                                                           StatusText="{Binding StatusText}" />
-                                <VerticalStackLayout x:Name="ActionButtonStack"
-                                                     HorizontalOptions="Center"
-                                                     Spacing="{StaticResource LayoutSpacing}">
-                                    <ScrollView Orientation="Horizontal"
-                                                HorizontalOptions="Center">
-                                        <pageControls:FileStateSelector SelectedState="{Binding SelectedState}"
-                                                                        VerticalOptions="Center" />
-                                    </ScrollView>
-                                    <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}"
-                                                         BindableLayout.ItemsSource="{Binding Files}">
-                                        <VerticalStackLayout.Behaviors>
-                                            <behaviors:ReleaseRemovedCommandsBehavior />
-                                        </VerticalStackLayout.Behaviors>
-                                        <BindableLayout.ItemTemplate>
-                                            <DataTemplate x:DataType="mobileModels:RecentFileEntry">
-                                                <Grid ColumnDefinitions="Auto,*,Auto"
-                                                      ColumnSpacing="{StaticResource IconRowSpacing}">
-                                                    <ImageButton Grid.Column="0"
-                                                                 Background="Transparent"
-                                                                 Padding="8"
-                                                                 Source="{StaticResource IconEncryptFile}"
-                                                                 IsVisible="{Binding IsInPlace}"
-                                                                 Command="{Binding ReverseCommand,
-                                                                       Source={x:Reference PageRoot},
-                                                                       x:DataType=pages:RecentFilesPage}"
-                                                                 CommandParameter="{Binding .}">
-                                                        <ImageButton.Triggers>
-                                                            <DataTrigger TargetType="ImageButton"
-                                                                         Binding="{Binding IsNameEncrypted}"
-                                                                         Value="True">
-                                                                <Setter Property="Source"
-                                                                        Value="{StaticResource IconDecryptFile}" />
-                                                            </DataTrigger>
-                                                        </ImageButton.Triggers>
-                                                    </ImageButton>
-                                                    <ImageButton Grid.Column="0"
-                                                                 Background="Transparent"
-                                                                 Padding="8"
-                                                                 Source="{StaticResource IconViewFile}"
-                                                                 IsVisible="{Binding IsViewed}"
-                                                                 Command="{Binding OpenCommand,
-                                                                       Source={x:Reference PageRoot},
-                                                                       x:DataType=pages:RecentFilesPage}"
-                                                                 CommandParameter="{Binding .}" />
-                                                    <ImageButton Grid.Column="0"
-                                                                 Background="Transparent"
-                                                                 Padding="8"
-                                                                 Source="{StaticResource IconOpenFile}"
-                                                                 IsVisible="{Binding IsOther}"
-                                                                 Command="{Binding OpenCommand,
-                                                                       Source={x:Reference PageRoot},
-                                                                       x:DataType=pages:RecentFilesPage}"
-                                                                 CommandParameter="{Binding .}">
-                                                        <ImageButton.Triggers>
-                                                            <DataTrigger TargetType="ImageButton"
-                                                                         Binding="{Binding IsNameEncrypted}"
-                                                                         Value="True">
-                                                                <Setter Property="Source"
-                                                                        Value="{StaticResource IconShareFile}" />
-                                                            </DataTrigger>
-                                                        </ImageButton.Triggers>
-                                                    </ImageButton>
-                                                    <Border x:Name="EntryBorder"
-                                                            Grid.Column="1"
-                                                            Background="{AppThemeBinding Light={StaticResource LightBackground}, Dark={StaticResource DarkBackground}}"
-                                                            StrokeThickness="0"
-                                                            StrokeShape="RoundRectangle 8"
-                                                            Padding="12,0">
-                                                        <!-- Toolkit behaviors do not inherit the binding context of their view. -->
-                                                        <Border.Behaviors>
-                                                            <toolkit:TouchBehavior BindingContext="{Binding BindingContext,
-                                                                                         Source={x:Reference EntryBorder},
-                                                                                         x:DataType=Border}"
-                                                                                   Command="{Binding OpenCommand,
-                                                                                         Source={x:Reference PageRoot},
-                                                                                         x:DataType=pages:RecentFilesPage}"
-                                                                                   CommandParameter="{Binding .}"
-                                                                                   LongPressCommand="{Binding ShowFullPathCommand,
-                                                                                         Source={x:Reference PageRoot},
-                                                                                         x:DataType=pages:RecentFilesPage}"
-                                                                                   LongPressCommandParameter="{Binding .}" />
-                                                        </Border.Behaviors>
-                                                        <!-- WinUI can only trim the end, which is accepted there. -->
-                                                        <VerticalStackLayout VerticalOptions="Center">
-                                                            <Label Text="{Binding DisplayName}"
-                                                                   Style="{StaticResource FileName}"
-                                                                   MaxLines="1"
-                                                                   LineBreakMode="MiddleTruncation" />
-                                                            <Label Text="{Binding DisplayLocation}"
-                                                                   IsVisible="{Binding HasLocation}"
-                                                                   Style="{StaticResource ExtraFileInfo}"
-                                                                   MaxLines="1"
-                                                                   LineBreakMode="MiddleTruncation" />
-                                                        </VerticalStackLayout>
-                                                    </Border>
-                                                    <ImageButton Grid.Column="2"
-                                                                 Background="Transparent"
-                                                                 Padding="8"
-                                                                 Source="{StaticResource IconRemoveFile}"
-                                                                 Command="{Binding RemoveCommand,
-                                                                       Source={x:Reference PageRoot},
-                                                                       x:DataType=pages:RecentFilesPage}"
-                                                                 CommandParameter="{Binding .}">
-                                                    </ImageButton>
-                                                </Grid>
-                                            </DataTemplate>
-                                        </BindableLayout.ItemTemplate>
-                                    </VerticalStackLayout>
-                                </VerticalStackLayout>
-                            </VerticalStackLayout>
-                        </Grid>
-                    </ScrollView>
-                    <Grid Grid.Row="0"
-                          ColumnDefinitions="*,Auto">
-                        <Label Text="{x:Static modelUtilities:MobileTexts.RecentFilesContentTitle}"
-                               Style="{StaticResource CardTitleStyle}" />
-                        <HorizontalStackLayout Grid.Column="1"
-                                               VerticalOptions="Center">
-                            <ImageButton VerticalOptions="Center"
-                                         Background="Transparent"
-                                         Padding="8"
-                                         Source="{StaticResource IconDecryptFile}"
-                                         IsVisible="{Binding IsReverseAllVisible}"
-                                         Command="{Binding ReverseAllCommand}">
-                                <ImageButton.Triggers>
-                                    <DataTrigger TargetType="ImageButton"
-                                                 Binding="{Binding ReverseAllEncrypts}"
-                                                 Value="True">
-                                        <Setter Property="Source"
-                                                Value="{StaticResource IconEncryptFile}" />
-                                    </DataTrigger>
-                                </ImageButton.Triggers>
-                            </ImageButton>
-                            <ImageButton VerticalOptions="Center"
-                                         Background="Transparent"
-                                         Padding="8"
-                                         Source="{StaticResource IconAdd}"
-                                         Command="{Binding AddCommand}" />
-                            <ImageButton VerticalOptions="Center"
-                                         Background="Transparent"
-                                         Padding="10"
-                                         Source="{StaticResource IconReload}"
-                                         Command="{Binding ReloadCommand}" />
-                            <pageControls:PageInformationButton Style="{StaticResource PageInformationButtonCorner}"
-                                                                Title="{x:Static modelUtilities:MobileTexts.RecentFilesContentTitle}"
-                                                                Message="{Binding Description}" />
-                        </HorizontalStackLayout>
-                    </Grid>
-                </Grid>
-            </Border>
+            <pageControls:PageCard x:Name="Card"
+                                   Grid.Row="1"
+                                   Title="{x:Static modelUtilities:MobileTexts.RecentFilesContentTitle}"
+                                   Information="{Binding Description}"
+                                   BodyPadding="{StaticResource IconRowBodyPadding}">
+                <pageControls:PageCard.HeaderActions>
+                    <HorizontalStackLayout VerticalOptions="Center">
+                        <ImageButton Style="{StaticResource CardHeaderIconButtonStyle}"
+                                     Source="{StaticResource IconDecryptFile}"
+                                     IsVisible="{Binding IsReverseAllVisible}"
+                                     Command="{Binding ReverseAllCommand}">
+                            <ImageButton.Triggers>
+                                <DataTrigger TargetType="ImageButton"
+                                             Binding="{Binding ReverseAllEncrypts}"
+                                             Value="True">
+                                    <Setter Property="Source"
+                                            Value="{StaticResource IconEncryptFile}" />
+                                </DataTrigger>
+                            </ImageButton.Triggers>
+                        </ImageButton>
+                        <ImageButton Style="{StaticResource CardHeaderIconButtonStyle}"
+                                     Source="{StaticResource IconAdd}"
+                                     Command="{Binding AddCommand}" />
+                        <ImageButton Style="{StaticResource CardHeaderIconButtonStyle}"
+                                     Padding="10"
+                                     Source="{StaticResource IconReload}"
+                                     Command="{Binding ReloadCommand}" />
+                    </HorizontalStackLayout>
+                </pageControls:PageCard.HeaderActions>
+                <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}"
+                                     InputTransparent="{Binding IsBusy}">
+                    <!-- Without any files, the page information is shown. -->
+                    <Border Margin="{StaticResource IconRowBodyContentMargin}"
+                            IsVisible="{Binding NoFilesText, Converter={StaticResource StringNotEmptyConverter}}"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource LightOutline}, Dark={StaticResource DarkOutline}}"
+                            Stroke="{AppThemeBinding Light={StaticResource LightOutline}, Dark={StaticResource DarkOutline}}"
+                            StrokeShape="RoundRectangle 4"
+                            Padding="10,6">
+                        <Label Text="{Binding NoFilesText}"
+                               FontSize="13" />
+                    </Border>
+                    <pageControls:PageMessages Margin="{StaticResource IconRowBodyContentMargin}"
+                                               MessageText="{Binding MessageText}"
+                                               StatusText="{Binding StatusText}" />
+                    <VerticalStackLayout x:Name="ActionButtonStack"
+                                         HorizontalOptions="Center"
+                                         Spacing="{StaticResource LayoutSpacing}">
+                        <ScrollView Orientation="Horizontal"
+                                    HorizontalOptions="Center">
+                            <pageControls:FileStateSelector SelectedState="{Binding SelectedState}"
+                                                            VerticalOptions="Center" />
+                        </ScrollView>
+                        <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}"
+                                             BindableLayout.ItemsSource="{Binding Files}">
+                            <VerticalStackLayout.Behaviors>
+                                <behaviors:ReleaseRemovedCommandsBehavior />
+                            </VerticalStackLayout.Behaviors>
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="mobileModels:RecentFileEntry">
+                                    <Grid ColumnDefinitions="Auto,*,Auto"
+                                          ColumnSpacing="{StaticResource IconRowSpacing}">
+                                        <ImageButton Grid.Column="0"
+                                                     Background="Transparent"
+                                                     Padding="8"
+                                                     Source="{StaticResource IconEncryptFile}"
+                                                     IsVisible="{Binding IsInPlace}"
+                                                     Command="{Binding ReverseCommand,
+                                                           Source={x:Reference PageRoot},
+                                                           x:DataType=pages:RecentFilesPage}"
+                                                     CommandParameter="{Binding .}">
+                                            <ImageButton.Triggers>
+                                                <DataTrigger TargetType="ImageButton"
+                                                             Binding="{Binding IsNameEncrypted}"
+                                                             Value="True">
+                                                    <Setter Property="Source"
+                                                            Value="{StaticResource IconDecryptFile}" />
+                                                </DataTrigger>
+                                            </ImageButton.Triggers>
+                                        </ImageButton>
+                                        <ImageButton Grid.Column="0"
+                                                     Background="Transparent"
+                                                     Padding="8"
+                                                     Source="{StaticResource IconViewFile}"
+                                                     IsVisible="{Binding IsViewed}"
+                                                     Command="{Binding OpenCommand,
+                                                           Source={x:Reference PageRoot},
+                                                           x:DataType=pages:RecentFilesPage}"
+                                                     CommandParameter="{Binding .}" />
+                                        <ImageButton Grid.Column="0"
+                                                     Background="Transparent"
+                                                     Padding="8"
+                                                     Source="{StaticResource IconOpenFile}"
+                                                     IsVisible="{Binding IsOther}"
+                                                     Command="{Binding OpenCommand,
+                                                           Source={x:Reference PageRoot},
+                                                           x:DataType=pages:RecentFilesPage}"
+                                                     CommandParameter="{Binding .}">
+                                            <ImageButton.Triggers>
+                                                <DataTrigger TargetType="ImageButton"
+                                                             Binding="{Binding IsNameEncrypted}"
+                                                             Value="True">
+                                                    <Setter Property="Source"
+                                                            Value="{StaticResource IconShareFile}" />
+                                                </DataTrigger>
+                                            </ImageButton.Triggers>
+                                        </ImageButton>
+                                        <Border x:Name="EntryBorder"
+                                                Grid.Column="1"
+                                                Background="{AppThemeBinding Light={StaticResource LightBackground}, Dark={StaticResource DarkBackground}}"
+                                                StrokeThickness="0"
+                                                StrokeShape="RoundRectangle 8"
+                                                Padding="12,0">
+                                            <!-- Toolkit behaviors do not inherit the binding context of their view. -->
+                                            <Border.Behaviors>
+                                                <toolkit:TouchBehavior BindingContext="{Binding BindingContext,
+                                                                             Source={x:Reference EntryBorder},
+                                                                             x:DataType=Border}"
+                                                                       Command="{Binding OpenCommand,
+                                                                             Source={x:Reference PageRoot},
+                                                                             x:DataType=pages:RecentFilesPage}"
+                                                                       CommandParameter="{Binding .}"
+                                                                       LongPressCommand="{Binding ShowFullPathCommand,
+                                                                             Source={x:Reference PageRoot},
+                                                                             x:DataType=pages:RecentFilesPage}"
+                                                                       LongPressCommandParameter="{Binding .}" />
+                                            </Border.Behaviors>
+                                            <!-- WinUI can only trim the end, which is accepted there. -->
+                                            <VerticalStackLayout VerticalOptions="Center">
+                                                <Label Text="{Binding DisplayName}"
+                                                       Style="{StaticResource FileName}"
+                                                       MaxLines="1"
+                                                       LineBreakMode="MiddleTruncation" />
+                                                <Label Text="{Binding DisplayLocation}"
+                                                       IsVisible="{Binding HasLocation}"
+                                                       Style="{StaticResource ExtraFileInfo}"
+                                                       MaxLines="1"
+                                                       LineBreakMode="MiddleTruncation" />
+                                            </VerticalStackLayout>
+                                        </Border>
+                                        <ImageButton Grid.Column="2"
+                                                     Background="Transparent"
+                                                     Padding="8"
+                                                     Source="{StaticResource IconRemoveFile}"
+                                                     Command="{Binding RemoveCommand,
+                                                           Source={x:Reference PageRoot},
+                                                           x:DataType=pages:RecentFilesPage}"
+                                                     CommandParameter="{Binding .}">
+                                        </ImageButton>
+                                    </Grid>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </pageControls:PageCard>
         </Grid>
         <ActivityIndicator IsRunning="{Binding IsBusy}"
                            IsVisible="{Binding IsBusy}"

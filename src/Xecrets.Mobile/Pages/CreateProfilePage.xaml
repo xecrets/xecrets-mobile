@@ -44,70 +44,56 @@
     <Grid x:Name="ContentRoot"
           Padding="{StaticResource LayoutPadding}"
           RowSpacing="{StaticResource LayoutSpacing}">
-        <Border x:Name="ContentColumn"
-                VerticalOptions="Start"
-                HorizontalOptions="Center"
-                Style="{StaticResource PageInformationCardStyle}">
-            <Grid RowDefinitions="Auto,*" RowSpacing="{StaticResource CardTitleSpacing}">
-                <ScrollView Grid.Row="1">
-                    <Grid x:Name="ContentBody" Padding="{StaticResource IconRowBodyPadding}">
-                        <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
-                        <Entry Margin="{StaticResource IconRowBodyContentMargin}" Text="{Binding Email}"
-                               Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkEmail}"
-                               Keyboard="Email"
-                               ReturnType="Next" />
-                        <controls:PasswordEntry Margin="{StaticResource IconRowBodyLeadingMargin}" x:Name="PasswordEntryControl"
-                                                Text="{Binding Password, Mode=TwoWay}"
-                                                Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkPassword}"
-                                                ToolTipProperties.Text="{x:Static modelUtilities:MobileTexts.ToolTipMasterPassword}"
-                                                ReturnType="Next" />
-                        <ProgressBar HorizontalOptions="Start"
-                                     WidthRequest="{Binding PasswordTextEntry.Width, Source={x:Reference PageRoot}, x:DataType=pages:CreateProfilePage}"
-                                     Progress="{Binding PasswordStrength}"
-                                     ProgressColor="{Binding PasswordStrengthColor, Converter={StaticResource StrengthColorToColorConverter}}">
-                            <ProgressBar.Margin>
-                                <OnIdiom x:TypeArguments="Thickness"
-                                         Default="16,-6,0,0">
-                                    <OnIdiom.Desktop>24,-8,0,0</OnIdiom.Desktop>
-                                </OnIdiom>
-                            </ProgressBar.Margin>
-                            <!-- Opacity, not IsVisible, so the space stays reserved and nothing moves when typing starts. -->
-                            <ProgressBar.Triggers>
-                                <DataTrigger TargetType="ProgressBar"
-                                             Binding="{Binding Password}"
-                                             Value="">
-                                    <Setter Property="Opacity"
-                                            Value="0" />
-                                </DataTrigger>
-                            </ProgressBar.Triggers>
-                        </ProgressBar>
-                        <controls:PasswordEntry Margin="{StaticResource IconRowBodyLeadingMargin}" x:Name="ConfirmPasswordEntryControl"
-                                                Text="{Binding ConfirmPassword, Mode=TwoWay}"
-                                                Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkConfirmPassword}"
-                                                ToolTipProperties.Text="{x:Static modelUtilities:MobileTexts.ToolTipMasterPassword}"
-                                                ReturnType="Go" />
-                        <Label Margin="{StaticResource IconRowBodyContentMargin}" Text="{Binding ErrorText}"
-                               TextColor="Red"
-                               IsVisible="{Binding ErrorText, Converter={StaticResource StringNotEmptyConverter}}"
-                               Style="{StaticResource Caption1}" />
-                        <VerticalStackLayout x:Name="ActionButtonStack" Margin="{StaticResource IconRowBodyContentMargin}"
-                                             HorizontalOptions="Center"
-                                             Spacing="{StaticResource LayoutSpacing}">
-                            <Button Text="{Binding ButtonText}"
-                                    Command="{Binding CreateCommand}" />
-                        </VerticalStackLayout>
-                        </VerticalStackLayout>
-                    </Grid>
-                </ScrollView>
-                <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-                    <Label Text="{Binding Heading}"
-                           Style="{StaticResource CardTitleStyle}" />
-                    <controls:PageInformationButton Grid.Column="1"
-                                                    Style="{StaticResource PageInformationButtonCorner}"
-                                                    Title="{Binding Heading}"
-                                                    Message="{Binding Information}" />
-                </Grid>
-            </Grid>
-        </Border>
+        <controls:PageCard x:Name="Card"
+                           Title="{Binding Heading}"
+                           Information="{Binding Information}"
+                           BodyPadding="{StaticResource IconRowBodyPadding}">
+            <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
+                <Entry Margin="{StaticResource IconRowBodyContentMargin}" Text="{Binding Email}"
+                       Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkEmail}"
+                       Keyboard="Email"
+                       ReturnType="Next" />
+                <controls:PasswordEntry Margin="{StaticResource IconRowBodyLeadingMargin}" x:Name="PasswordEntryControl"
+                                        Text="{Binding Password, Mode=TwoWay}"
+                                        Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkPassword}"
+                                        ToolTipProperties.Text="{x:Static modelUtilities:MobileTexts.ToolTipMasterPassword}"
+                                        ReturnType="Next" />
+                <ProgressBar HorizontalOptions="Start"
+                             WidthRequest="{Binding PasswordTextEntry.Width, Source={x:Reference PageRoot}, x:DataType=pages:CreateProfilePage}"
+                             Progress="{Binding PasswordStrength}"
+                             ProgressColor="{Binding PasswordStrengthColor, Converter={StaticResource StrengthColorToColorConverter}}">
+                    <ProgressBar.Margin>
+                        <OnIdiom x:TypeArguments="Thickness"
+                                 Default="16,-6,0,0">
+                            <OnIdiom.Desktop>24,-8,0,0</OnIdiom.Desktop>
+                        </OnIdiom>
+                    </ProgressBar.Margin>
+                    <!-- Opacity, not IsVisible, so the space stays reserved and nothing moves when typing starts. -->
+                    <ProgressBar.Triggers>
+                        <DataTrigger TargetType="ProgressBar"
+                                     Binding="{Binding Password}"
+                                     Value="">
+                            <Setter Property="Opacity"
+                                    Value="0" />
+                        </DataTrigger>
+                    </ProgressBar.Triggers>
+                </ProgressBar>
+                <controls:PasswordEntry Margin="{StaticResource IconRowBodyLeadingMargin}" x:Name="ConfirmPasswordEntryControl"
+                                        Text="{Binding ConfirmPassword, Mode=TwoWay}"
+                                        Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkConfirmPassword}"
+                                        ToolTipProperties.Text="{x:Static modelUtilities:MobileTexts.ToolTipMasterPassword}"
+                                        ReturnType="Go" />
+                <Label Margin="{StaticResource IconRowBodyContentMargin}" Text="{Binding ErrorText}"
+                       TextColor="Red"
+                       IsVisible="{Binding ErrorText, Converter={StaticResource StringNotEmptyConverter}}"
+                       Style="{StaticResource Caption1}" />
+                <VerticalStackLayout x:Name="ActionButtonStack" Margin="{StaticResource IconRowBodyContentMargin}"
+                                     HorizontalOptions="Center"
+                                     Spacing="{StaticResource LayoutSpacing}">
+                    <Button Text="{Binding ButtonText}"
+                            Command="{Binding CreateCommand}" />
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+        </controls:PageCard>
     </Grid>
 </ContentPage>

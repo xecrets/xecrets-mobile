@@ -44,47 +44,29 @@
               Padding="{StaticResource ContentTitleLayoutPadding}"
               RowSpacing="{StaticResource LayoutSpacing}">
             <controls:PageBreadcrumb Text="{Binding Breadcrumb}" />
-            <Border x:Name="ContentColumn"
-                    Grid.Row="1"
-                    VerticalOptions="Start"
-                    HorizontalOptions="Center"
-                    Style="{StaticResource PageInformationCardStyle}">
-                <Grid RowDefinitions="Auto,*"
-                      RowSpacing="{StaticResource CardTitleSpacing}">
-                    <ScrollView Grid.Row="1">
-                        <Grid x:Name="ContentBody"
-                              Padding="{StaticResource PageInformationBodyPadding}">
-                            <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
-                            <VerticalStackLayout>
-                                <Label Text="{Binding FileNameText}"
-                                       Style="{StaticResource FileName}" />
-                                <Label Text="{Binding MetadataText}"
-                                       Style="{StaticResource ExtraFileInfo}" />
-                            </VerticalStackLayout>
-                            <controls:PageMessages MessageText="{Binding MessageText}"
-                                                   StatusText="{Binding StatusText}" />
-                            <VerticalStackLayout x:Name="ActionButtonStack"
-                                                 HorizontalOptions="Center"
-                                                 Spacing="{StaticResource LayoutSpacing}">
-                                <Button Text="{x:Static modelUtilities:MobileTexts.ButtonSaveAs}"
-                                        Command="{Binding SaveAsCommand}" />
-                                <Button Text="{x:Static modelUtilities:MobileTexts.ButtonSendTo}"
-                                        Command="{Binding SendToCommand}" />
-                            </VerticalStackLayout>
-                            </VerticalStackLayout>
-                        </Grid>
-                    </ScrollView>
-                    <Grid Grid.Row="0"
-                          ColumnDefinitions="*,Auto">
-                        <Label Text="{x:Static modelUtilities:MobileTexts.EncryptResultContentTitle}"
-                               Style="{StaticResource CardTitleStyle}" />
-                        <controls:PageInformationButton Grid.Column="1"
-                                                        Style="{StaticResource PageInformationButtonCorner}"
-                                                        Title="{x:Static modelUtilities:MobileTexts.EncryptResultContentTitle}"
-                                                        Message="{x:Static modelUtilities:MobileTexts.DialogTextResult}" />
-                    </Grid>
-                </Grid>
-            </Border>
+            <controls:PageCard x:Name="Card"
+                               Grid.Row="1"
+                               Title="{x:Static modelUtilities:MobileTexts.EncryptResultContentTitle}"
+                               Information="{x:Static modelUtilities:MobileTexts.DialogTextResult}">
+                <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
+                    <VerticalStackLayout>
+                        <Label Text="{Binding FileNameText}"
+                               Style="{StaticResource FileName}" />
+                        <Label Text="{Binding MetadataText}"
+                               Style="{StaticResource ExtraFileInfo}" />
+                    </VerticalStackLayout>
+                    <controls:PageMessages MessageText="{Binding MessageText}"
+                                           StatusText="{Binding StatusText}" />
+                    <VerticalStackLayout x:Name="ActionButtonStack"
+                                         HorizontalOptions="Center"
+                                         Spacing="{StaticResource LayoutSpacing}">
+                        <Button Text="{x:Static modelUtilities:MobileTexts.ButtonSaveAs}"
+                                Command="{Binding SaveAsCommand}" />
+                        <Button Text="{x:Static modelUtilities:MobileTexts.ButtonSendTo}"
+                                Command="{Binding SendToCommand}" />
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </controls:PageCard>
         </Grid>
         <ActivityIndicator IsRunning="{Binding IsBusy}"
                            IsVisible="{Binding IsBusy}"

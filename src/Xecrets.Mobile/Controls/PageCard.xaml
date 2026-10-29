@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    Xecrets Ez Mobile - Copyright © 2026 Svante Seleborg, All Rights Reserved.
+
+    This code file is part of Xecrets Ez Mobile, an application that uses the Xecrets.Net library, parts of which in turn
+    are derived from AxCrypt as licensed under GPL v3 or later. This code is not derived from AxCrypt. It is separately
+    authored and copyrighted, and licensed only as follows unless explicitly licensed otherwise.
+
+    Xecrets Ez Mobile is free software: you can redistribute it and/or modify it under the terms of the GNU General
+    Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+    later version.
+
+    No additional permission is granted beyond that license. If you incorporate this code into a larger work and
+    distribute that work to others, you are responsible for complying with the GNU General Public License version 3 or
+    later. See https://www.gnu.org/licenses/ for more information.
+
+    Xecrets Ez Mobile is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+    implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+    details.
+
+    You should have received a copy of the GNU General Public License along with Xecrets Ez Mobile. If not, see
+    <https://www.gnu.org/licenses/>.
+
+    The source repository can be found at https://github.com/xecrets/xecrets-mobile please go there for more information,
+    suggestions and contributions. You may also visit https://www.axantum.com for more information about the author.
+-->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
+             x:Class="Xecrets.Mobile.Controls.PageCard"
+             x:ClassModifier="internal"
+             x:DataType="controls:PageCard"
+             x:Name="Root"
+             VerticalOptions="Start"
+             HorizontalOptions="Center"
+             BodyPadding="{StaticResource PageInformationBodyPadding}">
+    <!-- Content is set explicitly, since Body is the content property, so that the pages can give the body directly. -->
+    <ContentView.Content>
+        <!-- The body and the header actions are hosted, not bound to this control as binding context, so that they
+             keep the binding context of the page. The title row comes after the body so that it is drawn on top. -->
+        <Border x:Name="CardBorder"
+                Style="{StaticResource PageInformationCardStyle}">
+            <Grid RowDefinitions="Auto,*"
+                  RowSpacing="{StaticResource CardTitleSpacing}">
+                <ScrollView Grid.Row="1">
+                    <ContentView x:Name="BodyHost"
+                                 Padding="{Binding BodyPadding, Source={x:Reference Root}, x:DataType=controls:PageCard}" />
+                </ScrollView>
+                <Grid Grid.Row="0"
+                      ColumnDefinitions="*,Auto">
+                    <Label Text="{Binding Title, Source={x:Reference Root}, x:DataType=controls:PageCard}"
+                           Style="{StaticResource CardTitleStyle}" />
+                    <HorizontalStackLayout Grid.Column="1"
+                                           VerticalOptions="Center">
+                        <ContentView x:Name="HeaderActionsHost"
+                                     VerticalOptions="Center" />
+                        <controls:PageInformationButton Style="{StaticResource PageInformationButtonCorner}"
+                                                        Title="{Binding Title, Source={x:Reference Root}, x:DataType=controls:PageCard}"
+                                                        Message="{Binding Information, Source={x:Reference Root}, x:DataType=controls:PageCard}" />
+                    </HorizontalStackLayout>
+                </Grid>
+            </Grid>
+        </Border>
+    </ContentView.Content>
+</ContentView>

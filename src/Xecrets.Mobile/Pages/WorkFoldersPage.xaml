@@ -58,33 +58,43 @@
               Padding="{StaticResource ContentTitleLayoutPadding}"
               RowSpacing="{StaticResource LayoutSpacing}">
             <pageControls:PageBreadcrumb Text="{Binding Breadcrumb}" />
-            <Border x:Name="ContentColumn"
-                    Grid.Row="1"
-                    VerticalOptions="Start"
-                    HorizontalOptions="Center"
-                    Style="{StaticResource PageInformationCardStyle}">
-                <Grid RowDefinitions="Auto,*" RowSpacing="{StaticResource CardTitleSpacing}">
-                    <ScrollView Grid.Row="1">
-                        <Grid x:Name="ContentBody" Padding="{StaticResource IconRowBodyPadding}">
-                            <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
-                            <!-- Without any folders, the page information is shown. -->
-                            <Border Margin="{StaticResource IconRowBodyContentMargin}"
-                                    IsVisible="{Binding NoFoldersText, Converter={StaticResource StringNotEmptyConverter}}"
-                                    BackgroundColor="{AppThemeBinding Light={StaticResource LightOutline}, Dark={StaticResource DarkOutline}}"
-                                    Stroke="{AppThemeBinding Light={StaticResource LightOutline}, Dark={StaticResource DarkOutline}}"
-                                    StrokeShape="RoundRectangle 4"
-                                    Padding="10,6">
-                                <Label Text="{Binding NoFoldersText}"
-                                       FontSize="13" />
-                            </Border>
-                            <pageControls:PageMessages Margin="{StaticResource IconRowBodyContentMargin}"
-                                                       MessageText="{Binding MessageText}"
-                                                       StatusText="{Binding StatusText}" />
-                            <VerticalStackLayout x:Name="ActionButtonStack"
-                                                 HorizontalOptions="Center"
-                                                 Spacing="{StaticResource LayoutSpacing}">
-                            <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}"
-                                                 BindableLayout.ItemsSource="{Binding Folders}">
+            <pageControls:PageCard x:Name="Card"
+                                   Grid.Row="1"
+                                   Title="{x:Static modelUtilities:MobileTexts.WorkFoldersContentTitle}"
+                                   Information="{Binding Description}"
+                                   BodyPadding="{StaticResource IconRowBodyPadding}">
+                <pageControls:PageCard.HeaderActions>
+                    <HorizontalStackLayout VerticalOptions="Center">
+                        <ImageButton Style="{StaticResource CardHeaderIconButtonStyle}"
+                                     Command="{Binding AddCommand}">
+                            <ImageButton.Source>
+                                <FontImageSource Glyph="{x:Static f:FluentUI.add_28_regular}"
+                                                 FontFamily="{x:Static f:FluentUI.FontFamily}"
+                                                 Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                                                 Size="28" />
+                            </ImageButton.Source>
+                        </ImageButton>
+                    </HorizontalStackLayout>
+                </pageControls:PageCard.HeaderActions>
+                <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
+                    <!-- Without any folders, the page information is shown. -->
+                    <Border Margin="{StaticResource IconRowBodyContentMargin}"
+                            IsVisible="{Binding NoFoldersText, Converter={StaticResource StringNotEmptyConverter}}"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource LightOutline}, Dark={StaticResource DarkOutline}}"
+                            Stroke="{AppThemeBinding Light={StaticResource LightOutline}, Dark={StaticResource DarkOutline}}"
+                            StrokeShape="RoundRectangle 4"
+                            Padding="10,6">
+                        <Label Text="{Binding NoFoldersText}"
+                               FontSize="13" />
+                    </Border>
+                    <pageControls:PageMessages Margin="{StaticResource IconRowBodyContentMargin}"
+                                               MessageText="{Binding MessageText}"
+                                               StatusText="{Binding StatusText}" />
+                    <VerticalStackLayout x:Name="ActionButtonStack"
+                                         HorizontalOptions="Center"
+                                         Spacing="{StaticResource LayoutSpacing}">
+                        <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}"
+                                             BindableLayout.ItemsSource="{Binding Folders}">
                             <BindableLayout.ItemTemplate>
                                 <DataTemplate x:DataType="mobileModels:WorkFolderEntry">
                                     <!-- Rename leads and remove trails, so that the two are as far apart as
@@ -103,11 +113,11 @@
                                             </ImageButton.Source>
                                         </ImageButton>
                                         <pageControls:ActionButton Grid.Column="1"
-                                                               VerticalOptions="Center"
-                                                               Title="{Binding ListDisplayName}"
-                                                               Icon="{StaticResource IconMyFolderButton}"
-                                                               Command="{Binding OpenCommand}"
-                                                               CommandParameter="{Binding Folder}" />
+                                                                   VerticalOptions="Center"
+                                                                   Title="{Binding ListDisplayName}"
+                                                                   Icon="{StaticResource IconMyFolderButton}"
+                                                                   Command="{Binding OpenCommand}"
+                                                                   CommandParameter="{Binding Folder}" />
                                         <ImageButton Grid.Column="2"
                                                      Style="{StaticResource ActionRowIconButtonStyle}"
                                                      Command="{Binding RemoveCommand}"
@@ -122,38 +132,15 @@
                                     </Grid>
                                 </DataTemplate>
                             </BindableLayout.ItemTemplate>
-                            </VerticalStackLayout>
-                            <BoxView Style="{StaticResource ActionDividerStyle}" />
-                            <pageControls:ActionButton Margin="{StaticResource IconRowActionButtonMargin}"
+                        </VerticalStackLayout>
+                        <BoxView Style="{StaticResource ActionDividerStyle}" />
+                        <pageControls:ActionButton Margin="{StaticResource IconRowActionButtonMargin}"
                                                    Title="{x:Static modelUtilities:MobileTexts.ButtonBrowseElsewhere}"
                                                    Icon="{StaticResource IconOpenFolderButton}"
                                                    Command="{Binding BrowseCommand}" />
-                            </VerticalStackLayout>
-                            </VerticalStackLayout>
-                        </Grid>
-                    </ScrollView>
-                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-                        <Label Text="{x:Static modelUtilities:MobileTexts.WorkFoldersContentTitle}"
-                               Style="{StaticResource CardTitleStyle}" />
-                        <HorizontalStackLayout Grid.Column="1" VerticalOptions="Center">
-                            <ImageButton VerticalOptions="Center"
-                                         Background="Transparent"
-                                         Padding="8"
-                                         Command="{Binding AddCommand}">
-                                <ImageButton.Source>
-                                    <FontImageSource Glyph="{x:Static f:FluentUI.add_28_regular}"
-                                                     FontFamily="{x:Static f:FluentUI.FontFamily}"
-                                                     Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
-                                                     Size="28" />
-                                </ImageButton.Source>
-                            </ImageButton>
-                            <pageControls:PageInformationButton Style="{StaticResource PageInformationButtonCorner}"
-                                                                 Title="{x:Static modelUtilities:MobileTexts.WorkFoldersContentTitle}"
-                                                                 Message="{Binding Description}" />
-                        </HorizontalStackLayout>
-                    </Grid>
-                </Grid>
-            </Border>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </pageControls:PageCard>
         </Grid>
         <ActivityIndicator IsRunning="{Binding IsBusy}"
                            IsVisible="{Binding IsBusy}"

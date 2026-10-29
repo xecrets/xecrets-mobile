@@ -461,6 +461,14 @@
         <Setter Property="VerticalOptions" Value="Center" />
     </Style>
 
+    <!-- An icon button in the card title row, beside the page information button. -->
+    <Style x:Key="CardHeaderIconButtonStyle"
+           TargetType="ImageButton">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Padding" Value="8" />
+        <Setter Property="VerticalOptions" Value="Center" />
+    </Style>
+
     <Style TargetType="Button">
         <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
         <Setter Property="TextColor" Value="{StaticResource White}" />

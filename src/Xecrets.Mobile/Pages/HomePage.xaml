@@ -45,56 +45,41 @@
               Padding="{StaticResource ContentTitleLayoutPadding}"
               RowSpacing="{StaticResource LayoutSpacing}">
             <controls:PageBreadcrumb Text="{Binding Breadcrumb}" />
-            <Border x:Name="ContentColumn"
-                    Grid.Row="1"
-                    VerticalOptions="Start"
-                    HorizontalOptions="Center"
-                    Style="{StaticResource PageInformationCardStyle}">
-                <Grid RowDefinitions="Auto,*" RowSpacing="{StaticResource CardTitleSpacing}">
-                    <ScrollView Grid.Row="1">
-                        <Grid x:Name="ContentBody" Padding="{StaticResource PageInformationBodyPadding}">
-                            <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
-                                <controls:PageMessages MessageText="{Binding MessageText}"
-                                                       StatusText="{Binding StatusText}" />
-                                <VerticalStackLayout x:Name="ActionButtonStack"
-                                                     HorizontalOptions="Center"
-                                                     Spacing="{StaticResource LayoutSpacing}">
-                                    <controls:ActionButton Title="{x:Static modelUtilities:MobileTexts.RecentFilesContentTitle}"
-                                                           Description="{x:Static modelUtilities:MobileTexts.HomeDetailRecentFiles}"
-                                                           Icon="{StaticResource IconRecentFilesButton}"
-                                                           Command="{Binding RecentFilesCommand}" />
-                                    <BoxView Style="{StaticResource ActionDividerStyle}" />
-                                    <controls:ActionButton Title="{x:Static modelUtilities:MobileTexts.HomeButtonEncryptDecryptOriginal}"
-                                                           Description="{x:Static modelUtilities:MobileTexts.HomeDetailReplace}"
-                                                           Icon="{StaticResource IconReplaceButton}"
-                                                           Command="{Binding MyFoldersCommand}" />
-                                    <controls:ActionButton Title="{x:Static modelUtilities:MobileTexts.HomeButtonEncryptDecryptCopy}"
-                                                           Description="{x:Static modelUtilities:MobileTexts.HomeDetailCopy}"
-                                                           Icon="{StaticResource IconCopyButton}"
-                                                           Command="{Binding InAppCommand}" />
-                                    <controls:ActionButton Title="{x:Static modelUtilities:MobileTexts.ButtonEncryptToShare}"
-                                                           Description="{x:Static modelUtilities:MobileTexts.HomeDetailShare}"
-                                                           Icon="{StaticResource IconShareButton}"
-                                                           Command="{Binding EncryptToShareCommand}" />
-                                    <BoxView Style="{StaticResource ActionDividerStyle}" />
-                                    <controls:ActionButton Title="{x:Static modelUtilities:MobileTexts.HomeButtonDelete}"
-                                                           Description="{x:Static modelUtilities:MobileTexts.HomeDetailDelete}"
-                                                           Icon="{StaticResource IconDeleteButton}"
-                                                           Command="{Binding WipeCommand}" />
-                                </VerticalStackLayout>
-                            </VerticalStackLayout>
-                        </Grid>
-                    </ScrollView>
-                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-                        <Label Text="{x:Static modelUtilities:MobileTexts.HomeContentTitle}"
-                               Style="{StaticResource CardTitleStyle}" />
-                        <controls:PageInformationButton Grid.Column="1"
-                                                        Style="{StaticResource PageInformationButtonCorner}"
-                                                        Title="{x:Static modelUtilities:MobileTexts.HomeContentTitle}"
-                                                        Message="{x:Static modelUtilities:MobileTexts.HomeDescription}" />
-                    </Grid>
-                </Grid>
-            </Border>
+            <controls:PageCard x:Name="Card"
+                               Grid.Row="1"
+                               Title="{x:Static modelUtilities:MobileTexts.HomeContentTitle}"
+                               Information="{x:Static modelUtilities:MobileTexts.HomeDescription}">
+                <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
+                    <controls:PageMessages MessageText="{Binding MessageText}"
+                                           StatusText="{Binding StatusText}" />
+                    <VerticalStackLayout x:Name="ActionButtonStack"
+                                         HorizontalOptions="Center"
+                                         Spacing="{StaticResource LayoutSpacing}">
+                        <controls:ActionButton Title="{x:Static modelUtilities:MobileTexts.RecentFilesContentTitle}"
+                                               Description="{x:Static modelUtilities:MobileTexts.HomeDetailRecentFiles}"
+                                               Icon="{StaticResource IconRecentFilesButton}"
+                                               Command="{Binding RecentFilesCommand}" />
+                        <BoxView Style="{StaticResource ActionDividerStyle}" />
+                        <controls:ActionButton Title="{x:Static modelUtilities:MobileTexts.HomeButtonEncryptDecryptOriginal}"
+                                               Description="{x:Static modelUtilities:MobileTexts.HomeDetailReplace}"
+                                               Icon="{StaticResource IconReplaceButton}"
+                                               Command="{Binding MyFoldersCommand}" />
+                        <controls:ActionButton Title="{x:Static modelUtilities:MobileTexts.HomeButtonEncryptDecryptCopy}"
+                                               Description="{x:Static modelUtilities:MobileTexts.HomeDetailCopy}"
+                                               Icon="{StaticResource IconCopyButton}"
+                                               Command="{Binding InAppCommand}" />
+                        <controls:ActionButton Title="{x:Static modelUtilities:MobileTexts.ButtonEncryptToShare}"
+                                               Description="{x:Static modelUtilities:MobileTexts.HomeDetailShare}"
+                                               Icon="{StaticResource IconShareButton}"
+                                               Command="{Binding EncryptToShareCommand}" />
+                        <BoxView Style="{StaticResource ActionDividerStyle}" />
+                        <controls:ActionButton Title="{x:Static modelUtilities:MobileTexts.HomeButtonDelete}"
+                                               Description="{x:Static modelUtilities:MobileTexts.HomeDetailDelete}"
+                                               Icon="{StaticResource IconDeleteButton}"
+                                               Command="{Binding WipeCommand}" />
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </controls:PageCard>
         </Grid>
         <ActivityIndicator IsRunning="{Binding IsBusy}"
                            IsVisible="{Binding IsBusy}"

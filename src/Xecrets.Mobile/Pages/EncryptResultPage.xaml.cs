@@ -59,6 +59,6 @@ internal partial class EncryptResultPage : IQueryAttributable
     {
         base.OnSizeAllocated(width, height);
 
-        LayoutMetrics.UpdateCenteredContentLayout(width, ContentRoot, ContentColumn, ActionButtonStack, ContentBody.Padding);
+        LayoutMetrics.UpdateCenteredContentLayout(width, ContentRoot, Card, ActionButtonStack);
     }
 }
