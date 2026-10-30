@@ -39,30 +39,72 @@ namespace Xecrets.Mobile.Models.Services;
 
 internal sealed class EncryptionPreparationService(
     EncryptRequestFactory encryptRequestFactory,
+    IProfileService profileService,
     ITransientFileService transientFileService,
     ICoreServices coreServices)
     : IEncryptionPreparationService
 {
-    public async Task<EncryptionPreparationResult> EncryptForCurrentProfileAsync(
-        IReadableFile source)
+    public async Task<EncryptionPreparationResult> EncryptWithCurrentProfileAsync(IReadableFile source)
     {
         await using Stream cleartext = await source.OpenReadAsync();
-        return await EncryptAsync(cleartext, source.FileName, encryptRequestFactory.ForCurrentProfile(source.FileName), false);
+        return await EncryptAsync(cleartext, source.FileName, encryptRequestFactory.Create(source.FileName), false);
     }
 
-    public async Task<EncryptionPreparationResult> EncryptForPasswordAsync(
-        IReadableFile source,
-        string password)
+    public async Task<EncryptionPreparationResult> EncryptWithPasswordAsync(IReadableFile source, string password)
     {
         await using Stream cleartext = await source.OpenReadAsync();
-        return await EncryptAsync(cleartext, source.FileName, EncryptRequestFactory.ForPassword(source.FileName, password), true);
+        return await EncryptAsync(cleartext, source.FileName, encryptRequestFactory.Create(source.FileName, password), true);
     }
+
+    /// <summary>
+    /// The file is decrypted with any of the known passwords to a temporary file, as for a decrypted copy,
+    /// which is wiped once the copy is encrypted, keeping the original name and times of the file.
+    /// </summary>
+    public async Task<EncryptionPreparationResult?> ReEncryptWithPasswordAsync(IReadableFile encryptedSource, string password)
+    {
+        await using Stream encrypted = await encryptedSource.OpenReadAsync();
+        using IDecryptionSession session = await coreServices.OpenDecryptionAsync(
+            encrypted,
+            new DecryptRequest(KnownIdentities(), new Progress<Progress>(_ => { })));
+        if (!session.IsDecryptable)
+        {
+            return null;
+        }
+
+        string cleartextPath = transientFileService.CreateHandoffPath(session.OriginalFileName);
+        try
+        {
+            await using (FileStream decrypted = File.Create(cleartextPath))
+            {
+                await session.DecryptAsync(decrypted);
+            }
+
+            EncryptRequest request = encryptRequestFactory.Create(session.OriginalFileName, password, session.EncryptedWithParameters) with
+            {
+                CreationTimeUtc = session.CreationTimeUtc,
+                LastAccessTimeUtc = session.LastAccessTimeUtc,
+                LastWriteTimeUtc = session.LastWriteTimeUtc,
+            };
+            await using FileStream cleartext = File.OpenRead(cleartextPath);
+            return await EncryptAsync(cleartext, session.OriginalFileName, request, true);
+        }
+        finally
+        {
+            await transientFileService.WipeTransientFileAsync(cleartextPath);
+        }
+    }
+
+    private List<Identity> KnownIdentities() =>
+    [
+        profileService.GetIdentity(),
+        .. profileService.GetExtraPasswords().Select(extraPassword => new Identity(extraPassword.Password, [])),
+    ];
 
     private async Task<EncryptionPreparationResult> EncryptAsync(
         Stream cleartext,
         string originalFileName,
         EncryptRequest request,
-        bool isForPassword)
+        bool encryptCopyForSharing)
     {
         string fileName = originalFileName.ToEncryptedName(string.Empty);
         string temporaryPath = transientFileService.CreateEncryptedOutputPath(fileName);
@@ -75,7 +117,7 @@ internal sealed class EncryptionPreparationService(
             fileName,
             EncryptedFileType.ContentType,
             fileSize,
-            isForPassword);
+            encryptCopyForSharing);
     }
 
 }

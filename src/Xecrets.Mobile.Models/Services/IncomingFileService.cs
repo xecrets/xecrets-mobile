@@ -162,7 +162,7 @@ internal sealed class IncomingFileService(
                 }
             }
 
-            EncryptionPreparationResult result = await encryptionPreparationService.EncryptForCurrentProfileAsync(
+            EncryptionPreparationResult result = await encryptionPreparationService.EncryptWithCurrentProfileAsync(
                 new LocalReadableFile(file.FilePath, file.DisplayName));
             await userInterfaceService.NavigateToAsync(AppDestination.EncryptResult, result);
         }

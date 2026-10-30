@@ -55,7 +55,7 @@ public partial class EncryptResultPageModel(
     public string Breadcrumb => BreadcrumbFormatter.Format(flowContext.Origin, Heading);
 
     public string Heading =>
-        Result.IsForPassword ? MobileTexts.BreadcrumbEncryptToShare : MobileTexts.BreadcrumbEncryptedCopy;
+        Result.EncryptCopyForSharing ? MobileTexts.BreadcrumbEncryptToShare : MobileTexts.BreadcrumbEncryptedCopy;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Breadcrumb))]
@@ -104,7 +104,7 @@ public partial class EncryptResultPageModel(
             if (saved is not null)
             {
                 await recentFilesService.AddFlowSourceAsync(
-                    encryptionResult.IsForPassword
+                    encryptionResult.EncryptCopyForSharing
                         ? RecentFileOperation.EncryptWithSaveAs
                         : RecentFileOperation.EncryptCopySaveAs);
                 await GoHomeAsync();
@@ -137,7 +137,7 @@ public partial class EncryptResultPageModel(
                 result.FilePath,
                 result.DisplayName,
                 result.ContentType);
-            await recentFilesService.AddFlowSourceAsync(result.IsForPassword
+            await recentFilesService.AddFlowSourceAsync(result.EncryptCopyForSharing
                 ? RecentFileOperation.EncryptWithSendTo
                 : RecentFileOperation.EncryptCopySendTo);
         }

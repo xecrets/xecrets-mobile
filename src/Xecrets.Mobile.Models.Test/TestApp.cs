@@ -51,7 +51,7 @@ internal sealed class TestApp
         Recent = new RecentFilesService(Session, Flow, Access, CrashLog);
         FolderAccess = new FolderAccessWorkflow(Access, Storage, UserInterface);
         Wiper = new FakeFileWiper(Access);
-        Encryption = new EncryptionPreparationService(new EncryptRequestFactory(Profile), Transient, Core);
+        Encryption = new EncryptionPreparationService(new EncryptRequestFactory(Profile), Profile, Transient, Core);
         OperationService = new WorkFolderOperationService(
             Core,
             Profile,

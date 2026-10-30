@@ -193,19 +193,26 @@ public sealed class FileOperationWorkflow(
         }
 
         flowContext.Begin(FlowOrigin.Home, file);
-        EncryptionPreparationResult result = await encryptionPreparationService.EncryptForCurrentProfileAsync(
+        EncryptionPreparationResult result = await encryptionPreparationService.EncryptWithCurrentProfileAsync(
             new ReferencedReadableFile(fileAccess, file));
         await userInterfaceService.NavigateToAsync(AppDestination.EncryptResult, result);
     }
 
     /// <summary>
-    /// The user is sent on to enter the password to encrypt a copy of the file with, unless it is encrypted already.
+    /// The user is sent on to enter the password to encrypt, or re-encrypt, a copy of the file with. The extension of the file
+    /// must match the contents so a .axx file must be actually encrypted, and a file without .axx must not be encrypted.
     /// </summary>
     private async Task ShareAsync(FileReference file)
     {
-        if (await IsFileOrNameEncryptedAsync(file))
+        if (!file.Name.IsEncrypted() && await IsFileEncryptedAsync(file))
         {
             await userInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextAlreadyEncrypted);
+            return;
+        }
+
+        if (file.Name.IsEncrypted() && !await IsFileEncryptedAsync(file))
+        {
+            await userInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextNotEncrypted);
             return;
         }
 

@@ -65,7 +65,7 @@ internal sealed class WorkFolderOperationService(
         string destinationName = file.Name.ToEncryptedName("");
         string folderId = await fileAccess.GetFolderOfFileAsync(file.Id);
         bool overwrite = await ConfirmOverwriteAsync(folderId, destinationName);
-        EncryptionPreparationResult encrypted = await encryptionPreparationService.EncryptForCurrentProfileAsync(
+        EncryptionPreparationResult encrypted = await encryptionPreparationService.EncryptWithCurrentProfileAsync(
             new ReferencedReadableFile(fileAccess, file));
         string resultId;
         try
@@ -91,7 +91,7 @@ internal sealed class WorkFolderOperationService(
     {
         try
         {
-            EncryptionPreparationResult encrypted = await encryptionPreparationService.EncryptForCurrentProfileAsync(
+            EncryptionPreparationResult encrypted = await encryptionPreparationService.EncryptWithCurrentProfileAsync(
                 new ReferencedReadableFile(fileAccess, file));
             try
             {

@@ -35,33 +35,41 @@ using Xecrets.Mobile.Models.Abstractions;
 namespace Xecrets.Mobile.Models.Services;
 
 /// <summary>
-/// Builds the requests to encrypt files, either for the current profile or for a password only.
+/// Builds requests to encrypt a file.
 /// </summary>
 internal sealed class EncryptRequestFactory(IProfileService profileService)
 {
-    public EncryptRequest ForCurrentProfile(string originalFileName)
+    /// <summary>
+    /// Encrypts with the current profile password and public key,
+    /// </summary>
+    /// <param name="originalFileName"></param>
+    /// <returns></returns>
+    public EncryptRequest Create(string originalFileName) => Create(originalFileName, profileService.GetIdentity().Passphrase);
+
+    /// <summary>
+    /// Encrypts with the password given and the profile public key.
+    /// </summary>
+    /// <param name="originalFileName"></param>
+    /// <param name="password"></param>
+    /// <returns></returns>
+    public EncryptRequest Create(string originalFileName, string password)
     {
-        DateTime utcNow = DateTime.UtcNow;
-        Identity identity = profileService.GetIdentity();
-        return new EncryptRequest(
-            identity.Passphrase,
-            [profileService.GetPublicKey()],
-            [],
-            originalFileName,
-            utcNow,
-            utcNow,
-            utcNow,
-            true,
-            new Progress<Progress>(_ => { }));
+        EncryptedWithParameters encryptedWith = new(password, [profileService.GetPublicKey()], []);
+        return Create(originalFileName, password, encryptedWith);
     }
 
-    public static EncryptRequest ForPassword(string originalFileName, string password)
+    /// <summary>
+    /// Encrypts with the password given, for all recipients and master keys a file was encrypted for, and for the
+    /// current profile, unless it was already among them. Whatever password the file was encrypted with is not kept.
+    /// </summary>
+    public EncryptRequest Create(string originalFileName, string password, EncryptedWithParameters encryptedWith)
     {
         DateTime utcNow = DateTime.UtcNow;
+        EncryptedWithParameters reEncryptWith = encryptedWith.ReEncryptWith(password, [profileService.GetPublicKey()]);
         return new EncryptRequest(
-            password,
-            [],
-            [],
+            reEncryptWith.Passphrase,
+            reEncryptWith.Recipients,
+            reEncryptWith.MasterKeys,
             originalFileName,
             utcNow,
             utcNow,

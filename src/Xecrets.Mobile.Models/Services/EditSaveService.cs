@@ -172,7 +172,7 @@ internal sealed class EditSaveService(
             state.UpdateFileSize(new FileInfo(state.File.FilePath).Length);
         }
 
-        return encryptRequestFactory.ForCurrentProfile(state.OriginalFileName);
+        return encryptRequestFactory.Create(state.OriginalFileName);
     }
 
     /// <summary>

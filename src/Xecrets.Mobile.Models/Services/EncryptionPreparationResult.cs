@@ -30,14 +30,14 @@
 
 namespace Xecrets.Mobile.Models.Services;
 
-/// <param name="IsForPassword">The file is encrypted with a password chosen for sharing it, rather than for the
+/// <param name="EncryptCopyForSharing">The file is encrypted with a password chosen for sharing it, rather than for the
 /// current profile.</param>
 public sealed record EncryptionPreparationResult(
     string FilePath,
     string DisplayName,
     string ContentType,
     long FileSize,
-    bool IsForPassword)
+    bool EncryptCopyForSharing)
 {
     public static EncryptionPreparationResult Empty { get; } = new(
         string.Empty,

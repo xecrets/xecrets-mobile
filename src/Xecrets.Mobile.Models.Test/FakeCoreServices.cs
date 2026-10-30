@@ -50,6 +50,13 @@ internal sealed class FakeCoreServices : ICoreServices
     /// </summary>
     public string? Password { get; set; }
 
+    /// <summary>
+    /// What any file that is decrypted was encrypted with.
+    /// </summary>
+    public EncryptedWithParameters EncryptedWith { get; set; } = EncryptedWithParameters.Empty;
+
+    public List<EncryptRequest> EncryptRequests { get; } = [];
+
     public async Task<bool> IsEncryptedAsync(Func<Task<Stream>> openReadAsync)
     {
         await using Stream stream = await openReadAsync();
@@ -58,6 +65,7 @@ internal sealed class FakeCoreServices : ICoreServices
 
     public async Task EncryptAsync(Stream cleartext, Stream encrypted, EncryptRequest request)
     {
+        EncryptRequests.Add(request);
         string contents = await new StreamReader(cleartext).ReadToEndAsync();
         await encrypted.WriteAsync(Encoding.UTF8.GetBytes($"{_marker}{request.OriginalFileName}\n{contents}"));
     }
@@ -73,11 +81,11 @@ internal sealed class FakeCoreServices : ICoreServices
 
         if (Password is not null && request.Identities.All(identity => identity.Passphrase != Password))
         {
-            return new FakeDecryptionSession(false, string.Empty, string.Empty);
+            return new FakeDecryptionSession(false, string.Empty, string.Empty, EncryptedWithParameters.Empty);
         }
 
         string[] parts = contents[_marker.Length..].Split('\n', 2);
-        return new FakeDecryptionSession(true, parts[0], parts[1]);
+        return new FakeDecryptionSession(true, parts[0], parts[1], EncryptedWith);
     }
 
     public Task<KeyPair> CreateKeyPairAsync(string email, string passphrase, DateTimeOffset createdUtc) =>
@@ -93,7 +101,11 @@ internal sealed class FakeCoreServices : ICoreServices
     public bool TryParseEmail(string email, [NotNullWhen(true)] out string? address) =>
         throw new NotSupportedException();
 
-    private sealed class FakeDecryptionSession(bool isDecryptable, string originalFileName, string contents)
+    private sealed class FakeDecryptionSession(
+        bool isDecryptable,
+        string originalFileName,
+        string contents,
+        EncryptedWithParameters encryptedWith)
         : IDecryptionSession
     {
         public bool IsDecryptable => isDecryptable;
@@ -101,7 +113,7 @@ internal sealed class FakeCoreServices : ICoreServices
         public DateTime CreationTimeUtc => DateTime.UnixEpoch;
         public DateTime LastAccessTimeUtc => DateTime.UnixEpoch;
         public DateTime LastWriteTimeUtc => DateTime.UnixEpoch;
-        public EncryptedWithParameters EncryptedWithParameters => throw new NotSupportedException();
+        public EncryptedWithParameters EncryptedWithParameters => encryptedWith;
         public Task DecryptAsync(Stream cleartext) => cleartext.WriteAsync(Encoding.UTF8.GetBytes(contents)).AsTask();
         public void Dispose() { }
     }

@@ -51,7 +51,7 @@ internal sealed class FakeProfileService : IProfileService
     public Identity GetIdentity() => new("password", []);
     public IReadOnlyList<PasswordUsage> GetExtraPasswords() => [];
     public Task RecordExtraPasswordUseAsync(string password) => Task.CompletedTask;
-    public PublicKey GetPublicKey() => null!;
+    public PublicKey GetPublicKey() => new("me@example.com", "me");
     public Task<bool> ShouldShowAsync(DontShowAgain notice) => throw new NotSupportedException();
     public Task SetDontShowAgainAsync(DontShowAgain notice) => throw new NotSupportedException();
 

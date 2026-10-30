@@ -34,7 +34,13 @@ namespace Xecrets.Mobile.Models.Abstractions;
 
 public interface IEncryptionPreparationService
 {
-    Task<EncryptionPreparationResult> EncryptForCurrentProfileAsync(IReadableFile source);
+    Task<EncryptionPreparationResult> EncryptWithCurrentProfileAsync(IReadableFile source);
 
-    Task<EncryptionPreparationResult> EncryptForPasswordAsync(IReadableFile source, string password);
+    Task<EncryptionPreparationResult> EncryptWithPasswordAsync(IReadableFile source, string password);
+
+    /// <summary>
+    /// Encrypts a copy of an encrypted file with the password, for all that the file is encrypted for and for the current
+    /// profile. Returns null when none of the known passwords opens the file.
+    /// </summary>
+    Task<EncryptionPreparationResult?> ReEncryptWithPasswordAsync(IReadableFile encryptedSource, string password);
 }

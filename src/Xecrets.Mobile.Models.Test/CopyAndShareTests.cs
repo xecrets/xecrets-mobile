@@ -31,6 +31,7 @@
 using NUnit.Framework;
 
 using Xecrets.Common.Models;
+using Xecrets.Core.Models;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.PageModels;
 using Xecrets.Mobile.Models.Services;
@@ -52,7 +53,7 @@ public sealed class CopyAndShareTests
         await app.Operations.PickAndRunAsync(WorkFolderIntent.Copy, docs);
 
         Assert.That(app.UserInterface.Destinations, Is.EqualTo([AppDestination.EncryptResult]));
-        Assert.That(((EncryptionPreparationResult)app.UserInterface.Payloads.Single()).IsForPassword, Is.False);
+        Assert.That(((EncryptionPreparationResult)app.UserInterface.Payloads.Single()).EncryptCopyForSharing, Is.False);
         Assert.That(app.Access.Files.Keys, Is.EqualTo(["docs/a.txt"]));
         Assert.That(app.Flow.Origin, Is.EqualTo(FlowOrigin.Home));
     }
@@ -114,9 +115,12 @@ public sealed class CopyAndShareTests
         Assert.That(app.Flow.Origin, Is.EqualTo(FlowOrigin.Home));
     }
 
-    [TestCase("docs/x.axx", "text")]
-    [TestCase("docs/a.txt", "ENC:a.txt\ntext")]
-    public async Task SharingAnEncryptedFileIsRefusedBeforeThePasswordIsAskedFor(string path, string content)
+    [TestCase("docs/a.txt", "ENC:a.txt\ntext", nameof(MobileTexts.DialogTextAlreadyEncrypted))]
+    [TestCase("docs/x.axx", "text", nameof(MobileTexts.DialogTextNotEncrypted))]
+    public async Task SharingAFileWhoseNameDoesNotMatchItsContentsIsRefusedBeforeThePasswordIsAskedFor(
+        string path,
+        string content,
+        string expectedText)
     {
         TestApp app = new();
         app.AddFile(path, content);
@@ -125,7 +129,97 @@ public sealed class CopyAndShareTests
         await app.Operations.PickAndRunAsync(WorkFolderIntent.Share, null);
 
         Assert.That(app.UserInterface.Destinations, Is.Empty);
-        Assert.That(app.UserInterface.TransientMessages, Is.EqualTo([MobileTexts.DialogTextAlreadyEncrypted]));
+        Assert.That(app.UserInterface.TransientMessages, Is.EqualTo([expectedText switch
+        {
+            nameof(MobileTexts.DialogTextAlreadyEncrypted) => MobileTexts.DialogTextAlreadyEncrypted,
+            nameof(MobileTexts.DialogTextNotEncrypted) => MobileTexts.DialogTextNotEncrypted,
+            _ => throw new ArgumentOutOfRangeException(nameof(expectedText), expectedText, @"Unknown text."),
+        }]));
+    }
+
+    [Test]
+    public async Task SharingAnEncryptedFileAsksForThePasswordForIt()
+    {
+        TestApp app = new();
+        app.AddFile("docs/a.txt.axx", "ENC:a.txt\ntext");
+        app.Access.PickedFiles.Enqueue("docs/a.txt.axx");
+
+        await app.Operations.PickAndRunAsync(WorkFolderIntent.Share, null);
+
+        Assert.That(app.UserInterface.Destinations, Is.EqualTo([AppDestination.EncryptToShare]));
+        Assert.That(((FileReference)app.UserInterface.Payloads.Single()).Id, Is.EqualTo("docs/a.txt.axx"));
+    }
+
+    [Test]
+    public async Task SharePasswordEncryptsACopyOfAnEncryptedFileForAllItIsEncryptedFor()
+    {
+        TestApp app = new();
+        PublicKey other = new("other@example.com", "other");
+        PublicKey masterKey = new("", "master");
+        app.Core.EncryptedWith = new EncryptedWithParameters("password", [other], [masterKey]);
+        app.AddFile("docs/a.txt.axx", "ENC:a.txt\ntext");
+        EncryptToSharePageModel page = CreateSharePage(app, new FileReference("docs/a.txt.axx", "a.txt.axx"));
+        page.Password = "shared";
+
+        await page.SubmitCommand.ExecuteAsync(null);
+
+        Assert.That(app.UserInterface.Destinations, Is.EqualTo([AppDestination.EncryptResult]));
+        EncryptionPreparationResult result = (EncryptionPreparationResult)app.UserInterface.Payloads.Single();
+        Assert.That(result.EncryptCopyForSharing, Is.True);
+        Assert.That(File.ReadAllText(result.FilePath), Is.EqualTo("ENC:a.txt\ntext"));
+        EncryptRequest request = app.Core.EncryptRequests.Single();
+        Assert.That(request.Passphrase, Is.EqualTo("shared"));
+        Assert.That(request.Recipients, Is.EqualTo([other, app.Profile.GetPublicKey()]));
+        Assert.That(request.MasterKeys, Is.EqualTo([masterKey]));
+        Assert.That(request.OriginalFileName, Is.EqualTo("a.txt"));
+        Assert.That(request.LastWriteTimeUtc, Is.EqualTo(DateTime.UnixEpoch));
+        Assert.That(app.Transient.RemainingFiles(), Is.EqualTo([result.FilePath]));
+        Assert.That(app.Access.Files.Keys, Is.EqualTo(["docs/a.txt.axx"]));
+    }
+
+    [Test]
+    public async Task SharePasswordDoesNotAddTheProfileToAnEncryptedFileAgain()
+    {
+        TestApp app = new();
+        app.Core.EncryptedWith = new EncryptedWithParameters("password", [app.Profile.GetPublicKey()], []);
+        app.AddFile("docs/a.txt.axx", "ENC:a.txt\ntext");
+        EncryptToSharePageModel page = CreateSharePage(app, new FileReference("docs/a.txt.axx", "a.txt.axx"));
+        page.Password = "shared";
+
+        await page.SubmitCommand.ExecuteAsync(null);
+
+        Assert.That(app.Core.EncryptRequests.Single().Recipients, Is.EqualTo([app.Profile.GetPublicKey()]));
+    }
+
+    [Test]
+    public async Task SharePasswordForAnEncryptedFileNoKnownPasswordOpensIsRefused()
+    {
+        TestApp app = new();
+        app.Core.Password = "unknown";
+        app.AddFile("docs/a.txt.axx", "ENC:a.txt\ntext");
+        EncryptToSharePageModel page = CreateSharePage(app, new FileReference("docs/a.txt.axx", "a.txt.axx"));
+        page.Password = "shared";
+
+        await page.SubmitCommand.ExecuteAsync(null);
+
+        Assert.That(app.UserInterface.Destinations, Is.Empty);
+        Assert.That(page.StatusText, Is.EqualTo(MobileTexts.DialogTextWrongPasswordOpen));
+        Assert.That(app.Core.EncryptRequests, Is.Empty);
+        Assert.That(app.Transient.RemainingFiles(), Is.Empty);
+    }
+
+    private static EncryptToSharePageModel CreateSharePage(TestApp app, FileReference file)
+    {
+        app.Flow.Begin(FlowOrigin.Home, file);
+        EncryptToSharePageModel page = new(
+            app.Profile,
+            app.Access,
+            app.Encryption,
+            app.Flow,
+            app.CrashLog,
+            app.UserInterface);
+        page.Initialize(file);
+        return page;
     }
 
     [Test]
@@ -147,7 +241,7 @@ public sealed class CopyAndShareTests
         await page.SubmitCommand.ExecuteAsync(null);
 
         Assert.That(app.UserInterface.Destinations, Is.EqualTo([AppDestination.EncryptResult]));
-        Assert.That(((EncryptionPreparationResult)app.UserInterface.Payloads.Single()).IsForPassword, Is.True);
+        Assert.That(((EncryptionPreparationResult)app.UserInterface.Payloads.Single()).EncryptCopyForSharing, Is.True);
         Assert.That(page.Password, Is.Empty);
         Assert.That(app.Access.Files.Keys, Is.EqualTo(["docs/a.txt"]));
         Assert.That(page.Breadcrumb, Is.EqualTo(string.Join(

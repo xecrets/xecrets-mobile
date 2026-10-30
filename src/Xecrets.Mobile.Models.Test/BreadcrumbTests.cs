@@ -43,13 +43,13 @@ public sealed class BreadcrumbTests
     [TestCase(FlowOrigin.Home, false, nameof(MobileTexts.BreadcrumbEncryptedCopy))]
     [TestCase(FlowOrigin.Home, true, nameof(MobileTexts.BreadcrumbEncryptToShare))]
     [TestCase(FlowOrigin.ReceivedFile, false, nameof(MobileTexts.BreadcrumbEncryptedCopy))]
-    public void EncryptResultIsNamedForTheKindOfCopy(FlowOrigin origin, bool isForPassword, string pageTextName)
+    public void EncryptResultIsNamedForTheKindOfCopy(FlowOrigin origin, bool encryptCopyForSharing, string pageTextName)
     {
         TestApp app = new();
         app.Flow.Begin(origin);
         EncryptResultPageModel page = new(null!, app.Operations, app.Recent, app.Transient, app.Flow, app.CrashLog, app.UserInterface);
 
-        page.Initialize(EncryptionPreparationResult.Empty with { IsForPassword = isForPassword });
+        page.Initialize(EncryptionPreparationResult.Empty with { EncryptCopyForSharing = encryptCopyForSharing });
 
         Assert.That(page.Breadcrumb, Is.EqualTo(ExpectedBreadcrumb(origin, pageTextName)));
     }

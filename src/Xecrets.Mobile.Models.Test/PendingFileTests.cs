@@ -159,7 +159,7 @@ public sealed class PendingFileTests
         TestCoreServices core = new();
         PreviewService preview = new(core, profile, transient, new PreviewState(), new DecryptionPasswordRequestState(), new FakeCrashLogService());
         IncomingFileService incoming = new(profile, transient, preview,
-            new EncryptionPreparationService(new EncryptRequestFactory(profile), transient, core), new FlowContext(), core, new FakeCrashLogService(), userInterface);
+            new EncryptionPreparationService(new EncryptRequestFactory(profile), profile, transient, core), new FlowContext(), core, new FakeCrashLogService(), userInterface);
         await incoming.ReceiveAsync(new TestIncomingFileSource(async () =>
         {
             string path = transient.CreateIncomingPath(name);

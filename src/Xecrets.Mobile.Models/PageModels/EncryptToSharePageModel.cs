@@ -35,6 +35,7 @@ using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
 using Xecrets.Mobile.Models.Utilities;
+using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
@@ -86,9 +87,23 @@ public partial class EncryptToSharePageModel(
             StatusText = string.Empty;
 
             string password = Password;
-            EncryptionPreparationResult result = await encryptionPreparationService.EncryptForPasswordAsync(
-                new ReferencedReadableFile(fileAccess, _file),
-                password);
+            ReferencedReadableFile source = new(fileAccess, _file);
+            EncryptionPreparationResult? result;
+
+            if (_file.Name.IsEncrypted())
+            {
+                result = await encryptionPreparationService.ReEncryptWithPasswordAsync(source, password);
+                if (result is null)
+                {
+                    StatusText = MobileTexts.DialogTextWrongPasswordOpen;
+                    return;
+                }
+            }
+            else
+            {
+                result = await encryptionPreparationService.EncryptWithPasswordAsync(source, password);
+            }
+
             await profileService.RecordExtraPasswordUseAsync(password);
 
             Password = string.Empty;
