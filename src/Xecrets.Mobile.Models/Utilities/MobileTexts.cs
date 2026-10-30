@@ -157,8 +157,6 @@ public static class MobileTexts
 
     public static string EditDescription => "Edit the text. Click the save icon to encrypt and save changes.";
 
-    public static string EncryptResultContentTitle => "Copy to share";
-
     // "Password"
     public static string EncryptToShareContentTitle => WatermarkPassword;
 

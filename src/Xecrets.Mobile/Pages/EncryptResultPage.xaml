@@ -46,7 +46,7 @@
             <controls:PageBreadcrumb Text="{Binding Breadcrumb}" />
             <controls:PageCard x:Name="Card"
                                Grid.Row="1"
-                               Title="{x:Static modelUtilities:MobileTexts.EncryptResultContentTitle}"
+                               Title="{Binding Heading}"
                                Information="{x:Static modelUtilities:MobileTexts.DialogTextResult}">
                 <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
                     <VerticalStackLayout>

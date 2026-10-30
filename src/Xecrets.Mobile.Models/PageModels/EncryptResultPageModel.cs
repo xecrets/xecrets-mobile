@@ -52,12 +52,14 @@ public partial class EncryptResultPageModel(
 {
     private const string _nonBreakingSpace = "\u00A0";
 
-    public string Breadcrumb => BreadcrumbFormatter.Format(
-        flowContext.Origin,
-        Result.IsForPassword ? MobileTexts.BreadcrumbEncryptToShare : MobileTexts.BreadcrumbEncryptedCopy);
+    public string Breadcrumb => BreadcrumbFormatter.Format(flowContext.Origin, Heading);
+
+    public string Heading =>
+        Result.IsForPassword ? MobileTexts.BreadcrumbEncryptToShare : MobileTexts.BreadcrumbEncryptedCopy;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Breadcrumb))]
+    [NotifyPropertyChangedFor(nameof(Heading))]
     [NotifyCanExecuteChangedFor(nameof(SaveAsCommand))]
     [NotifyCanExecuteChangedFor(nameof(SendToCommand))]
     // ReSharper disable once MemberCanBeMadeStatic.Local
