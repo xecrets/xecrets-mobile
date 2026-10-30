@@ -396,7 +396,7 @@ public sealed class PendingFileTests
             RecordedPasswords.Add(password);
             return Task.CompletedTask;
         }
-        public PublicKey GetPublicKey() => null!;
+        public PublicKey GetPublicKey() => new("me@example.com", "me");
         public Task<bool> ShouldShowAsync(DontShowAgain notice) => throw new NotSupportedException();
         public Task SetDontShowAgainAsync(DontShowAgain notice) => throw new NotSupportedException();
         public Task<TextEditor> GetTextEditorSettingsAsync() => throw new NotSupportedException();
