@@ -29,6 +29,7 @@
 #endregion Copyright and GPL License
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Maui.Controls;
 using Microsoft.Maui.Hosting;
 
 using Xecrets.Mobile.Abstractions;
@@ -52,6 +53,7 @@ internal static class MauiAppBuilderExtensions
             handlers.AddHandler<FileStateSelector, AndroidFileStateSelectorHandler>();
             handlers.AddHandler<ReadOnlyEditor, AndroidReadOnlyEditorHandler>();
             handlers.AddHandler<PasswordTextEntry, AndroidPasswordTextEntryHandler>();
+            handlers.AddHandler<Shell, AndroidShellRenderer>();
         });
         return builder;
     }
