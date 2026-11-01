@@ -49,7 +49,10 @@
                            Information="{Binding Information}"
                            BodyPadding="{StaticResource IconRowBodyPadding}">
             <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
-                <Entry Margin="{StaticResource IconRowBodyContentMargin}" Text="{Binding Email}"
+                <!-- As wide as the password text field, so both have the same left and right edges. -->
+                <Entry Margin="{StaticResource IconRowBodyLeadingMargin}" x:Name="EmailEntry" Text="{Binding Email}"
+                       HorizontalOptions="Start"
+                       WidthRequest="{Binding PasswordTextEntry.Width, Source={x:Reference PageRoot}, x:DataType=pages:CreateProfilePage}"
                        Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkEmail}"
                        Keyboard="Email"
                        ReturnType="Next" />

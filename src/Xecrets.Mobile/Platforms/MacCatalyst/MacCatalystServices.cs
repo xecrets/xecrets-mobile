@@ -28,58 +28,14 @@
 
 #endregion Copyright and GPL License
 
-using System;
 using System.Runtime.Versioning;
 
-using Foundation;
-
-using Microsoft.Maui;
-using Microsoft.Maui.Controls;
-using Microsoft.Maui.Handlers;
-
-using UIKit;
-
-using Xecrets.Mobile.Abstractions;
-using Xecrets.Mobile.Models.Abstractions;
-using Xecrets.Mobile.Models.Utilities;
 using Xecrets.Mobile.Platforms.Apple;
-using Xecrets.Mobile.Services;
 
 namespace Xecrets.Mobile.Platforms.MacCatalyst;
 
+// Everything is shared with iOS; the class remains so each platform has its own services type.
 [SupportedOSPlatform("maccatalyst")]
-internal class MacCatalystServices : PlatformServicesBase
+internal sealed class MacCatalystServices : AppleServices
 {
-    // The binding rejects null, but an empty content type means none and disables password suggestions.
-    private static readonly NSString _noTextContentType = new(string.Empty);
-
-    public override string CrashPageAdditionalInformation => MobileTexts.CrashPageAppleAdditionalInformation;
-
-    public override void RegisterCrashHandlers(ICrashLogService crashLogService)
-    {
-        AppleCrashHandler.Register(crashLogService);
-    }
-
-    public override (double Left, double Right) GetWindowGaps(VisualElement view) => view.GetWindowGaps();
-
-    public MacCatalystServices()
-    {
-        AppleTypography.RegisterSemiboldMappings();
-        EntryHandler.Mapper.AppendToMapping(PasswordEntryProperties.ConfigureMapperKey, (handler, view) =>
-        {
-            Entry entry = (Entry)view;
-            if (PasswordEntryProperties.GetPurpose(entry) is not { } purpose)
-            {
-                return;
-            }
-
-            handler.PlatformView.TextContentType = purpose switch
-            {
-                PasswordEntryPurpose.NewPassword => UITextContentType.NewPassword,
-                PasswordEntryPurpose.ExistingPassword => UITextContentType.Password,
-                PasswordEntryPurpose.SharePassword => _noTextContentType,
-                _ => throw new InvalidOperationException($"Invalid password entry purpose '{purpose}'."),
-            };
-        });
-    }
 }

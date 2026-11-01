@@ -51,6 +51,7 @@ internal partial class CreateProfilePage : IQueryAttributable
     {
         InitializeComponent();
         BindingContext = model;
+        platformServices.ConfigurePasswordEntry(EmailEntry, PasswordEntryPurpose.UserName);
         platformServices.ConfigurePasswordEntry(PasswordEntryControl.Entry, PasswordEntryPurpose.NewPassword);
         platformServices.ConfigurePasswordEntry(ConfirmPasswordEntryControl.Entry, PasswordEntryPurpose.NewPassword);
         pageHeaderService.ApplyStandardHeader(this);

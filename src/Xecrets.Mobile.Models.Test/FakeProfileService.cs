@@ -42,11 +42,13 @@ internal sealed class FakeProfileService : IProfileService
     public string CurrentPassword => throw new NotSupportedException();
     public bool IsAuthenticated => true;
     public Task<bool> HasProfileAsync() => throw new NotSupportedException();
-    public Task<SignInKey?> LoadProfileAsync() => throw new NotSupportedException();
+    public Task<SignInKey?> LoadProfileAsync() =>
+        Task.FromResult<SignInKey?>(new SignInKey("me@example.com", DateTimeOffset.UnixEpoch, []));
     public Task<ProfileActionResult> CreateProfileAsync(string email, string password) =>
         throw new NotSupportedException();
     public Task<ProfileActionResult> ChangeProfileAsync(string email, string password) => throw new NotSupportedException();
-    public Task<ProfileActionResult> LoginAsync(string password) => throw new NotSupportedException();
+    public Task<ProfileActionResult> LoginAsync(string password) => Task.FromResult(new ProfileActionResult(
+        password == "password" ? ProfileActionStatus.Success : ProfileActionStatus.WrongPassword));
     public void SignOut() => throw new NotSupportedException();
     public Identity GetIdentity() => new("password", []);
     public List<PasswordUsage> ExtraPasswords { get; } = [];
@@ -65,7 +67,7 @@ internal sealed class FakeProfileService : IProfileService
         return Task.CompletedTask;
     }
     public PublicKey GetPublicKey() => new("me@example.com", "me");
-    public Task<bool> ShouldShowAsync(DontShowAgain notice) => throw new NotSupportedException();
+    public Task<bool> ShouldShowAsync(DontShowAgain notice) => Task.FromResult(false);
     public Task SetDontShowAgainAsync(DontShowAgain notice) => throw new NotSupportedException();
 
     public TextEditor TextEditor { get; } = new();

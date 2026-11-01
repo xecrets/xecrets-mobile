@@ -42,16 +42,22 @@ namespace Xecrets.Mobile.Pages;
 
 internal partial class LoginPage : IQueryAttributable
 {
+    private readonly IPlatformServices _platformServices;
+
     private readonly IPageHeaderService _pageHeaderService;
+
+    public Entry PasswordTextEntry => PasswordEntryControl.Entry;
 
     public LoginPage(
         LoginPageModel model,
         IPlatformServices platformServices,
         IPageHeaderService pageHeaderService)
     {
+        _platformServices = platformServices;
         _pageHeaderService = pageHeaderService;
         InitializeComponent();
         BindingContext = model;
+        platformServices.ConfigurePasswordEntry(EmailEntry, PasswordEntryPurpose.UserName);
         platformServices.ConfigurePasswordEntry(PasswordEntryControl.Entry, PasswordEntryPurpose.ExistingPassword);
         pageHeaderService.ApplyStandardHeader(this);
     }
@@ -67,6 +73,10 @@ internal partial class LoginPage : IQueryAttributable
         switch (action)
         {
             case ProfileAction.Change:
+                // Shell applies the query before the page is pushed and its handlers are created, so the entries
+                // get this configuration when they connect. Without a user name, it's not a sign-in form.
+                PasswordEntryProperties.SetPurpose(EmailEntry, null);
+                _platformServices.ConfigurePasswordEntry(PasswordEntryControl.Entry, PasswordEntryPurpose.VerifyPassword);
                 ((LoginPageModel)BindingContext).InitializeVerification();
                 break;
             case ProfileAction.Unknown:

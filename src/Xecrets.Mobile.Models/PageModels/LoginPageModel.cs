@@ -80,6 +80,11 @@ public partial class LoginPageModel(
             return;
         }
 
+        // Cleared here, when the page appears again, not when leaving it: password managers read the fields as the
+        // page goes away, and the Shell root page is kept, so the last password must not still be there after sign out.
+        Password = string.Empty;
+        ErrorText = string.Empty;
+
         SignInKey? profile = await profileService.LoadProfileAsync();
         if (profile is null)
         {
@@ -105,7 +110,6 @@ public partial class LoginPageModel(
                 return;
             }
 
-            Password = string.Empty;
             if (_isVerification)
             {
                 await UserInterfaceService.NavigateReplacingAsync(AppDestination.ChangeProfile, ProfileAction.Change);

@@ -28,23 +28,61 @@
 
 #endregion Copyright and GPL License
 
+using System;
+
 using Microsoft.Maui;
+using Microsoft.Maui.Controls;
 using Microsoft.Maui.Handlers;
 
 using UIKit;
 
+using Xecrets.Mobile.Abstractions;
+using Xecrets.Mobile.Models.Abstractions;
+using Xecrets.Mobile.Models.Utilities;
+using Xecrets.Mobile.Services;
 using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Platforms.Apple;
 
-internal static class AppleTypography
+// What iOS and Mac Catalyst share; each platform's own class adds only what differs.
+internal abstract class AppleServices : PlatformServicesBase
 {
-    public static void RegisterSemiboldMappings()
+    public override string CrashPageAdditionalInformation => MobileTexts.CrashPageAppleAdditionalInformation;
+
+    public override void RegisterCrashHandlers(ICrashLogService crashLogService)
+    {
+        AppleCrashHandler.Register(crashLogService);
+    }
+
+    public override (double Left, double Right) GetWindowGaps(VisualElement view) => view.GetWindowGaps();
+
+    protected AppleServices()
     {
         LabelHandler.Mapper.AppendToMapping(nameof(ITextStyle.Font), (handler, view) =>
             ApplyFontWeight(view, handler.PlatformView));
         ButtonHandler.Mapper.AppendToMapping(nameof(ITextStyle.Font), (handler, view) =>
             ApplyFontWeight(view, handler.PlatformView.TitleLabel!));
+
+        EntryHandler.Mapper.AppendToMapping(PasswordEntryProperties.ConfigureMapperKey, (handler, view) =>
+        {
+            Entry entry = (Entry)view;
+            if (PasswordEntryProperties.GetPurpose(entry) is not { } purpose)
+            {
+                return;
+            }
+
+            handler.PlatformView.TextContentType = purpose switch
+            {
+                PasswordEntryPurpose.NewPassword => UITextContentType.NewPassword,
+                PasswordEntryPurpose.ExistingPassword => UITextContentType.Password,
+                // No documented opt-out exists, and an empty content type no longer stops suggestions on a secure
+                // field, but a one-time code field isn't offered passwords.
+                PasswordEntryPurpose.SharePassword => UITextContentType.OneTimeCode,
+                PasswordEntryPurpose.VerifyPassword => UITextContentType.OneTimeCode,
+                PasswordEntryPurpose.UserName => UITextContentType.Username,
+                _ => throw new InvalidOperationException($"Invalid password entry purpose '{purpose}'."),
+            };
+        });
     }
 
     private static void ApplyFontWeight(IView view, UILabel platformView)

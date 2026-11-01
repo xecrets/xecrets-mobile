@@ -35,6 +35,7 @@ using Android.Runtime;
 using Android.Text;
 using Android.Graphics;
 using AndroidContentCaptureImportance = Android.Views.ViewImportantForContentCapture;
+using AndroidImportantForAutofill = Android.Views.ImportantForAutofill;
 using AndroidView = Android.Views.View;
 
 using Microsoft.Maui;
@@ -100,9 +101,26 @@ internal class AndroidServices : PlatformServicesBase
                 {
                     PasswordEntryPurpose.NewPassword => "newPassword",
                     PasswordEntryPurpose.SharePassword => "notApplicable",
+                    PasswordEntryPurpose.VerifyPassword => "notApplicable",
                     PasswordEntryPurpose.ExistingPassword => "password",
+                    PasswordEntryPurpose.UserName => "username",
                     _ => throw new InvalidOperationException($"Invalid password entry purpose '{purpose}'."),
                 });
+
+                // The hint is only advice to the autofill service; these keep the entry out of autofill entirely,
+                // so nothing is suggested and no save is offered. Not being important for autofill does that up to
+                // Android 13, but Android 14 and later autofill such views too, unless they have no autofill type.
+                if (purpose is PasswordEntryPurpose.SharePassword or PasswordEntryPurpose.VerifyPassword)
+                {
+                    if (handler.PlatformView is not PasswordEditText passwordEditText)
+                    {
+                        throw new InvalidOperationException(
+                            $"Password entry purpose '{purpose}' requires a {nameof(PasswordEditText)}.");
+                    }
+
+                    handler.PlatformView.ImportantForAutofill = AndroidImportantForAutofill.NoExcludeDescendants;
+                    passwordEditText.IsAutofillExcluded = true;
+                }
             }
 
             if (OperatingSystem.IsAndroidVersionAtLeast(30))
@@ -119,7 +137,7 @@ internal class AndroidServices : PlatformServicesBase
         EntryHandler.Mapper.AppendToMapping(nameof(IEntry.IsPassword), (handler, view) =>
         {
             Entry entry = (Entry)view;
-            if (entry.IsPassword || PasswordEntryProperties.GetPurpose(entry) is null)
+            if (entry.IsPassword || PasswordEntryProperties.GetPurpose(entry) is null or PasswordEntryPurpose.UserName)
             {
                 return;
             }

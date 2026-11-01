@@ -28,10 +28,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
              xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
+             xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
              xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
              xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
              x:Class="Xecrets.Mobile.Pages.LoginPage"
              x:ClassModifier="internal"
+             x:Name="PageRoot"
              x:DataType="pageModels:LoginPageModel">
     <ContentPage.Resources>
         <ResourceDictionary>
@@ -46,6 +48,13 @@
                            Information="{Binding Information}"
                            BodyPadding="{StaticResource IconRowBodyPadding}">
             <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
+                <!-- Visible, so password managers save the password under this email instead of a previous one. As wide
+                     as the password text field, so both have the same left and right edges. -->
+                <Entry Margin="{StaticResource IconRowBodyLeadingMargin}" x:Name="EmailEntry" Text="{Binding Email}"
+                       HorizontalOptions="Start"
+                       WidthRequest="{Binding PasswordTextEntry.Width, Source={x:Reference PageRoot}, x:DataType=pages:LoginPage}"
+                       Keyboard="Email"
+                       IsReadOnly="True" />
                 <controls:PasswordEntry Margin="{StaticResource IconRowBodyLeadingMargin}" x:Name="PasswordEntryControl"
                                         Text="{Binding Password, Mode=TwoWay}"
                                         Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkPassword}"

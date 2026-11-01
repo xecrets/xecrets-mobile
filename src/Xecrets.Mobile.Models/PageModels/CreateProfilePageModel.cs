@@ -122,9 +122,6 @@ public partial class CreateProfilePageModel(
                 return;
             }
 
-            Email = string.Empty;
-            Password = string.Empty;
-            ConfirmPassword = string.Empty;
             if (_isChange)
             {
                 await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextProfileChanged);

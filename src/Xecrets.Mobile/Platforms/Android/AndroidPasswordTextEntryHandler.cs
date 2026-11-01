@@ -28,56 +28,15 @@
 
 #endregion Copyright and GPL License
 
-using System;
-
-using Android.Content;
-using Android.Text.Method;
-
 using Microsoft.Maui.Handlers;
 using Microsoft.Maui.Platform;
 
 namespace Xecrets.Mobile.Platforms.Android;
 
 /// <summary>
-/// Android copies and cuts text without marking it as sensitive, so this marks a shown password copied or cut from a
-/// password entry as sensitive, so that the system's confirmation of the copy does not show it.
+/// Gives password entries their own platform view, <see cref="PasswordEditText"/>.
 /// </summary>
 internal sealed class AndroidPasswordTextEntryHandler : EntryHandler
 {
-    protected override MauiAppCompatEditText CreatePlatformView() => new SensitiveCopyEditText(Context);
-
-    private sealed class SensitiveCopyEditText : MauiAppCompatEditText
-    {
-        public SensitiveCopyEditText(Context context) : base(context)
-        {
-        }
-
-        // Every copy and cut ends up here: the selection toolbar, keyboard shortcuts, the keyboard app and
-        // accessibility services.
-        public override bool OnTextContextMenuItem(int id)
-        {
-            // A hidden password is copied as the dots it is shown as, so only a shown one needs marking.
-            if ((id != global::Android.Resource.Id.Copy && id != global::Android.Resource.Id.Cut)
-                || TransformationMethod is PasswordTransformationMethod)
-            {
-                return base.OnTextContextMenuItem(id);
-            }
-
-            int start = Math.Max(0, Math.Min(SelectionStart, SelectionEnd));
-            int end = Math.Max(0, Math.Max(SelectionStart, SelectionEnd));
-            Context!.CopySensitiveText(Text![start..end]);
-
-            // Collapsing the selection closes the selection toolbar, as Android does after a copy or cut.
-            if (id == global::Android.Resource.Id.Cut)
-            {
-                EditableText!.Delete(start, end);
-            }
-            else
-            {
-                SetSelection(end);
-            }
-
-            return true;
-        }
-    }
+    protected override MauiAppCompatEditText CreatePlatformView() => new PasswordEditText(Context);
 }
