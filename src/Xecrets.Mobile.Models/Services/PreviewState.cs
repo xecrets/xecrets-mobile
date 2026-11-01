@@ -28,6 +28,8 @@
 
 #endregion Copyright and GPL License
 
+using Xecrets.Core.Models;
+
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 
@@ -49,26 +51,28 @@ internal sealed class PreviewState : IPreviewState
 
     public DecryptedFileInfo? File { get; private set; }
 
+    public EncryptedWithParameters EncryptedWith { get; private set; } = EncryptedWithParameters.Empty;
+
     public bool IsReady => Kind != PreviewKind.Unknown && !string.IsNullOrWhiteSpace(DecryptedPath);
 
-    public void SetImage(DecryptedFileInfo file)
+    public void SetImage(DecryptedFileInfo file, EncryptedWithParameters encryptedWith)
     {
         Kind = PreviewKind.Image;
-        SetFile(file);
+        SetFile(file, encryptedWith);
         Text = string.Empty;
     }
 
-    public void SetText(DecryptedFileInfo file, string text)
+    public void SetText(DecryptedFileInfo file, string text, EncryptedWithParameters encryptedWith)
     {
         Kind = PreviewKind.Text;
-        SetFile(file);
+        SetFile(file, encryptedWith);
         Text = text;
     }
 
-    public void SetExternal(DecryptedFileInfo file)
+    public void SetExternal(DecryptedFileInfo file, EncryptedWithParameters encryptedWith)
     {
         Kind = PreviewKind.External;
-        SetFile(file);
+        SetFile(file, encryptedWith);
         Text = string.Empty;
     }
 
@@ -95,11 +99,13 @@ internal sealed class PreviewState : IPreviewState
         FileSize = 0;
         Text = string.Empty;
         File = null;
+        EncryptedWith = EncryptedWithParameters.Empty;
     }
 
-    private void SetFile(DecryptedFileInfo file)
+    private void SetFile(DecryptedFileInfo file, EncryptedWithParameters encryptedWith)
     {
         File = file;
+        EncryptedWith = encryptedWith;
         OriginalFileName = file.DisplayName;
         DecryptedPath = file.FilePath;
         ContentType = file.ContentType;

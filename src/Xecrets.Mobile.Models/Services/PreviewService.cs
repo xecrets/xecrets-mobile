@@ -49,10 +49,10 @@ internal sealed class PreviewService(
 
     public bool HasPendingPasswordRequest => passwordRequestState.HasPendingRequest;
 
-    public async Task PrepareTextAsync(DecryptedFileInfo file)
+    public async Task PrepareTextAsync(DecryptedFileInfo file, EncryptedWithParameters encryptedWith)
     {
         string text = await File.ReadAllTextAsync(file.FilePath);
-        previewState.SetText(file, text);
+        previewState.SetText(file, text, encryptedWith);
     }
 
     public async Task<bool> PrepareAsync(IReadableFile encryptedFile)
@@ -169,15 +169,15 @@ internal sealed class PreviewService(
         DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(decryptedPath, session.OriginalFileName);
         if (file.Kind == PreviewKind.Image)
         {
-            previewState.SetImage(file);
+            previewState.SetImage(file, session.EncryptedWithParameters);
         }
         else if (file.Kind == PreviewKind.Text)
         {
-            await PrepareTextAsync(file);
+            await PrepareTextAsync(file, session.EncryptedWithParameters);
         }
         else
         {
-            previewState.SetExternal(file);
+            previewState.SetExternal(file, session.EncryptedWithParameters);
         }
 
         return PreviewPreparationStatus.Prepared;

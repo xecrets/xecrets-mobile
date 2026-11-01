@@ -28,6 +28,8 @@
 
 #endregion Copyright and GPL License
 
+using Xecrets.Core.Models;
+
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
@@ -41,7 +43,7 @@ internal sealed class FakePreviewService : IPreviewService
     public PreviewState Current { get; } = new();
     IPreviewState IPreviewService.Current => Current;
     public bool HasPendingPasswordRequest => NeedsPassword;
-    public Task PrepareTextAsync(DecryptedFileInfo file) => throw new NotSupportedException();
+    public Task PrepareTextAsync(DecryptedFileInfo file, EncryptedWithParameters encryptedWith) => throw new NotSupportedException();
 
     public async Task<bool> PrepareAsync(IReadableFile encryptedFile)
     {

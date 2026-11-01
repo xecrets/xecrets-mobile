@@ -33,6 +33,7 @@ using System.Text;
 using NUnit.Framework;
 
 using Xecrets.Common.Models;
+using Xecrets.Core.Models;
 using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Test;
@@ -163,12 +164,67 @@ public sealed class EditSaveServiceTests
         Assert.That(app.Store.Files, Is.Empty);
     }
 
-    private TestApp CreateEditing(string text, bool usesFolderIds = false)
+    [Test]
+    public async Task SaveEncryptsTheEditedTextForAllTheSourceIsEncryptedFor()
+    {
+        PublicKey other = new("other@example.com", "other");
+        PublicKey masterKey = new("", "master");
+        TestApp app = CreateEditing("text", new EncryptedWithParameters("password", [other], [masterKey]));
+        app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
+        app.Flow.Begin(FlowOrigin.Home, new FileReference("docs/x.axx", "x.axx"));
+
+        await app.EditSave.SaveAsync("edited");
+
+        EncryptRequest request = app.Core.EncryptRequests.Single();
+        Assert.That(request.Passphrase, Is.EqualTo(app.Profile.GetIdentity().Passphrase));
+        Assert.That(request.Recipients, Is.EqualTo([other, app.Profile.GetPublicKey()]));
+        Assert.That(request.MasterKeys, Is.EqualTo([masterKey]));
+    }
+
+    [Test]
+    public async Task CopyEncryptsTheEditedTextForAllTheSourceIsEncryptedFor()
+    {
+        PublicKey other = new("other@example.com", "other");
+        PublicKey masterKey = new("", "master");
+        TestApp app = CreateEditing("text", new EncryptedWithParameters("password", [other], [masterKey]));
+        app.AddFolder("docs");
+        app.Access.PickedFiles.Enqueue("docs/copy.axx");
+
+        await app.EditSave.SaveCopyAsync("edited");
+
+        EncryptRequest request = app.Core.EncryptRequests.Single();
+        Assert.That(request.Recipients, Is.EqualTo([other, app.Profile.GetPublicKey()]));
+        Assert.That(request.MasterKeys, Is.EqualTo([masterKey]));
+    }
+
+    [Test]
+    public async Task SaveDoesNotAddTheProfileToTheSourceRecipientsAgain()
+    {
+        TestApp app = CreateEditing("text");
+        app.Preview.Current.SetText(
+            app.Preview.Current.File!,
+            "text",
+            new EncryptedWithParameters("password", [app.Profile.GetPublicKey()], []));
+        app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
+        app.Flow.Begin(FlowOrigin.Home, new FileReference("docs/x.axx", "x.axx"));
+
+        await app.EditSave.SaveAsync("edited");
+
+        Assert.That(app.Core.EncryptRequests.Single().Recipients, Is.EqualTo([app.Profile.GetPublicKey()]));
+    }
+
+    private TestApp CreateEditing(string text, bool usesFolderIds = false) =>
+        CreateEditing(text, EncryptedWithParameters.Empty, usesFolderIds);
+
+    private TestApp CreateEditing(string text, EncryptedWithParameters encryptedWith, bool usesFolderIds = false)
     {
         string path = Path.Combine(_directory, "a.txt");
         File.WriteAllText(path, text);
         TestApp app = new(usesFolderIds);
-        app.Preview.Current.SetText(new DecryptedFileInfo(path, "a.txt", "text/plain", text.Length, PreviewKind.Text), text);
+        app.Preview.Current.SetText(
+            new DecryptedFileInfo(path, "a.txt", "text/plain", text.Length, PreviewKind.Text),
+            text,
+            encryptedWith);
         return app;
     }
 }

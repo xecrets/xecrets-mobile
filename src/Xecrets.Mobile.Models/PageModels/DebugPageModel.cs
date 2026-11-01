@@ -30,6 +30,8 @@
 
 using CommunityToolkit.Mvvm.Input;
 
+using Xecrets.Core.Models;
+
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Data;
 using Xecrets.Mobile.Models.Models;
@@ -60,7 +62,8 @@ public partial class DebugPageModel(
             fileName,
             "text/plain",
             file.Length,
-            PreviewKind.Text));
+            PreviewKind.Text),
+            EncryptedWithParameters.Empty);
         await UserInterfaceService.NavigateToAsync(AppDestination.View);
     }
 

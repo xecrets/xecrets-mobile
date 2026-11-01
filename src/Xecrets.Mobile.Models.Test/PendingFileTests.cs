@@ -432,7 +432,7 @@ public sealed class PendingFileTests
         public DateTime CreationTimeUtc => DateTime.UnixEpoch;
         public DateTime LastAccessTimeUtc => DateTime.UnixEpoch;
         public DateTime LastWriteTimeUtc => DateTime.UnixEpoch;
-        public EncryptedWithParameters EncryptedWithParameters => throw new NotSupportedException();
+        public EncryptedWithParameters EncryptedWithParameters => EncryptedWithParameters.Empty;
         public async Task DecryptAsync(Stream cleartext)
         {
             if (failure is not null)

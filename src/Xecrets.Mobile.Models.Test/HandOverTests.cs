@@ -31,6 +31,7 @@
 using NUnit.Framework;
 
 using Xecrets.Common.Models;
+using Xecrets.Core.Models;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.PageModels;
 using Xecrets.Mobile.Models.Services;
@@ -92,7 +93,7 @@ public sealed class HandOverTests
         TestApp app = new();
         app.Flow.Begin(origin);
         string path = CreateFile(_directory, "a.txt");
-        app.Preview.Current.SetText(new DecryptedFileInfo(path, "a.txt", "text/plain", 4, PreviewKind.Text), "text");
+        app.Preview.Current.SetText(new DecryptedFileInfo(path, "a.txt", "text/plain", 4, PreviewKind.Text), "text", EncryptedWithParameters.Empty);
         PreviewPageModel page = new(
             app.Preview,
             null!,

@@ -32,6 +32,8 @@ using System.Text;
 
 using NUnit.Framework;
 
+using Xecrets.Core.Models;
+
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.PageModels;
@@ -106,11 +108,11 @@ public sealed class PreviewPageTests
         DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(path, "a.txt");
         if (file.Kind == PreviewKind.Text)
         {
-            app.Preview.Current.SetText(file, File.ReadAllText(path));
+            app.Preview.Current.SetText(file, File.ReadAllText(path), EncryptedWithParameters.Empty);
         }
         else
         {
-            app.Preview.Current.SetExternal(file);
+            app.Preview.Current.SetExternal(file, EncryptedWithParameters.Empty);
         }
 
         PreviewPageModel page = new(

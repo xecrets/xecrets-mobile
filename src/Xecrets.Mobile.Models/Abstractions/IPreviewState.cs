@@ -28,6 +28,8 @@
 
 #endregion Copyright and GPL License
 
+using Xecrets.Core.Models;
+
 using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Abstractions;
@@ -47,6 +49,11 @@ public interface IPreviewState
     string Text { get; }
 
     DecryptedFileInfo? File { get; }
+
+    /// <summary>
+    /// What the file was encrypted with, so that edits are encrypted for the same recipients and master keys.
+    /// </summary>
+    EncryptedWithParameters EncryptedWith { get; }
 
     bool IsReady { get; }
 

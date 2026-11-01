@@ -28,6 +28,8 @@
 
 #endregion Copyright and GPL License
 
+using Xecrets.Core.Models;
+
 using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Abstractions;
@@ -38,7 +40,7 @@ public interface IPreviewService
 
     bool HasPendingPasswordRequest { get; }
 
-    Task PrepareTextAsync(DecryptedFileInfo file);
+    Task PrepareTextAsync(DecryptedFileInfo file, EncryptedWithParameters encryptedWith);
 
     Task<bool> PrepareAsync(IReadableFile encryptedFile);
 

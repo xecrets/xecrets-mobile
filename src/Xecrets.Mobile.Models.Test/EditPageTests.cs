@@ -33,6 +33,7 @@ using System.Text;
 using NUnit.Framework;
 
 using Xecrets.Common.Models;
+using Xecrets.Core.Models;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.PageModels;
 using Xecrets.Mobile.Models.Utilities;
@@ -230,7 +231,7 @@ public sealed class EditPageTests
         string path = Path.Combine(_directory, "a.txt");
         File.WriteAllText(path, "text");
         TestApp app = new();
-        app.Preview.Current.SetText(new DecryptedFileInfo(path, "a.txt", "text/plain", 4, PreviewKind.Text), "text");
+        app.Preview.Current.SetText(new DecryptedFileInfo(path, "a.txt", "text/plain", 4, PreviewKind.Text), "text", EncryptedWithParameters.Empty);
         return app;
     }
 }

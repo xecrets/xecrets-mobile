@@ -59,6 +59,13 @@ internal sealed class EncryptRequestFactory(IProfileService profileService)
     }
 
     /// <summary>
+    /// Encrypts with the current profile password, for all recipients and master keys a file was encrypted for, and
+    /// for the current profile, unless it was already among them.
+    /// </summary>
+    public EncryptRequest Create(string originalFileName, EncryptedWithParameters encryptedWith) =>
+        Create(originalFileName, profileService.GetIdentity().Passphrase, encryptedWith);
+
+    /// <summary>
     /// Encrypts with the password given, for all recipients and master keys a file was encrypted for, and for the
     /// current profile, unless it was already among them. Whatever password the file was encrypted with is not kept.
     /// </summary>
