@@ -123,6 +123,63 @@ public sealed class ProfileServiceTests
     }
 
     [Test]
+    public async Task AddedExtraPasswordIsKeptOnceAndNotCountedAsUsed()
+    {
+        await _profileService.RecordExtraPasswordUseAsync("used password");
+        await _profileService.AddExtraPasswordAsync("added password");
+        await _profileService.AddExtraPasswordAsync("added password");
+        _profileService.SignOut();
+        await _profileService.LoginAsync("old password");
+
+        Assert.That(
+            _profileService.GetExtraPasswords()
+                .Select(extraPassword => (extraPassword.Password, extraPassword.UsageCount)),
+            Is.EqualTo(new[] { ("used password", 1), ("added password", 0), }));
+    }
+
+    [Test]
+    public async Task AddingAnExtraPasswordAlreadyKeptDoesNotChangeItsUse()
+    {
+        await _profileService.RecordExtraPasswordUseAsync("password");
+
+        await _profileService.AddExtraPasswordAsync("password");
+
+        Assert.That(_profileService.GetExtraPasswords().Single().UsageCount, Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task AddedExtraPasswordReplacesTheLastWhenFull()
+    {
+        for (int i = 0; i < 25; ++i)
+        {
+            await _profileService.RecordExtraPasswordUseAsync($"password {i}");
+        }
+
+        await _profileService.AddExtraPasswordAsync("added password");
+
+        Assert.That(_profileService.GetExtraPasswords(), Has.Count.EqualTo(25));
+        Assert.That(_profileService.GetExtraPasswords()[^1].Password, Is.EqualTo("added password"));
+        Assert.That(
+            _profileService.GetExtraPasswords().Select(extraPassword => extraPassword.Password),
+            Does.Not.Contain("password 24"));
+    }
+
+    [Test]
+    public async Task RemovedExtraPasswordIsNoLongerKept()
+    {
+        await _profileService.RecordExtraPasswordUseAsync("kept password");
+        await _profileService.RecordExtraPasswordUseAsync("removed password");
+
+        await _profileService.RemoveExtraPasswordAsync("removed password");
+        _profileService.SignOut();
+        await _profileService.LoginAsync("old password");
+
+        Assert.That(
+            _profileService.GetExtraPasswords().Select(extraPassword => extraPassword.Password),
+            Is.EqualTo(new[] { "kept password", }));
+    }
+
+    [Test]
     public async Task ChangeProfileRejectsInvalidEmail()
     {
         ProfileActionResult result = await _profileService.ChangeProfileAsync("not an email", "new password");

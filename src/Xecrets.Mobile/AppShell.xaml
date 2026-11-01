@@ -68,6 +68,13 @@
               IconImageSource="{StaticResource IconRecentFilesMenu}"
               Command="{Binding RecentFilesCommand}" />
 
+    <MenuItem x:Name="DecryptionPasswordsMenuItem"
+              x:DataType="local:AppShell"
+              BindingContext="{x:Reference AppShellRoot}"
+              Text="{x:Static modelUtilities:MobileTexts.MenuDecryptionPasswords}"
+              IconImageSource="{StaticResource IconDecryptionPasswordsMenu}"
+              Command="{Binding DecryptionPasswordsCommand}" />
+
     <MenuItem x:Name="ChangeProfileMenuItem"
               x:DataType="local:AppShell"
               BindingContext="{x:Reference AppShellRoot}"

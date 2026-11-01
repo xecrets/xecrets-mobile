@@ -265,7 +265,7 @@ public sealed class FileOperationWorkflow(
             return FileOperationOutcome.Completed(decrypted);
         }
 
-        await userInterfaceService.NavigateToAsync(AppDestination.EnterPassword);
+        await userInterfaceService.NavigateToAsync(AppDestination.EnterPassword, DecryptionPasswordsIntent.Add);
         return FileOperationOutcome.AwaitingPassword;
     }
 
@@ -280,7 +280,7 @@ public sealed class FileOperationWorkflow(
                 break;
 
             case FileOperationStatus.AwaitingPassword:
-                await userInterfaceService.NavigateToAsync(AppDestination.EnterPassword);
+                await userInterfaceService.NavigateToAsync(AppDestination.EnterPassword, DecryptionPasswordsIntent.Add);
                 break;
 
             case FileOperationStatus.NotDone:
@@ -308,7 +308,8 @@ public sealed class FileOperationWorkflow(
         }
 
         if (file.Root.IsWipedForGood() &&
-            !await userInterfaceService.DisplayConfirmationAsync(MobileTexts.MessageTextConfirmWipe))
+            !await userInterfaceService.DisplayConfirmationAsync(
+                MobileTexts.MessageTextConfirmWipe, MobileTexts.ButtonOk, MobileTexts.LabelCancel))
         {
             return;
         }
@@ -352,7 +353,7 @@ public sealed class FileOperationWorkflow(
 
         if (previewService.HasPendingPasswordRequest)
         {
-            await userInterfaceService.NavigateToAsync(AppDestination.EnterPassword);
+            await userInterfaceService.NavigateToAsync(AppDestination.EnterPassword, DecryptionPasswordsIntent.Add);
             return true;
         }
 

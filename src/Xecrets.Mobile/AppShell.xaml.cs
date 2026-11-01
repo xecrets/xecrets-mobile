@@ -97,6 +97,7 @@ internal partial class AppShell
     {
         // Signing in and out always navigates, and recent files are kept per signed-in profile.
         SetFlyoutItemIsVisible(RecentFilesMenuItem, _profileSession.UserStore is not null);
+        SetFlyoutItemIsVisible(DecryptionPasswordsMenuItem, _profileSession.UserStore is not null);
         SetFlyoutItemIsVisible(ChangeProfileMenuItem, _profileSession.UserStore is not null);
         if (args.Current.Location.OriginalString != "//startup")
         {
@@ -120,7 +121,19 @@ internal partial class AppShell
     private async Task RecentFilesAsync()
     {
         FlyoutIsPresented = false;
-        await _userInterfaceService.NavigateToAsync(AppDestination.RecentFiles);
+        await _userInterfaceService.NavigateToAsync(AppDestination.RecentFiles, null);
+    }
+
+    [RelayCommand]
+    private async Task DecryptionPasswordsAsync()
+    {
+        FlyoutIsPresented = false;
+        if (CurrentPage?.BindingContext is EnterPasswordPageModel)
+        {
+            return;
+        }
+
+        await _userInterfaceService.NavigateToAsync(AppDestination.EnterPassword, DecryptionPasswordsIntent.Manage);
     }
 
     [RelayCommand]
@@ -153,21 +166,21 @@ internal partial class AppShell
             return;
         }
 
-        await _userInterfaceService.NavigateToAsync(AppDestination.SuggestPassword);
+        await _userInterfaceService.NavigateToAsync(AppDestination.SuggestPassword, null);
     }
 
     [RelayCommand]
     private async Task AboutAsync()
     {
         FlyoutIsPresented = false;
-        await _userInterfaceService.NavigateToAsync(AppDestination.About);
+        await _userInterfaceService.NavigateToAsync(AppDestination.About, null);
     }
 
     [RelayCommand]
     private async Task DebugAsync()
     {
         FlyoutIsPresented = false;
-        await _userInterfaceService.NavigateToAsync(AppDestination.Debug);
+        await _userInterfaceService.NavigateToAsync(AppDestination.Debug, null);
     }
 
     [RelayCommand]

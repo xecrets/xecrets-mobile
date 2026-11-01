@@ -217,10 +217,12 @@ public sealed class PendingFileTests
 
         PreviewService preview = new(null!, null!, transient, new PreviewState(), request, new FakeCrashLogService());
         TestUserInterfaceService userInterface = new();
-        EnterPasswordPageModel page = new(preview, new TestWorkFolderOperationService(), null!, userInterface)
+        EnterPasswordPageModel page = new(
+            preview, new TestWorkFolderOperationService(), new TestProfileService(), null!, userInterface)
         {
             Password = "password",
         };
+        page.Initialize(DecryptionPasswordsIntent.Add);
         await page.SubmitCommand.ExecuteAsync(null);
 
         Assert.That(request.HasPendingRequest, Is.False);
@@ -246,10 +248,11 @@ public sealed class PendingFileTests
         Assert.That(await preview.PrepareImportedAsync(path), Is.EqualTo(PreviewPreparationStatus.WrongPassword));
 
         TestUserInterfaceService userInterface = new();
-        EnterPasswordPageModel page = new(preview, new TestWorkFolderOperationService(), null!, userInterface)
+        EnterPasswordPageModel page = new(preview, new TestWorkFolderOperationService(), profile, null!, userInterface)
         {
             Password = "wrong",
         };
+        page.Initialize(DecryptionPasswordsIntent.Add);
         await page.SubmitCommand.ExecuteAsync(null);
         Assert.That(request.HasPendingRequest, Is.True);
         Assert.That(page.ErrorText, Is.EqualTo(MobileTexts.DialogTextWrongPasswordOpen));
@@ -263,6 +266,7 @@ public sealed class PendingFileTests
         Assert.That(state.Text, Is.EqualTo("decrypted"));
         Assert.That(profile.RecordedPasswords, Is.EqualTo(["password"]));
         Assert.That(userInterface.Destinations, Is.EqualTo([AppDestination.Preview]));
+        Assert.That(userInterface.Replacements, Is.EqualTo([AppDestination.Preview]));
     }
 
     [Test]
@@ -343,6 +347,7 @@ public sealed class PendingFileTests
         public bool CanReceiveIncomingFiles { get; init; }
         public IReadOnlyDictionary<string, string> IconMap => throw new NotSupportedException();
         public List<AppDestination> Destinations { get; } = [];
+        public List<AppDestination> Replacements { get; } = [];
         public List<string> Messages { get; } = [];
         public int BackCount { get; private set; }
         public Task InvokeOnMainThreadAsync(Func<Task> action) => action();
@@ -351,17 +356,20 @@ public sealed class PendingFileTests
             Messages.Add(message);
             return Task.CompletedTask;
         }
-        public Task<bool> DisplayConfirmationAsync(string message) => throw new NotSupportedException();
+        public Task<bool> DisplayConfirmationAsync(string message, string accept, string cancel) => throw new NotSupportedException();
         public Task<string?> DisplayPromptAsync(string message, string initialValue) => throw new NotSupportedException();
         public Task<SaveChangesChoice> DisplaySaveChangesAsync(string message) => throw new NotSupportedException();
         public Task DisplayTransientMessageAsync(string message) => DisplayMessageAsync(message);
-        public Task NavigateToAsync(AppDestination destination)
+        public Task NavigateToAsync(AppDestination destination, object? parameter)
         {
             Destinations.Add(destination);
             return Task.CompletedTask;
         }
-        public Task NavigateToAsync(AppDestination destination, object parameter) => NavigateToAsync(destination);
-        public Task NavigateReplacingAsync(AppDestination destination, object parameter) => NavigateToAsync(destination);
+        public Task NavigateReplacingAsync(AppDestination destination, object? parameter)
+        {
+            Replacements.Add(destination);
+            return NavigateToAsync(destination, parameter);
+        }
         public Task GoBackAsync(object? parameter)
         {
             if (parameter is not null)
@@ -396,6 +404,8 @@ public sealed class PendingFileTests
             RecordedPasswords.Add(password);
             return Task.CompletedTask;
         }
+        public Task AddExtraPasswordAsync(string password) => throw new NotSupportedException();
+        public Task RemoveExtraPasswordAsync(string password) => throw new NotSupportedException();
         public PublicKey GetPublicKey() => new("me@example.com", "me");
         public Task<bool> ShouldShowAsync(DontShowAgain notice) => throw new NotSupportedException();
         public Task SetDontShowAgainAsync(DontShowAgain notice) => throw new NotSupportedException();

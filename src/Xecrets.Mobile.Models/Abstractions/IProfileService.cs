@@ -62,6 +62,10 @@ public interface IProfileService
 
     Task RecordExtraPasswordUseAsync(string password);
 
+    Task AddExtraPasswordAsync(string password);
+
+    Task RemoveExtraPasswordAsync(string password);
+
     PublicKey GetPublicKey();
 
     Task<bool> ShouldShowAsync(DontShowAgain notice);

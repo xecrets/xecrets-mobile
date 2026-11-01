@@ -28,6 +28,8 @@
 
 #endregion Copyright and GPL License
 
+using System.Collections.ObjectModel;
+
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -37,15 +39,43 @@ using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
+/// <summary>
+/// The decryption passwords, tried in turn when the password of the profile does not decrypt a file. Opened from the
+/// menu they can be added and deleted. Opened when no known password decrypts a file, the password entered is tried on
+/// that file, and kept when it decrypts it.
+/// </summary>
 public partial class EnterPasswordPageModel(
     IPreviewService previewService,
     IWorkFolderOperationService workFolderOperationService,
+    IProfileService profileService,
     IFlowContext flowContext,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IBreadcrumbPageModel
 {
-    public string Breadcrumb =>
-        BreadcrumbFormatter.Format(flowContext.Origin, MobileTexts.BreadcrumbPassword);
+    private DecryptionPasswordsIntent _intent = DecryptionPasswordsIntent.Manage;
+
+    public string Breadcrumb => _intent switch
+    {
+        DecryptionPasswordsIntent.Manage => string.Join(
+            MobileTexts.BreadcrumbSeparator,
+            MobileTexts.BreadcrumbHome,
+            MobileTexts.BreadcrumbDecryptionPasswords),
+        DecryptionPasswordsIntent.Add => BreadcrumbFormatter.Format(
+            flowContext.Origin,
+            MobileTexts.BreadcrumbDecryptionPasswords),
+        _ => throw new ArgumentOutOfRangeException(nameof(_intent), _intent, @"Unknown decryption passwords intent."),
+    };
+
+    public string Description => MobileTexts.DecryptionPasswordsDescription;
+
+    public ObservableCollection<string> Passwords { get; } = [];
+
+    /// <summary>
+    /// The description, shown on the page itself while there are no passwords, to make it easier to find.
+    /// </summary>
+    [ObservableProperty] public partial string NoPasswordsText { get; set; } = string.Empty;
+
+    [ObservableProperty] public partial bool IsAdding { get; set; }
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SubmitCommand))]
@@ -55,18 +85,58 @@ public partial class EnterPasswordPageModel(
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SubmitCommand))]
+    [NotifyCanExecuteChangedFor(nameof(AddCommand))]
+    [NotifyCanExecuteChangedFor(nameof(DeleteCommand))]
     public partial bool IsBusy { get; set; }
 
-    public void Initialize()
+    public void Initialize(DecryptionPasswordsIntent intent)
     {
-        ErrorText = previewService.HasPendingPasswordRequest || workFolderOperationService.HasPendingPasswordRequest
-            ? MobileTexts.DialogTextWrongPasswordOpen
-            : string.Empty;
+        _intent = intent;
+        IsAdding = intent == DecryptionPasswordsIntent.Add;
+        OnPropertyChanged(nameof(Breadcrumb));
+    }
+
+    public void Load()
+    {
+        ErrorText = _intent == DecryptionPasswordsIntent.Add
+            && (previewService.HasPendingPasswordRequest || workFolderOperationService.HasPendingPasswordRequest)
+                ? MobileTexts.DialogTextWrongPasswordOpen
+                : string.Empty;
+        ShowPasswords();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanUseCommand))]
+    private void Add()
+    {
+        ErrorText = string.Empty;
+        IsAdding = true;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanUseCommand))]
+    private async Task DeleteAsync(string password)
+    {
+        if (!await UserInterfaceService.DisplayConfirmationAsync(
+                MobileTexts.MessageTextConfirmWipe, MobileTexts.ButtonOk, MobileTexts.LabelCancel))
+        {
+            return;
+        }
+
+        await profileService.RemoveExtraPasswordAsync(password);
+        ShowPasswords();
     }
 
     [RelayCommand(CanExecute = nameof(CanSubmit))]
     private async Task Submit()
     {
+        if (_intent == DecryptionPasswordsIntent.Manage)
+        {
+            await profileService.AddExtraPasswordAsync(Password);
+            Password = string.Empty;
+            IsAdding = false;
+            ShowPasswords();
+            return;
+        }
+
         try
         {
             IsBusy = true;
@@ -89,6 +159,7 @@ public partial class EnterPasswordPageModel(
                 return;
             }
 
+            // Done with, the page is not left to go back to.
             Password = string.Empty;
             if (isWorkFolderRequest)
             {
@@ -96,7 +167,7 @@ public partial class EnterPasswordPageModel(
             }
             else
             {
-                await UserInterfaceService.NavigateToAsync(AppDestination.Preview);
+                await UserInterfaceService.NavigateReplacingAsync(AppDestination.Preview);
             }
         }
         catch (OperationCanceledException)
@@ -110,6 +181,19 @@ public partial class EnterPasswordPageModel(
     }
 
     private bool CanSubmit() => !IsBusy && Password.Length > 0;
+
+    private bool CanUseCommand() => !IsBusy;
+
+    private void ShowPasswords()
+    {
+        Passwords.Clear();
+        foreach (string password in profileService.GetExtraPasswords().Select(extraPassword => extraPassword.Password))
+        {
+            Passwords.Add(password);
+        }
+
+        NoPasswordsText = Passwords.Count == 0 ? Description : string.Empty;
+    }
 
     // A file that was not decrypted, although the password was right, is left as it was, and the user has been told
     // why, as when the user cancels choosing where to save it.

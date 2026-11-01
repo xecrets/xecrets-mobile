@@ -49,7 +49,7 @@ public interface IUserInterfaceService
 
     Task DisplayMessageAsync(string message);
 
-    Task<bool> DisplayConfirmationAsync(string message);
+    Task<bool> DisplayConfirmationAsync(string message, string accept, string cancel);
 
     /// <summary>
     /// Asks the user whether to save, discard or keep unsaved changes. Dismissing the question keeps them.
@@ -64,14 +64,17 @@ public interface IUserInterfaceService
 
     Task DisplayTransientMessageAsync(string message);
 
-    Task NavigateToAsync(AppDestination destination);
-
-    Task NavigateToAsync(AppDestination destination, object parameter);
+    /// <summary>
+    /// Navigates to <paramref name="destination"/>, passing <paramref name="parameter"/> to it unless null. Without a
+    /// parameter, nothing is done if the current page already is the destination.
+    /// </summary>
+    Task NavigateToAsync(AppDestination destination, object? parameter);
 
     /// <summary>
-    /// Navigates to <paramref name="destination"/> in place of the current page, so that going back skips it.
+    /// Navigates to <paramref name="destination"/> in place of the current page, so that going back skips it, passing
+    /// <paramref name="parameter"/> to it unless null.
     /// </summary>
-    Task NavigateReplacingAsync(AppDestination destination, object parameter);
+    Task NavigateReplacingAsync(AppDestination destination, object? parameter);
 
     Task GoBackAsync(object? parameter);
 

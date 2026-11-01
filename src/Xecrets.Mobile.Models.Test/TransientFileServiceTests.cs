@@ -285,13 +285,14 @@ public sealed class TransientFileServiceTests
         public Func<Task> NavigateAsync { get; init; } = () => throw new NotSupportedException();
         public Task InvokeOnMainThreadAsync(Func<Task> action) => action();
         public Task DisplayMessageAsync(string message) => throw new NotSupportedException();
-        public Task<bool> DisplayConfirmationAsync(string message) => throw new NotSupportedException();
+        public Task<bool> DisplayConfirmationAsync(string message, string accept, string cancel) => throw new NotSupportedException();
         public Task<string?> DisplayPromptAsync(string message, string initialValue) => throw new NotSupportedException();
         public Task<SaveChangesChoice> DisplaySaveChangesAsync(string message) => throw new NotSupportedException();
         public Task DisplayTransientMessageAsync(string message) => throw new NotSupportedException();
-        public Task NavigateToAsync(AppDestination destination) => NavigateAsync();
-        public Task NavigateToAsync(AppDestination destination, object parameter) => throw new NotSupportedException();
-        public Task NavigateReplacingAsync(AppDestination destination, object parameter) => throw new NotSupportedException();
+        public Task NavigateToAsync(AppDestination destination, object? parameter) =>
+            parameter is null ? NavigateAsync() : throw new NotSupportedException();
+        public Task NavigateReplacingAsync(AppDestination destination, object? parameter) =>
+            throw new NotSupportedException();
         public Task GoBackAsync(object? parameter) => throw new NotSupportedException();
         public Task OpenBrowserAsync(string url) => throw new NotSupportedException();
 
@@ -312,6 +313,8 @@ public sealed class TransientFileServiceTests
         public Identity GetIdentity() => throw new NotSupportedException();
         public IReadOnlyList<PasswordUsage> GetExtraPasswords() => throw new NotSupportedException();
         public Task RecordExtraPasswordUseAsync(string password) => throw new NotSupportedException();
+        public Task AddExtraPasswordAsync(string password) => throw new NotSupportedException();
+        public Task RemoveExtraPasswordAsync(string password) => throw new NotSupportedException();
         public PublicKey GetPublicKey() => throw new NotSupportedException();
         public Task<bool> ShouldShowAsync(DontShowAgain notice) => throw new NotSupportedException();
         public Task SetDontShowAgainAsync(DontShowAgain notice) => throw new NotSupportedException();

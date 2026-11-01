@@ -79,6 +79,7 @@ public sealed class FolderAccessWorkflowTests
         Assert.That(file, Is.Null);
         Assert.That(app.UserInterface.Confirmations,
             Is.EqualTo([string.Format(MobileTexts.DialogTextAllowFolderAccessFormat, "a.txt")]));
+        Assert.That(app.UserInterface.ConfirmationButtons, Is.EqualTo([(MobileTexts.LabelYes, MobileTexts.LabelNo)]));
         Assert.That(app.Access.FolderPickerStarts, Is.Empty);
     }
 

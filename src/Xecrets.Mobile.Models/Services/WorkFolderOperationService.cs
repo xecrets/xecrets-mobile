@@ -360,7 +360,9 @@ internal sealed class WorkFolderOperationService(
         }
 
         bool overwrite = await userInterfaceService.DisplayConfirmationAsync(
-            string.Format(MobileTexts.DialogTextConfirmOverwrite, destinationName));
+            string.Format(MobileTexts.DialogTextConfirmOverwrite, destinationName),
+            MobileTexts.LabelYes,
+            MobileTexts.LabelNo);
         if (!overwrite)
         {
             throw new OperationCanceledException();

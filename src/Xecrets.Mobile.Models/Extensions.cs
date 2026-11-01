@@ -29,6 +29,7 @@
 #endregion Copyright and GPL License
 
 using Xecrets.Common.Models;
+using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Utilities;
 
@@ -56,6 +57,15 @@ internal static class Extensions
                 return null;
             }
         }
+
+        /// <summary>
+        /// The name a file is kept under while it is saved over, with its extension in the name, as for an encrypted
+        /// file, so that it is seen what it is: "report-txt.axx" is kept as "report-txt-axx.bak".
+        /// </summary>
+        public string ToBackupName() =>
+            Path.GetExtension(value) is { Length: > 1 } extension
+                ? $"{Path.GetFileNameWithoutExtension(value)}-{extension[1..]}.bak"
+                : $"{Path.GetFileNameWithoutExtension(value)}.bak";
     }
 
     /// <summary>
@@ -113,87 +123,81 @@ internal static class Extensions
         return flags;
     }
 
-    /// <summary>
-    /// The root as the first segment of a path to show. There is none when the path starts at the top, or when nothing
-    /// is known of where the file or folder is stored.
-    /// </summary>
-    public static IReadOnlyList<string> ToPathSegments(this RootProvider root) =>
-        root.ToDisplay() is { Length: > 0 } display ? [display] : [];
-
-    /// <summary>
-    /// The root as a short text to show, or empty when there is nothing meaningful to show.
-    /// </summary>
-    public static string ToDisplay(this RootProvider root) => root switch
+    extension(RootProvider root)
     {
-        RootProvider.Unknown => "",
-        RootProvider.None => "",
-        RootProvider.Other => "",
-        RootProvider.AndroidPhone => "Phone",
-        RootProvider.AndroidTablet => "Tablet",
-        RootProvider.AndroidDevice => "Device",
-        RootProvider.IPhone => "On My iPhone",
-        RootProvider.IPad => "On My iPad",
-        RootProvider.Mac => "",
-        RootProvider.RemovableStorage => "Media",
-        RootProvider.ExternalDrive => "Media",
-        RootProvider.Downloads => "Downloads",
-        RootProvider.MediaImages => "Images",
-        RootProvider.MediaVideos => "Videos",
-        RootProvider.MediaAudio => "Audio",
-        RootProvider.MediaDocuments => "Documents",
-        RootProvider.ICloudDrive => "iCloud",
-        RootProvider.GoogleDrive => "Drive",
-        RootProvider.OneDrive => "OneDrive",
-        RootProvider.Dropbox => "Dropbox",
-        RootProvider.CloudStorage => "Cloud",
-        _ => throw new ArgumentOutOfRangeException(nameof(root), root, @"Unknown root provider."),
-    };
+        /// <summary>
+        /// The root as the first segment of a path to show. There is none when the path starts at the top, or when
+        /// nothing is known of where the file or folder is stored.
+        /// </summary>
+        public IReadOnlyList<string> ToPathSegments() =>
+            root.ToDisplay() is { Length: > 0 } display ? [display] : [];
 
-    /// <summary>
-    /// The name a file is kept under while it is saved over, with its extension in the name, as for an encrypted file,
-    /// so that it is seen what it is: "report-txt.axx" is kept as "report-txt-axx.bak".
-    /// </summary>
-    public static string ToBackupName(this string fileName) =>
-        Path.GetExtension(fileName) is { Length: > 1 } extension
-            ? $"{Path.GetFileNameWithoutExtension(fileName)}-{extension[1..]}.bak"
-            : $"{Path.GetFileNameWithoutExtension(fileName)}.bak";
+        /// <summary>
+        /// The root as a short text to show, or empty when there is nothing meaningful to show.
+        /// </summary>
+        public string ToDisplay() => root switch
+        {
+            RootProvider.Unknown => "",
+            RootProvider.None => "",
+            RootProvider.Other => "",
+            RootProvider.AndroidPhone => "Phone",
+            RootProvider.AndroidTablet => "Tablet",
+            RootProvider.AndroidDevice => "Device",
+            RootProvider.IPhone => "On My iPhone",
+            RootProvider.IPad => "On My iPad",
+            RootProvider.Mac => "",
+            RootProvider.RemovableStorage => "Media",
+            RootProvider.ExternalDrive => "Media",
+            RootProvider.Downloads => "Downloads",
+            RootProvider.MediaImages => "Images",
+            RootProvider.MediaVideos => "Videos",
+            RootProvider.MediaAudio => "Audio",
+            RootProvider.MediaDocuments => "Documents",
+            RootProvider.ICloudDrive => "iCloud",
+            RootProvider.GoogleDrive => "Drive",
+            RootProvider.OneDrive => "OneDrive",
+            RootProvider.Dropbox => "Dropbox",
+            RootProvider.CloudStorage => "Cloud",
+            _ => throw new ArgumentOutOfRangeException(nameof(root), root, @"Unknown root provider."),
+        };
 
-    /// <summary>
-    /// Tells if the root is storage in the device itself, where overwriting a file replaces its contents. Removable
-    /// media and cloud storage are not, nor is storage that is not known, since cloud storage keeps replaced contents as
-    /// versions.
-    /// </summary>
-    public static bool IsOnDevice(this RootProvider root) => root switch
-    {
-        RootProvider.Unknown => false,
-        RootProvider.None => true,
-        RootProvider.Other => false,
-        RootProvider.AndroidPhone => true,
-        RootProvider.AndroidTablet => true,
-        RootProvider.AndroidDevice => true,
-        RootProvider.IPhone => true,
-        RootProvider.IPad => true,
-        RootProvider.Mac => true,
-        RootProvider.RemovableStorage => false,
-        RootProvider.ExternalDrive => false,
-        RootProvider.Downloads => true,
-        RootProvider.MediaImages => true,
-        RootProvider.MediaVideos => true,
-        RootProvider.MediaAudio => true,
-        RootProvider.MediaDocuments => true,
-        RootProvider.ICloudDrive => false,
-        RootProvider.GoogleDrive => false,
-        RootProvider.OneDrive => false,
-        RootProvider.Dropbox => false,
-        RootProvider.CloudStorage => false,
-        _ => throw new ArgumentOutOfRangeException(nameof(root), root, @"Unknown root provider."),
-    };
+        /// <summary>
+        /// Tells if the root is storage in the device itself, where overwriting a file replaces its contents.
+        /// Removable media and cloud storage are not, nor is storage that is not known, since cloud storage keeps
+        /// replaced contents as versions.
+        /// </summary>
+        public bool IsOnDevice() => root switch
+        {
+            RootProvider.Unknown => false,
+            RootProvider.None => true,
+            RootProvider.Other => false,
+            RootProvider.AndroidPhone => true,
+            RootProvider.AndroidTablet => true,
+            RootProvider.AndroidDevice => true,
+            RootProvider.IPhone => true,
+            RootProvider.IPad => true,
+            RootProvider.Mac => true,
+            RootProvider.RemovableStorage => false,
+            RootProvider.ExternalDrive => false,
+            RootProvider.Downloads => true,
+            RootProvider.MediaImages => true,
+            RootProvider.MediaVideos => true,
+            RootProvider.MediaAudio => true,
+            RootProvider.MediaDocuments => true,
+            RootProvider.ICloudDrive => false,
+            RootProvider.GoogleDrive => false,
+            RootProvider.OneDrive => false,
+            RootProvider.Dropbox => false,
+            RootProvider.CloudStorage => false,
+            _ => throw new ArgumentOutOfRangeException(nameof(root), root, @"Unknown root provider."),
+        };
 
-    /// <summary>
-    /// Tells if wiping a file in the root is known to leave nothing to recover. On the device the file is overwritten,
-    /// and iCloud Drive removes all versions of it. Other storage may keep versions or a trash.
-    /// </summary>
-    public static bool IsWipedForGood(this RootProvider root) => root.IsOnDevice() || root == RootProvider.ICloudDrive;
+        /// <summary>
+        /// Tells if wiping a file in the root is known to leave nothing to recover. On the device the file is
+        /// overwritten, and iCloud Drive removes all versions of it. Other storage may keep versions or a trash.
+        /// </summary>
+        public bool IsWipedForGood() => root.IsOnDevice() || root == RootProvider.ICloudDrive;
+    }
 
     /// <summary>
     /// Combines a user-facing message with the exception detail, for display as status text.
@@ -205,5 +209,14 @@ internal static class Extensions
             : exception.Message;
 
         return string.Format(MobileTexts.DialogTextExceptionFormat, exceptionMessage);
+    }
+
+    extension(IUserInterfaceService userInterfaceService)
+    {
+        public Task NavigateToAsync(AppDestination destination) =>
+            userInterfaceService.NavigateToAsync(destination, null);
+
+        public Task NavigateReplacingAsync(AppDestination destination) =>
+            userInterfaceService.NavigateReplacingAsync(destination, null);
     }
 }

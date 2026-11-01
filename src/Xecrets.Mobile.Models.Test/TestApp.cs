@@ -146,6 +146,9 @@ internal sealed class TestApp
 
     public EditPageModel CreateEditPage() => new(Preview, EditSave, Flow, CrashLog, Profile, UserInterface);
 
+    public EnterPasswordPageModel CreateEnterPasswordPage() =>
+        new(Preview, OperationService, Profile, Flow, UserInterface);
+
     public List<string> RecentIds() => [.. Store.Files.Select(file => file.Id)];
 
     public List<string> FolderIds() => [.. Store.Folders.Select(folder => folder.Id)];

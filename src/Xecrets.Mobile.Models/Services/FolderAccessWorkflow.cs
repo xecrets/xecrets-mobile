@@ -148,7 +148,9 @@ public sealed class FolderAccessWorkflow(
 
     private async Task<WorkFolder?> RequestFolderAsync(FileReference file) =>
         await userInterfaceService.DisplayConfirmationAsync(
-            string.Format(MobileTexts.DialogTextAllowFolderAccessFormat, file.Name))
+            string.Format(MobileTexts.DialogTextAllowFolderAccessFormat, file.Name),
+            MobileTexts.LabelYes,
+            MobileTexts.LabelNo)
             ? await AddFolderAsync(await fileAccess.GetParentFolderAsync(file.Id))
             : null;
 }

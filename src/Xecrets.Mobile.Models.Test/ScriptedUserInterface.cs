@@ -44,6 +44,11 @@ internal sealed class ScriptedUserInterface : IUserInterfaceService
 
     public List<string> Confirmations { get; } = [];
 
+    /// <summary>
+    /// The accept and cancel buttons of each confirmation, in the same order as <see cref="Confirmations"/>.
+    /// </summary>
+    public List<(string Accept, string Cancel)> ConfirmationButtons { get; } = [];
+
     public List<string> Messages { get; } = [];
 
     public List<string> TransientMessages { get; } = [];
@@ -66,9 +71,10 @@ internal sealed class ScriptedUserInterface : IUserInterfaceService
         return Task.CompletedTask;
     }
 
-    public Task<bool> DisplayConfirmationAsync(string message)
+    public Task<bool> DisplayConfirmationAsync(string message, string accept, string cancel)
     {
         Confirmations.Add(message);
+        ConfirmationButtons.Add((accept, cancel));
         return Task.FromResult(Answers.Count > 0 && Answers.Dequeue());
     }
 
@@ -86,19 +92,19 @@ internal sealed class ScriptedUserInterface : IUserInterfaceService
         return Task.CompletedTask;
     }
 
-    public Task NavigateToAsync(AppDestination destination)
+    public Task NavigateToAsync(AppDestination destination, object? parameter)
     {
+        if (parameter is not null)
+        {
+            Payloads.Add(parameter);
+        }
+
         Destinations.Add(destination);
         return Task.CompletedTask;
     }
 
-    public Task NavigateToAsync(AppDestination destination, object parameter)
-    {
-        Payloads.Add(parameter);
-        return NavigateToAsync(destination);
-    }
-
-    public Task NavigateReplacingAsync(AppDestination destination, object parameter) => NavigateToAsync(destination);
+    public Task NavigateReplacingAsync(AppDestination destination, object? parameter) =>
+        this.NavigateToAsync(destination);
     public Task GoBackAsync(object? parameter)
     {
         BackCount++;

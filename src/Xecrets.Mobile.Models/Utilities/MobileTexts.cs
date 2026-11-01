@@ -48,6 +48,9 @@ public static class MobileTexts
     // "Encrypt / Decrypt: Copy"
     public static string BreadcrumbCopy => HomeButtonEncryptDecryptCopy;
 
+    // "Decryption passwords"
+    public static string BreadcrumbDecryptionPasswords => DecryptionPasswordsContentTitle;
+
     // "Edit"
     public static string BreadcrumbEdit => EditContentTitle;
 
@@ -101,6 +104,10 @@ public static class MobileTexts
     public static string CrashPageExplanation => "There was a problem. We have copied the following log to the clipboard. Use the button to report it. Paste the log into the message.";
 
     public static string CrashPageTitle => "Sorry, we crashed!";
+
+    public static string DecryptionPasswordsContentTitle => "Decryption passwords";
+
+    public static string DecryptionPasswordsDescription => "Passwords for decryption only, when you receive files from someone else or have used another password before. They are tried automatically when a file is opened, and do not affect encryption. Use the add button to add a password, and the delete button to remove one.";
 
     public static string DialogTextAccessDeniedOrNotSupported => "Access denied or not supported.";
 
@@ -198,6 +205,9 @@ public static class MobileTexts
     public static string LabelContinue => "Continue";
 
     public static string MenuChangeProfile => "Change local profile";
+
+    // "Decryption passwords"
+    public static string MenuDecryptionPasswords => DecryptionPasswordsContentTitle;
 
     public static string MenuGitHub => "View source";
 
@@ -327,9 +337,6 @@ public static class MobileTexts
     // "Save As…"
     public static string ButtonSaveAs => AppTexts.ButtonSaveAs.ToSentenceCase();
 
-    // "Add a decryption password"
-    public static string DialogTextAddPassword => AppTexts.DialogTextAddPassword;
-
     public static string DialogTextInsufficientRights => AppTexts.DialogTextInsufficientRights;
 
     // "Canceled"
@@ -372,16 +379,13 @@ public static class MobileTexts
     // "Suggest password", also used as the page title.
     public static string MenuSuggestPassword => AppTexts.DialogTitleSuggestPassword;
 
+    // "This operation cannot be undone.", confirming any operation that cannot be undone, not only wiping.
     public static string MessageTextConfirmWipe => AppTexts.MessageTextConfirmWipe;
 
     // "Sign in to Xecrets Ez"
     public static string SignInHeading => AppTexts.SignInHeading;
 
     public static string SiteUrl => AppTexts.SiteUrl;
-
-    // "Adding a password is only for decryption, when you receive files from someone else, or you have used another
-    // password previously. It does not affect encryption."
-    public static string ToolTipAddPassword => AppTexts.ToolTipAddPassword;
 
     // "Not used for sending emails. It's an identifier for your local profile in the software and for sharing with others."
     public static string ToolTipEmail => AppTexts.ToolTipEmail;

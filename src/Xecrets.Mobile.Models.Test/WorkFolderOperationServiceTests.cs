@@ -220,6 +220,7 @@ public sealed class WorkFolderOperationServiceTests
             Throws.InstanceOf<OperationCanceledException>());
         Assert.That(app.UserInterface.Confirmations,
             Is.EqualTo([string.Format(MobileTexts.DialogTextConfirmOverwrite, encryptedName)]));
+        Assert.That(app.UserInterface.ConfirmationButtons, Is.EqualTo([(MobileTexts.LabelYes, MobileTexts.LabelNo)]));
         Assert.That(app.Access.Files.Keys, Is.EquivalentTo(["docs/a.txt", $"docs/{encryptedName}"]));
     }
 }

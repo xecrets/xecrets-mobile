@@ -142,17 +142,10 @@ internal sealed class ProfileService(
     {
         await using IEditScope<ExtraCredentials> credentials = session.ExtraCredentials!.BeginEdit();
 
-        PasswordUsage? entry = credentials.Value.Passwords
-            .FirstOrDefault(extraPassword => string.Equals(extraPassword.Password, password, StringComparison.Ordinal));
-
+        PasswordUsage? entry = FindExtraPassword(credentials.Value, password);
         if (entry is null)
         {
-            if (credentials.Value.Passwords.Count >= 25)
-            {
-                credentials.Value.Passwords.RemoveRange(24, credentials.Value.Passwords.Count - 24);
-            }
-
-            credentials.Value.Passwords.Add(new PasswordUsage { Password = password, UsageCount = 1, });
+            AddNewExtraPassword(credentials.Value, password, usageCount: 1);
             return;
         }
 
@@ -162,6 +155,40 @@ internal sealed class ProfileService(
             .. credentials.Value.Passwords
                 .OrderByDescending(extraPassword => extraPassword.UsageCount)
         ];
+    }
+
+    // A password added in advance is not counted as used until it decrypts a file.
+    public async Task AddExtraPasswordAsync(string password)
+    {
+        await using IEditScope<ExtraCredentials> credentials = session.ExtraCredentials!.BeginEdit();
+
+        if (FindExtraPassword(credentials.Value, password) is null)
+        {
+            AddNewExtraPassword(credentials.Value, password, usageCount: 0);
+        }
+    }
+
+    public async Task RemoveExtraPasswordAsync(string password)
+    {
+        await using IEditScope<ExtraCredentials> credentials = session.ExtraCredentials!.BeginEdit();
+
+        credentials.Value.Passwords.RemoveAll(
+            extraPassword => string.Equals(extraPassword.Password, password, StringComparison.Ordinal));
+    }
+
+    private static PasswordUsage? FindExtraPassword(ExtraCredentials credentials, string password) =>
+        credentials.Passwords
+            .FirstOrDefault(extraPassword => string.Equals(extraPassword.Password, password, StringComparison.Ordinal));
+
+    // At most 25 passwords are kept, dropping the least used to make room.
+    private static void AddNewExtraPassword(ExtraCredentials credentials, string password, int usageCount)
+    {
+        if (credentials.Passwords.Count >= 25)
+        {
+            credentials.Passwords.RemoveRange(24, credentials.Passwords.Count - 24);
+        }
+
+        credentials.Passwords.Add(new PasswordUsage { Password = password, UsageCount = usageCount, });
     }
 
     public PublicKey GetPublicKey() =>

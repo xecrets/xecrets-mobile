@@ -49,8 +49,21 @@ internal sealed class FakeProfileService : IProfileService
     public Task<ProfileActionResult> LoginAsync(string password) => throw new NotSupportedException();
     public void SignOut() => throw new NotSupportedException();
     public Identity GetIdentity() => new("password", []);
-    public IReadOnlyList<PasswordUsage> GetExtraPasswords() => [];
+    public List<PasswordUsage> ExtraPasswords { get; } = [];
+    public IReadOnlyList<PasswordUsage> GetExtraPasswords() => ExtraPasswords;
     public Task RecordExtraPasswordUseAsync(string password) => Task.CompletedTask;
+
+    public Task AddExtraPasswordAsync(string password)
+    {
+        ExtraPasswords.Add(new PasswordUsage { Password = password, });
+        return Task.CompletedTask;
+    }
+
+    public Task RemoveExtraPasswordAsync(string password)
+    {
+        ExtraPasswords.RemoveAll(extraPassword => extraPassword.Password == password);
+        return Task.CompletedTask;
+    }
     public PublicKey GetPublicKey() => new("me@example.com", "me");
     public Task<bool> ShouldShowAsync(DontShowAgain notice) => throw new NotSupportedException();
     public Task SetDontShowAgainAsync(DontShowAgain notice) => throw new NotSupportedException();

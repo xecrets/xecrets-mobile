@@ -84,12 +84,12 @@ internal class DefaultUserInterfaceService(IBuildInformation buildInformation) :
     public Task DisplayMessageAsync(string message) =>
         Shell.Current.DisplayAlertAsync(MobileTexts.DisplayNameProgram, message, MobileTexts.ButtonOk);
 
-    public Task<bool> DisplayConfirmationAsync(string message) =>
+    public Task<bool> DisplayConfirmationAsync(string message, string accept, string cancel) =>
         Shell.Current.DisplayAlertAsync(
             MobileTexts.DisplayNameProgram,
             message,
-            MobileTexts.LabelYes,
-            MobileTexts.LabelNo);
+            accept,
+            cancel);
 
     public async Task<SaveChangesChoice> DisplaySaveChangesAsync(string message)
     {
@@ -116,9 +116,14 @@ internal class DefaultUserInterfaceService(IBuildInformation buildInformation) :
     public virtual Task DisplayTransientMessageAsync(string message) =>
         Toast.Make(message, ToastDuration.Long).Show();
 
-    public Task NavigateToAsync(AppDestination destination)
+    public Task NavigateToAsync(AppDestination destination, object? parameter)
     {
         string route = GetRoute(destination);
+        if (parameter is not null)
+        {
+            return NavigateToRouteAsync(route, parameter);
+        }
+
         Page? currentPage = Shell.Current.CurrentPage;
         if (currentPage is not null && Routing.GetRoute(currentPage) == route)
         {
@@ -128,21 +133,13 @@ internal class DefaultUserInterfaceService(IBuildInformation buildInformation) :
         return NavigateToRouteAsync(route);
     }
 
-    public Task NavigateToAsync(AppDestination destination, object parameter) =>
-        NavigateToRouteAsync(
-            GetRoute(destination),
-            new Dictionary<string, object>
-            {
-                { nameof(NavigationParameter.Payload), parameter },
-            });
-
-    public Task NavigateReplacingAsync(AppDestination destination, object parameter) =>
-        NavigateToRouteAsync(
-            $"../{GetRoute(destination)}",
-            new Dictionary<string, object>
-            {
-                { nameof(NavigationParameter.Payload), parameter },
-            });
+    public Task NavigateReplacingAsync(AppDestination destination, object? parameter)
+    {
+        string route = $"../{GetRoute(destination)}";
+        return parameter is null
+            ? NavigateToRouteAsync(route)
+            : NavigateToRouteAsync(route, parameter);
+    }
 
     private static string GetRoute(AppDestination destination)
     {
@@ -196,8 +193,11 @@ internal class DefaultUserInterfaceService(IBuildInformation buildInformation) :
 
     private static Task NavigateToRouteAsync(string route) => Shell.Current.GoToAsync(route);
 
-    private static Task NavigateToRouteAsync(
-        string route,
-        IDictionary<string, object> parameters) =>
-        Shell.Current.GoToAsync(route, parameters);
+    private static Task NavigateToRouteAsync(string route, object parameter) =>
+        Shell.Current.GoToAsync(
+            route,
+            new Dictionary<string, object>
+            {
+                { nameof(NavigationParameter.Payload), parameter },
+            });
 }

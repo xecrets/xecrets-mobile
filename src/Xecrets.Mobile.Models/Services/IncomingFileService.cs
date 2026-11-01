@@ -133,7 +133,9 @@ internal sealed class IncomingFileService(
             {
                 if (previewService.HasPendingPasswordRequest)
                 {
-                    await userInterfaceService.NavigateToAsync(AppDestination.EnterPassword);
+                    await userInterfaceService.NavigateToAsync(
+                        AppDestination.EnterPassword,
+                        DecryptionPasswordsIntent.Add);
                 }
                 else
                 {

@@ -28,29 +28,47 @@
 
 #endregion Copyright and GPL License
 
+using System.Collections.Generic;
+
+using CommunityToolkit.Mvvm.Input;
+
+using Microsoft.Maui.Controls;
+
 using Xecrets.Mobile.Abstractions;
+using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.PageModels;
 using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
-internal partial class EnterPasswordPage
+internal partial class EnterPasswordPage : IQueryAttributable
 {
+    public IAsyncRelayCommand<string> DeleteCommand { get; }
+
     public EnterPasswordPage(
         EnterPasswordPageModel model,
         IPlatformServices platformServices,
         IPageHeaderService pageHeaderService)
     {
+        DeleteCommand = model.DeleteCommand;
         InitializeComponent();
         BindingContext = model;
         platformServices.ConfigurePasswordEntry(PasswordEntryControl.Entry, PasswordEntryPurpose.ExistingPassword);
         pageHeaderService.ApplyStandardHeader(this);
     }
 
+    public void ApplyQueryAttributes(IDictionary<string, object> query)
+    {
+        ((EnterPasswordPageModel)BindingContext).Initialize(
+            query.TryGetValue(nameof(NavigationParameter.Payload), out object? intent)
+                ? (DecryptionPasswordsIntent)intent
+                : DecryptionPasswordsIntent.Manage);
+    }
+
     protected override void OnAppearing()
     {
         base.OnAppearing();
-        ((EnterPasswordPageModel)BindingContext).Initialize();
+        ((EnterPasswordPageModel)BindingContext).Load();
     }
 
     protected override void OnDisappearing()

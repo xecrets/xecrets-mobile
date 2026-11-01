@@ -65,13 +65,27 @@ public sealed class BreadcrumbTests
 
         await app.Operations.PickAndRunAsync(WorkFolderIntent.Auto, docs);
 
-        EnterPasswordPageModel page = new(app.Preview, app.OperationService, app.Flow, app.UserInterface);
+        EnterPasswordPageModel page = app.CreateEnterPasswordPage();
+        page.Initialize((DecryptionPasswordsIntent)app.UserInterface.Payloads.Single());
         Assert.That(app.UserInterface.Destinations, Is.EqualTo([AppDestination.EnterPassword]));
         Assert.That(page.Breadcrumb, Is.EqualTo(string.Join(
             MobileTexts.BreadcrumbSeparator,
             MobileTexts.BreadcrumbHome,
             MobileTexts.BreadcrumbMyFolders,
-            MobileTexts.BreadcrumbPassword)));
+            MobileTexts.BreadcrumbDecryptionPasswords)));
+    }
+
+    [Test]
+    public void DecryptionPasswordsFromTheMenuAreShownUnderHome()
+    {
+        EnterPasswordPageModel page = new TestApp().CreateEnterPasswordPage();
+
+        page.Initialize(DecryptionPasswordsIntent.Manage);
+
+        Assert.That(page.Breadcrumb, Is.EqualTo(string.Join(
+            MobileTexts.BreadcrumbSeparator,
+            MobileTexts.BreadcrumbHome,
+            MobileTexts.BreadcrumbDecryptionPasswords)));
     }
 
     [TestCase(WorkFolderIntent.Auto, nameof(MobileTexts.BreadcrumbMyFolders))]

@@ -306,6 +306,7 @@ public sealed class ElsewhereOperationTests
         await app.Operations.PickAndRunAsync(WorkFolderIntent.Delete, null);
 
         Assert.That(app.UserInterface.Confirmations, Is.EqualTo([MobileTexts.MessageTextConfirmWipe]));
+        Assert.That(app.UserInterface.ConfirmationButtons, Is.EqualTo([(MobileTexts.ButtonOk, MobileTexts.LabelCancel)]));
         Assert.That(app.Access.SaveAsStarts, Is.Empty);
         Assert.That(app.Access.Files, Is.Empty);
         Assert.That(app.UserInterface.TransientMessages, Is.EqualTo([MobileTexts.DialogTextFileOverwritten]));

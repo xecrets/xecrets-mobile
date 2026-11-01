@@ -224,6 +224,11 @@
                 FontFamily="{x:Static f:FluentUI.FontFamily}"
                 Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
                 Size="{StaticResource size240}" />
+    <FontImageSource x:Key="IconDecryptionPasswordsMenu"
+                Glyph="{x:Static f:FluentUI.key_multiple_24_regular}"
+                FontFamily="{x:Static f:FluentUI.FontFamily}"
+                Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                Size="{StaticResource size240}" />
     <FontImageSource x:Key="IconSuggestPasswordMenu"
                 Glyph="{x:Static f:FluentUI.password_24_regular}"
                 FontFamily="{x:Static f:FluentUI.FontFamily}"

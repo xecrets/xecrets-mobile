@@ -79,6 +79,12 @@ internal sealed partial class PasswordEntry
         set => PasswordTextEntry.ReturnType = value;
     }
 
+    public bool IsReadOnly
+    {
+        get => PasswordTextEntry.IsReadOnly;
+        set => PasswordTextEntry.IsReadOnly = value;
+    }
+
     private static FontImageSource CreateVisibilityIcon(string glyph)
     {
         FontImageSource imageSource = new()

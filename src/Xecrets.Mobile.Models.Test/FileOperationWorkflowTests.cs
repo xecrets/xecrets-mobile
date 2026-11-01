@@ -53,6 +53,7 @@ public sealed class FileOperationWorkflowTests
         await app.Operations.PickAndRunAsync(WorkFolderIntent.Delete, docs);
 
         Assert.That(app.UserInterface.Confirmations, Is.EqualTo([MobileTexts.MessageTextConfirmWipe]));
+        Assert.That(app.UserInterface.ConfirmationButtons, Is.EqualTo([(MobileTexts.ButtonOk, MobileTexts.LabelCancel)]));
         Assert.That(app.Access.Files, Is.Empty);
         Assert.That(app.Store.Files, Is.Empty);
     }
@@ -101,6 +102,7 @@ public sealed class FileOperationWorkflowTests
         await app.Operations.PickAndRunAsync(WorkFolderIntent.Delete, docs);
 
         Assert.That(app.UserInterface.Confirmations, Is.EqualTo([MobileTexts.MessageTextConfirmWipe]));
+        Assert.That(app.UserInterface.ConfirmationButtons, Is.EqualTo([(MobileTexts.ButtonOk, MobileTexts.LabelCancel)]));
         Assert.That(app.Access.Files, Is.Empty);
     }
 
