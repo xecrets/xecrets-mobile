@@ -5,8 +5,8 @@
 #     ('dotnet --version' and 'dotnet workload --version').
 #   - Xcode: .xcode-version (repo root). Keep in sync with local 'xcodebuild -version',
 #     and check the version exists on the runner image:
-#     https://github.com/actions/runner-images (macos-26 README, "Installed Xcode versions").
-#   - Runner images: versioned labels (ubuntu-24.04, macos-26), never *-latest.
+#     https://github.com/actions/runner-images (xcode-27-arm64 README, "Installed Xcode versions").
+#   - Runner images: versioned labels (ubuntu-24.04, xcode-27), never *-latest.
 #   - Actions: pinned to full commit SHAs; Dependabot proposes updates.
 #
 # Tests:
@@ -389,7 +389,7 @@ jobs:
   ios:
     name: iOS
     needs: version
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 60
     steps:
       - name: Checkout xecrets-mobile
@@ -518,7 +518,7 @@ jobs:
       (github.ref == 'refs/heads/main' ||
       github.ref == 'refs/heads/develop' ||
       startsWith(github.ref, 'refs/heads/feature/'))
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 15
     environment: publish-apple-appstore
     steps:

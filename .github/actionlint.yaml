@@ -1,0 +1,5 @@
+# actionlint only knows the standard GitHub-hosted runner labels. xcode-27 is the label of the Xcode 27
+# public preview image; remove this file when ci.yml moves to a standard macOS 27 label.
+self-hosted-runner:
+  labels:
+    - xcode-27

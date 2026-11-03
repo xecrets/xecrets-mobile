@@ -270,7 +270,7 @@ public static class MobileTexts
         """
         Welcome to Xecrets Ez
 
-        Encrypt and decrypt your files on Windows, Linux, macOS, Android and iOS.
+        Encrypt and decrypt files across all major desktop and mobile platforms with Xecrets Ez.
 
         (c) Create an entirely local profile.
         (e) Encrypt and decrypt files in place.
@@ -281,7 +281,7 @@ public static class MobileTexts
         (w) Overwrite and delete files (when supported).
         (o) Always work offline.
 
-        …and more! Get the desktop app too.
+        …and more!
 
         Note: Check the trash or other recovery options when deleting cloud files!
         """;

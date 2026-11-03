@@ -32,8 +32,7 @@
              x:DataType="controls:PageCard"
              x:Name="Root"
              VerticalOptions="Start"
-             HorizontalOptions="Center"
-             BodyPadding="{StaticResource PageInformationBodyPadding}">
+             HorizontalOptions="Center">
     <!-- Content is set explicitly, since Body is the content property, so that the pages can give the body directly. -->
     <ContentView.Content>
         <!-- The body and the header actions are hosted, not bound to this control as binding context, so that they

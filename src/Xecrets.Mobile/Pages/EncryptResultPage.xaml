@@ -47,7 +47,8 @@
             <controls:PageCard x:Name="Card"
                                Grid.Row="1"
                                Title="{Binding Heading}"
-                               Information="{x:Static modelUtilities:MobileTexts.DialogTextResult}">
+                               Information="{x:Static modelUtilities:MobileTexts.DialogTextResult}"
+                               BodyPadding="{StaticResource PageInformationBodyPadding}">
                 <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
                     <VerticalStackLayout>
                         <Label Text="{Binding FileNameText}"
