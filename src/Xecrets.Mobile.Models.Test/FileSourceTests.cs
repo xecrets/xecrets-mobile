@@ -105,5 +105,7 @@ public sealed class FileSourceTests
         public Task WipeTransientFileAsync(string filePath) => throw new NotSupportedException();
         public Task RunExclusiveAsync(Func<Task> operation) => throw new NotSupportedException();
         public Task MaybeWipeTrackedFilesAsync() => throw new NotSupportedException();
+
+        public Task WipeTrackedFilesAsync() => throw new NotSupportedException();
     }
 }

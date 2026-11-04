@@ -30,13 +30,14 @@
 
 using Xecrets.Common.Models;
 using Xecrets.Core.Abstractions;
+using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Models.Data;
 
 /// <summary>
 /// Persists Xecrets.Core device settings in <see cref="DeviceSettings.Values"/>.
 /// </summary>
-internal sealed class MobileDeviceSettings(MobileDataStore dataStore) : IDeviceSettings
+internal sealed class MobileDeviceSettings(MobileDataStore dataStore) : IDeviceSettings, IClear
 {
     private readonly Lazy<Dictionary<string, string>> _settings =
         new(() => new Dictionary<string, string>(dataStore.ReadDeviceValues()));
@@ -56,10 +57,15 @@ internal sealed class MobileDeviceSettings(MobileDataStore dataStore) : IDeviceS
         }
     }
 
-    public void Clear()
+    public void Clear() => Clear(persist: true);
+
+    public void Clear(bool persist)
     {
         _settings.Value.Clear();
-        Persist(settings => settings.Clear());
+        if (persist)
+        {
+            Persist(settings => settings.Clear());
+        }
     }
 
     // IDeviceSettings is synchronous and Core may call it on the UI thread. Task.Run keeps the awaited continuations

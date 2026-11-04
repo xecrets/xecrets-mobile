@@ -56,6 +56,12 @@ public sealed class PendingFileTests
     [TearDown]
     public void TearDown()
     {
+        // A wipe removes the cache directory itself once it is empty.
+        if (!Directory.Exists(_directory))
+        {
+            return;
+        }
+
         foreach (string file in Directory.GetFiles(_directory, "*", SearchOption.AllDirectories))
         {
             File.SetAttributes(file, FileAttributes.Normal);

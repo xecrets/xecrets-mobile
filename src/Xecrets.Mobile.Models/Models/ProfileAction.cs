@@ -38,4 +38,5 @@ public enum ProfileAction
     Unknown,
     Create,
     Change,
+    Delete,
 }

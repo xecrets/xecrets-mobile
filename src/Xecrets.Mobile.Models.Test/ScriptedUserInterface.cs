@@ -104,7 +104,7 @@ internal sealed class ScriptedUserInterface : IUserInterfaceService
     }
 
     public Task NavigateReplacingAsync(AppDestination destination, object? parameter) =>
-        this.NavigateToAsync(destination);
+        NavigateToAsync(destination, parameter);
     public Task GoBackAsync(object? parameter)
     {
         BackCount++;

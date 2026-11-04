@@ -53,4 +53,5 @@ public enum AppDestination
     Welcome,
     VerifyPassword,
     ChangeProfile,
+    Startup,
 }

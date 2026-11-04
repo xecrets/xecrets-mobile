@@ -43,6 +43,8 @@ namespace Xecrets.Mobile.Models.PageModels;
 public partial class CreateProfilePageModel(
     IProfileService profileService,
     IStrengthMeter strengthMeter,
+    LocalProfileDeletionService deletionService,
+    InstallationService installationService,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService)
 {
@@ -76,7 +78,14 @@ public partial class CreateProfilePageModel(
     public partial string ErrorText { get; set; } = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsEditable))]
+    public partial bool IsDelete { get; private set; }
+
+    public bool IsEditable => !IsDelete;
+
+    [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(CreateCommand))]
+    [NotifyCanExecuteChangedFor(nameof(DeleteCommand))]
     // ReSharper disable once MemberCanBeMadeStatic.Local
     private partial bool IsBusy { get; set; }
 
@@ -94,6 +103,38 @@ public partial class CreateProfilePageModel(
         ConfirmPassword = profileService.CurrentPassword;
     }
 
+    // As when changing, the current email and password are shown, but cannot be edited.
+    public void InitializeDelete()
+    {
+        IsDelete = true;
+        Heading = MobileTexts.MenuDeleteProfile;
+        Information = MobileTexts.MessageTextConfirmWipe;
+        Email = profileService.CurrentEmail;
+        Password = profileService.CurrentPassword;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanDelete))]
+    private async Task Delete()
+    {
+        try
+        {
+            IsBusy = true;
+            if (!await UserInterfaceService.DisplayConfirmationAsync(
+                    MobileTexts.MessageTextConfirmWipe, MobileTexts.LabelYes, MobileTexts.LabelNo))
+            {
+                return;
+            }
+
+            await deletionService.DeleteAsync();
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private bool CanDelete() => !IsBusy;
+
     [RelayCommand(CanExecute = nameof(CanCreate))]
     private async Task Create()
     {
@@ -106,6 +147,13 @@ public partial class CreateProfilePageModel(
             {
                 ErrorText = MobileTexts.DialogValidationConfirmPassword;
                 return;
+            }
+
+            if (!_isChange)
+            {
+                // Without a local profile, as when first installed or after deleting it, this is not done at startup, so
+                // that nothing is written before a profile is created.
+                await installationService.EnsureAsync();
             }
 
             ProfileActionResult result = _isChange

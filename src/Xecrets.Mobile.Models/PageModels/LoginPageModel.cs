@@ -62,12 +62,12 @@ public partial class LoginPageModel(
     private partial bool IsBusy { get; set; }
 
     // As the Shell root, the page signs in. Pushed on top of another page, it is initialized with a payload and only
-    // verifies the password before the profile is changed.
-    private bool _isVerification;
+    // verifies the password before the profile is changed or deleted.
+    private ProfileAction _verifiedAction = ProfileAction.Unknown;
 
-    public void InitializeVerification()
+    public void InitializeVerification(ProfileAction action)
     {
-        _isVerification = true;
+        _verifiedAction = action;
         Heading = MobileTexts.VerifyPasswordHeading;
         Information = MobileTexts.VerifyPasswordDescription;
     }
@@ -110,9 +110,9 @@ public partial class LoginPageModel(
                 return;
             }
 
-            if (_isVerification)
+            if (_verifiedAction != ProfileAction.Unknown)
             {
-                await UserInterfaceService.NavigateReplacingAsync(AppDestination.ChangeProfile, ProfileAction.Change);
+                await UserInterfaceService.NavigateReplacingAsync(AppDestination.ChangeProfile, _verifiedAction);
                 return;
             }
 

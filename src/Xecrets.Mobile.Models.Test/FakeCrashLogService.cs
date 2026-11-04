@@ -48,6 +48,10 @@ internal sealed class FakeCrashLogService : ICrashLogService
     {
     }
 
+    public bool IsDeleted { get; private set; }
+
+    public void DeleteAll() => IsDeleted = true;
+
     public void WriteSwallowedException(Exception exception, string filePath = "", string memberName = "", int lineNumber = 0) =>
         Swallowed.Add(exception);
 }

@@ -42,6 +42,8 @@ namespace Xecrets.Mobile.Pages;
 
 internal partial class CreateProfilePage : IQueryAttributable
 {
+    private readonly IPlatformServices _platformServices;
+
     public Entry PasswordTextEntry => PasswordEntryControl.Entry;
 
     public CreateProfilePage(
@@ -49,6 +51,7 @@ internal partial class CreateProfilePage : IQueryAttributable
         IPlatformServices platformServices,
         IPageHeaderService pageHeaderService)
     {
+        _platformServices = platformServices;
         InitializeComponent();
         BindingContext = model;
         platformServices.ConfigurePasswordEntry(EmailEntry, PasswordEntryPurpose.UserName);
@@ -71,6 +74,17 @@ internal partial class CreateProfilePage : IQueryAttributable
                 break;
             case ProfileAction.Change:
                 ((CreateProfilePageModel)BindingContext).InitializeChange();
+                break;
+            case ProfileAction.Delete:
+                // As on the verification page, Shell applies the query before the handlers are created. Without a user
+                // name and a new password, it's not a form for password managers to save.
+                PasswordEntryProperties.SetPurpose(EmailEntry, null);
+                _platformServices.ConfigurePasswordEntry(PasswordEntryControl.Entry, PasswordEntryPurpose.VerifyPassword);
+                _platformServices.ConfigurePasswordEntry(ConfirmPasswordEntryControl.Entry, PasswordEntryPurpose.VerifyPassword);
+
+                // Only the entry, so that the password can still be shown.
+                PasswordEntryControl.Entry.IsEnabled = false;
+                ((CreateProfilePageModel)BindingContext).InitializeDelete();
                 break;
             case ProfileAction.Unknown:
             default:

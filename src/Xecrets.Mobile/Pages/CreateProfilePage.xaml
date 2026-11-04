@@ -49,8 +49,18 @@
                            Information="{Binding Information}"
                            BodyPadding="{StaticResource IconRowBodyPadding}">
             <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
+                <!-- The page information is always shown, so that what is asked for is not misunderstood. -->
+                <Border Margin="{StaticResource IconRowBodyContentMargin}"
+                        BackgroundColor="{AppThemeBinding Light={StaticResource LightOutline}, Dark={StaticResource DarkOutline}}"
+                        Stroke="{AppThemeBinding Light={StaticResource LightOutline}, Dark={StaticResource DarkOutline}}"
+                        StrokeShape="RoundRectangle 4"
+                        Padding="10,6">
+                    <Label Text="{Binding Information}"
+                           FontSize="13" />
+                </Border>
                 <!-- As wide as the password text field, so both have the same left and right edges. -->
                 <Entry Margin="{StaticResource IconRowBodyLeadingMargin}" x:Name="EmailEntry" Text="{Binding Email}"
+                       IsEnabled="{Binding IsEditable}"
                        HorizontalOptions="Start"
                        WidthRequest="{Binding PasswordTextEntry.Width, Source={x:Reference PageRoot}, x:DataType=pages:CreateProfilePage}"
                        Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkEmail}"
@@ -62,6 +72,7 @@
                                         ToolTipProperties.Text="{x:Static modelUtilities:MobileTexts.ToolTipMasterPassword}"
                                         ReturnType="Next" />
                 <ProgressBar HorizontalOptions="Start"
+                             IsVisible="{Binding IsEditable}"
                              WidthRequest="{Binding PasswordTextEntry.Width, Source={x:Reference PageRoot}, x:DataType=pages:CreateProfilePage}"
                              Progress="{Binding PasswordStrength}"
                              ProgressColor="{Binding PasswordStrengthColor, Converter={StaticResource StrengthColorToColorConverter}}">
@@ -82,6 +93,7 @@
                     </ProgressBar.Triggers>
                 </ProgressBar>
                 <controls:PasswordEntry Margin="{StaticResource IconRowBodyLeadingMargin}" x:Name="ConfirmPasswordEntryControl"
+                                        IsVisible="{Binding IsEditable}"
                                         Text="{Binding ConfirmPassword, Mode=TwoWay}"
                                         Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkConfirmPassword}"
                                         ToolTipProperties.Text="{x:Static modelUtilities:MobileTexts.ToolTipMasterPassword}"
@@ -94,7 +106,12 @@
                                      HorizontalOptions="Center"
                                      Spacing="{StaticResource LayoutSpacing}">
                     <Button Text="{Binding ButtonText}"
+                            IsVisible="{Binding IsEditable}"
                             Command="{Binding CreateCommand}" />
+                    <Button Text="{x:Static modelUtilities:MobileTexts.ButtonDelete}"
+                            Style="{StaticResource DestructiveButtonStyle}"
+                            IsVisible="{Binding IsDelete}"
+                            Command="{Binding DeleteCommand}" />
                 </VerticalStackLayout>
             </VerticalStackLayout>
         </controls:PageCard>

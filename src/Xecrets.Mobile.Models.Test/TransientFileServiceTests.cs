@@ -46,8 +46,15 @@ public sealed class TransientFileServiceTests
     [SetUp]
     public void SetUp() => _cacheDirectory = Directory.CreateTempSubdirectory().FullName;
 
+    // A wipe removes the cache directory itself once it is empty.
     [TearDown]
-    public void TearDown() => Directory.Delete(_cacheDirectory, recursive: true);
+    public void TearDown()
+    {
+        if (Directory.Exists(_cacheDirectory))
+        {
+            Directory.Delete(_cacheDirectory, recursive: true);
+        }
+    }
 
     [Test]
     public async Task SuspendedWipeReturnsControlAndExcludesIncomingCopy()
@@ -172,6 +179,17 @@ public sealed class TransientFileServiceTests
     }
 
     [Test]
+    public async Task NothingIsCreatedInTheCacheUntilNeeded()
+    {
+        Directory.Delete(_cacheDirectory);
+        TransientFileService transient = CreateService(_ => Task.CompletedTask);
+
+        await transient.MaybeWipeTrackedFilesAsync();
+
+        Assert.That(Directory.Exists(_cacheDirectory), Is.False);
+    }
+
+    [Test]
     public async Task WipeRemovesReadOnlyFiles()
     {
         TransientFileService transient = CreateService(_ => Task.CompletedTask);
@@ -181,7 +199,7 @@ public sealed class TransientFileServiceTests
 
         await transient.MaybeWipeTrackedFilesAsync();
 
-        Assert.That(Directory.GetFiles(_cacheDirectory, "*", SearchOption.AllDirectories), Is.Empty);
+        Assert.That(Directory.Exists(_cacheDirectory), Is.False);
     }
 
     [TestCase(false, false)]

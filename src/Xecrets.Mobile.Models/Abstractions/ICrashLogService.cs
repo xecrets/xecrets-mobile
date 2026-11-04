@@ -43,6 +43,11 @@ public interface ICrashLogService
     void WriteCrashLog(string source, object? crash);
 
     /// <summary>
+    /// Deletes all crash logs and logs of swallowed exceptions.
+    /// </summary>
+    void DeleteAll();
+
+    /// <summary>
     /// Silently logs an exception that is handled without being passed on, such as when reported to the user only as a
     /// status, for troubleshooting. Unlike a crash log, nothing is shown to the user, and a failure to log is ignored.
     /// </summary>

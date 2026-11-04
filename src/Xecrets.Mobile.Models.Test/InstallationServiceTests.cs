@@ -209,6 +209,10 @@ public sealed class InstallationServiceTests
         {
         }
 
+        public void DeleteAll()
+        {
+        }
+
         public void WriteSwallowedException(Exception exception, string filePath = "", string memberName = "", int lineNumber = 0)
         {
         }

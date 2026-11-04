@@ -92,7 +92,12 @@ internal partial class App
     // ReSharper disable once AsyncVoidEventHandlerMethod - the exception is caught and logged as unhandled.
     private async void InitializeWindowAsync(object? sender, EventArgs e)
     {
-        await _services.GetRequiredService<InstallationService>().EnsureAsync();
+        // Without a local profile, as when first installed or after deleting it, this is done when one is created, so
+        // that nothing is written before that.
+        if (await _services.GetRequiredService<IProfileService>().HasProfileAsync())
+        {
+            await _services.GetRequiredService<InstallationService>().EnsureAsync();
+        }
         await _transientFileService.MaybeWipeTrackedFilesAsync();
         await _services.GetRequiredService<GrantCleanupService>().RunAsync();
         await _cultureCoordinator.ApplySavedAsync();

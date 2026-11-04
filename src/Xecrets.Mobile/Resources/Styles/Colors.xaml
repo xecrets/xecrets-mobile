@@ -17,6 +17,7 @@
     <Color x:Key="Secondary">#E4E9F8</Color>
     <Color x:Key="SecondaryDarkText">#B9C6EF</Color>
     <Color x:Key="Tertiary">#34477F</Color>
+    <Color x:Key="Destructive">#C42B1C</Color>
 
     <Color x:Key="DarkBackground">#171A24</Color>
     <Color x:Key="LightOnDarkBackground">#E5E8F2</Color>

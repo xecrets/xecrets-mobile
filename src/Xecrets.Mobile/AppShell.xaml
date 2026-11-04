@@ -82,6 +82,13 @@
               IconImageSource="{StaticResource IconChangeProfileMenu}"
               Command="{Binding ChangeProfileCommand}" />
 
+    <MenuItem x:Name="DeleteProfileMenuItem"
+              x:DataType="local:AppShell"
+              BindingContext="{x:Reference AppShellRoot}"
+              Text="{x:Static modelUtilities:MobileTexts.MenuDeleteProfile}"
+              IconImageSource="{StaticResource IconDeleteProfileMenu}"
+              Command="{Binding DeleteProfileCommand}" />
+
     <MenuItem x:DataType="local:AppShell"
               BindingContext="{x:Reference AppShellRoot}"
               Text="{x:Static modelUtilities:MobileTexts.MenuSuggestPassword}"

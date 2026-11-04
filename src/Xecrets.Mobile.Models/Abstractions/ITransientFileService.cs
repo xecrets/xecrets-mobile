@@ -48,4 +48,9 @@ public interface ITransientFileService
     Task RunExclusiveAsync(Func<Task> operation);
 
     Task MaybeWipeTrackedFilesAsync();
+
+    /// <summary>
+    /// As <see cref="MaybeWipeTrackedFilesAsync"/>, but waits for any operation in progress instead of skipping.
+    /// </summary>
+    Task WipeTrackedFilesAsync();
 }

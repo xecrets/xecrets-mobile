@@ -28,6 +28,7 @@
 
 #endregion Copyright and GPL License
 
+using System.Linq;
 using System.Threading.Tasks;
 using System;
 
@@ -99,6 +100,8 @@ internal partial class AppShell
         SetFlyoutItemIsVisible(RecentFilesMenuItem, _profileSession.UserStore is not null);
         SetFlyoutItemIsVisible(DecryptionPasswordsMenuItem, _profileSession.UserStore is not null);
         SetFlyoutItemIsVisible(ChangeProfileMenuItem, _profileSession.UserStore is not null);
+        SetFlyoutItemIsVisible(DeleteProfileMenuItem, _profileSession.UserStore is not null);
+        DeleteProfileCommand.NotifyCanExecuteChanged();
         if (args.Current.Location.OriginalString != "//startup")
         {
             return;
@@ -137,7 +140,17 @@ internal partial class AppShell
     }
 
     [RelayCommand]
-    private async Task ChangeProfileAsync()
+    private Task ChangeProfileAsync() => VerifyPasswordAsync(ProfileAction.Change);
+
+    [RelayCommand(CanExecute = nameof(CanDeleteProfile))]
+    private Task DeleteProfileAsync() => VerifyPasswordAsync(ProfileAction.Delete);
+
+    // Not while a decrypted file is open in the app, as it would be deleted from under the page showing it. The menu
+    // item asks while the Shell is still being created, before there is a navigation stack.
+    private bool CanDeleteProfile() =>
+        Navigation.NavigationStack?.Any(page => page?.BindingContext is EditPageModel or ViewPageModel) != true;
+
+    private async Task VerifyPasswordAsync(ProfileAction action)
     {
         FlyoutIsPresented = false;
         if (CurrentPage?.BindingContext is LoginPageModel or CreateProfilePageModel)
@@ -145,7 +158,7 @@ internal partial class AppShell
             return;
         }
 
-        await _userInterfaceService.NavigateToAsync(AppDestination.VerifyPassword, ProfileAction.Change);
+        await _userInterfaceService.NavigateToAsync(AppDestination.VerifyPassword, action);
     }
 
     [RelayCommand]

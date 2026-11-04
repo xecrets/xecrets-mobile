@@ -81,6 +81,8 @@ public static class MobileTexts
 
     public static string ButtonBrowseElsewhere => "Browse anywhere";
 
+    public static string ButtonDelete => "Delete";
+
     public static string ButtonDiscard => "Discard";
 
     public static string ButtonEncryptToShare => "Encrypt to share";
@@ -205,6 +207,8 @@ public static class MobileTexts
     public static string LabelContinue => "Continue";
 
     public static string MenuChangeProfile => "Change local profile";
+
+    public static string MenuDeleteProfile => "Delete local profile";
 
     // "Decryption passwords"
     public static string MenuDecryptionPasswords => DecryptionPasswordsContentTitle;

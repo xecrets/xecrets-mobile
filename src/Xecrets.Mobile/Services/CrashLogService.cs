@@ -122,6 +122,21 @@ internal sealed class CrashLogService : ICrashLogService
         File.WriteAllText(CurrentPath, report.ToString());
     }
 
+    public void DeleteAll()
+    {
+        try
+        {
+            if (Directory.Exists(CurrentDirectory))
+            {
+                Directory.Delete(CurrentDirectory, recursive: true);
+            }
+        }
+        catch (Exception)
+        {
+            // Best effort, and a failure cannot be logged here, since it is the logs that are deleted.
+        }
+    }
+
     public void WriteSwallowedException(
         Exception exception,
         [CallerFilePath] string filePath = "",

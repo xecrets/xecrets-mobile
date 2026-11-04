@@ -73,11 +73,12 @@ internal partial class LoginPage : IQueryAttributable
         switch (action)
         {
             case ProfileAction.Change:
+            case ProfileAction.Delete:
                 // Shell applies the query before the page is pushed and its handlers are created, so the entries
                 // get this configuration when they connect. Without a user name, it's not a sign-in form.
                 PasswordEntryProperties.SetPurpose(EmailEntry, null);
                 _platformServices.ConfigurePasswordEntry(PasswordEntryControl.Entry, PasswordEntryPurpose.VerifyPassword);
-                ((LoginPageModel)BindingContext).InitializeVerification();
+                ((LoginPageModel)BindingContext).InitializeVerification(action);
                 break;
             case ProfileAction.Unknown:
             case ProfileAction.Create:

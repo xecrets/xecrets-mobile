@@ -73,6 +73,14 @@ internal sealed class FakeTransientFileService : ITransientFileService, IDisposa
 
     public Task MaybeWipeTrackedFilesAsync() => Task.CompletedTask;
 
+    public bool IsWiped { get; private set; }
+
+    public Task WipeTrackedFilesAsync()
+    {
+        IsWiped = true;
+        return Task.CompletedTask;
+    }
+
     // The files left in the folder.
     public IReadOnlyList<string> RemainingFiles() =>
         Directory.Exists(RootDirectory)

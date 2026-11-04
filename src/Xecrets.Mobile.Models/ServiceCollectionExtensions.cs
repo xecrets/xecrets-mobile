@@ -64,6 +64,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IPreviewService, PreviewService>();
         services.AddSingleton<IIncomingFileService, IncomingFileService>();
         services.AddSingleton<SessionExitService>();
+        services.AddSingleton<LocalProfileDeletionService>();
         services.AddSingleton<IWorkFolderOperationService, WorkFolderOperationService>();
         services.AddSingleton<IEditSaveService, EditSaveService>();
         services.AddSingleton<FolderAccessWorkflow>();

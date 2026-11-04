@@ -89,6 +89,19 @@ public sealed class MobileDeviceSettingsTests
         Assert.That(new MobileDeviceSettings(_store)["key"], Is.Empty);
     }
 
+    [Test]
+    public async Task ClearWithoutPersistingForgetsTheValuesWithoutWriting()
+    {
+        MobileDeviceSettings deviceSettings = new(_store);
+        deviceSettings["key"] = "value";
+        await _store.ResetStoreAsync();
+
+        deviceSettings.Clear(persist: false);
+
+        Assert.That(deviceSettings["key"], Is.Empty);
+        Assert.That(Directory.EnumerateFiles(_directory, "*", SearchOption.AllDirectories), Is.Empty);
+    }
+
     private sealed class TestCrashLogService : ICrashLogService
     {
         public bool HasPendingCrashLog => false;
@@ -100,6 +113,10 @@ public sealed class MobileDeviceSettingsTests
         public string ReadCurrent() => string.Empty;
 
         public void WriteCrashLog(string source, object? crash)
+        {
+        }
+
+        public void DeleteAll()
         {
         }
 

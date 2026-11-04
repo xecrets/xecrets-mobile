@@ -90,6 +90,19 @@ public sealed class LoginPageTests
         Assert.That(page.Email, Is.EqualTo("me@example.com"));
     }
 
+    [Test]
+    public async Task VerifiedPasswordLeadsOnToTheActionVerifiedFor([Values(ProfileAction.Change, ProfileAction.Delete)] ProfileAction action)
+    {
+        LoginPageModel page = CreateLoginPage(out ScriptedUserInterface userInterface);
+        page.InitializeVerification(action);
+        page.Password = "password";
+
+        await page.LoginCommand.ExecuteAsync(null);
+
+        Assert.That(userInterface.Destinations, Is.EqualTo([AppDestination.ChangeProfile]));
+        Assert.That(userInterface.Payloads, Is.EqualTo([action]));
+    }
+
     private static LoginPageModel CreateLoginPage(out ScriptedUserInterface userInterface)
     {
         userInterface = new ScriptedUserInterface();

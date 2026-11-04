@@ -37,7 +37,8 @@ public sealed class TransientFileService(IFileService fileService, IFileWiper fi
 {
     private readonly SemaphoreSlim _gate = new(1, 1);
 
-    private readonly string _rootDirectory = CreateRootDirectory(fileService);
+    // Created by CreatePath only when needed, so that nothing is left in the cache before there are files in it.
+    private readonly string _rootDirectory = Path.Combine(fileService.CacheDirectory, "XecretsHandoff");
 
     public string CreateHandoffPath(string originalFileName)
         => CreatePath(Guid.NewGuid().ToString("N"), originalFileName);
@@ -112,8 +113,16 @@ public sealed class TransientFileService(IFileService fileService, IFileWiper fi
         }
     }
 
+    public Task WipeTrackedFilesAsync() => RunExclusiveAsync(WipeTrackedFilesCoreAsync);
+
+    // Not even an empty cache directory is left behind. A missing one is not an error, as it is only created when needed.
     private async Task WipeTrackedFilesCoreAsync()
-        => await WipeDirectoryAsync(fileService.CacheDirectory);
+    {
+        if (Directory.Exists(fileService.CacheDirectory))
+        {
+            await WipeDirectoryAsync(fileService.CacheDirectory);
+        }
+    }
 
     // Recursive post-order descent: fully wipe each subdirectory (and try to remove it) before touching
     // this directory's own files, then try to remove this directory once everything under it is gone.
@@ -144,10 +153,7 @@ public sealed class TransientFileService(IFileService fileService, IFileWiper fi
             await TryWipeAsync(file);
         }
 
-        if (directory != fileService.CacheDirectory)
-        {
-            TryDeleteIfEmpty(directory);
-        }
+        TryDeleteIfEmpty(directory);
     }
 
     private async Task TryWipeAsync(string path)
@@ -180,14 +186,6 @@ public sealed class TransientFileService(IFileService fileService, IFileWiper fi
             // Best effort.
             crashLogService.WriteSwallowedException(ex);
         }
-    }
-
-    private static string CreateRootDirectory(IFileService fileService)
-    {
-        string rootDirectory = Path.Combine(fileService.CacheDirectory, "XecretsHandoff");
-        Directory.CreateDirectory(rootDirectory);
-
-        return rootDirectory;
     }
 
     private static string CreateFriendlyFileName(string originalFileName)

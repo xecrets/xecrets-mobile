@@ -49,7 +49,9 @@ internal sealed class FakeProfileService : IProfileService
     public Task<ProfileActionResult> ChangeProfileAsync(string email, string password) => throw new NotSupportedException();
     public Task<ProfileActionResult> LoginAsync(string password) => Task.FromResult(new ProfileActionResult(
         password == "password" ? ProfileActionStatus.Success : ProfileActionStatus.WrongPassword));
-    public void SignOut() => throw new NotSupportedException();
+    public bool IsSignedOut { get; private set; }
+
+    public void SignOut() => IsSignedOut = true;
     public Identity GetIdentity() => new("password", []);
     public List<PasswordUsage> ExtraPasswords { get; } = [];
     public IReadOnlyList<PasswordUsage> GetExtraPasswords() => ExtraPasswords;
