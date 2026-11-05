@@ -122,6 +122,17 @@ public interface IFileAccess
     Task<byte[]> ReadStartAsync(string fileId, int count);
 
     /// <summary>
+    /// The times of the file, to keep when it is encrypted. A time the platform does not tell is the current time.
+    /// </summary>
+    Task<FileTimes> GetTimesAsync(string fileId);
+
+    /// <summary>
+    /// Sets the times of the file, such as those of its original for a decrypted file, as far as the platform and the
+    /// storage allow. A time that the platform or the storage does not allow to be set is left as it is, without failing.
+    /// </summary>
+    Task SetSupportedTimesAsync(string fileId, FileTimes times);
+
+    /// <summary>
     /// Checks that the file can be read now, without reading it. Storage that does not keep the file on the device may
     /// still have to get it. Throws as <see cref="OpenReadAsync"/>.
     /// </summary>

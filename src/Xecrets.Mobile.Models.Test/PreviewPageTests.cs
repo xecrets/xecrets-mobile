@@ -101,11 +101,31 @@ public sealed class PreviewPageTests
         Assert.That(page.EditCommand.CanExecute(null), Is.EqualTo(canEdit));
     }
 
+    [Test]
+    public async Task SavedCopyGetsTheTimesOfTheOriginal()
+    {
+        TestApp app = new();
+        PreviewPageModel page = await CreatePageAsync(app, new TestFileService(hasExternalViewer: true), 4);
+        FileTimes original = new(
+            new DateTime(2020, 1, 2, 3, 4, 5, DateTimeKind.Utc),
+            new DateTime(2021, 1, 2, 3, 4, 5, DateTimeKind.Utc),
+            new DateTime(2022, 1, 2, 3, 4, 5, DateTimeKind.Utc));
+        app.Preview.Current.SetText(
+            app.Preview.Current.File! with { OriginalTimes = original },
+            app.Preview.Current.Text,
+            EncryptedWithParameters.Empty);
+        app.Access.PickedFiles.Enqueue("docs/a.txt");
+
+        await page.SaveAsCommand.ExecuteAsync(null);
+
+        Assert.That(app.Access.Times["docs/a.txt"], Is.EqualTo(original));
+    }
+
     private async Task<PreviewPageModel> CreatePageAsync(TestApp app, TestFileService fileService, long size)
     {
         string path = Path.Combine(_directory, "a.txt");
         File.WriteAllText(path, new string('a', (int)size), Encoding.ASCII);
-        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(path, "a.txt");
+        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(path, "a.txt", FileTimes.UtcNow);
         if (file.Kind == PreviewKind.Text)
         {
             app.Preview.Current.SetText(file, File.ReadAllText(path), EncryptedWithParameters.Empty);

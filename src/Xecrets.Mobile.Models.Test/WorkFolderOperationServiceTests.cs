@@ -31,6 +31,7 @@
 using NUnit.Framework;
 
 using Xecrets.Common.Models;
+using Xecrets.Core.Models;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Utilities;
 using Xecrets.Texts;
@@ -96,6 +97,58 @@ public sealed class WorkFolderOperationServiceTests
         await app.OperationService.EncryptAsync(new FileReference("grant:docs|docs/a.txt", "a.txt"));
 
         Assert.That(app.RecentIds(), Is.EqualTo([$"grant:docs|docs/{encryptedName}", "docs/b.txt"]));
+    }
+
+    [Test]
+    public async Task EncryptKeepsTheTimesOfTheFile()
+    {
+        TestApp app = new();
+        app.AddFile("docs/a.txt");
+        DateTime created = new(2020, 1, 2, 3, 4, 5, DateTimeKind.Utc);
+        DateTime accessed = new(2021, 1, 2, 3, 4, 5, DateTimeKind.Utc);
+        DateTime written = new(2022, 1, 2, 3, 4, 5, DateTimeKind.Utc);
+        app.Access.Times["docs/a.txt"] = new FileTimes(created, accessed, written);
+
+        await app.OperationService.EncryptAsync(new FileReference("docs/a.txt", "a.txt"));
+
+        EncryptRequest request = app.Core.EncryptRequests.Single();
+        Assert.That(
+            (request.CreationTimeUtc, request.LastAccessTimeUtc, request.LastWriteTimeUtc),
+            Is.EqualTo((created, accessed, written)));
+    }
+
+    /// <summary>
+    /// The fake file access tells the current time for a file it has no times for, as a platform does for a time it
+    /// cannot tell.
+    /// </summary>
+    [Test]
+    public async Task EncryptUsesTheTimeOfEncryptionForAFileWhoseTimesCannotBeTold()
+    {
+        TestApp app = new();
+        app.AddFile("docs/a.txt");
+        DateTime before = DateTime.UtcNow;
+
+        await app.OperationService.EncryptAsync(new FileReference("docs/a.txt", "a.txt"));
+
+        EncryptRequest request = app.Core.EncryptRequests.Single();
+        Assert.That(request.CreationTimeUtc, Is.InRange(before, DateTime.UtcNow));
+        Assert.That(request.LastAccessTimeUtc, Is.InRange(before, DateTime.UtcNow));
+        Assert.That(request.LastWriteTimeUtc, Is.InRange(before, DateTime.UtcNow));
+    }
+
+    /// <summary>
+    /// The fake decryption tells the Unix epoch for all the times of the original.
+    /// </summary>
+    [Test]
+    public async Task DecryptRestoresTheTimesOfTheOriginal()
+    {
+        TestApp app = new();
+        app.Access.Files["docs/x.axx"] = "ENC:a.txt\ntext"u8.ToArray();
+
+        await app.OperationService.DecryptWithKnownPasswordsAsync(new FileReference("docs/x.axx", "x.axx"));
+
+        Assert.That(app.Access.Times["docs/a.txt"],
+            Is.EqualTo(new FileTimes(DateTime.UnixEpoch, DateTime.UnixEpoch, DateTime.UnixEpoch)));
     }
 
     [Test]

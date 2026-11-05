@@ -361,14 +361,16 @@ public sealed class FileOperationWorkflow(
     }
 
     /// <summary>
-    /// Lets the user save a copy of the complete file anywhere. Returns null when the user cancels, and otherwise the
-    /// saved file.
+    /// Lets the user save a copy of the complete file anywhere, with the times given, as far as they can be set.
+    /// Returns null when the user cancels, and otherwise the saved file.
     /// </summary>
-    public async Task<FileReference?> SaveAsAsync(string fileName, string completedFilePath)
+    public async Task<FileReference?> SaveAsAsync(string fileName, string completedFilePath, FileTimes times)
     {
         FileReference? file = await fileAccess.SaveAsAsync("", fileName, completedFilePath);
         if (file is not null)
         {
+            await fileAccess.SetSupportedTimesAsync(file.Id, times);
+
             await userInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextFileSaved);
         }
 

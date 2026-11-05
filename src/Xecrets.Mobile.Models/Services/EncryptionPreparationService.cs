@@ -32,6 +32,7 @@ using Xecrets.Core.Abstractions;
 using Xecrets.Core.Models;
 
 using Xecrets.Mobile.Models.Abstractions;
+using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Utilities;
 using Xecrets.Texts;
 
@@ -47,14 +48,26 @@ internal sealed class EncryptionPreparationService(
     public async Task<EncryptionPreparationResult> EncryptWithCurrentProfileAsync(IReadableFile source)
     {
         await using Stream cleartext = await source.OpenReadAsync();
-        return await EncryptAsync(cleartext, source.FileName, encryptRequestFactory.Create(source.FileName), false);
+        EncryptRequest request = WithTimes(encryptRequestFactory.Create(source.FileName), await source.GetTimesAsync());
+        return await EncryptAsync(cleartext, source.FileName, request, false);
     }
 
     public async Task<EncryptionPreparationResult> EncryptWithPasswordAsync(IReadableFile source, string password)
     {
         await using Stream cleartext = await source.OpenReadAsync();
-        return await EncryptAsync(cleartext, source.FileName, encryptRequestFactory.Create(source.FileName, password), true);
+        EncryptRequest request = WithTimes(encryptRequestFactory.Create(source.FileName, password), await source.GetTimesAsync());
+        return await EncryptAsync(cleartext, source.FileName, request, true);
     }
+
+    /// <summary>
+    /// Keeps the times of the file in the encrypted result.
+    /// </summary>
+    private static EncryptRequest WithTimes(EncryptRequest request, FileTimes times) => request with
+    {
+        CreationTimeUtc = times.CreationTimeUtc,
+        LastAccessTimeUtc = times.LastAccessTimeUtc,
+        LastWriteTimeUtc = times.LastWriteTimeUtc,
+    };
 
     /// <summary>
     /// The file is decrypted with any of the known passwords to a temporary file, as for a decrypted copy,

@@ -99,7 +99,8 @@ internal sealed class WorkFolderOperationService(
                     file,
                     encrypted.FilePath,
                     encrypted.DisplayName,
-                    MobileTexts.DialogTextFileEncrypted);
+                    MobileTexts.DialogTextFileEncrypted,
+                    FileTimes.UtcNow);
             }
             finally
             {
@@ -198,6 +199,7 @@ internal sealed class WorkFolderOperationService(
         try
         {
             string resultName;
+            FileTimes resultTimes;
             string folderId = "";
             bool overwrite = false;
             await using (Stream encrypted = await fileAccess.OpenReadAsync(file.Id))
@@ -209,6 +211,7 @@ internal sealed class WorkFolderOperationService(
                 }
 
                 resultName = session.OriginalFileName;
+                resultTimes = new FileTimes(session.CreationTimeUtc, session.LastAccessTimeUtc, session.LastWriteTimeUtc);
                 if (!isElsewhere)
                 {
                     folderId = await fileAccess.GetFolderOfFileAsync(file.Id);
@@ -222,10 +225,12 @@ internal sealed class WorkFolderOperationService(
 
             if (isElsewhere)
             {
-                return await ExportResultAsync(file, resultPath, resultName, MobileTexts.DialogTextFileDecrypted);
+                return await ExportResultAsync(
+                    file, resultPath, resultName, MobileTexts.DialogTextFileDecrypted, resultTimes);
             }
 
             string resultId = await fileAccess.SaveInFolderAsync(folderId, resultName, resultPath, overwrite);
+            await fileAccess.SetSupportedTimesAsync(resultId, resultTimes);
             FileReference result = file with { Id = resultId, Name = resultName };
             await CompleteAsync(file, result, MobileTexts.DialogTextFileDecrypted);
             return FileOperationOutcome.Completed(result);
@@ -249,7 +254,8 @@ internal sealed class WorkFolderOperationService(
         FileReference source,
         string resultPath,
         string suggestedName,
-        string completedText)
+        string completedText,
+        FileTimes resultTimes)
     {
         FileReference? saved = await fileAccess.SaveAsAsync(
             await fileAccess.GetParentFolderAsync(source.Id),
@@ -259,6 +265,8 @@ internal sealed class WorkFolderOperationService(
         {
             return await ReportAsync(DestinationStatus.Canceled);
         }
+
+        await fileAccess.SetSupportedTimesAsync(saved.Id, resultTimes);
 
         if (IsProbablyChangedByOsFromSuggestion(suggestedName, saved.Name))
         {

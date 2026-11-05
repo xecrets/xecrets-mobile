@@ -67,7 +67,7 @@ public sealed class PreviewInfoFactoryTests
         string filePath = Path.Combine(_directory, "document.pdf");
         File.WriteAllText(filePath, "%PDF-1.4\n1 0 obj << /Type /Catalog >>\nendobj\n", Encoding.ASCII);
 
-        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(filePath, "document.pdf");
+        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(filePath, "document.pdf", FileTimes.UtcNow);
 
         Assert.That(file.ContentType, Is.EqualTo("application/pdf"));
         Assert.That(file.Kind, Is.EqualTo(PreviewKind.External));
@@ -81,7 +81,7 @@ public sealed class PreviewInfoFactoryTests
         string filePath = Path.Combine(_directory, "notes.xyz");
         File.WriteAllText(filePath, "Just some plain text notes.", Encoding.ASCII);
 
-        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(filePath, "notes.xyz");
+        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(filePath, "notes.xyz", FileTimes.UtcNow);
 
         Assert.That(file.ContentType, Is.EqualTo("text/plain"));
         Assert.That(file.Kind, Is.EqualTo(PreviewKind.Text));
@@ -93,7 +93,7 @@ public sealed class PreviewInfoFactoryTests
         string filePath = Path.Combine(_directory, "blob.xyz");
         File.WriteAllBytes(filePath, [0x00, 0x01, 0x02, 0xFF, 0xFE, 0xFD]);
 
-        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(filePath, "blob.xyz");
+        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(filePath, "blob.xyz", FileTimes.UtcNow);
 
         Assert.That(file.ContentType, Is.EqualTo("application/octet-stream"));
         Assert.That(file.Kind, Is.EqualTo(PreviewKind.External));
@@ -109,7 +109,7 @@ public sealed class PreviewInfoFactoryTests
         string filePath = Path.Combine(_directory, "large.txt");
         File.WriteAllText(filePath, new string('a', (int)PreviewInfoFactory.MaxInlineTextSizeBytes + 1), Encoding.ASCII);
 
-        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(filePath, "large.txt");
+        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(filePath, "large.txt", FileTimes.UtcNow);
 
         Assert.That(file.ContentType, Is.EqualTo("text/plain"));
         Assert.That(file.Kind, Is.EqualTo(PreviewKind.External));
@@ -121,7 +121,7 @@ public sealed class PreviewInfoFactoryTests
         string filePath = Path.Combine(_directory, "small.txt");
         File.WriteAllText(filePath, new string('a', (int)PreviewInfoFactory.MaxInlineTextSizeBytes), Encoding.ASCII);
 
-        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(filePath, "small.txt");
+        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(filePath, "small.txt", FileTimes.UtcNow);
 
         Assert.That(file.ContentType, Is.EqualTo("text/plain"));
         Assert.That(file.Kind, Is.EqualTo(PreviewKind.Text));
@@ -136,7 +136,7 @@ public sealed class PreviewInfoFactoryTests
         string filePath = Path.Combine(_directory, "report.docx");
         File.WriteAllBytes(filePath, [0x50, 0x4B, 0x03, 0x04, 0x00, 0x00, 0x00, 0x00]);
 
-        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(filePath, "report.docx");
+        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(filePath, "report.docx", FileTimes.UtcNow);
 
         Assert.That(file.ContentType, Is.EqualTo("application/vnd.openxmlformats-officedocument.wordprocessingml.document"));
         Assert.That(file.Kind, Is.EqualTo(PreviewKind.External));

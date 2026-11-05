@@ -62,7 +62,8 @@ public partial class DebugPageModel(
             fileName,
             "text/plain",
             file.Length,
-            PreviewKind.Text),
+            PreviewKind.Text,
+            FileTimes.UtcNow),
             EncryptedWithParameters.Empty);
         await UserInterfaceService.NavigateToAsync(AppDestination.View);
     }

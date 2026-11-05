@@ -179,7 +179,8 @@ public partial class CacheBrowserPageModel : PageModelBase
                 entry.DisplayName,
                 FileTypeClassifier.DetectContentType(entry.DisplayName),
                 entry.Size,
-                PreviewKind.External));
+                PreviewKind.External,
+                FileTimes.UtcNow));
         }
         catch (Exception ex)
         {

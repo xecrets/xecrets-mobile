@@ -29,6 +29,7 @@
 #endregion Copyright and GPL License
 
 using Xecrets.Mobile.Models.Abstractions;
+using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Services;
 
@@ -37,4 +38,13 @@ internal sealed class LocalReadableFile(string path, string fileName) : IReadabl
     public string FileName => fileName;
 
     public Task<Stream> OpenReadAsync() => Task.FromResult<Stream>(File.OpenRead(path));
+
+    /// <summary>
+    /// The times of the local file itself. For a file shared with the app, these are the times of the copy it was
+    /// received as, which need not be those of the original.
+    /// </summary>
+    public Task<FileTimes> GetTimesAsync() => Task.FromResult(new FileTimes(
+        File.GetCreationTimeUtc(path),
+        File.GetLastAccessTimeUtc(path),
+        File.GetLastWriteTimeUtc(path)));
 }

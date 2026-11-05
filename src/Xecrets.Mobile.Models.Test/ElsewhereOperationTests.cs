@@ -116,6 +116,23 @@ public sealed class ElsewhereOperationTests
         Assert.That(app.UserInterface.TransientMessages, Is.EqualTo([MobileTexts.DialogTextFileDecrypted]));
     }
 
+    /// <summary>
+    /// The fake decryption tells the Unix epoch for all the times of the original.
+    /// </summary>
+    [Test]
+    public async Task FileElsewhereIsDecryptedWithTheTimesOfTheOriginal()
+    {
+        TestApp app = new();
+        app.AddFile("other/x.axx", "ENC:a.txt\ntext");
+        app.Access.PickedFiles.Enqueue("other/x.axx");
+        app.Access.PickedFiles.Enqueue("other/a.txt");
+
+        await app.Operations.PickAndRunAsync(WorkFolderIntent.Auto, null);
+
+        Assert.That(app.Access.Times["other/a.txt"],
+            Is.EqualTo(new FileTimes(DateTime.UnixEpoch, DateTime.UnixEpoch, DateTime.UnixEpoch)));
+    }
+
     [Test]
     public async Task FileElsewhereIsDecryptedWithThePasswordAskedFor()
     {

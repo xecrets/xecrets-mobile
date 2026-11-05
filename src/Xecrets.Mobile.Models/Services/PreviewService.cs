@@ -166,7 +166,10 @@ internal sealed class PreviewService(
 
         TryMakeReadOnly(decryptedPath);
 
-        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(decryptedPath, session.OriginalFileName);
+        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(
+            decryptedPath,
+            session.OriginalFileName,
+            new FileTimes(session.CreationTimeUtc, session.LastAccessTimeUtc, session.LastWriteTimeUtc));
         if (file.Kind == PreviewKind.Image)
         {
             previewState.SetImage(file, session.EncryptedWithParameters);

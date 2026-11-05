@@ -164,7 +164,7 @@ public static class MobileTexts
     // "Edit"
     public static string EditContentTitle => ButtonEdit;
 
-    public static string EditDescription => "Edit the text. Click the save icon to encrypt and save changes.";
+    public static string EditDescription => "Edit the text. Tap the save icon to encrypt and save changes.";
 
     // "Password"
     public static string EncryptToShareContentTitle => WatermarkPassword;
@@ -237,7 +237,7 @@ public static class MobileTexts
 
     public static string RecentFilesContentTitle => "Recent files";
 
-    public static string RecentFilesDescription => "Recently used files. Click the icon to choose an action. Click the file name to preview. Long-press to see the full name and path. Use the add button to add a file from \"My folders\".";
+    public static string RecentFilesDescription => "Recently used files. Tap the icon to choose an action. Tap the file name to preview. Long-press to see the full name and path. Use the add button to add a file from \"My folders\".";
 
     public static string SuggestPasswordDescription => "Suggested passwords that are strong and easy to type and remember. Use » for a new suggestion, and the copy button to copy it to the clipboard.";
 
@@ -255,9 +255,9 @@ public static class MobileTexts
 
     public static string ViewDescription => "Shows the text or image in the file. Go back to choose something else to do with it.";
 
-    public static string WorkFolderCopyDescription => "Click a folder button to choose a file starting there, or use \"Browse anywhere\" for a file in any other place. The original file is not changed.";
+    public static string WorkFolderCopyDescription => "Tap a folder button to choose a file starting there, or use \"Browse anywhere\" for a file in any other place. The original file is not changed.";
 
-    public static string WorkFolderDescription => "Add a folder to allow the app access to it, then click a folder button to encrypt or decrypt a file. Some folders are not supported. Use \"Browse anywhere\" for a file in any other place, and save the result where you choose.";
+    public static string WorkFolderDescription => "Add a folder to allow the app access to it, then tap a folder button to encrypt or decrypt a file. Some folders are not supported. Use \"Browse anywhere\" for a file in any other place, and save the result where you choose.";
 
     public static string WorkFolderIntentCopy => "Choose the file to encrypt or decrypt a copy of.";
 

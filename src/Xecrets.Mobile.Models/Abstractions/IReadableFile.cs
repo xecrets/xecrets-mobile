@@ -28,6 +28,8 @@
 
 #endregion Copyright and GPL License
 
+using Xecrets.Mobile.Models.Models;
+
 namespace Xecrets.Mobile.Models.Abstractions;
 
 public interface IReadableFile
@@ -38,4 +40,9 @@ public interface IReadableFile
     /// Opens a new stream, which the caller disposes.
     /// </summary>
     Task<Stream> OpenReadAsync();
+
+    /// <summary>
+    /// The times of the file, to keep when it is encrypted. A time that cannot be told is the current time.
+    /// </summary>
+    Task<FileTimes> GetTimesAsync();
 }

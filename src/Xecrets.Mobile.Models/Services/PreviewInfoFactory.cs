@@ -41,7 +41,7 @@ internal static class PreviewInfoFactory
 
     private const int TextSampleSizeBytes = 4096;
 
-    public static DecryptedFileInfo CreateInfo(string filePath, string displayName)
+    public static DecryptedFileInfo CreateInfo(string filePath, string displayName, FileTimes originalTimes)
     {
         string fileName = string.IsNullOrWhiteSpace(displayName)
             ? Path.GetFileName(filePath)
@@ -61,7 +61,7 @@ internal static class PreviewInfoFactory
             kind = PreviewKind.External;
         }
 
-        return new DecryptedFileInfo(filePath, fileName, contentType, fileSize, kind);
+        return new DecryptedFileInfo(filePath, fileName, contentType, fileSize, kind, originalTimes);
     }
 
     private static PreviewKind GetPreviewKind(string fileName, string contentType)

@@ -231,7 +231,7 @@ public sealed class EditPageTests
         string path = Path.Combine(_directory, "a.txt");
         File.WriteAllText(path, "text");
         TestApp app = new();
-        app.Preview.Current.SetText(new DecryptedFileInfo(path, "a.txt", "text/plain", 4, PreviewKind.Text), "text", EncryptedWithParameters.Empty);
+        app.Preview.Current.SetText(new DecryptedFileInfo(path, "a.txt", "text/plain", 4, PreviewKind.Text, FileTimes.UtcNow), "text", EncryptedWithParameters.Empty);
         return app;
     }
 }

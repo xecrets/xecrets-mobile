@@ -99,7 +99,7 @@ public partial class EncryptResultPageModel(
             StatusText = "";
             EncryptionPreparationResult encryptionResult = Result;
             FileReference? saved =
-                await fileOperationWorkflow.SaveAsAsync(encryptionResult.DisplayName, encryptionResult.FilePath);
+                await fileOperationWorkflow.SaveAsAsync(encryptionResult.DisplayName, encryptionResult.FilePath, FileTimes.UtcNow);
 
             if (saved is not null)
             {

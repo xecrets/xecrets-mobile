@@ -126,7 +126,7 @@ public sealed class TextEditorFontModelTests
         {
             TestApp app = new();
             app.Profile.TextEditor.ProportionalFont = true;
-            app.Preview.Current.SetText(new DecryptedFileInfo(path, "a.txt", "text/plain", 4, PreviewKind.Text), "text", EncryptedWithParameters.Empty);
+            app.Preview.Current.SetText(new DecryptedFileInfo(path, "a.txt", "text/plain", 4, PreviewKind.Text, FileTimes.UtcNow), "text", EncryptedWithParameters.Empty);
             EditPageModel page = app.CreateEditPage();
 
             await page.InitializeCommand.ExecuteAsync(null);

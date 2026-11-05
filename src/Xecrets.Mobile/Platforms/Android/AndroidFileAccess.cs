@@ -29,6 +29,7 @@
 #endregion Copyright and GPL License
 
 using Android.Content;
+using Android.Database;
 using Android.Provider;
 
 using Microsoft.Maui.Devices;
@@ -350,6 +351,34 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
                 throw new FileNotAccessibleException(ex);
             }
         });
+
+    /// <summary>
+    /// A document provider tells only when the file was last modified, so the other times are the current time.
+    /// </summary>
+    public Task<FileTimes> GetTimesAsync(string fileId) =>
+        Task.Run(() =>
+        {
+            using ICursor cursor = ContentResolver.Query(
+                AndroidUri.Parse(fileId)!,
+                [DocumentsContract.Document.ColumnLastModified],
+                null, null, null)!;
+            try
+            {
+                cursor.MoveToFirst();
+                return cursor.IsNull(0)
+                    ? FileTimes.UtcNow
+                    : FileTimes.UtcNow with { LastWriteTimeUtc = DateTime.UnixEpoch.AddMilliseconds(cursor.GetLong(0)) };
+            }
+            finally
+            {
+                cursor.Close(); // Dispose does not call Java close()
+            }
+        });
+
+    /// <summary>
+    /// Android does not let an app set the times of a document.
+    /// </summary>
+    public Task SetSupportedTimesAsync(string fileId, FileTimes times) => Task.CompletedTask;
 
     public async Task<byte[]> ReadStartAsync(string fileId, int count)
     {

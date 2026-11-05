@@ -147,6 +147,20 @@ internal sealed class WindowsFileAccess(WorkFolderStorage storage, ICrashLogServ
         }
     }
 
+    public Task<FileTimes> GetTimesAsync(string fileId) =>
+        Task.FromResult(new FileTimes(
+            File.GetCreationTimeUtc(fileId),
+            File.GetLastAccessTimeUtc(fileId),
+            File.GetLastWriteTimeUtc(fileId)));
+
+    public Task SetSupportedTimesAsync(string fileId, FileTimes times)
+    {
+        File.SetCreationTimeUtc(fileId, times.CreationTimeUtc);
+        File.SetLastAccessTimeUtc(fileId, times.LastAccessTimeUtc);
+        File.SetLastWriteTimeUtc(fileId, times.LastWriteTimeUtc);
+        return Task.CompletedTask;
+    }
+
     public async Task<byte[]> ReadStartAsync(string fileId, int count)
     {
         await using Stream stream = await OpenReadAsync(fileId);

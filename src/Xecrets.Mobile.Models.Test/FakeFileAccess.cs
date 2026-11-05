@@ -40,6 +40,9 @@ internal sealed class FakeFileAccess(WorkFolderStorage storage) : IFileAccess
     // The contents of the files, by path.
     public Dictionary<string, byte[]> Files { get; } = [];
 
+    // The times the platform tells for files, by path, and those set on them. A file not here has the current time.
+    public Dictionary<string, FileTimes> Times { get; } = [];
+
     // The paths of files that cannot be reached now, such as when offline.
     public HashSet<string> Offline { get; } = [];
 
@@ -157,6 +160,15 @@ internal sealed class FakeFileAccess(WorkFolderStorage storage) : IFileAccess
     }
 
     public Task<Stream> OpenReadAsync(string fileId) => Task.FromResult<Stream>(new MemoryStream(Read(fileId)));
+
+    public Task<FileTimes> GetTimesAsync(string fileId) =>
+        Task.FromResult(Times.GetValueOrDefault(PathOf(fileId)) ?? FileTimes.UtcNow);
+
+    public Task SetSupportedTimesAsync(string fileId, FileTimes times)
+    {
+        Times[PathOf(fileId)] = times;
+        return Task.CompletedTask;
+    }
 
     public Task<byte[]> ReadStartAsync(string fileId, int count)
     {

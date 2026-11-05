@@ -38,4 +38,6 @@ internal sealed class ReferencedReadableFile(IFileAccess fileAccess, FileReferen
     public string FileName => file.Name;
 
     public Task<Stream> OpenReadAsync() => fileAccess.OpenReadAsync(file.Id);
+
+    public Task<FileTimes> GetTimesAsync() => fileAccess.GetTimesAsync(file.Id);
 }

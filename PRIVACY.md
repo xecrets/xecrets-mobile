@@ -21,8 +21,10 @@ Xecrets Ez processes files that you select, open or send to the app. Encryption 
 decryption take place locally on the device. Passwords are used locally and are not
 stored or transmitted by the app.
 
-The app may create temporary copies of files while encrypting, decrypting, previewing,
-editing, opening or sharing them. It attempts to overwrite and remove its tracked
+The app may create temporary files in its cache while viewing, editing or sharing
+files. Text files smaller than approximately 2 MB are an exception: when viewed or
+edited in the app they never leave app memory and are never written to disk. The app
+attempts to overwrite and remove its tracked
 temporary files when they are no longer needed. Because mobile operating systems,
 flash storage and other applications control parts of the storage lifecycle, secure
 physical erasure cannot be guaranteed.

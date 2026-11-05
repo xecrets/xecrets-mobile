@@ -132,7 +132,7 @@ internal sealed class EditSaveService(
         try
         {
             string fileName = previewService.Current.OriginalFileName.ToEncryptedName("");
-            savedCopy = await fileOperationWorkflow.SaveAsAsync(fileName, encryptedPath);
+            savedCopy = await fileOperationWorkflow.SaveAsAsync(fileName, encryptedPath, FileTimes.UtcNow);
         }
         finally
         {
@@ -172,7 +172,10 @@ internal sealed class EditSaveService(
             state.UpdateFileSize(new FileInfo(state.File.FilePath).Length);
         }
 
-        return encryptRequestFactory.Create(state.OriginalFileName, state.EncryptedWith);
+        EncryptRequest request = encryptRequestFactory.Create(state.OriginalFileName, state.EncryptedWith);
+        return state.File is { } file
+            ? request with { CreationTimeUtc = file.OriginalTimes.CreationTimeUtc }
+            : request;
     }
 
     /// <summary>

@@ -242,7 +242,7 @@ public partial class PreviewPageModel(
         {
             IsBusy = true;
             StatusText = "";
-            if (await fileOperationWorkflow.SaveAsAsync(file.DisplayName, file.FilePath) is not null)
+            if (await fileOperationWorkflow.SaveAsAsync(file.DisplayName, file.FilePath, file.OriginalTimes) is not null)
             {
                 await recentFilesService.AddFlowSourceAsync(RecentFileOperation.DecryptCopySaveAs);
                 await GoHomeIfStartedThereAsync();

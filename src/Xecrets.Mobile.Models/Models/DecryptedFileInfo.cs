@@ -35,4 +35,5 @@ public sealed record DecryptedFileInfo(
     string DisplayName,
     string ContentType,
     long FileSize,
-    PreviewKind Kind);
+    PreviewKind Kind,
+    FileTimes OriginalTimes);

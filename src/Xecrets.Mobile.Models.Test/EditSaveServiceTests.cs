@@ -197,6 +197,30 @@ public sealed class EditSaveServiceTests
         Assert.That(request.MasterKeys, Is.EqualTo([masterKey]));
     }
 
+    /// <summary>
+    /// The text was just changed, so only the creation time of the original is kept.
+    /// </summary>
+    [Test]
+    public async Task SaveKeepsTheCreationTimeOfTheOriginal()
+    {
+        TestApp app = CreateEditing("text");
+        DateTime created = new(2020, 1, 2, 3, 4, 5, DateTimeKind.Utc);
+        app.Preview.Current.SetText(
+            app.Preview.Current.File! with { OriginalTimes = new FileTimes(created, created, created) },
+            "text",
+            EncryptedWithParameters.Empty);
+        app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
+        app.Flow.Begin(FlowOrigin.Home, new FileReference("docs/x.axx", "x.axx"));
+        DateTime before = DateTime.UtcNow;
+
+        await app.EditSave.SaveAsync("edited");
+
+        EncryptRequest request = app.Core.EncryptRequests.Single();
+        Assert.That(request.CreationTimeUtc, Is.EqualTo(created));
+        Assert.That(request.LastWriteTimeUtc, Is.InRange(before, DateTime.UtcNow));
+        Assert.That(request.LastAccessTimeUtc, Is.InRange(before, DateTime.UtcNow));
+    }
+
     [Test]
     public async Task SaveDoesNotAddTheProfileToTheSourceRecipientsAgain()
     {
@@ -222,7 +246,7 @@ public sealed class EditSaveServiceTests
         File.WriteAllText(path, text);
         TestApp app = new(usesFolderIds);
         app.Preview.Current.SetText(
-            new DecryptedFileInfo(path, "a.txt", "text/plain", text.Length, PreviewKind.Text),
+            new DecryptedFileInfo(path, "a.txt", "text/plain", text.Length, PreviewKind.Text, FileTimes.UtcNow),
             text,
             encryptedWith);
         return app;

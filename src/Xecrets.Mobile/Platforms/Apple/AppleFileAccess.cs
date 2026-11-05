@@ -232,6 +232,50 @@ internal sealed class AppleFileAccess(
         }
     }
 
+    /// <summary>
+    /// Read through the same grant and coordination as the file itself, so a file provider reports the times of the
+    /// file as it was read.
+    /// </summary>
+    public Task<FileTimes> GetTimesAsync(string fileId) =>
+        ReadResolvedAsync(fileId, coordinatedUrl =>
+        {
+            NSDictionary values = coordinatedUrl.GetResourceValues(
+                [NSUrl.CreationDateKey, NSUrl.ContentAccessDateKey, NSUrl.ContentModificationDateKey],
+                out NSError? error) ?? throw new NSErrorException(error!);
+
+            DateTime utcNow = DateTime.UtcNow;
+            return new FileTimes(
+                ToUtc(values[NSUrl.CreationDateKey]) ?? utcNow,
+                ToUtc(values[NSUrl.ContentAccessDateKey]) ?? utcNow,
+                ToUtc(values[NSUrl.ContentModificationDateKey]) ?? utcNow);
+        });
+
+    private static DateTime? ToUtc(NSObject? value) => value is NSDate date ? (DateTime)date : null;
+
+    /// <summary>
+    /// Set through the same grant as for overwriting the file, and coordinated as a write, so a file provider learns of
+    /// the change.
+    /// </summary>
+    public async Task SetSupportedTimesAsync(string fileId, FileTimes times)
+    {
+        (NSUrl url, NSUrl grant) = await ResolveWriteAccessAsync(fileId);
+        using IDisposable access = new AppleSecurityScope(grant);
+        await url.WriteCoordinatedAsync(default, coordinatedUrl =>
+        {
+            SetTime(coordinatedUrl, NSUrl.CreationDateKey, times.CreationTimeUtc);
+            SetTime(coordinatedUrl, NSUrl.ContentAccessDateKey, times.LastAccessTimeUtc);
+            SetTime(coordinatedUrl, NSUrl.ContentModificationDateKey, times.LastWriteTimeUtc);
+        });
+    }
+
+    private static void SetTime(NSUrl url, NSString key, DateTime timeUtc)
+    {
+        if (!url.SetResource(key, (NSDate)DateTime.SpecifyKind(timeUtc, DateTimeKind.Utc), out NSError error))
+        {
+            throw new NSErrorException(error);
+        }
+    }
+
     public Task<byte[]> ReadStartAsync(string fileId, int count) =>
         ReadResolvedAsync(fileId, coordinatedUrl =>
         {
@@ -266,13 +310,19 @@ internal sealed class AppleFileAccess(
     // A file in none of My folders is reached by the access the picker gave to it.
     public async Task<IWritableFile> OpenWriteAsync(string fileId)
     {
+        (NSUrl url, NSUrl grant) = await ResolveWriteAccessAsync(fileId);
+        return new AppleWritableFile(url, grant);
+    }
+
+    private async Task<(NSUrl Url, NSUrl Grant)> ResolveWriteAccessAsync(string fileId)
+    {
         if (await grants.FindFolderAsync(fileId, isFolderItself: false) is { } folder)
         {
-            return new AppleWritableFile(NSUrl.FromString(fileId)!, folder.GrantId.ResolveGrant());
+            return (NSUrl.FromString(fileId)!, folder.GrantId.ResolveGrant());
         }
 
         ResolvedUrl resolved = await grants.ResolveAccessAsync(fileId) ?? throw new FileNotAccessibleException();
-        return new AppleWritableFile(resolved.FileUrl, resolved.AccessUrl);
+        return (resolved.FileUrl, resolved.AccessUrl);
     }
 
     // The folder of a file is told by its url.
