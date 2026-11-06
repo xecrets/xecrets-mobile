@@ -12,6 +12,7 @@
              x:TypeArguments="x:Double"
              Default="18">
         <OnIdiom.Desktop>24</OnIdiom.Desktop>
+        <OnIdiom.Tablet>22</OnIdiom.Tablet>
     </OnIdiom>
 
     <Style TargetType="ActivityIndicator">

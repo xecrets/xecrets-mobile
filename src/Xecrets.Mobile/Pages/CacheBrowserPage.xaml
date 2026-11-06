@@ -26,6 +26,7 @@
 -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
              xmlns:models="clr-namespace:Xecrets.Mobile.Models.Models;assembly=Xecrets.Mobile.Models"
              xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
              xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
@@ -48,7 +49,7 @@
             <utilities:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
         </ResourceDictionary>
     </ContentPage.Resources>
-    <ScrollView>
+    <controls:FadingScrollView FadeColor="{AppThemeBinding Light={StaticResource LightBackground}, Dark={StaticResource DarkBackground}}">
         <VerticalStackLayout Padding="{StaticResource LayoutPadding}"
                              Spacing="{StaticResource LayoutSpacing}">
             <Label Text="Cache"
@@ -89,5 +90,5 @@
                 </BindableLayout.ItemTemplate>
             </VerticalStackLayout>
         </VerticalStackLayout>
-    </ScrollView>
+    </controls:FadingScrollView>
 </ContentPage>

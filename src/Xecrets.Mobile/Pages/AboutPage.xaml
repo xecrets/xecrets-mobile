@@ -26,28 +26,34 @@
 -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
              xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
              xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
              x:Class="Xecrets.Mobile.Pages.AboutPage"
              x:ClassModifier="internal"
              x:DataType="pageModels:AboutPageModel">
-    <ScrollView>
+    <controls:FadingScrollView FadeColor="{AppThemeBinding Light={StaticResource LightBackground}, Dark={StaticResource DarkBackground}}">
         <VerticalStackLayout Padding="{StaticResource LayoutPadding}"
                              Spacing="{StaticResource LayoutSpacing}">
             <Label Text="{Binding ProductName}"
                    HorizontalOptions="Center"
                    Style="{StaticResource Title1}" />
-            <Label Text="{Binding Version}"
-                   Style="{StaticResource Body1}" />
-
             <Border Style="{StaticResource CardStyle}">
                 <Grid ColumnDefinitions="Auto,*"
                       ColumnSpacing="12"
-                      RowDefinitions="Auto,Auto,Auto,Auto"
+                      RowDefinitions="Auto,Auto,Auto,Auto,Auto"
                       RowSpacing="8">
-                    <Label Text="Publisher"
+                    <Label Text="Version"
                            Style="{StaticResource Body2Strong}" />
                     <Label Grid.Column="1"
+                           Text="{Binding Version}"
+                           Style="{StaticResource Body2}" />
+
+                    <Label Grid.Row="1"
+                           Text="Publisher"
+                           Style="{StaticResource Body2Strong}" />
+                    <Label Grid.Row="1"
+                           Grid.Column="1"
                            Text="{Binding Publisher}"
                            Style="{StaticResource Body2}"
                            TextColor="{StaticResource Primary}"
@@ -58,18 +64,18 @@
                         </Label.GestureRecognizers>
                     </Label>
 
-                    <Label Grid.Row="1"
+                    <Label Grid.Row="2"
                            Text="Platform"
                            Style="{StaticResource Body2Strong}" />
-                    <Label Grid.Row="1"
+                    <Label Grid.Row="2"
                            Grid.Column="1"
                            Text="{Binding Platform}"
                            Style="{StaticResource Body2}" />
 
-                    <Label Grid.Row="2"
+                    <Label Grid.Row="3"
                            Text="License"
                            Style="{StaticResource Body2Strong}" />
-                    <Label Grid.Row="2"
+                    <Label Grid.Row="3"
                            Grid.Column="1"
                            Text="{Binding License}"
                            Style="{StaticResource Body2}"
@@ -81,10 +87,10 @@
                         </Label.GestureRecognizers>
                     </Label>
 
-                    <Label Grid.Row="3"
+                    <Label Grid.Row="4"
                            Text="Source code"
                            Style="{StaticResource Body2Strong}" />
-                    <Label Grid.Row="3"
+                    <Label Grid.Row="4"
                            Grid.Column="1"
                            Text="{Binding SourceCodeUrl}"
                            Style="{StaticResource Body2}"
@@ -98,10 +104,16 @@
                 </Grid>
             </Border>
 
-            <Label Text="{Binding Copyright}"
-                   Style="{StaticResource Caption1}" />
-            <Label Text="{Binding ThirdPartyNotice}"
-                   Style="{StaticResource Caption1}" />
+            <!-- One paragraph, the copyright followed by where to find the third-party information. -->
+            <Label Style="{StaticResource Caption1}">
+                <Label.FormattedText>
+                    <FormattedString>
+                        <Span Text="{Binding Copyright}" />
+                        <Span Text=" " />
+                        <Span Text="{Binding ThirdPartyNotice}" />
+                    </FormattedString>
+                </Label.FormattedText>
+            </Label>
         </VerticalStackLayout>
-    </ScrollView>
+    </controls:FadingScrollView>
 </ContentPage>

@@ -28,6 +28,7 @@
 
 #endregion Copyright and GPL License
 
+using System.Linq;
 using System.Windows.Input;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
@@ -35,8 +36,9 @@ using Microsoft.Maui.Controls;
 namespace Xecrets.Mobile.Controls;
 
 /// <summary>
-/// The card of a page, with a title, optional header actions and a page information button in the top row, and a
-/// scrollable body below it.
+/// The card of a page, with a title, optional header actions and a page information button in the top row, a
+/// scrollable body below it, and an optional body header above and footer below the body that stay visible when the
+/// body scrolls.
 /// </summary>
 [ContentProperty(nameof(Body))]
 internal sealed partial class PageCard
@@ -57,6 +59,32 @@ internal sealed partial class PageCard
     public static readonly BindableProperty BodyProperty = BindableProperty.Create(
         nameof(Body), typeof(View), typeof(PageCard),
         propertyChanged: (bindable, _, newValue) => ((PageCard)bindable).BodyHost.Content = (View?)newValue);
+
+    // The body header and the footer are set once from the page. Their rows are only added with them, so that a card
+    // without them has no extra spacing.
+    public static readonly BindableProperty BodyHeaderProperty = BindableProperty.Create(
+        nameof(BodyHeader), typeof(View), typeof(PageCard),
+        propertyChanged: (bindable, _, newValue) =>
+        {
+            // Below the title row, moving the rows below it down.
+            Grid cardGrid = ((PageCard)bindable).CardGrid;
+            foreach (BindableObject child in cardGrid.Children.Cast<BindableObject>().Where(child => Grid.GetRow(child) >= 1))
+            {
+                Grid.SetRow(child, Grid.GetRow(child) + 1);
+            }
+
+            cardGrid.RowDefinitions.Insert(1, new RowDefinition(GridLength.Auto));
+            cardGrid.Add((View)newValue, 0, 1);
+        });
+
+    public static readonly BindableProperty FooterProperty = BindableProperty.Create(
+        nameof(Footer), typeof(View), typeof(PageCard),
+        propertyChanged: (bindable, _, newValue) =>
+        {
+            Grid cardGrid = ((PageCard)bindable).CardGrid;
+            cardGrid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+            cardGrid.Add((View)newValue, 0, cardGrid.RowDefinitions.Count - 1);
+        });
 
     public PageCard()
     {
@@ -91,6 +119,18 @@ internal sealed partial class PageCard
     {
         get => (View?)GetValue(BodyProperty);
         set => SetValue(BodyProperty, value);
+    }
+
+    public View? BodyHeader
+    {
+        get => (View?)GetValue(BodyHeaderProperty);
+        set => SetValue(BodyHeaderProperty, value);
+    }
+
+    public View? Footer
+    {
+        get => (View?)GetValue(FooterProperty);
+        set => SetValue(FooterProperty, value);
     }
 
     /// <summary>

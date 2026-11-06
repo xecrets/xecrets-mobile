@@ -65,14 +65,6 @@ namespace Xecrets.Mobile.Platforms.Android;
     DataMimeType = EncryptedFileType.ContentType, DataScheme = "content")]
 [IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable],
     DataMimeType = "*/*", DataScheme = "content")]
-[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable],
-    DataMimeType = "text/plain", DataScheme = "file")]
-[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable],
-    DataMimeType = "application/octet-stream", DataScheme = "file")]
-[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable],
-    DataMimeType = EncryptedFileType.ContentType, DataScheme = "file")]
-[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable],
-    DataMimeType = "*/*", DataScheme = "file")]
 public class MainActivity : MauiAppCompatActivity, IActivityResultCallback
 {
     private ActivityResultLauncher? _documentPickerLauncher;

@@ -101,6 +101,7 @@ internal partial class AppShell
         SetFlyoutItemIsVisible(DecryptionPasswordsMenuItem, _profileSession.UserStore is not null);
         SetFlyoutItemIsVisible(ChangeProfileMenuItem, _profileSession.UserStore is not null);
         SetFlyoutItemIsVisible(DeleteProfileMenuItem, _profileSession.UserStore is not null);
+        SetFlyoutItemIsVisible(SignOutMenuItem, _profileSession.UserStore is not null);
         DeleteProfileCommand.NotifyCanExecuteChanged();
         if (args.Current.Location.OriginalString != "//startup")
         {

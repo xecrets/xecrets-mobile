@@ -26,23 +26,34 @@
 -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
              xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
              xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
              x:Class="Xecrets.Mobile.Pages.ThirdPartyLicensesPage"
              x:ClassModifier="internal"
              x:DataType="pageModels:ThirdPartyLicensesPageModel">
-    <ScrollView>
-        <VerticalStackLayout Padding="{StaticResource LayoutPadding}"
-                             Spacing="{StaticResource LayoutSpacing}">
+    <!-- The title and the explanation stay in place, and only the notices in the card scroll. Aligned to the top, so
+         that the card is only as tall as the notices when they fit. -->
+    <Grid RowDefinitions="Auto,*"
+          Padding="{StaticResource LayoutPadding}"
+          RowSpacing="{StaticResource LayoutSpacing}"
+          VerticalOptions="Start">
+        <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
             <Label Text="{x:Static modelUtilities:MobileTexts.ThirdPartyLicensesPageTitle}"
                    HorizontalOptions="Center"
                    Style="{StaticResource Title1}" />
             <Label Text="{x:Static modelUtilities:MobileTexts.ThirdPartyLicensesPageExplanation}"
                    Style="{StaticResource Body2}" />
-            <Border Style="{StaticResource CardStyle}">
-                <Label Text="{Binding ThirdPartyNotices}"
-                       Style="{StaticResource Caption1}" />
-            </Border>
         </VerticalStackLayout>
-    </ScrollView>
+        <!-- The card padding is inside the scrolling, so that the text scrolls to the edges of the card. -->
+        <Border Grid.Row="1"
+                Style="{StaticResource CardStyle}"
+                Padding="0">
+            <controls:FadingScrollView FadeColor="{AppThemeBinding Light={StaticResource LightSecondaryBackground}, Dark={StaticResource DarkSecondaryBackground}}">
+                <Label Text="{Binding ThirdPartyNotices}"
+                       Padding="{StaticResource CardPadding}"
+                       Style="{StaticResource Caption1}" />
+            </controls:FadingScrollView>
+        </Border>
+    </Grid>
 </ContentPage>

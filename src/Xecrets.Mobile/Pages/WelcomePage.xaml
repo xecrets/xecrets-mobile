@@ -27,6 +27,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:f="clr-namespace:Fonts"
+             xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
              xmlns:models="clr-namespace:Xecrets.Mobile.Models.Models;assembly=Xecrets.Mobile.Models"
              xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
              xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
@@ -57,24 +58,34 @@
             </DataTemplate>
         </ResourceDictionary>
     </ContentPage.Resources>
-    <ScrollView>
-        <VerticalStackLayout x:Name="ContentRoot"
-                             Padding="{StaticResource LayoutPadding}"
+    <!-- The text scrolls, and the choices below it stay in place, so that they are always available. Aligned to the
+         top, so that the choices follow the text when it fits, and are at the bottom of the page when it doesn't. -->
+    <Grid RowDefinitions="*,Auto"
+          RowSpacing="{StaticResource LayoutSpacing}"
+          VerticalOptions="Start">
+        <controls:FadingScrollView FadeColor="{AppThemeBinding Light={StaticResource LightBackground}, Dark={StaticResource DarkBackground}}">
+            <VerticalStackLayout x:Name="ContentRoot"
+                                 Padding="{StaticResource LayoutPaddingWithoutBottom}"
+                                 Spacing="{StaticResource LayoutSpacing}">
+                <Label Text="{Binding Heading}"
+                       HorizontalOptions="Center"
+                       HorizontalTextAlignment="Center"
+                       Style="{StaticResource Title1}" />
+
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Introduction}"
+                                     BindableLayout.ItemTemplate="{StaticResource WelcomeLineTemplate}"
+                                     Spacing="{StaticResource IconRowSpacing}" />
+
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Lines}"
+                                     BindableLayout.ItemTemplate="{StaticResource WelcomeLineTemplate}"
+                                     Spacing="{StaticResource IconRowSpacing}"
+                                     Margin="0,8,0,0" />
+            </VerticalStackLayout>
+        </controls:FadingScrollView>
+
+        <VerticalStackLayout Grid.Row="1"
+                             Padding="{StaticResource LayoutPaddingWithoutTop}"
                              Spacing="{StaticResource LayoutSpacing}">
-            <Label Text="{Binding Heading}"
-                   HorizontalOptions="Center"
-                   HorizontalTextAlignment="Center"
-                   Style="{StaticResource Title1}" />
-
-            <VerticalStackLayout BindableLayout.ItemsSource="{Binding Introduction}"
-                                 BindableLayout.ItemTemplate="{StaticResource WelcomeLineTemplate}"
-                                 Spacing="{StaticResource IconRowSpacing}" />
-
-            <VerticalStackLayout BindableLayout.ItemsSource="{Binding Lines}"
-                                 BindableLayout.ItemTemplate="{StaticResource WelcomeLineTemplate}"
-                                 Spacing="{StaticResource IconRowSpacing}"
-                                 Margin="0,8,0,0" />
-
             <HorizontalStackLayout IsVisible="{Binding IsDontShowAgainAvailable}">
                 <CheckBox IsChecked="{Binding DontShowAgain}"
                           VerticalOptions="Center" />
@@ -83,14 +94,16 @@
                        VerticalOptions="Center" />
             </HorizontalStackLayout>
 
-            <VerticalStackLayout x:Name="ActionButtonStack"
-                                 HorizontalOptions="Center"
-                                 Spacing="{StaticResource LayoutSpacing}">
+            <Grid x:Name="ActionButtonGrid"
+                  HorizontalOptions="Center"
+                  ColumnDefinitions="*,*"
+                  ColumnSpacing="{StaticResource LayoutSpacing}">
                 <Button Text="{x:Static modelUtilities:MobileTexts.ButtonOk}"
                         Command="{Binding OkCommand}" />
-                <Button Text="{x:Static modelUtilities:MobileTexts.MenuInfo}"
+                <Button Grid.Column="1"
+                        Text="{x:Static modelUtilities:MobileTexts.MenuInfo}"
                         Command="{Binding OpenXecretsHomeCommand}" />
-            </VerticalStackLayout>
+            </Grid>
         </VerticalStackLayout>
-    </ScrollView>
+    </Grid>
 </ContentPage>

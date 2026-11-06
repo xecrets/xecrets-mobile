@@ -36,11 +36,14 @@ namespace Xecrets.Mobile.Pages;
 
 internal partial class PreviewPage
 {
+    private readonly ActionButtonColumns _actionButtonColumns;
+
     public PreviewPage(PreviewPageModel model, IPageHeaderService pageHeaderService)
     {
         InitializeComponent();
         BindingContext = model;
         pageHeaderService.ApplyStandardHeader(this);
+        _actionButtonColumns = new ActionButtonColumns(ActionButtonStack, ActionButtonGrid);
     }
 
     // ReSharper disable once AsyncVoidMethod
@@ -55,11 +58,18 @@ internal partial class PreviewPage
     {
         base.OnSizeAllocated(width, height);
 
+        _actionButtonColumns.Update(width, height);
         UpdateCenteredContentLayout(width);
     }
 
     private void UpdateCenteredContentLayout(double pageWidth)
     {
+        if (_actionButtonColumns.IsTwoColumns)
+        {
+            LayoutMetrics.UpdateCenteredTwoColumnLayout(pageWidth, ContentRoot, Card, ActionButtonGrid);
+            return;
+        }
+
         LayoutMetrics.UpdateCenteredContentLayout(pageWidth, ContentRoot, Card, ActionButtonStack);
     }
 }

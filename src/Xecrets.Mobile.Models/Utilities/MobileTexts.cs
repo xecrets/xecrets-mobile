@@ -39,7 +39,9 @@ public static class MobileTexts
 {
     #region Untranslated texts
 
-    public static string AboutPageThirdPartyNotice => "Built with .NET MAUI and CommunityToolkit.Maui. Other components are provided under their respective licenses, reproduced in full under Third-party licenses in the menu. All third-party product names and trademarks are the property of their respective owners. Their use does not imply affiliation, sponsorship or endorsement.";
+    public static string MenuSignOut => "Sign out";
+
+    public static string AboutPageThirdPartyNotice => "See Third-party licenses in the menu for more information.";
 
     // The breadcrumb segments, here and in the translated region below, are joined by
     // BreadcrumbSeparator to form the trail shown at the top of the pages that are shared between
@@ -330,7 +332,6 @@ public static class MobileTexts
 
     public static string ButtonEncrypt => AppTexts.ButtonEncrypt;
 
-    public static string ButtonExit => AppTexts.ButtonExit;
 
     // "Help", also used as the overflow menu item text, see MenuHelp.
     public static string ButtonHelp => AppTexts.ButtonHelp;

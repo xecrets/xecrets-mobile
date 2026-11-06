@@ -55,13 +55,13 @@
                     <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}" />
                 </DataTrigger>
             </Border.Triggers>
-            <VerticalStackLayout Padding="50,8,18,8"
+            <VerticalStackLayout Padding="{StaticResource ActionButtonTextPadding}"
                                  Spacing="4"
                                  VerticalOptions="Center">
                 <Label Text="{Binding Title}"
                        TextColor="{StaticResource White}"
                        utilities:Typography.FontWeight="Semibold"
-                       FontSize="16"
+                       FontSize="{StaticResource FontSizeMedium}"
                        LineHeight="1"
                        LineBreakMode="MiddleTruncation">
                     <Label.Triggers>
@@ -74,7 +74,7 @@
                 </Label>
                 <Label Text="{Binding Description}"
                        TextColor="{StaticResource White}"
-                       FontSize="12"
+                       FontSize="{StaticResource FontSizeCaption2}"
                        LineHeight="1">
                     <Label.Triggers>
                         <DataTrigger TargetType="Label"
@@ -95,8 +95,8 @@
                HorizontalOptions="Start"
                VerticalOptions="Center"
                Margin="18,0,0,0"
-               WidthRequest="24"
-               HeightRequest="24"
+               WidthRequest="{StaticResource ActionButtonIconSize}"
+               HeightRequest="{StaticResource ActionButtonIconSize}"
                InputTransparent="True" />
         <Button x:Name="CommandButton"
                 Style="{x:Null}"

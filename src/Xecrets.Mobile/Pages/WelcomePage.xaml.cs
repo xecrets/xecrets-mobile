@@ -61,6 +61,8 @@ internal partial class WelcomePage : IQueryAttributable
     {
         base.OnSizeAllocated(width, height);
 
-        LayoutMetrics.UpdateActionButtonStackWidth(width - ContentRoot.Padding.HorizontalThickness, ActionButtonStack);
+        // After this layout pass, since a width set while the page is being laid out is not used for the button grid in
+        // the fixed area below the scrolling text.
+        Dispatcher.Dispatch(() => LayoutMetrics.UpdateTwoColumnActionButtonWidth(width - ContentRoot.Padding.HorizontalThickness, ActionButtonGrid));
     }
 }

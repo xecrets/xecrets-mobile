@@ -72,6 +72,15 @@
                         <Button Text="{x:Static modelUtilities:MobileTexts.ButtonSendTo}"
                                 Command="{Binding SendToCommand}" />
                     </VerticalStackLayout>
+                    <!-- The action buttons in order in two columns, for a phone in landscape, where a single column is
+                         too tall for the screen. The buttons are moved here from the stack above, see
+                         ActionButtonColumns. -->
+                    <Grid x:Name="ActionButtonGrid"
+                          IsVisible="False"
+                          HorizontalOptions="Center"
+                          ColumnDefinitions="*,*"
+                          ColumnSpacing="{StaticResource LayoutSpacing}"
+                          RowSpacing="{StaticResource LayoutSpacing}" />
                 </VerticalStackLayout>
             </controls:PageCard>
         </Grid>

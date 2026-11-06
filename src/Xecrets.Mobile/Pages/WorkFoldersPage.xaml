@@ -62,7 +62,7 @@
                                    Grid.Row="1"
                                    Title="{x:Static modelUtilities:MobileTexts.WorkFoldersContentTitle}"
                                    Information="{Binding Description}"
-                                   BodyPadding="{StaticResource IconRowBodyPadding}">
+                                   BodyPadding="0">
                 <pageControls:PageCard.HeaderActions>
                     <HorizontalStackLayout VerticalOptions="Center">
                         <ImageButton Style="{StaticResource CardHeaderIconButtonStyle}"
@@ -85,7 +85,7 @@
                             StrokeShape="RoundRectangle 4"
                             Padding="10,6">
                         <Label Text="{Binding NoFoldersText}"
-                               FontSize="13" />
+                               FontSize="{StaticResource FontSizeCaption1}" />
                     </Border>
                     <pageControls:PageMessages Margin="{StaticResource IconRowBodyContentMargin}"
                                                MessageText="{Binding MessageText}"
@@ -133,13 +133,22 @@
                                 </DataTemplate>
                             </BindableLayout.ItemTemplate>
                         </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+                <!-- Outside the scrolling body, so that browsing stays available however many folders there are. -->
+                <pageControls:PageCard.Footer>
+                    <VerticalStackLayout x:Name="FooterStack"
+                                         HorizontalOptions="Center"
+                                         Padding="{StaticResource IconRowFooterPadding}"
+                                         Spacing="{StaticResource LayoutSpacing}">
                         <BoxView Style="{StaticResource ActionDividerStyle}" />
-                        <pageControls:ActionButton Margin="{StaticResource IconRowActionButtonMargin}"
+                        <pageControls:ActionButton x:Name="BrowseButton"
+                                                   Margin="{StaticResource IconRowActionButtonMargin}"
                                                    Title="{x:Static modelUtilities:MobileTexts.ButtonBrowseElsewhere}"
                                                    Icon="{StaticResource IconOpenFolderButton}"
                                                    Command="{Binding BrowseCommand}" />
                     </VerticalStackLayout>
-                </VerticalStackLayout>
+                </pageControls:PageCard.Footer>
             </pageControls:PageCard>
         </Grid>
         <ActivityIndicator IsRunning="{Binding IsBusy}"

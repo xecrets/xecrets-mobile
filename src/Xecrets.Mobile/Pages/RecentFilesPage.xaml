@@ -121,6 +121,17 @@
                                      Command="{Binding ReloadCommand}" />
                     </HorizontalStackLayout>
                 </pageControls:PageCard.HeaderActions>
+                <!-- Outside the scrolling body, so that the filter stays in place when the files are scrolled. The bottom
+                     padding and CardTitleSpacing below it make LayoutSpacing, as between the items of the body. -->
+                <pageControls:PageCard.BodyHeader>
+                    <ScrollView Orientation="Horizontal"
+                                HorizontalOptions="Center"
+                                Padding="0,0,0,4"
+                                InputTransparent="{Binding IsBusy}">
+                        <pageControls:FileStateSelector SelectedState="{Binding SelectedState}"
+                                                        VerticalOptions="Center" />
+                    </ScrollView>
+                </pageControls:PageCard.BodyHeader>
                 <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}"
                                      InputTransparent="{Binding IsBusy}">
                     <!-- Without any files, the page information is shown. -->
@@ -131,7 +142,7 @@
                             StrokeShape="RoundRectangle 4"
                             Padding="10,6">
                         <Label Text="{Binding NoFilesText}"
-                               FontSize="13" />
+                               FontSize="{StaticResource FontSizeCaption1}" />
                     </Border>
                     <pageControls:PageMessages Margin="{StaticResource IconRowBodyContentMargin}"
                                                MessageText="{Binding MessageText}"
@@ -139,11 +150,6 @@
                     <VerticalStackLayout x:Name="ActionButtonStack"
                                          HorizontalOptions="Center"
                                          Spacing="{StaticResource LayoutSpacing}">
-                        <ScrollView Orientation="Horizontal"
-                                    HorizontalOptions="Center">
-                            <pageControls:FileStateSelector SelectedState="{Binding SelectedState}"
-                                                            VerticalOptions="Center" />
-                        </ScrollView>
                         <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}"
                                              BindableLayout.ItemsSource="{Binding Files}">
                             <VerticalStackLayout.Behaviors>

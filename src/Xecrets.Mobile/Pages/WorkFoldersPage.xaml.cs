@@ -69,6 +69,9 @@ internal partial class WorkFoldersPage : IQueryAttributable
 
     private void UpdateCenteredContentLayout(double pageWidth)
     {
-        LayoutMetrics.UpdateCenteredContentLayout(pageWidth, ContentRoot, Card, ActionButtonStack, double.PositiveInfinity);
+        LayoutMetrics.UpdateCenteredIconRowLayout(pageWidth, ContentRoot, Card, ActionButtonStack, BrowseButton.Margin);
+
+        // The footer is as wide as the folder rows, so that the browse button lines up with the folder buttons.
+        FooterStack.WidthRequest = ActionButtonStack.WidthRequest;
     }
 }

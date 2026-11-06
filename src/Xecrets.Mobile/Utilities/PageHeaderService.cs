@@ -80,6 +80,8 @@ internal sealed class PageHeaderService(
             VerticalOptions = LayoutOptions.Center,
             VerticalTextAlignment = TextAlignment.Center,
             LineBreakMode = LineBreakMode.TailTruncation,
+            // The phone size of Body1Strong on every idiom, since the navigation bar is no taller on a tablet.
+            FontSize = 17,
             LineHeight = 1.1,
             TextColor = Colors.White,
         };

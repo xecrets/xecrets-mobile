@@ -39,12 +39,17 @@
              keep the binding context of the page. The title row comes after the body so that it is drawn on top. -->
         <Border x:Name="CardBorder"
                 Style="{StaticResource PageInformationCardStyle}">
-            <Grid RowDefinitions="Auto,*"
+            <!-- A body header and a footer, when there are any, are added in rows of their own from the code, above and
+                 below the scrolling body. -->
+            <Grid x:Name="CardGrid"
+                  RowDefinitions="Auto,*"
                   RowSpacing="{StaticResource CardTitleSpacing}">
-                <ScrollView Grid.Row="1">
+                <!-- The fades over the edges of the body show that there is more to scroll to. -->
+                <controls:FadingScrollView Grid.Row="1"
+                                           FadeColor="{AppThemeBinding Light={StaticResource LightSecondaryBackground}, Dark={StaticResource DarkSecondaryBackground}}">
                     <ContentView x:Name="BodyHost"
                                  Padding="{Binding BodyPadding, Source={x:Reference Root}, x:DataType=controls:PageCard}" />
-                </ScrollView>
+                </controls:FadingScrollView>
                 <Grid Grid.Row="0"
                       ColumnDefinitions="*,Auto">
                     <Label Text="{Binding Title, Source={x:Reference Root}, x:DataType=controls:PageCard}"

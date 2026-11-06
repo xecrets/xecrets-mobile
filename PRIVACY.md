@@ -31,9 +31,11 @@ physical erasure cannot be guaranteed.
 
 ## Profile, Settings and Device Backup
 
-The app stores a local profile containing the key material required for its operation.
-The profile key pair is encrypted with the profile password, which is not stored with
-it. App settings are stored using the operating system's app storage facilities.
+The app stores a local profile containing the key material required for its operation,
+and the email address entered when the profile was created. The email address is only an
+identifier for the profile and is never used to send email, so it does not have to be a
+real address, as long as it has the form of one. The profile key pair is encrypted with
+the profile password, which is not stored with it. App settings are stored using the operating system's app storage facilities.
 
 The device operating system may include the local profile in its cloud backup or
 device-transfer service, according to the user's platform and account settings. Xecrets

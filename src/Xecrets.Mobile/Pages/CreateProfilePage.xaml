@@ -49,14 +49,16 @@
                            Information="{Binding Information}"
                            BodyPadding="{StaticResource IconRowBodyPadding}">
             <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
-                <!-- The page information is always shown, so that what is asked for is not misunderstood. -->
-                <Border Margin="{StaticResource IconRowBodyContentMargin}"
+                <!-- The page information is always shown, so that what is asked for is not misunderstood. On a phone in
+                     landscape there is not room for it, and it's shown as a transient message instead. -->
+                <Border x:Name="InformationBox"
+                        Margin="{StaticResource IconRowBodyContentMargin}"
                         BackgroundColor="{AppThemeBinding Light={StaticResource LightOutline}, Dark={StaticResource DarkOutline}}"
                         Stroke="{AppThemeBinding Light={StaticResource LightOutline}, Dark={StaticResource DarkOutline}}"
                         StrokeShape="RoundRectangle 4"
                         Padding="10,6">
                     <Label Text="{Binding Information}"
-                           FontSize="13" />
+                           FontSize="{StaticResource FontSizeCaption1}" />
                 </Border>
                 <!-- As wide as the password text field, so both have the same left and right edges. -->
                 <Entry Margin="{StaticResource IconRowBodyLeadingMargin}" x:Name="EmailEntry" Text="{Binding Email}"
@@ -80,6 +82,7 @@
                         <OnIdiom x:TypeArguments="Thickness"
                                  Default="16,-6,0,0">
                             <OnIdiom.Desktop>24,-8,0,0</OnIdiom.Desktop>
+                            <OnIdiom.Tablet>24,-8,0,0</OnIdiom.Tablet>
                         </OnIdiom>
                     </ProgressBar.Margin>
                     <!-- Opacity, not IsVisible, so the space stays reserved and nothing moves when typing starts. -->

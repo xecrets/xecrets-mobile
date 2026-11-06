@@ -101,10 +101,11 @@
               IconImageSource="{StaticResource IconAbout}"
               Command="{Binding AboutCommand}" />
 
-    <MenuItem x:DataType="local:AppShell"
+    <MenuItem x:Name="SignOutMenuItem"
+              x:DataType="local:AppShell"
               BindingContext="{x:Reference AppShellRoot}"
-              Text="{x:Static modelUtilities:MobileTexts.ButtonExit}"
-              IconImageSource="{StaticResource IconExit}"
+              Text="{x:Static modelUtilities:MobileTexts.MenuSignOut}"
+              IconImageSource="{StaticResource IconSignOut}"
               Command="{Binding ExitCommand}" />
 
     <ShellContent

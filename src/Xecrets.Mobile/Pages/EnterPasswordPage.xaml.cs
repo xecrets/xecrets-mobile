@@ -88,6 +88,6 @@ internal partial class EnterPasswordPage : IQueryAttributable
 
     private void UpdateCenteredContentLayout(double pageWidth)
     {
-        LayoutMetrics.UpdateCenteredContentLayout(pageWidth, ContentRoot, Card, ActionButtonStack);
+        LayoutMetrics.UpdateCenteredFormLayout(pageWidth, ContentRoot, Card, ActionButtonStack);
     }
 }

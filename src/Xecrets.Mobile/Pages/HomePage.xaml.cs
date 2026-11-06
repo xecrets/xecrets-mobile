@@ -39,6 +39,7 @@ internal partial class HomePage
 {
     private readonly IProfileService _profileService;
     private readonly IPageHeaderService _pageHeaderService;
+    private readonly ActionButtonColumns _actionButtonColumns;
     private string _headerEmail;
 
     public HomePage(HomePageModel model, IProfileService profileService, IPageHeaderService pageHeaderService)
@@ -49,6 +50,7 @@ internal partial class HomePage
         BindingContext = model;
         pageHeaderService.ApplyStandardHeader(this);
         _headerEmail = profileService.CurrentEmail;
+        _actionButtonColumns = new ActionButtonColumns(ActionButtonStack, ActionButtonGrid);
     }
 
     // The page is kept by Shell, and the email in the header changes when the profile is changed.
@@ -75,6 +77,7 @@ internal partial class HomePage
     {
         base.OnSizeAllocated(width, height);
 
+        _actionButtonColumns.Update(width, height);
         UpdateCenteredContentLayout(width);
     }
 
@@ -91,6 +94,12 @@ internal partial class HomePage
 
     private void UpdateCenteredContentLayout(double pageWidth)
     {
+        if (_actionButtonColumns.IsTwoColumns)
+        {
+            LayoutMetrics.UpdateCenteredTwoColumnLayout(pageWidth, ContentRoot, Card, ActionButtonGrid);
+            return;
+        }
+
         LayoutMetrics.UpdateCenteredContentLayout(pageWidth, ContentRoot, Card, ActionButtonStack);
     }
 }

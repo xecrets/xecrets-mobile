@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    Xecrets Ez Mobile - Copyright © 2026 Svante Seleborg, All Rights Reserved.
+
+    This code file is part of Xecrets Ez Mobile, an application that uses the Xecrets.Net library, parts of which in turn
+    are derived from AxCrypt as licensed under GPL v3 or later. This code is not derived from AxCrypt. It is separately
+    authored and copyrighted, and licensed only as follows unless explicitly licensed otherwise.
+
+    Xecrets Ez Mobile is free software: you can redistribute it and/or modify it under the terms of the GNU General
+    Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+    later version.
+
+    No additional permission is granted beyond that license. If you incorporate this code into a larger work and
+    distribute that work to others, you are responsible for complying with the GNU General Public License version 3 or
+    later. See https://www.gnu.org/licenses/ for more information.
+
+    Xecrets Ez Mobile is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+    implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+    details.
+
+    You should have received a copy of the GNU General Public License along with Xecrets Ez Mobile. If not, see
+    <https://www.gnu.org/licenses/>.
+
+    The source repository can be found at https://github.com/xecrets/xecrets-mobile please go there for more information,
+    suggestions and contributions. You may also visit https://www.axantum.com for more information about the author.
+-->
+<!-- A scroll view with a fade and a chevron over its top and bottom edges, showing that there is more to scroll to. They
+     are only visible when there is, and let taps through to the content below them. -->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:f="clr-namespace:Fonts"
+             x:Class="Xecrets.Mobile.Controls.FadingScrollView"
+             x:ClassModifier="internal">
+    <ContentView.Content>
+        <Grid>
+            <ScrollView x:Name="Scroll" />
+            <Grid x:Name="TopScrollFade"
+                  IsVisible="False"
+                  InputTransparent="True"
+                  VerticalOptions="Start"
+                  HeightRequest="{StaticResource ScrollFadeHeight}">
+                <BoxView BackgroundColor="Transparent">
+                    <BoxView.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                            <GradientStop x:Name="TopFadeEdge" Offset="0" />
+                            <GradientStop x:Name="TopFadeInner" Offset="1" />
+                        </LinearGradientBrush>
+                    </BoxView.Background>
+                </BoxView>
+                <Label Text="{x:Static f:FluentUI.chevron_up_16_regular}"
+                       FontFamily="{x:Static f:FluentUI.FontFamily}"
+                       FontSize="{StaticResource ScrollChevronSize}"
+                       LineHeight="1"
+                       TextColor="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Start" />
+            </Grid>
+            <Grid x:Name="BottomScrollFade"
+                  IsVisible="False"
+                  InputTransparent="True"
+                  VerticalOptions="End"
+                  HeightRequest="{StaticResource ScrollFadeHeight}">
+                <BoxView BackgroundColor="Transparent">
+                    <BoxView.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                            <GradientStop x:Name="BottomFadeInner" Offset="0" />
+                            <GradientStop x:Name="BottomFadeEdge" Offset="1" />
+                        </LinearGradientBrush>
+                    </BoxView.Background>
+                </BoxView>
+                <Label Text="{x:Static f:FluentUI.chevron_down_16_regular}"
+                       FontFamily="{x:Static f:FluentUI.FontFamily}"
+                       FontSize="{StaticResource ScrollChevronSize}"
+                       LineHeight="1"
+                       TextColor="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                       HorizontalOptions="Center"
+                       VerticalOptions="End" />
+            </Grid>
+        </Grid>
+    </ContentView.Content>
+</ContentView>

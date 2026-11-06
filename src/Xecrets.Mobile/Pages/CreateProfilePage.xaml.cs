@@ -32,8 +32,10 @@ using System;
 using System.Collections.Generic;
 
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Devices;
 
 using Xecrets.Mobile.Abstractions;
+using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.PageModels;
 using Xecrets.Mobile.Utilities;
@@ -42,16 +44,24 @@ namespace Xecrets.Mobile.Pages;
 
 internal partial class CreateProfilePage : IQueryAttributable
 {
+    // The text fields on a phone in landscape, as tall as an action button, instead of the taller default.
+    private const double _compactEntryMinimumHeight = 40;
+
     private readonly IPlatformServices _platformServices;
+    private readonly IUserInterfaceService _userInterfaceService;
+    private bool _isCompact;
+    private bool _isAppeared;
 
     public Entry PasswordTextEntry => PasswordEntryControl.Entry;
 
     public CreateProfilePage(
         CreateProfilePageModel model,
         IPlatformServices platformServices,
+        IUserInterfaceService userInterfaceService,
         IPageHeaderService pageHeaderService)
     {
         _platformServices = platformServices;
+        _userInterfaceService = userInterfaceService;
         InitializeComponent();
         BindingContext = model;
         platformServices.ConfigurePasswordEntry(EmailEntry, PasswordEntryPurpose.UserName);
@@ -92,15 +102,70 @@ internal partial class CreateProfilePage : IQueryAttributable
         }
     }
 
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+
+        _isAppeared = true;
+        if (_isCompact)
+        {
+            ShowInformation();
+        }
+    }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        _isAppeared = false;
+    }
+
     protected override void OnSizeAllocated(double width, double height)
     {
         base.OnSizeAllocated(width, height);
 
+        // Not when deleting, where the information is a warning that should stay on the page, and the form is short.
+        bool isCompact = DeviceInfo.Current.Idiom == DeviceIdiom.Phone && width > height && ((CreateProfilePageModel)BindingContext).IsEditable;
+        UpdateCompactForm(isCompact);
         UpdateCenteredContentLayout(width);
     }
 
     private void UpdateCenteredContentLayout(double pageWidth)
     {
-        LayoutMetrics.UpdateCenteredContentLayout(pageWidth, ContentRoot, Card, ActionButtonStack);
+        LayoutMetrics.UpdateCenteredFormLayout(pageWidth, ContentRoot, Card, ActionButtonStack);
+    }
+
+    // On a phone in landscape, lowers the text fields and shows the page information as a transient message instead of
+    // on the page, so that the form fits the height. The information is also shown by the information button.
+    private void UpdateCompactForm(bool isCompact)
+    {
+        if (isCompact == _isCompact)
+        {
+            return;
+        }
+
+        _isCompact = isCompact;
+        foreach (Entry entry in new[] { EmailEntry, PasswordEntryControl.Entry, ConfirmPasswordEntryControl.Entry })
+        {
+            if (isCompact)
+            {
+                entry.MinimumHeightRequest = _compactEntryMinimumHeight;
+            }
+            else
+            {
+                // Back to the height of the text field style.
+                entry.ClearValue(MinimumHeightRequestProperty);
+            }
+        }
+
+        InformationBox.IsVisible = !isCompact;
+        if (isCompact && _isAppeared)
+        {
+            ShowInformation();
+        }
+    }
+
+    private void ShowInformation()
+    {
+        _ = _userInterfaceService.DisplayTransientMessageAsync(((CreateProfilePageModel)BindingContext).Information);
     }
 }

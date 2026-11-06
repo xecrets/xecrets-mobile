@@ -30,6 +30,7 @@
 
 using System;
 
+using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 
 using Xecrets.Mobile.Controls;
@@ -42,6 +43,28 @@ internal static class LayoutMetrics
 
     private const double _contentColumnMaximumWidth = 960;
 
+    // A form, such as a password entry, is narrower than a list, since a field much wider than what is typed into it
+    // only spreads out the form on a tablet or a phone in landscape.
+    private const double _formContentColumnMaximumWidth = 600;
+
+    public static void UpdateCenteredFormLayout(double pageWidth, Layout contentRoot, PageCard card, View actionButtonStack)
+    {
+        UpdateCenteredLayout(pageWidth, contentRoot, card, actionButtonStack, _formContentColumnMaximumWidth, _actionButtonStackMaximumWidth);
+    }
+
+    // For buttons in icon rows, with an icon button on each side, so that the buttons are as wide as other action
+    // buttons. The margin is that of a standalone button in the rows, which lines it up with the row buttons.
+    // Two columns of action buttons, each column at most as wide as a single column of buttons.
+    public static void UpdateCenteredTwoColumnLayout(double pageWidth, Layout contentRoot, PageCard card, Grid actionButtonGrid)
+    {
+        UpdateCenteredLayout(pageWidth, contentRoot, card, actionButtonGrid, _contentColumnMaximumWidth, (2 * _actionButtonStackMaximumWidth) + actionButtonGrid.ColumnSpacing);
+    }
+
+    public static void UpdateCenteredIconRowLayout(double pageWidth, Layout contentRoot, PageCard card, View actionButtonStack, Thickness iconRowMargin)
+    {
+        UpdateCenteredLayout(pageWidth, contentRoot, card, actionButtonStack, _contentColumnMaximumWidth, _actionButtonStackMaximumWidth + iconRowMargin.HorizontalThickness);
+    }
+
     public static void UpdateCenteredContentLayout(
         double pageWidth,
         Layout contentRoot,
@@ -49,13 +72,24 @@ internal static class LayoutMetrics
         View actionButtonStack,
         double actionButtonStackMaximumWidth = _actionButtonStackMaximumWidth)
     {
+        UpdateCenteredLayout(pageWidth, contentRoot, card, actionButtonStack, _contentColumnMaximumWidth, actionButtonStackMaximumWidth);
+    }
+
+    private static void UpdateCenteredLayout(
+        double pageWidth,
+        Layout contentRoot,
+        PageCard card,
+        View actionButtonStack,
+        double contentColumnMaximumWidth,
+        double actionButtonStackMaximumWidth)
+    {
         double availableContentWidth = pageWidth - contentRoot.Padding.Left - contentRoot.Padding.Right;
         if (availableContentWidth <= 0)
         {
             return;
         }
 
-        double contentColumnWidth = Math.Min(availableContentWidth, _contentColumnMaximumWidth);
+        double contentColumnWidth = Math.Min(availableContentWidth, contentColumnMaximumWidth);
         card.WidthRequest = contentColumnWidth;
 
         // The button stack sits inside the card body, so it has to fit that content box, not the card's
@@ -76,5 +110,11 @@ internal static class LayoutMetrics
         }
 
         actionButtonStack.WidthRequest = Math.Min(availableWidth, actionButtonStackMaximumWidth);
+    }
+
+    // Two action buttons side by side, each at most as wide as a single column of buttons.
+    public static void UpdateTwoColumnActionButtonWidth(double availableWidth, Grid actionButtonGrid)
+    {
+        UpdateActionButtonStackWidth(availableWidth, actionButtonGrid, (2 * _actionButtonStackMaximumWidth) + actionButtonGrid.ColumnSpacing);
     }
 }
