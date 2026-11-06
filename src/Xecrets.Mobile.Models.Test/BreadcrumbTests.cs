@@ -45,7 +45,7 @@ public sealed class BreadcrumbTests
     [TestCase(FlowOrigin.ReceivedFile, false, nameof(MobileTexts.BreadcrumbEncryptedCopy))]
     public void EncryptResultIsNamedForTheKindOfCopy(FlowOrigin origin, bool encryptCopyForSharing, string pageTextName)
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.Flow.Begin(origin);
         EncryptResultPageModel page = new(null!, app.Operations, app.Recent, app.Transient, app.Flow, app.CrashLog, app.UserInterface);
 
@@ -57,7 +57,7 @@ public sealed class BreadcrumbTests
     [Test]
     public async Task PasswordAskedForInMyFoldersIsShownUnderMyFolders()
     {
-        TestApp app = new();
+        using TestApp app = new();
         WorkFolder docs = app.AddFolder("docs");
         app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
         app.Access.PickedFiles.Enqueue("docs/x.axx");
@@ -78,7 +78,8 @@ public sealed class BreadcrumbTests
     [Test]
     public void DecryptionPasswordsFromTheMenuAreShownUnderHome()
     {
-        EnterPasswordPageModel page = new TestApp().CreateEnterPasswordPage();
+        using TestApp app = new();
+        EnterPasswordPageModel page = app.CreateEnterPasswordPage();
 
         page.Initialize(DecryptionPasswordsIntent.Manage);
 
@@ -94,7 +95,7 @@ public sealed class BreadcrumbTests
     [TestCase(WorkFolderIntent.Share, nameof(MobileTexts.BreadcrumbEncryptToShare))]
     public void MyFoldersIsNamedForTheOperationItWasOpenedFor(WorkFolderIntent intent, string pageTextName)
     {
-        TestApp app = new();
+        using TestApp app = new();
         WorkFoldersPageModel page = app.CreateWorkFoldersPage();
 
         page.Initialize(intent);

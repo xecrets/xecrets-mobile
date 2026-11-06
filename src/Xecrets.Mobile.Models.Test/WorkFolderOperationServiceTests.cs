@@ -48,7 +48,7 @@ public sealed class WorkFolderOperationServiceTests
     [Test]
     public async Task EncryptWritesResultNextToSourceWipesSourceAndReplacesItInRecentFiles()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("docs/a.txt");
         app.AddRecent("docs/a.txt", RecentFileOperation.InPlace, "a.txt");
         app.AddRecent("other.txt", RecentFileOperation.InPlace);
@@ -67,7 +67,7 @@ public sealed class WorkFolderOperationServiceTests
     [Test]
     public void ResultThatCannotBeSavedLeavesTheSourceAndNoTemporaryFile()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("docs/a.txt");
         app.Access.FailingWrites.Add($"docs/{"a.txt".ToEncryptedName("")}");
 
@@ -87,7 +87,7 @@ public sealed class WorkFolderOperationServiceTests
     [Test]
     public async Task EncryptRemovesTheSourceUnderAnyIdItIsListedBy()
     {
-        TestApp app = new(usesFolderIds: true);
+        using TestApp app = new(usesFolderIds: true);
         app.AddFile("docs/a.txt");
         app.AddRecent("grant:docs|docs/a.txt", RecentFileOperation.InPlace, "a.txt");
         app.AddRecent("docs/a.txt", RecentFileOperation.EncryptCopySaveAs, "a.txt");
@@ -102,7 +102,7 @@ public sealed class WorkFolderOperationServiceTests
     [Test]
     public async Task EncryptKeepsTheTimesOfTheFile()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("docs/a.txt");
         DateTime created = new(2020, 1, 2, 3, 4, 5, DateTimeKind.Utc);
         DateTime accessed = new(2021, 1, 2, 3, 4, 5, DateTimeKind.Utc);
@@ -124,7 +124,7 @@ public sealed class WorkFolderOperationServiceTests
     [Test]
     public async Task EncryptUsesTheTimeOfEncryptionForAFileWhoseTimesCannotBeTold()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("docs/a.txt");
         DateTime before = DateTime.UtcNow;
 
@@ -142,7 +142,7 @@ public sealed class WorkFolderOperationServiceTests
     [Test]
     public async Task DecryptRestoresTheTimesOfTheOriginal()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.Access.Files["docs/x.axx"] = "ENC:a.txt\ntext"u8.ToArray();
 
         await app.OperationService.DecryptWithKnownPasswordsAsync(new FileReference("docs/x.axx", "x.axx"));
@@ -154,7 +154,7 @@ public sealed class WorkFolderOperationServiceTests
     [Test]
     public async Task DecryptWritesTheOriginalFileNextToTheSource()
     {
-        TestApp app = new(usesFolderIds: true);
+        using TestApp app = new(usesFolderIds: true);
         app.Access.Files["docs/x.axx"] = "ENC:a.txt\ntext"u8.ToArray();
 
         FileReference? result = await app.OperationService.DecryptWithKnownPasswordsAsync(
@@ -169,7 +169,7 @@ public sealed class WorkFolderOperationServiceTests
     [Test]
     public async Task EncryptedFileIsStoredWhereTheSourceWas()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("docs/a.txt");
         FileReference source = new("docs/a.txt", "a.txt") { Root = RootProvider.OneDrive, FolderPath = ["docs"] };
 
@@ -183,7 +183,7 @@ public sealed class WorkFolderOperationServiceTests
     [Test]
     public async Task DecryptedFileIsStoredWhereTheSourceWas()
     {
-        TestApp app = new(usesFolderIds: true);
+        using TestApp app = new(usesFolderIds: true);
         app.Access.Files["docs/x.axx"] = "ENC:a.txt\ntext"u8.ToArray();
         FileReference source = new("grant:docs|docs/x.axx", "x.axx") { Root = RootProvider.IPhone, FolderPath = ["docs"] };
 
@@ -195,7 +195,7 @@ public sealed class WorkFolderOperationServiceTests
     [Test]
     public async Task FileThatCannotBeDecryptedIsKeptForAPassword()
     {
-        TestApp app = new() { Core = { Password = "other" } };
+        using TestApp app = new() { Core = { Password = "other" } };
         app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
 
         FileReference? result = await app.OperationService.DecryptWithKnownPasswordsAsync(
@@ -209,7 +209,7 @@ public sealed class WorkFolderOperationServiceTests
     [Test]
     public async Task FileKeptForAPasswordIsDecryptedWithIt()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.Access.Files["docs/x.axx"] = "ENC:a.txt\ntext"u8.ToArray();
         app.Core.Password = "other";
         await app.OperationService.DecryptWithKnownPasswordsAsync(new FileReference("docs/x.axx", "x.axx"));
@@ -229,7 +229,7 @@ public sealed class WorkFolderOperationServiceTests
     [Test]
     public async Task FailedWipeIsToldAndRecentFilesAreStillUpdated()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.Access.Files["docs/x.axx"] = "ENC:a.txt\ntext"u8.ToArray();
         app.AddRecent("docs/x.axx", RecentFileOperation.InPlace);
         app.Wiper.Fails = true;
@@ -249,7 +249,7 @@ public sealed class WorkFolderOperationServiceTests
     [Test]
     public async Task FolderOfTheFileIsFoundOnceForAnOperation()
     {
-        TestApp app = new();
+        using TestApp app = new();
         string encryptedName = "a.txt".ToEncryptedName("");
         app.AddFile("docs/a.txt");
         app.AddFile($"docs/{encryptedName}", "existing");
@@ -264,7 +264,7 @@ public sealed class WorkFolderOperationServiceTests
     [Test]
     public void ExistingResultIsOnlyOverwrittenWhenTheUserConfirms()
     {
-        TestApp app = new();
+        using TestApp app = new();
         string encryptedName = "a.txt".ToEncryptedName("");
         app.AddFile("docs/a.txt");
         app.AddFile($"docs/{encryptedName}", "existing");

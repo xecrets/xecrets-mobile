@@ -63,7 +63,7 @@ public sealed class EditPageTests
     [Test]
     public async Task LeavingWithoutChangesDoesNotAsk()
     {
-        TestApp app = CreateEditingSource();
+        using TestApp app = CreateEditingSource();
         EditPageModel page = await OpenAsync(app);
 
         Assert.That(await page.CanLeaveAsync(), Is.True);
@@ -73,7 +73,7 @@ public sealed class EditPageTests
     [Test]
     public async Task LeavingWithChangesAsksAndStaysOnCancel()
     {
-        TestApp app = CreateEditingSource();
+        using TestApp app = CreateEditingSource();
         EditPageModel page = await OpenAsync(app);
         page.Text = "edited";
         app.UserInterface.SaveChangesAnswers.Enqueue(SaveChangesChoice.Cancel);
@@ -87,7 +87,7 @@ public sealed class EditPageTests
     [Test]
     public async Task LeavingWithChangesDiscardsThem()
     {
-        TestApp app = CreateEditingSource();
+        using TestApp app = CreateEditingSource();
         EditPageModel page = await OpenAsync(app);
         page.Text = "edited";
         app.UserInterface.SaveChangesAnswers.Enqueue(SaveChangesChoice.Discard);
@@ -99,7 +99,7 @@ public sealed class EditPageTests
     [Test]
     public async Task LeavingWithChangesSavesThemEncrypted()
     {
-        TestApp app = CreateEditingSource();
+        using TestApp app = CreateEditingSource();
         EditPageModel page = await OpenAsync(app);
         page.Text = "edited";
         app.UserInterface.SaveChangesAnswers.Enqueue(SaveChangesChoice.Save);
@@ -111,7 +111,7 @@ public sealed class EditPageTests
     [Test]
     public async Task SaveEncryptsOverTheSourceAndKeepsEditing()
     {
-        TestApp app = CreateEditingSource();
+        using TestApp app = CreateEditingSource();
         EditPageModel page = await OpenAsync(app);
         page.Text = "edited";
 
@@ -127,7 +127,7 @@ public sealed class EditPageTests
     [Test]
     public async Task SaveIsNotDoneWhenTheBackupNameIsInUse()
     {
-        TestApp app = CreateEditingSource();
+        using TestApp app = CreateEditingSource();
         app.AddFile("docs/x-axx.bak", "other");
         EditPageModel page = await OpenAsync(app);
         page.Text = "edited";
@@ -143,7 +143,7 @@ public sealed class EditPageTests
     [Test]
     public async Task SaveWithoutChangesDoesNothing()
     {
-        TestApp app = CreateEditing();
+        using TestApp app = CreateEditing();
         EditPageModel page = await OpenAsync(app);
 
         await page.SaveCommand.ExecuteAsync(null);
@@ -156,7 +156,7 @@ public sealed class EditPageTests
     [Test]
     public async Task ChoosingNotToSaveACopyStaysWithTheChanges()
     {
-        TestApp app = CreateEditing();
+        using TestApp app = CreateEditing();
         app.Access.PickedFiles.Enqueue(null);
         EditPageModel page = await OpenAsync(app);
         page.Text = "edited";
@@ -169,7 +169,7 @@ public sealed class EditPageTests
     [Test]
     public async Task SavingACopyLeavesNoUnsavedChanges()
     {
-        TestApp app = CreateEditing();
+        using TestApp app = CreateEditing();
         app.Access.PickedFiles.Enqueue("downloads/copy.axx");
         EditPageModel page = await OpenAsync(app);
         page.Text = "edited";
@@ -183,7 +183,7 @@ public sealed class EditPageTests
     [Test]
     public async Task FileIsShownWithWhereTheUserIsAndItsTypeAndSize()
     {
-        TestApp app = CreateEditingSource();
+        using TestApp app = CreateEditingSource();
 
         EditPageModel page = await OpenAsync(app);
 
@@ -199,7 +199,7 @@ public sealed class EditPageTests
     [Test]
     public async Task SizeIsUpdatedWhenSaved()
     {
-        TestApp app = CreateEditingSource();
+        using TestApp app = CreateEditingSource();
         EditPageModel page = await OpenAsync(app);
         page.Text = "edited";
 

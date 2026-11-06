@@ -45,7 +45,7 @@ public sealed class CopyAndShareTests
     [Test]
     public async Task CopyOfAPlainFileIsEncryptedAndTheFileIsLeftAsItIs()
     {
-        TestApp app = new();
+        using TestApp app = new();
         WorkFolder docs = app.AddFolder("docs");
         app.AddFile("docs/a.txt");
         app.Access.PickedFiles.Enqueue("docs/a.txt");
@@ -61,7 +61,7 @@ public sealed class CopyAndShareTests
     [Test]
     public async Task CopyOfAnEncryptedFileIsPreviewedAndTheFileIsLeftAsItIs()
     {
-        TestApp app = new();
+        using TestApp app = new();
         WorkFolder docs = app.AddFolder("docs");
         app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
         app.Access.PickedFiles.Enqueue("docs/x.axx");
@@ -76,7 +76,7 @@ public sealed class CopyAndShareTests
     [Test]
     public async Task CopyOfAFileNamedEncryptedButNotEncryptedIsNotPreviewed()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("docs/x.axx");
         app.Access.PickedFiles.Enqueue("docs/x.axx");
 
@@ -90,7 +90,7 @@ public sealed class CopyAndShareTests
     [TestCase(WorkFolderIntent.Share)]
     public async Task CopyDoesNotMoveTheFolderOfTheFileToTheTop(WorkFolderIntent intent)
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFolder("docs");
         WorkFolder other = app.AddFolder("other");
         app.AddFile("other/a.txt");
@@ -104,7 +104,7 @@ public sealed class CopyAndShareTests
     [Test]
     public async Task SharingAFileAsksForThePasswordForIt()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("docs/a.txt");
         app.Access.PickedFiles.Enqueue("docs/a.txt");
 
@@ -122,7 +122,7 @@ public sealed class CopyAndShareTests
         string content,
         string expectedText)
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile(path, content);
         app.Access.PickedFiles.Enqueue(path);
 
@@ -140,7 +140,7 @@ public sealed class CopyAndShareTests
     [Test]
     public async Task SharingAnEncryptedFileAsksForThePasswordForIt()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("docs/a.txt.axx", "ENC:a.txt\ntext");
         app.Access.PickedFiles.Enqueue("docs/a.txt.axx");
 
@@ -153,7 +153,7 @@ public sealed class CopyAndShareTests
     [Test]
     public async Task SharePasswordEncryptsACopyOfAnEncryptedFileForAllItIsEncryptedFor()
     {
-        TestApp app = new();
+        using TestApp app = new();
         PublicKey other = new("other@example.com", "other");
         PublicKey masterKey = new("", "master");
         app.Core.EncryptedWith = new EncryptedWithParameters("password", [other], [masterKey]);
@@ -180,7 +180,7 @@ public sealed class CopyAndShareTests
     [Test]
     public async Task SharePasswordDoesNotAddTheProfileToAnEncryptedFileAgain()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.Core.EncryptedWith = new EncryptedWithParameters("password", [app.Profile.GetPublicKey()], []);
         app.AddFile("docs/a.txt.axx", "ENC:a.txt\ntext");
         EncryptToSharePageModel page = CreateSharePage(app, new FileReference("docs/a.txt.axx", "a.txt.axx"));
@@ -194,7 +194,7 @@ public sealed class CopyAndShareTests
     [Test]
     public async Task SharePasswordForAnEncryptedFileNoKnownPasswordOpensIsRefused()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.Core.Password = "unknown";
         app.AddFile("docs/a.txt.axx", "ENC:a.txt\ntext");
         EncryptToSharePageModel page = CreateSharePage(app, new FileReference("docs/a.txt.axx", "a.txt.axx"));
@@ -225,7 +225,7 @@ public sealed class CopyAndShareTests
     [Test]
     public async Task SharePasswordEncryptsACopyOfTheChosenFile()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("docs/a.txt");
         app.Flow.Begin(FlowOrigin.Home, new FileReference("docs/a.txt", "a.txt"));
         EncryptToSharePageModel page = new(

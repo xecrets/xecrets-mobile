@@ -53,7 +53,7 @@ public sealed class ElsewhereOperationTests
     [Test]
     public async Task FileInMyFoldersPickedByBrowsingIsChangedWhereItIs()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFolder("docs");
         app.AddFile("docs/a.txt");
         app.Access.PickedFiles.Enqueue("docs/a.txt");
@@ -69,7 +69,7 @@ public sealed class ElsewhereOperationTests
     [Test]
     public async Task FileElsewherePickedInAFolderIsEncryptedToTheFileSavedWithoutAskingForItsFolder()
     {
-        TestApp app = new();
+        using TestApp app = new();
         WorkFolder docs = app.AddFolder("docs");
         app.AddFile("other/a.txt");
         app.Access.PickedFiles.Enqueue("other/a.txt");
@@ -88,7 +88,7 @@ public sealed class ElsewhereOperationTests
     [Test]
     public async Task ResultElsewhereIsNotListedAndNoAccessIsKept()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("other/a.txt");
         app.AddRecent("other/a.txt", RecentFileOperation.View);
         app.Access.PickedFiles.Enqueue("other/a.txt");
@@ -104,7 +104,7 @@ public sealed class ElsewhereOperationTests
     [Test]
     public async Task FileElsewhereIsDecryptedWithAKnownPassword()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("other/x.axx", "ENC:a.txt\ntext");
         app.Access.PickedFiles.Enqueue("other/x.axx");
         app.Access.PickedFiles.Enqueue("other/a.txt");
@@ -122,7 +122,7 @@ public sealed class ElsewhereOperationTests
     [Test]
     public async Task FileElsewhereIsDecryptedWithTheTimesOfTheOriginal()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("other/x.axx", "ENC:a.txt\ntext");
         app.Access.PickedFiles.Enqueue("other/x.axx");
         app.Access.PickedFiles.Enqueue("other/a.txt");
@@ -136,7 +136,7 @@ public sealed class ElsewhereOperationTests
     [Test]
     public async Task FileElsewhereIsDecryptedWithThePasswordAskedFor()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("other/x.axx", "ENC:a.txt\ntext");
         app.Access.PickedFiles.Enqueue("other/x.axx");
         app.Core.Password = "other";
@@ -166,7 +166,7 @@ public sealed class ElsewhereOperationTests
         string content,
         string saved)
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile(source, content);
         app.Access.PickedFiles.Enqueue(source);
         app.Access.PickedFiles.Enqueue(saved);
@@ -181,7 +181,7 @@ public sealed class ElsewhereOperationTests
     [Test]
     public async Task CancelingTheSaveLeavesTheFileAsItIs()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("other/a.txt");
         app.Access.PickedFiles.Enqueue("other/a.txt");
         app.Access.PickedFiles.Enqueue(null);
@@ -196,7 +196,7 @@ public sealed class ElsewhereOperationTests
     [Test]
     public async Task ResultSavedUnderAnotherNameIsSavedWithoutAsking()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("other/a.txt");
         app.Access.PickedFiles.Enqueue("other/a.txt");
         app.Access.PickedFiles.Enqueue("saved/other.axx");
@@ -211,7 +211,7 @@ public sealed class ElsewhereOperationTests
     [Test]
     public async Task DecryptedResultSavedUnderAChangedNameIsToldWithoutAsking()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("other/x.axx", "ENC:a.txt\ntext");
         app.Access.PickedFiles.Enqueue("other/x.axx");
         app.Access.PickedFiles.Enqueue("other/a (1).txt");
@@ -227,7 +227,7 @@ public sealed class ElsewhereOperationTests
     [Test]
     public async Task FileElsewhereThatCannotBeWipedIsDeniedBeforeAskingWhereToSave()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("other/a.txt");
         app.Wiper.Denied.Add("other/a.txt");
         app.Access.PickedFiles.Enqueue("other/a.txt");
@@ -246,7 +246,7 @@ public sealed class ElsewhereOperationTests
     [Test]
     public async Task ResultIsWrittenAlsoWhenTheRightsToItAreNotTold()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("other/a.txt");
         app.Wiper.Denied.Add($"saved/{_encryptedName}");
         app.Access.PickedFiles.Enqueue("other/a.txt");
@@ -262,7 +262,7 @@ public sealed class ElsewhereOperationTests
     [Test]
     public async Task FailureToWriteTheResultRemovesItAndLeavesTheFileAsItIs()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("other/a.txt");
         app.Access.FailingWrites.Add($"saved/{_encryptedName}");
         app.Access.PickedFiles.Enqueue("other/a.txt");
@@ -278,7 +278,7 @@ public sealed class ElsewhereOperationTests
     [Test]
     public async Task ExistingLongerFileReplacedByTheResultHasOnlyTheResult()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("other/a.txt");
         app.AddFile($"saved/{_encryptedName}", new string('x', 100));
         app.Access.PickedFiles.Enqueue("other/a.txt");
@@ -298,7 +298,7 @@ public sealed class ElsewhereOperationTests
     [Test]
     public async Task FileThatCannotBeRemovedAfterSavingTheResultIsLeftAndTold()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("other/a.txt");
         app.Wiper.Fails = true;
         app.Access.PickedFiles.Enqueue("other/a.txt");
@@ -314,7 +314,7 @@ public sealed class ElsewhereOperationTests
     [Test]
     public async Task FileElsewhereIsWipedWithoutSavingAnything()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("other/a.txt");
         app.Access.PickedRoot = RootProvider.AndroidPhone;
         app.Access.PickedFiles.Enqueue("other/a.txt");
@@ -332,7 +332,7 @@ public sealed class ElsewhereOperationTests
     [Test]
     public async Task FileElsewhereThatCannotBeWipedIsDeniedBeforeAskingToConfirm()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("other/a.txt");
         app.Wiper.Denied.Add("other/a.txt");
         app.Access.PickedFiles.Enqueue("other/a.txt");
@@ -347,7 +347,7 @@ public sealed class ElsewhereOperationTests
     [Test]
     public async Task DescriptionIsShownOnThePageOnlyWhileThereAreNoFolders()
     {
-        TestApp app = new();
+        using TestApp app = new();
         WorkFoldersPageModel page = app.CreateWorkFoldersPage();
 
         await page.LoadCommand.ExecuteAsync(null);
@@ -362,7 +362,7 @@ public sealed class ElsewhereOperationTests
     [Test]
     public async Task BrowsingFromThePageStartsWhereThePlatformDecides()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFolder("docs");
         app.Access.PickedFiles.Enqueue(null);
         WorkFoldersPageModel page = app.CreateWorkFoldersPage();
@@ -381,7 +381,7 @@ public sealed class ElsewhereOperationTests
         string result,
         string completedTextName)
     {
-        TestApp app = new();
+        using TestApp app = new();
         using IDisposable cleanup = app.Transient;
         string saved = source.IsEncrypted() ? "saved/a.txt" : $"saved/{_encryptedName}";
         app.AddFile(source, content);
@@ -414,7 +414,7 @@ public sealed class ElsewhereOperationTests
         string content,
         string? failing)
     {
-        TestApp app = new();
+        using TestApp app = new();
         using IDisposable cleanup = app.Transient;
         app.AddFile(source, content);
         app.Access.PickedFiles.Enqueue(source);
@@ -438,7 +438,7 @@ public sealed class ElsewhereOperationTests
     [Test]
     public async Task ResultSavedUnderAChangedNameIsToldWithoutAsking()
     {
-        TestApp app = new();
+        using TestApp app = new();
         string changedName = $"{Path.GetFileNameWithoutExtension(_encryptedName)} 2{Path.GetExtension(_encryptedName)}";
         app.AddFile("other/a.txt");
         app.Access.PickedFiles.Enqueue("other/a.txt");

@@ -103,7 +103,9 @@ internal partial class App
         await _cultureCoordinator.ApplySavedAsync();
 
         Window window = (Window)sender!;
-        window.Page = CreateAppShell();
+        AppShell shell = CreateAppShell();
+        _services.GetRequiredService<EzAppShell>().Shell = shell;
+        window.Page = shell;
     }
 
     private AppShell CreateAppShell() => new(

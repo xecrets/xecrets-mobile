@@ -43,7 +43,7 @@ public sealed class DecryptionPasswordsPageTests
     [Test]
     public void KeptPasswordsAreListed()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.Profile.ExtraPasswords.Add(new PasswordUsage { Password = "first", });
         app.Profile.ExtraPasswords.Add(new PasswordUsage { Password = "second", });
         EnterPasswordPageModel page = app.CreateEnterPasswordPage();
@@ -59,7 +59,8 @@ public sealed class DecryptionPasswordsPageTests
     [Test]
     public void WithoutPasswordsThePageInformationIsShown()
     {
-        EnterPasswordPageModel page = new TestApp().CreateEnterPasswordPage();
+        using TestApp app = new();
+        EnterPasswordPageModel page = app.CreateEnterPasswordPage();
 
         page.Initialize(DecryptionPasswordsIntent.Manage);
         page.Load();
@@ -71,7 +72,8 @@ public sealed class DecryptionPasswordsPageTests
     [Test]
     public void OpenedToAddAPasswordShowsTheEntry()
     {
-        EnterPasswordPageModel page = new TestApp().CreateEnterPasswordPage();
+        using TestApp app = new();
+        EnterPasswordPageModel page = app.CreateEnterPasswordPage();
 
         page.Initialize(DecryptionPasswordsIntent.Add);
 
@@ -81,7 +83,7 @@ public sealed class DecryptionPasswordsPageTests
     [Test]
     public async Task AddedPasswordIsKeptAndListed()
     {
-        TestApp app = new();
+        using TestApp app = new();
         EnterPasswordPageModel page = app.CreateEnterPasswordPage();
         page.Initialize(DecryptionPasswordsIntent.Manage);
         page.Load();
@@ -102,7 +104,7 @@ public sealed class DecryptionPasswordsPageTests
     [Test]
     public async Task PasswordAddedFromTheMenuDoesNotDecryptAFileWaitingForAPassword()
     {
-        TestApp app = new();
+        using TestApp app = new();
         WorkFolder docs = app.AddFolder("docs");
         app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
         app.Access.PickedFiles.Enqueue("docs/x.axx");
@@ -127,7 +129,7 @@ public sealed class DecryptionPasswordsPageTests
     [TestCase(false)]
     public async Task PasswordIsDeletedOnlyWhenConfirmed(bool confirmed)
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.Profile.ExtraPasswords.Add(new PasswordUsage { Password = "first", });
         app.Profile.ExtraPasswords.Add(new PasswordUsage { Password = "second", });
         app.UserInterface.Answers.Enqueue(confirmed);

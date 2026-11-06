@@ -48,17 +48,21 @@ using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Services;
 
-internal class DefaultUserInterfaceService(IBuildInformation buildInformation) : IUserInterfaceService
+internal class DefaultUserInterfaceService(IBuildInformation buildInformation, EzAppShell ezAppShell) : IUserInterfaceService
 {
-    private static Shell? AppShell => Application.Current?.Windows.Count == 1
+    protected Shell AppShell => ezAppShell.Shell;
+
+    // The shell shown in the app's only window, or null while there is none, as before the shell is created or after
+    // the window is closed. Incoming files are only processed by a shell that is shown.
+    private static Shell? WindowShell => Application.Current?.Windows.Count == 1
         ? Application.Current.Windows[0].Page as Shell
         : null;
 
-    private static string? CurrentRoute => AppShell?.CurrentItem?.CurrentItem?.CurrentItem is { } shellContent
+    private static string? CurrentRoute => WindowShell?.CurrentItem?.CurrentItem?.CurrentItem is { } shellContent
         ? Routing.GetRoute(shellContent)
         : null;
 
-    public bool IsShellAvailable => AppShell is not null;
+    public bool IsShellAvailable => WindowShell is not null;
 
     public IReadOnlyDictionary<string, string> IconMap { get; } = new Dictionary<string, string>
     {
@@ -76,16 +80,16 @@ internal class DefaultUserInterfaceService(IBuildInformation buildInformation) :
         CurrentRoute is "home" or "login" or "introduction";
 
     public bool CanReceiveIncomingFiles =>
-        AppShell is null ||
+        WindowShell is null ||
         CurrentRoute is "startup" or "home" or "login" or "introduction";
 
     public Task InvokeOnMainThreadAsync(Func<Task> action) => MainThread.InvokeOnMainThreadAsync(action);
 
     public Task DisplayMessageAsync(string message) =>
-        Shell.Current.DisplayAlertAsync(MobileTexts.DisplayNameProgram, message, MobileTexts.ButtonOk);
+        AppShell.DisplayAlertAsync(MobileTexts.DisplayNameProgram, message, MobileTexts.ButtonOk);
 
     public Task<bool> DisplayConfirmationAsync(string message, string accept, string cancel) =>
-        Shell.Current.DisplayAlertAsync(
+        AppShell.DisplayAlertAsync(
             MobileTexts.DisplayNameProgram,
             message,
             accept,
@@ -93,7 +97,7 @@ internal class DefaultUserInterfaceService(IBuildInformation buildInformation) :
 
     public async Task<SaveChangesChoice> DisplaySaveChangesAsync(string message)
     {
-        string? choice = await Shell.Current.DisplayActionSheetAsync(
+        string? choice = await AppShell.DisplayActionSheetAsync(
             message,
             MobileTexts.LabelCancel,
             MobileTexts.ButtonDiscard,
@@ -106,7 +110,7 @@ internal class DefaultUserInterfaceService(IBuildInformation buildInformation) :
     }
 
     public Task<string?> DisplayPromptAsync(string message, string initialValue) =>
-        Shell.Current.DisplayPromptAsync(
+        AppShell.DisplayPromptAsync(
             MobileTexts.DisplayNameProgram,
             message,
             MobileTexts.ButtonOk,
@@ -124,7 +128,7 @@ internal class DefaultUserInterfaceService(IBuildInformation buildInformation) :
             return NavigateToRouteAsync(route, parameter);
         }
 
-        Page? currentPage = Shell.Current.CurrentPage;
+        Page? currentPage = AppShell.CurrentPage;
         if (currentPage is not null && Routing.GetRoute(currentPage) == route)
         {
             return Task.CompletedTask;
@@ -173,7 +177,7 @@ internal class DefaultUserInterfaceService(IBuildInformation buildInformation) :
 
     public Task GoBackAsync(object? parameter) => parameter is null
         ? NavigateToRouteAsync("..")
-        : Shell.Current.GoToAsync(
+        : AppShell.GoToAsync(
             "..",
             new ShellNavigationQueryParameters
             {
@@ -192,10 +196,10 @@ internal class DefaultUserInterfaceService(IBuildInformation buildInformation) :
         }
     }
 
-    private static Task NavigateToRouteAsync(string route) => Shell.Current.GoToAsync(route);
+    private Task NavigateToRouteAsync(string route) => AppShell.GoToAsync(route);
 
-    private static Task NavigateToRouteAsync(string route, object parameter) =>
-        Shell.Current.GoToAsync(
+    private Task NavigateToRouteAsync(string route, object parameter) =>
+        AppShell.GoToAsync(
             route,
             new Dictionary<string, object>
             {

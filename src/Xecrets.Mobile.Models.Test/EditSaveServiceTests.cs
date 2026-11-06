@@ -61,7 +61,7 @@ public sealed class EditSaveServiceTests
     [Test]
     public async Task SaveEncryptsTheEditedTextOverTheSourceAndListsItInPlaceOfAnyEntryForTheFile()
     {
-        TestApp app = CreateEditing("text", usesFolderIds: true);
+        using TestApp app = CreateEditing("text", usesFolderIds: true);
         app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
         app.AddRecent("docs/x.axx", RecentFileOperation.InPlace, "x.axx");
         FileReference source = new("grant:docs|docs/x.axx", "x.axx");
@@ -80,7 +80,7 @@ public sealed class EditSaveServiceTests
     [Test]
     public async Task SaveLeavesNoBackupOfTheSource()
     {
-        TestApp app = CreateEditing("text");
+        using TestApp app = CreateEditing("text");
         app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
         app.Flow.Begin(FlowOrigin.Home, new FileReference("docs/x.axx", "x.axx"));
 
@@ -92,7 +92,7 @@ public sealed class EditSaveServiceTests
     [Test]
     public async Task SaveIsNotDoneWhenTheBackupNameIsInUse()
     {
-        TestApp app = CreateEditing("text");
+        using TestApp app = CreateEditing("text");
         app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
         app.AddFile("docs/x-axx.bak", "other");
         app.Flow.Begin(FlowOrigin.Home, new FileReference("docs/x.axx", "x.axx"));
@@ -109,7 +109,7 @@ public sealed class EditSaveServiceTests
     [Test]
     public void FailedSaveKeepsTheSource()
     {
-        TestApp app = CreateEditing("text");
+        using TestApp app = CreateEditing("text");
         app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
         app.Access.FailingWrites.Add("docs/x.axx");
         app.Flow.Begin(FlowOrigin.Home, new FileReference("docs/x.axx", "x.axx"));
@@ -124,7 +124,7 @@ public sealed class EditSaveServiceTests
     [Test]
     public void SaveIsNotDoneWhenTheSourceCannotBeKeptUnderItsBackupName()
     {
-        TestApp app = CreateEditing("text");
+        using TestApp app = CreateEditing("text");
         app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
         app.Access.FailingRenames.Add("docs/x.axx");
         app.Flow.Begin(FlowOrigin.Home, new FileReference("docs/x.axx", "x.axx"));
@@ -138,7 +138,7 @@ public sealed class EditSaveServiceTests
     [Test]
     public async Task CopySavedInMyFoldersBecomesTheSource()
     {
-        TestApp app = CreateEditing("text");
+        using TestApp app = CreateEditing("text");
         app.AddFolder("docs");
         app.Access.PickedFiles.Enqueue("docs/copy.axx");
 
@@ -153,7 +153,7 @@ public sealed class EditSaveServiceTests
     [Test]
     public async Task CopySavedOutsideMyFoldersLeavesTheSourceUnchanged()
     {
-        TestApp app = CreateEditing("text");
+        using TestApp app = CreateEditing("text");
         app.AddFolder("docs");
         app.Access.PickedFiles.Enqueue("downloads/copy.axx");
 
@@ -169,7 +169,7 @@ public sealed class EditSaveServiceTests
     {
         PublicKey other = new("other@example.com", "other");
         PublicKey masterKey = new("", "master");
-        TestApp app = CreateEditing("text", new EncryptedWithParameters("password", [other], [masterKey]));
+        using TestApp app = CreateEditing("text", new EncryptedWithParameters("password", [other], [masterKey]));
         app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
         app.Flow.Begin(FlowOrigin.Home, new FileReference("docs/x.axx", "x.axx"));
 
@@ -186,7 +186,7 @@ public sealed class EditSaveServiceTests
     {
         PublicKey other = new("other@example.com", "other");
         PublicKey masterKey = new("", "master");
-        TestApp app = CreateEditing("text", new EncryptedWithParameters("password", [other], [masterKey]));
+        using TestApp app = CreateEditing("text", new EncryptedWithParameters("password", [other], [masterKey]));
         app.AddFolder("docs");
         app.Access.PickedFiles.Enqueue("docs/copy.axx");
 
@@ -203,7 +203,7 @@ public sealed class EditSaveServiceTests
     [Test]
     public async Task SaveKeepsTheCreationTimeOfTheOriginal()
     {
-        TestApp app = CreateEditing("text");
+        using TestApp app = CreateEditing("text");
         DateTime created = new(2020, 1, 2, 3, 4, 5, DateTimeKind.Utc);
         app.Preview.Current.SetText(
             app.Preview.Current.File! with { OriginalTimes = new FileTimes(created, created, created) },
@@ -224,7 +224,7 @@ public sealed class EditSaveServiceTests
     [Test]
     public async Task SaveDoesNotAddTheProfileToTheSourceRecipientsAgain()
     {
-        TestApp app = CreateEditing("text");
+        using TestApp app = CreateEditing("text");
         app.Preview.Current.SetText(
             app.Preview.Current.File!,
             "text",

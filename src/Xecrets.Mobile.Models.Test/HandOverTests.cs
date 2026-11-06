@@ -55,7 +55,7 @@ public sealed class HandOverTests
     [Test]
     public async Task EncryptedCopySavedReturnsHomeAndRemovesTheCopy()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.Flow.Begin(FlowOrigin.Home);
         string path = CreateFile(Path.Combine(_directory, "result"), "a.txt.axx");
         EncryptResultPageModel page = new(null!, app.Operations, app.Recent, app.Transient, app.Flow, app.CrashLog, app.UserInterface);
@@ -71,7 +71,7 @@ public sealed class HandOverTests
     [Test]
     public async Task EncryptedCopyNotSavedStays()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.Flow.Begin(FlowOrigin.Home);
         string path = CreateFile(Path.Combine(_directory, "result"), "a.txt.axx");
         EncryptResultPageModel page = new(null!, app.Operations, app.Recent, app.Transient, app.Flow, app.CrashLog, app.UserInterface);
@@ -90,7 +90,7 @@ public sealed class HandOverTests
     [TestCase(FlowOrigin.RecentFiles, false)]
     public async Task DecryptedCopySavedReturnsHomeOnlyWhenStartedThere(FlowOrigin origin, bool returnsHome)
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.Flow.Begin(origin);
         string path = CreateFile(_directory, "a.txt");
         app.Preview.Current.SetText(new DecryptedFileInfo(path, "a.txt", "text/plain", 4, PreviewKind.Text, FileTimes.UtcNow), "text", EncryptedWithParameters.Empty);

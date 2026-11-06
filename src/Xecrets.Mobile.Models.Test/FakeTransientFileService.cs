@@ -89,6 +89,12 @@ internal sealed class FakeTransientFileService : ITransientFileService, IDisposa
 
     public void Dispose()
     {
+        // A decrypted file is made read-only, and Directory.Delete can't remove a read-only file on Windows.
+        foreach (string file in RemainingFiles())
+        {
+            File.SetAttributes(file, FileAttributes.Normal);
+        }
+
         if (Directory.Exists(RootDirectory))
         {
             Directory.Delete(RootDirectory, recursive: true);

@@ -42,7 +42,7 @@ public sealed class FileOperationWorkflowTests
     [Test]
     public async Task SecureDeleteWipesTheFileAndRemovesItFromRecentFiles()
     {
-        TestApp app = new();
+        using TestApp app = new();
         WorkFolder docs = app.AddFolder("docs");
         app.AddFile("docs/a.txt");
         app.AddRecent("docs/a.txt", RecentFileOperation.InPlace);
@@ -61,7 +61,7 @@ public sealed class FileOperationWorkflowTests
     [Test]
     public async Task SecureDeleteRemovesTheFileUnderAnyIdItIsListedBy()
     {
-        TestApp app = new(usesFolderIds: true);
+        using TestApp app = new(usesFolderIds: true);
         WorkFolder docs = app.AddFolder("docs");
         app.AddFile("docs/a.txt");
         app.AddRecent("docs/a.txt", RecentFileOperation.View);
@@ -77,7 +77,7 @@ public sealed class FileOperationWorkflowTests
     [Test]
     public async Task SecureDeleteDoesNothingUnlessConfirmed()
     {
-        TestApp app = new();
+        using TestApp app = new();
         WorkFolder docs = app.AddFolder("docs");
         app.AddFile("docs/a.txt");
         app.Access.PickedRoot = RootProvider.AndroidPhone;
@@ -92,7 +92,7 @@ public sealed class FileOperationWorkflowTests
     [TestCase(RootProvider.ICloudDrive)]
     public async Task SecureDeleteIsConfirmedWhereTheFileCannotBeRecovered(RootProvider root)
     {
-        TestApp app = new();
+        using TestApp app = new();
         WorkFolder docs = app.AddFolder("docs");
         app.AddFile("docs/a.txt");
         app.Access.PickedRoot = root;
@@ -113,7 +113,7 @@ public sealed class FileOperationWorkflowTests
     [TestCase(RootProvider.RemovableStorage)]
     public async Task SecureDeleteIsNotConfirmedWhereTheFileMayBeRecovered(RootProvider root)
     {
-        TestApp app = new();
+        using TestApp app = new();
         WorkFolder docs = app.AddFolder("docs");
         app.AddFile("docs/a.txt");
         app.Access.PickedRoot = root;
@@ -128,7 +128,7 @@ public sealed class FileOperationWorkflowTests
     [Test]
     public async Task FileIsDecryptedOrEncryptedByItsContentsByDefault()
     {
-        TestApp app = new();
+        using TestApp app = new();
         WorkFolder docs = app.AddFolder("docs");
         app.Access.Files["docs/x.axx"] = "ENC:a.txt\ntext"u8.ToArray();
         app.Access.PickedFiles.Enqueue("docs/x.axx");
@@ -142,7 +142,7 @@ public sealed class FileOperationWorkflowTests
     [Test]
     public async Task FileNamedAsEncryptedIsNeverEncrypted()
     {
-        TestApp app = new();
+        using TestApp app = new();
         WorkFolder docs = app.AddFolder("docs");
         app.AddFile("docs/x.axx", "not encrypted");
         app.Access.PickedFiles.Enqueue("docs/x.axx");
@@ -156,7 +156,7 @@ public sealed class FileOperationWorkflowTests
     [Test]
     public async Task EncryptedFileNotNamedAsEncryptedIsNotEncryptedAgain()
     {
-        TestApp app = new();
+        using TestApp app = new();
         WorkFolder docs = app.AddFolder("docs");
         app.AddFile("docs/x.txt", "ENC:a.txt\ntext");
         app.Access.PickedFiles.Enqueue("docs/x.txt");
@@ -170,7 +170,7 @@ public sealed class FileOperationWorkflowTests
     [Test]
     public async Task DecryptOfFileNamedAsEncryptedButNotEncryptedOnlyTellsTheUser()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFolder("docs");
         app.AddFile("docs/x.axx", "not encrypted");
 

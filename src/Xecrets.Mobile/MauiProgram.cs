@@ -97,6 +97,7 @@ internal static class MauiProgram
         builder.Services.AddSingleton<IThirdPartyNoticesService, ThirdPartyNoticesService>();
         builder.Services.AddSingleton(new Cultures(() => deviceFormattingCultureName));
         builder.Services.AddSingleton<MobileCultureCoordinator>();
+        builder.Services.AddSingleton<EzAppShell>();
 
         builder.Services.AddTransientWithShellRoute<CreateProfilePage, CreateProfilePageModel>("create-profile");
         builder.Services.AddTransientWithShellRoute<PreviewPage, PreviewPageModel>("preview");

@@ -45,7 +45,7 @@ public sealed class WorkFoldersPageTests
     [Test]
     public async Task OperationHintIsShownOnceAsATransientMessage()
     {
-        TestApp app = new();
+        using TestApp app = new();
         WorkFoldersPageModel page = app.CreateWorkFoldersPage();
         page.Initialize(WorkFolderIntent.Delete);
 
@@ -59,7 +59,7 @@ public sealed class WorkFoldersPageTests
     [Test]
     public async Task FolderAddedForAnOperationHasTheFilePickedInItRightAway()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("docs/a.txt");
         app.Access.PickedFolders.Enqueue(FakeFileAccess.Folder("docs"));
         app.Access.PickedFiles.Enqueue("docs/a.txt");
@@ -76,7 +76,7 @@ public sealed class WorkFoldersPageTests
     [Test]
     public async Task FolderAddedWithoutAnOperationIsOnlyAdded()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.Access.PickedFolders.Enqueue(FakeFileAccess.Folder("docs"));
         WorkFoldersPageModel page = app.CreateWorkFoldersPage();
 
@@ -89,7 +89,7 @@ public sealed class WorkFoldersPageTests
     [Test]
     public async Task FoldersWithTheSameNameAreToldApartByTheirPath()
     {
-        TestApp app = new();
+        using TestApp app = new();
         WorkFoldersPageModel page = app.CreateWorkFoldersPage();
         foreach (string path in new[] { "a/docs", "b/docs", "c/notes" })
         {
@@ -110,7 +110,7 @@ public sealed class WorkFoldersPageTests
     [Test]
     public async Task FoldersWithTheSameNameAreToldApartByWhereTheyAreStored()
     {
-        TestApp app = new();
+        using TestApp app = new();
         WorkFoldersPageModel page = app.CreateWorkFoldersPage();
         (string Id, RootProvider Root)[] folders = [("x/Work", RootProvider.Dropbox), ("y/Work", RootProvider.ICloudDrive)];
         foreach ((string id, RootProvider root) in folders)

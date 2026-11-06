@@ -39,7 +39,8 @@ using Platform = Microsoft.Maui.ApplicationModel.Platform;
 
 namespace Xecrets.Mobile.Platforms.Android;
 
-internal class AndroidUserInterfaceService(IBuildInformation buildInformation) : DefaultUserInterfaceService(buildInformation)
+internal class AndroidUserInterfaceService(IBuildInformation buildInformation, EzAppShell ezAppShell)
+    : DefaultUserInterfaceService(buildInformation, ezAppShell)
 {
     public override async Task SetSensitiveClipboardTextAsync(string text, bool confirm)
     {

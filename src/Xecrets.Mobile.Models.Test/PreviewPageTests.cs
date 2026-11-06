@@ -59,7 +59,7 @@ public sealed class PreviewPageTests
     [TestCase(false)]
     public async Task TextAtOrUnderTheSizeCapIsViewedInTheApp(bool hasExternalViewer)
     {
-        TestApp app = new();
+        using TestApp app = new();
         TestFileService fileService = new(hasExternalViewer);
         PreviewPageModel page = await CreatePageAsync(app, fileService, PreviewInfoFactory.MaxInlineTextSizeBytes);
 
@@ -72,7 +72,7 @@ public sealed class PreviewPageTests
     [Test]
     public async Task TextOverTheSizeCapIsViewedExternally()
     {
-        TestApp app = new();
+        using TestApp app = new();
         TestFileService fileService = new(hasExternalViewer: true);
         PreviewPageModel page = await CreatePageAsync(app, fileService, PreviewInfoFactory.MaxInlineTextSizeBytes + 1);
 
@@ -85,7 +85,7 @@ public sealed class PreviewPageTests
     [Test]
     public async Task TextOverTheSizeCapCannotBeViewedWithoutAnExternalViewer()
     {
-        TestApp app = new();
+        using TestApp app = new();
         PreviewPageModel page = await CreatePageAsync(app, new TestFileService(hasExternalViewer: false), PreviewInfoFactory.MaxInlineTextSizeBytes + 1);
 
         Assert.That(page.ViewCommand.CanExecute(null), Is.False);
@@ -95,7 +95,7 @@ public sealed class PreviewPageTests
     [TestCase(1, false)]
     public async Task TextCanBeEditedOnlyAtOrUnderTheSizeCap(long overTheCap, bool canEdit)
     {
-        TestApp app = new();
+        using TestApp app = new();
         PreviewPageModel page = await CreatePageAsync(app, new TestFileService(hasExternalViewer: true), PreviewInfoFactory.MaxInlineTextSizeBytes + overTheCap);
 
         Assert.That(page.EditCommand.CanExecute(null), Is.EqualTo(canEdit));
@@ -104,7 +104,7 @@ public sealed class PreviewPageTests
     [Test]
     public async Task SavedCopyGetsTheTimesOfTheOriginal()
     {
-        TestApp app = new();
+        using TestApp app = new();
         PreviewPageModel page = await CreatePageAsync(app, new TestFileService(hasExternalViewer: true), 4);
         FileTimes original = new(
             new DateTime(2020, 1, 2, 3, 4, 5, DateTimeKind.Utc),

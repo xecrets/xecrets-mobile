@@ -42,7 +42,7 @@ public sealed class FolderAccessWorkflowTests
     [Test]
     public async Task FileInOneOfMyFoldersIsUsedThroughItAndTheFolderIsMovedFirst()
     {
-        TestApp app = new(usesFolderIds: true);
+        using TestApp app = new(usesFolderIds: true);
         app.AddFolder("other");
         WorkFolder docs = app.AddFolder("docs");
         app.Access.PickedFiles.Enqueue("docs/sub/a.txt");
@@ -58,7 +58,7 @@ public sealed class FolderAccessWorkflowTests
     [Test]
     public async Task InnermostOfMyFoldersIsUsed()
     {
-        TestApp app = new(usesFolderIds: true);
+        using TestApp app = new(usesFolderIds: true);
         app.AddFolder("docs");
         app.AddFolder("docs/sub");
         app.Access.PickedFiles.Enqueue("docs/sub/a.txt");
@@ -71,7 +71,7 @@ public sealed class FolderAccessWorkflowTests
     [Test]
     public async Task FileOutsideMyFoldersIsNotUsedWhenTheUserDeclinesToAddItsFolder()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.Access.PickedFiles.Enqueue("downloads/a.txt");
 
         FileReference? file = await app.FolderAccess.PickWritableFileAsync(null, FilePickerKind.Any);
@@ -89,7 +89,7 @@ public sealed class FolderAccessWorkflowTests
     [Test]
     public async Task FileOutsideMyFoldersIsPickedAgainInTheFolderAdded()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.Access.PickedFiles.Enqueue("downloads/a.txt");
         app.Access.PickedFiles.Enqueue("downloads/a.txt");
         app.Access.PickedFolders.Enqueue(FakeFileAccess.Folder("downloads"));
@@ -109,7 +109,7 @@ public sealed class FolderAccessWorkflowTests
     [Test]
     public async Task FolderAddedThatDoesNotContainTheFileAsksAgainUntilTheUserCancels()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.UserInterface.Answers.Enqueue(true);
         app.UserInterface.Answers.Enqueue(true);
         app.Access.PickedFolders.Enqueue(FakeFileAccess.Folder("elsewhere"));
@@ -126,7 +126,7 @@ public sealed class FolderAccessWorkflowTests
     [Test]
     public async Task CancelingTheFolderPickerEndsAskingForAccess()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.UserInterface.Answers.Enqueue(true);
         app.Access.PickedFolders.Enqueue(WorkFolderResult.Canceled);
 
@@ -139,7 +139,7 @@ public sealed class FolderAccessWorkflowTests
     [Test]
     public async Task FolderWhoseGrantIsGoneIsAskedForAgain()
     {
-        TestApp app = new(usesFolderIds: true);
+        using TestApp app = new(usesFolderIds: true);
         WorkFolder docs = app.AddFolder("docs");
         app.Access.RevokedFolderGrants.Add(docs.GrantId);
         app.UserInterface.Answers.Enqueue(true);
@@ -155,7 +155,7 @@ public sealed class FolderAccessWorkflowTests
     [Test]
     public async Task FolderAddedAgainKeepsItsNameAndIsMovedFirst()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFolder("other");
         app.Store.Folders.Add(new WorkFolder("docs", "My documents", "grant:old"));
         app.Access.PickedFolders.Enqueue(WorkFolderResult.Valid(new WorkFolder("docs", "docs", "grant:new")));
@@ -169,7 +169,7 @@ public sealed class FolderAccessWorkflowTests
     [Test]
     public async Task FolderThatCannotBeUsedIsReportedAndTheUserChoosesAgain()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.Access.PickedFolders.Enqueue(WorkFolderResult.NoAccess);
         app.Access.PickedFolders.Enqueue(WorkFolderResult.NotFolder);
         app.Access.PickedFolders.Enqueue(WorkFolderResult.Canceled);

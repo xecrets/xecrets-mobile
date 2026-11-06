@@ -41,7 +41,7 @@ namespace Xecrets.Mobile.Models.Test;
 /// folders is identified by its path. With <see cref="FakeFileAccess.UsesFolderIds"/>, a file reached through a
 /// folder has an id of its own, "grant|path", as on Android.
 /// </summary>
-internal sealed class TestApp
+internal sealed class TestApp : IDisposable
 {
     public TestApp(bool usesFolderIds = false)
     {
@@ -152,4 +152,7 @@ internal sealed class TestApp
     public List<string> RecentIds() => [.. Store.Files.Select(file => file.Id)];
 
     public List<string> FolderIds() => [.. Store.Folders.Select(folder => folder.Id)];
+
+    // Removes the temporary files, which are real files on disk.
+    public void Dispose() => Transient.Dispose();
 }

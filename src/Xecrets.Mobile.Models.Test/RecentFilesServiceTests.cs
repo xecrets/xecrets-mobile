@@ -41,7 +41,7 @@ public sealed class RecentFilesServiceTests
     [Test]
     public async Task AddedFileIsListedFirstInPlaceOfAnEntryForTheSameFile()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddRecent("a.txt", RecentFileOperation.InPlace);
         app.AddRecent("b.txt", RecentFileOperation.View);
 
@@ -58,7 +58,7 @@ public sealed class RecentFilesServiceTests
     [Test]
     public async Task ListIsLimitedToTheMostRecentFiles()
     {
-        TestApp app = new();
+        using TestApp app = new();
         for (int i = 0; i < 60; i++)
         {
             await app.Recent.AddAsync(new FileReference($"{i}.txt", $"{i}.txt"), RecentFileOperation.InPlace);
@@ -71,7 +71,7 @@ public sealed class RecentFilesServiceTests
     [Test]
     public async Task FileOnlyReadKeepsTheAccessToIt()
     {
-        TestApp app = new();
+        using TestApp app = new();
 
         bool isAdded = await app.Recent.AddAsync(new FileReference("a.axx", "a.axx"), RecentFileOperation.View);
 
@@ -82,7 +82,7 @@ public sealed class RecentFilesServiceTests
     [Test]
     public async Task FileOnlyReadIsNotListedWhenTheAccessToItCannotBeKept()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.Access.CanKeepFileGrants = false;
 
         bool isAdded = await app.Recent.AddAsync(
@@ -100,7 +100,7 @@ public sealed class RecentFilesServiceTests
     [Test]
     public async Task ChangedFileThenOnlyReadStaysListedAsChangedAndIsMovedFirst()
     {
-        TestApp app = new(usesFolderIds: true);
+        using TestApp app = new(usesFolderIds: true);
         app.AddRecent("b.axx", RecentFileOperation.View, "b.axx");
         app.AddRecent("grant:docs|docs/a.txt", RecentFileOperation.Edit, "a.txt");
 
@@ -121,7 +121,7 @@ public sealed class RecentFilesServiceTests
     [Test]
     public async Task ChangedFileThenOnlyReadByItselfStaysListedOnceAsChanged()
     {
-        TestApp app = new(usesFolderIds: true);
+        using TestApp app = new(usesFolderIds: true);
         app.AddRecent("b.axx", RecentFileOperation.View, "b.axx");
         app.AddRecent("grant:docs|docs/a.axx", RecentFileOperation.InPlace, "a.axx");
 
@@ -140,7 +140,7 @@ public sealed class RecentFilesServiceTests
     [Test]
     public async Task FileOnlyReadThenChangedThroughAFolderIsListedOnceAsChanged()
     {
-        TestApp app = new(usesFolderIds: true);
+        using TestApp app = new(usesFolderIds: true);
         app.AddRecent("docs/a.axx", RecentFileOperation.View, "a.axx");
         app.AddRecent("b.axx", RecentFileOperation.View, "b.axx");
 
@@ -157,7 +157,7 @@ public sealed class RecentFilesServiceTests
     [Test]
     public async Task FileReachedThroughAFolderIsNotListedAsOnlyRead()
     {
-        TestApp app = new(usesFolderIds: true);
+        using TestApp app = new(usesFolderIds: true);
 
         bool isAdded = await app.Recent.AddAsync(
             new FileReference("grant:docs|docs/a.txt", "a.txt"),
@@ -170,7 +170,7 @@ public sealed class RecentFilesServiceTests
     [Test]
     public async Task ChangedFileIsListedWithoutAccessToItAlone()
     {
-        TestApp app = new();
+        using TestApp app = new();
 
         await app.Recent.AddAsync(new FileReference("docs/a.txt", "a.txt"), RecentFileOperation.InPlace);
         await app.Recent.AddAsync(new FileReference("docs/b.txt", "b.txt"), RecentFileOperation.Edit);
@@ -182,7 +182,7 @@ public sealed class RecentFilesServiceTests
     [Test]
     public async Task FlowSourceIsListedWhenThereIsOne()
     {
-        TestApp app = new();
+        using TestApp app = new();
         await app.Recent.AddFlowSourceAsync(RecentFileOperation.DecryptCopySendTo);
         app.Flow.Begin(FlowOrigin.Home, new FileReference("a.axx", "a.axx"));
 
@@ -194,7 +194,7 @@ public sealed class RecentFilesServiceTests
     [Test]
     public async Task ReplacedIdKeepsItsPlaceOperationAndName()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.Store.Files =
         [
             new RecentFile { Id = "b.txt", Operation = RecentFileOperation.View },
@@ -215,7 +215,7 @@ public sealed class RecentFilesServiceTests
     [Test]
     public async Task AddedFileIsListedWithWhereItIsStored()
     {
-        TestApp app = new();
+        using TestApp app = new();
 
         await app.Recent.AddAsync(
             new FileReference("a.txt", "a.txt") { Root = RootProvider.GoogleDrive, FolderPath = ["Work", "Secret"] },
@@ -228,7 +228,7 @@ public sealed class RecentFilesServiceTests
     [Test]
     public async Task FileAddedAgainIsListedWithWhereItIsStoredNow()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.Store.Files =
         [
             new RecentFile { Id = "a.txt", Operation = RecentFileOperation.InPlace, Root = RootProvider.Other },
@@ -245,7 +245,7 @@ public sealed class RecentFilesServiceTests
     [Test]
     public async Task AddedFileIsListedWithWhereItIsStoredOnceUsed()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.Access.LocatedAgain["a.txt"] =
             new FileReference("a.txt", "a.txt") { Root = RootProvider.OneDrive, FolderPath = ["Pictures"] };
 
@@ -260,7 +260,7 @@ public sealed class RecentFilesServiceTests
     [Test]
     public async Task FileAddedWithoutKnowingWhereItIsStoredIsListedWithoutIt()
     {
-        TestApp app = new();
+        using TestApp app = new();
 
         await app.Recent.AddAsync(new FileReference("a.txt", "a.txt"), RecentFileOperation.InPlace);
 
@@ -271,7 +271,7 @@ public sealed class RecentFilesServiceTests
     [Test]
     public async Task ReplacedIdKeepsWhereTheFileIsStored()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.Store.Files =
         [
             new RecentFile

@@ -47,7 +47,7 @@ public sealed class RecentFilesPageTests
     [Test]
     public async Task ListIsShownWithoutAccessingTheFiles()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddRecent("docs/a.txt", RecentFileOperation.InPlace);
         app.AddRecent("gone.axx", RecentFileOperation.View);
         RecentFilesPageModel page = app.CreateRecentFilesPage();
@@ -61,7 +61,7 @@ public sealed class RecentFilesPageTests
     [Test]
     public async Task FilesAreShownWithWhereTheyAreStoredAsFarAsKnown()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.Store.Files =
         [
             new RecentFile
@@ -88,7 +88,7 @@ public sealed class RecentFilesPageTests
     [Test]
     public async Task FileWhoseIdCannotBeReadIsShownByItsRememberedName()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddRecent("bad:1", RecentFileOperation.View, "a.axx");
         app.AddRecent("bad:2", RecentFileOperation.View);
         RecentFilesPageModel page = app.CreateRecentFilesPage();
@@ -104,7 +104,7 @@ public sealed class RecentFilesPageTests
     [Test]
     public async Task FileIsShownByWhereItIsStoredAndItsName()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.Store.Files =
         [
             new RecentFile
@@ -143,7 +143,7 @@ public sealed class RecentFilesPageTests
     [Test]
     public async Task OtherShowsEveryFileNotEncryptedOrDecryptedInPlace()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("docs/a.txt");
         app.AddFile("docs/b.axx");
         app.AddFile("docs/c.txt");
@@ -162,7 +162,7 @@ public sealed class RecentFilesPageTests
     [Test]
     public async Task ViewedFileIsShownAgainThroughTheAccessToItAlone()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("downloads/a.axx");
         app.Access.FileGrants.Add("downloads/a.axx");
         app.AddRecent("downloads/a.axx", RecentFileOperation.View, "a.axx");
@@ -177,7 +177,7 @@ public sealed class RecentFilesPageTests
     [Test]
     public async Task OpenedFileKeepsWhereItIsStored()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("downloads/a.axx");
         app.Access.FileGrants.Add("downloads/a.axx");
         app.Store.Files =
@@ -202,7 +202,7 @@ public sealed class RecentFilesPageTests
     [Test]
     public async Task FileOnlyReadWithoutAccessIsReportedAndKept()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("downloads/a.axx");
         app.AddRecent("downloads/a.axx", RecentFileOperation.View, "a.axx");
         RecentFilesPageModel page = await LoadedPageAsync(app);
@@ -221,7 +221,7 @@ public sealed class RecentFilesPageTests
     [Test]
     public async Task FileThatCannotBeReachedIsReportedAndKept()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFolder("docs");
         app.AddFile("docs/a.txt");
         app.Access.Offline.Add("docs/a.txt");
@@ -238,7 +238,7 @@ public sealed class RecentFilesPageTests
     [Test]
     public async Task DecryptedFileIsOpenedWhereItIsAndMayBeChangedThere()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFolder("docs");
         app.AddFile("docs/a.txt");
         app.AddRecent("docs/a.txt", RecentFileOperation.InPlace, "a.txt");
@@ -252,7 +252,7 @@ public sealed class RecentFilesPageTests
     [Test]
     public async Task EncryptedFileIsShownLikeAViewedFile()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFolder("docs");
         app.AddFile("docs/a.axx");
         app.AddRecent("docs/a.axx", RecentFileOperation.InPlace, "a.axx");
@@ -269,7 +269,7 @@ public sealed class RecentFilesPageTests
     [Test]
     public async Task FileOnlyReadIsOpenedWithoutAllowingChanges()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("downloads/a.txt");
         app.Access.FileGrants.Add("downloads/a.txt");
         app.AddRecent("downloads/a.txt", RecentFileOperation.EncryptCopySaveAs, "a.txt");
@@ -287,7 +287,7 @@ public sealed class RecentFilesPageTests
     [Test]
     public async Task ChangedFileOutsideMyFoldersIsUsedOnceItsFolderIsAdded()
     {
-        TestApp app = new(usesFolderIds: true);
+        using TestApp app = new(usesFolderIds: true);
         app.AddFile("docs/a.txt");
         app.AddRecent("grant:gone|docs/a.txt", RecentFileOperation.InPlace, "a.txt");
         app.UserInterface.Answers.Enqueue(true);
@@ -305,7 +305,7 @@ public sealed class RecentFilesPageTests
     [Test]
     public async Task ChangedFileIsNotUsedWhenTheUserDeclinesToAddItsFolder()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFile("docs/a.txt");
         app.AddRecent("docs/a.txt", RecentFileOperation.InPlace, "a.txt");
         RecentFilesPageModel page = await LoadedPageAsync(app);
@@ -321,7 +321,7 @@ public sealed class RecentFilesPageTests
     [Test]
     public async Task EncryptingFromTheListShowsTheResultFirst()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFolder("docs");
         app.AddFile("docs/a.txt");
         app.AddRecent("docs/b.txt", RecentFileOperation.InPlace, "b.txt");
@@ -339,7 +339,7 @@ public sealed class RecentFilesPageTests
     [Test]
     public async Task DecryptingWithAPasswordFromTheListShowsTheResultWhenReturning()
     {
-        TestApp app = new();
+        using TestApp app = new();
         string encryptedName = "a.txt".ToEncryptedName(string.Empty);
         app.AddFolder("docs");
         app.AddFile($"docs/{encryptedName}", "ENC:a.txt\ntext");
@@ -360,7 +360,7 @@ public sealed class RecentFilesPageTests
     [Test]
     public async Task DecryptionWaitingForAPasswordThatIsNotGivenLeavesTheSource()
     {
-        TestApp app = new();
+        using TestApp app = new();
         string encryptedName = "a.txt".ToEncryptedName(string.Empty);
         app.AddFolder("docs");
         app.AddFile($"docs/{encryptedName}", "ENC:a.txt\ntext");
@@ -381,7 +381,7 @@ public sealed class RecentFilesPageTests
     [Test]
     public async Task FileNotChangedIsLeftAndTheOthersAreStillChanged()
     {
-        TestApp app = new();
+        using TestApp app = new();
         string encryptedName = "b.txt".ToEncryptedName(string.Empty);
         app.AddFolder("docs");
         app.AddFile("docs/a.txt", "ENC:a.txt\ntext");
@@ -401,7 +401,7 @@ public sealed class RecentFilesPageTests
     [Test]
     public async Task ReverseOfFileNamedAsEncryptedButNotEncryptedOnlyTellsTheUser()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFolder("docs");
         app.AddFile("docs/x.axx", "not encrypted");
         app.AddRecent("docs/x.axx", RecentFileOperation.InPlace, "x.axx");
@@ -422,7 +422,7 @@ public sealed class RecentFilesPageTests
     [Test]
     public async Task FileNotFoundInItsFolderIsReported()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFolder("docs");
         app.AddFile("docs/a.txt");
         app.AddRecent("docs/a.txt", RecentFileOperation.InPlace, "a.txt");
@@ -438,7 +438,7 @@ public sealed class RecentFilesPageTests
     [Test]
     public async Task FolderThatCannotBeSearchedIsReportedAsAnError()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddFolder("docs");
         app.AddFile("docs/a.txt");
         app.AddRecent("docs/a.txt", RecentFileOperation.InPlace, "a.txt");
@@ -455,7 +455,7 @@ public sealed class RecentFilesPageTests
     [Test]
     public async Task RemovingAnEntryKeepsOtherEntriesForTheSameFile()
     {
-        TestApp app = new(usesFolderIds: true);
+        using TestApp app = new(usesFolderIds: true);
         app.AddRecent("grant:docs|docs/a.txt", RecentFileOperation.InPlace, "a.txt");
         app.AddRecent("docs/a.txt", RecentFileOperation.EncryptCopySaveAs, "a.txt");
         RecentFilesPageModel page = await LoadedPageAsync(app);
@@ -468,7 +468,7 @@ public sealed class RecentFilesPageTests
     [Test]
     public async Task DescriptionIsShownOnThePageOnlyWhileNoFilesAreListed()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddRecent("docs/a.txt", RecentFileOperation.InPlace);
         RecentFilesPageModel page = await LoadedPageAsync(app);
         string withFiles = page.NoFilesText;
@@ -482,7 +482,7 @@ public sealed class RecentFilesPageTests
     [Test]
     public async Task FileListedByAnUnknownOperationIsNotShown()
     {
-        TestApp app = new();
+        using TestApp app = new();
         app.AddRecent("docs/a.txt", RecentFileOperation.InPlace);
         app.AddRecent("future.txt", RecentFileOperation.Unknown, "future.txt");
 
