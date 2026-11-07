@@ -27,17 +27,13 @@
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
-             xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
              x:Class="Xecrets.Mobile.Controls.PageBreadcrumb"
              x:ClassModifier="internal"
              x:DataType="controls:PageBreadcrumb"
+             Margin="{StaticResource BreadcrumbMargin}"
              x:Name="Root">
-    <ContentView.Resources>
-        <utilities:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
-    </ContentView.Resources>
     <Label BindingContext="{x:Reference Root}"
            Text="{Binding Text, Mode=OneWay}"
-           IsVisible="{Binding Text, Converter={StaticResource StringNotEmptyConverter}}"
            HorizontalOptions="Center"
            Margin="0,0,0,-4"
            HorizontalTextAlignment="Center"

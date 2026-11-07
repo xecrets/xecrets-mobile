@@ -46,16 +46,16 @@ public partial class CreateProfilePageModel(
     LocalProfileDeletionService deletionService,
     InstallationService installationService,
     IUserInterfaceService userInterfaceService)
-    : PageModelBase(userInterfaceService)
+    : PageModelBase(userInterfaceService), IPageInformationPageModel, IBreadcrumbPageModel
 {
+    [ObservableProperty]
+    public partial string Breadcrumb { get; private set; } = string.Empty;
+
     [ObservableProperty]
     public partial string Heading { get; private set; } = MobileTexts.HeadingCreateUserFirstTimeSetup;
 
     [ObservableProperty]
     public partial string Information { get; private set; } = MobileTexts.ToolTipEmail;
-
-    [ObservableProperty]
-    public partial string ButtonText { get; private set; } = MobileTexts.ButtonCreate;
 
     [ObservableProperty]
     public partial string Email { get; set; } = string.Empty;
@@ -84,6 +84,9 @@ public partial class CreateProfilePageModel(
     public bool IsEditable => !IsDelete;
 
     [ObservableProperty]
+    public partial bool IsHeadingAlwaysVisible { get; private set; } = true;
+
+    [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(CreateCommand))]
     [NotifyCanExecuteChangedFor(nameof(DeleteCommand))]
     // ReSharper disable once MemberCanBeMadeStatic.Local
@@ -95,9 +98,10 @@ public partial class CreateProfilePageModel(
     public void InitializeChange()
     {
         _isChange = true;
+        IsHeadingAlwaysVisible = false;
+        Breadcrumb = BreadcrumbFormatter.Format(FlowOrigin.Home, MobileTexts.BreadcrumbChangeProfile);
         Heading = MobileTexts.MenuChangeProfile;
         Information = MobileTexts.ChangeProfileDescription;
-        ButtonText = MobileTexts.ButtonSave;
         Email = profileService.CurrentEmail;
         Password = profileService.CurrentPassword;
         ConfirmPassword = profileService.CurrentPassword;
@@ -107,6 +111,7 @@ public partial class CreateProfilePageModel(
     public void InitializeDelete()
     {
         IsDelete = true;
+        Breadcrumb = BreadcrumbFormatter.Format(FlowOrigin.Home, MobileTexts.BreadcrumbDeleteProfile);
         Heading = MobileTexts.MenuDeleteProfile;
         Information = MobileTexts.MessageTextConfirmWipe;
         Email = profileService.CurrentEmail;

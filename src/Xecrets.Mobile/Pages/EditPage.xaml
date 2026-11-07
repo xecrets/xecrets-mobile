@@ -48,35 +48,33 @@
              them spans the full page width, and is all that scrolls. -->
         <Grid RowDefinitions="Auto,*"
               RowSpacing="{StaticResource LayoutSpacing}">
-            <VerticalStackLayout Padding="{StaticResource FullWidthTextHeaderPadding}"
-                                 Spacing="{StaticResource LayoutSpacing}">
+            <VerticalStackLayout Padding="{StaticResource FullWidthTextHeaderPadding}">
                 <controls:PageBreadcrumb Text="{Binding Breadcrumb}" />
-                <Border Style="{StaticResource PageInformationCardStyle}">
-                    <Grid ColumnDefinitions="*,Auto">
-                        <VerticalStackLayout Margin="{StaticResource IconRowBodyLeadingMargin}"
-                                             VerticalOptions="Center">
-                            <Label Text="{Binding FileNameText}"
-                                   Style="{StaticResource FileName}" />
-                            <Label Text="{Binding MetadataText}"
-                                   Style="{StaticResource ExtraFileInfo}" />
-                        </VerticalStackLayout>
-                        <HorizontalStackLayout Grid.Column="1"
-                                               VerticalOptions="Start">
-                            <controls:TextFontButtons BindingContext="{Binding Font}" />
-                            <ImageButton VerticalOptions="Center"
-                                         Background="Transparent"
-                                         MinimumWidthRequest="36"
-                                         Padding="6,8"
-                                         Source="{StaticResource IconSave}"
-                                         Command="{Binding SaveCommand}" />
-                            <controls:PageInformationButton Style="{StaticResource PageInformationButtonCorner}"
-                                                            Title="{x:Static modelUtilities:MobileTexts.EditContentTitle}"
-                                                            Message="{x:Static modelUtilities:MobileTexts.EditDescription}" />
-                        </HorizontalStackLayout>
-                    </Grid>
-                </Border>
-                <controls:PageMessages MessageText="{Binding MessageText}"
-                                       StatusText="{Binding StatusText}" />
+                <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
+                    <Border Style="{StaticResource PageInformationCardStyle}">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Margin="{StaticResource IconRowBodyLeadingMargin}"
+                                                 VerticalOptions="Center">
+                                <Label Text="{Binding FileNameText}"
+                                       Style="{StaticResource FileName}" />
+                                <Label Text="{Binding MetadataText}"
+                                       Style="{StaticResource ExtraFileInfo}" />
+                            </VerticalStackLayout>
+                            <HorizontalStackLayout Grid.Column="1"
+                                                   VerticalOptions="Start">
+                                <controls:TextFontButtons BindingContext="{Binding Font}" />
+                                <ImageButton VerticalOptions="Center"
+                                             Background="Transparent"
+                                             MinimumWidthRequest="36"
+                                             Padding="6,8"
+                                             Source="{StaticResource IconSave}"
+                                             Command="{Binding SaveCommand}" />
+                            </HorizontalStackLayout>
+                        </Grid>
+                    </Border>
+                    <controls:PageMessages MessageText="{Binding MessageText}"
+                                           StatusText="{Binding StatusText}" />
+                </VerticalStackLayout>
             </VerticalStackLayout>
             <!-- The scroll view scrolls the text, since the editor's own scrolling does not fling. -->
             <ScrollView Grid.Row="1"

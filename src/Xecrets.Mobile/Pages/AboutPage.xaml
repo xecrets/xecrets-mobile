@@ -33,87 +33,90 @@
              x:ClassModifier="internal"
              x:DataType="pageModels:AboutPageModel">
     <controls:FadingScrollView FadeColor="{AppThemeBinding Light={StaticResource LightBackground}, Dark={StaticResource DarkBackground}}">
-        <VerticalStackLayout Padding="{StaticResource LayoutPadding}"
-                             Spacing="{StaticResource LayoutSpacing}">
-            <Label Text="{Binding ProductName}"
-                   HorizontalOptions="Center"
-                   Style="{StaticResource Title1}" />
-            <Border Style="{StaticResource CardStyle}">
-                <Grid ColumnDefinitions="Auto,*"
-                      ColumnSpacing="12"
-                      RowDefinitions="Auto,Auto,Auto,Auto,Auto"
-                      RowSpacing="8">
-                    <Label Text="Version"
-                           Style="{StaticResource Body2Strong}" />
-                    <Label Grid.Column="1"
-                           Text="{Binding Version}"
-                           Style="{StaticResource Body2}" />
+        <VerticalStackLayout Padding="{StaticResource LayoutPadding}">
+            <controls:PageBreadcrumb Text="{Binding Breadcrumb}" />
+            <VerticalStackLayout Spacing="{DynamicResource FormSpacing}">
+                <Label x:Name="ProductNameTitle"
+                       Text="{Binding ProductName}"
+                       HorizontalOptions="Center"
+                       Style="{StaticResource Title1}" />
+                <Border Style="{StaticResource CardStyle}">
+                    <Grid ColumnDefinitions="Auto,*"
+                          ColumnSpacing="12"
+                          RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+                          RowSpacing="{DynamicResource DetailRowSpacing}">
+                        <Label Text="Version"
+                               Style="{StaticResource Body2Strong}" />
+                        <Label Grid.Column="1"
+                               Text="{Binding Version}"
+                               Style="{StaticResource Body2}" />
 
-                    <Label Grid.Row="1"
-                           Text="Publisher"
-                           Style="{StaticResource Body2Strong}" />
-                    <Label Grid.Row="1"
-                           Grid.Column="1"
-                           Text="{Binding Publisher}"
-                           Style="{StaticResource Body2}"
-                           TextColor="{StaticResource Primary}"
-                           TextDecorations="Underline">
-                        <Label.GestureRecognizers>
-                            <TapGestureRecognizer Command="{Binding OpenBrowserCommand}"
-                                                  CommandParameter="{x:Static modelUtilities:MobileTexts.SiteUrl}" />
-                        </Label.GestureRecognizers>
-                    </Label>
+                        <Label Grid.Row="1"
+                               Text="Publisher"
+                               Style="{StaticResource Body2Strong}" />
+                        <Label Grid.Row="1"
+                               Grid.Column="1"
+                               Text="{Binding Publisher}"
+                               Style="{StaticResource Body2}"
+                               TextColor="{StaticResource Primary}"
+                               TextDecorations="Underline">
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding OpenBrowserCommand}"
+                                                      CommandParameter="{x:Static modelUtilities:MobileTexts.SiteUrl}" />
+                            </Label.GestureRecognizers>
+                        </Label>
 
-                    <Label Grid.Row="2"
-                           Text="Platform"
-                           Style="{StaticResource Body2Strong}" />
-                    <Label Grid.Row="2"
-                           Grid.Column="1"
-                           Text="{Binding Platform}"
-                           Style="{StaticResource Body2}" />
+                        <Label Grid.Row="2"
+                               Text="Platform"
+                               Style="{StaticResource Body2Strong}" />
+                        <Label Grid.Row="2"
+                               Grid.Column="1"
+                               Text="{Binding Platform}"
+                               Style="{StaticResource Body2}" />
 
-                    <Label Grid.Row="3"
-                           Text="License"
-                           Style="{StaticResource Body2Strong}" />
-                    <Label Grid.Row="3"
-                           Grid.Column="1"
-                           Text="{Binding License}"
-                           Style="{StaticResource Body2}"
-                           TextColor="{StaticResource Primary}"
-                           TextDecorations="Underline">
-                        <Label.GestureRecognizers>
-                            <TapGestureRecognizer Command="{Binding OpenBrowserCommand}"
-                                                  CommandParameter="https://www.gnu.org/licenses/gpl-3.0.html" />
-                        </Label.GestureRecognizers>
-                    </Label>
+                        <Label Grid.Row="3"
+                               Text="License"
+                               Style="{StaticResource Body2Strong}" />
+                        <Label Grid.Row="3"
+                               Grid.Column="1"
+                               Text="{Binding License}"
+                               Style="{StaticResource Body2}"
+                               TextColor="{StaticResource Primary}"
+                               TextDecorations="Underline">
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding OpenBrowserCommand}"
+                                                      CommandParameter="https://www.gnu.org/licenses/gpl-3.0.html" />
+                            </Label.GestureRecognizers>
+                        </Label>
 
-                    <Label Grid.Row="4"
-                           Text="Source code"
-                           Style="{StaticResource Body2Strong}" />
-                    <Label Grid.Row="4"
-                           Grid.Column="1"
-                           Text="{Binding SourceCodeUrl}"
-                           Style="{StaticResource Body2}"
-                           TextColor="{StaticResource Primary}"
-                           TextDecorations="Underline">
-                        <Label.GestureRecognizers>
-                            <TapGestureRecognizer Command="{Binding OpenBrowserCommand}"
-                                                  CommandParameter="{Binding SourceCodeUrl}" />
-                        </Label.GestureRecognizers>
-                    </Label>
-                </Grid>
-            </Border>
+                        <Label Grid.Row="4"
+                               Text="Source code"
+                               Style="{StaticResource Body2Strong}" />
+                        <Label Grid.Row="4"
+                               Grid.Column="1"
+                               Text="{Binding SourceCodeUrl}"
+                               Style="{StaticResource Body2}"
+                               TextColor="{StaticResource Primary}"
+                               TextDecorations="Underline">
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding OpenBrowserCommand}"
+                                                      CommandParameter="{Binding SourceCodeUrl}" />
+                            </Label.GestureRecognizers>
+                        </Label>
+                    </Grid>
+                </Border>
 
-            <!-- One paragraph, the copyright followed by where to find the third-party information. -->
-            <Label Style="{StaticResource Caption1}">
-                <Label.FormattedText>
-                    <FormattedString>
-                        <Span Text="{Binding Copyright}" />
-                        <Span Text=" " />
-                        <Span Text="{Binding ThirdPartyNotice}" />
-                    </FormattedString>
-                </Label.FormattedText>
-            </Label>
+                <!-- One paragraph, the copyright followed by where to find the third-party information. -->
+                <Label Style="{StaticResource Caption1}">
+                    <Label.FormattedText>
+                        <FormattedString>
+                            <Span Text="{Binding Copyright}" />
+                            <Span Text=" " />
+                            <Span Text="{Binding ThirdPartyNotice}" />
+                        </FormattedString>
+                    </Label.FormattedText>
+                </Label>
+            </VerticalStackLayout>
         </VerticalStackLayout>
     </controls:FadingScrollView>
 </ContentPage>

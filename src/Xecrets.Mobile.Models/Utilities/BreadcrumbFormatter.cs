@@ -47,7 +47,7 @@ internal static class BreadcrumbFormatter
     private static string[] OriginTexts(FlowOrigin origin) => origin switch
     {
         FlowOrigin.Home => [MobileTexts.BreadcrumbHome],
-        FlowOrigin.MyFolders => [MobileTexts.BreadcrumbHome, MobileTexts.BreadcrumbMyFolders],
+        FlowOrigin.MyFolders => [MobileTexts.BreadcrumbHome, MobileTexts.BreadcrumbOriginal],
         FlowOrigin.RecentFiles => [MobileTexts.BreadcrumbHome, MobileTexts.BreadcrumbRecentFiles],
         FlowOrigin.ReceivedFile => [MobileTexts.BreadcrumbReceivedFile],
         _ => throw new ArgumentOutOfRangeException(nameof(origin), origin, @"Unknown flow origin."),

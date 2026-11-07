@@ -30,6 +30,8 @@
 
 using System;
 
+using Fonts;
+
 using Microsoft.Maui;
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls;
@@ -48,6 +50,11 @@ internal sealed class PageHeaderService(
 {
     public void ApplyStandardHeader(ContentPage page)
     {
+        if (page.BindingContext is IPageInformationPageModel)
+        {
+            page.ToolbarItems.Add(CreatePageInformationItem());
+        }
+
         page.ToolbarItems.Add(CreateOverflowItem(MobileTexts.MenuWelcome, HeaderCommand.Welcome));
         page.ToolbarItems.Add(CreateOverflowItem(MobileTexts.MenuHelp, HeaderCommand.Help));
         page.ToolbarItems.Add(CreateOverflowItem(MobileTexts.MenuSupport, HeaderCommand.Support));
@@ -108,6 +115,7 @@ internal sealed class PageHeaderService(
         }
 
         titleView.Children.Add(titleLayout);
+        View content = page.Content;
 
         // Shell hosts the title view natively and never sizes it, but lays out its content. The content moves without
         // resizing when the space Shell gives the title view changes, such as when the toolbar items appear.
@@ -115,24 +123,71 @@ internal sealed class PageHeaderService(
         {
             if (args.PropertyName is nameof(VisualElement.X) or nameof(VisualElement.Width))
             {
-                CenterInWindow(titleView, titleLayout);
+                CenterTitle(page, content, titleView, titleLayout);
             }
         };
-        titleView.Loaded += (_, _) => CenterInWindow(titleView, titleLayout);
+        // The page content moves without the title view moving when the display cutout changes sides, as when the
+        // phone is turned from one landscape orientation to the other. The title view is replaced when the title
+        // changes, so the old one stops following the content when it is unloaded.
+        void OnContentLaidOut(object? sender, EventArgs args) => CenterTitle(page, content, titleView, titleLayout);
+        titleView.Loaded += (_, _) =>
+        {
+            content.BatchCommitted += OnContentLaidOut;
+            CenterTitle(page, content, titleView, titleLayout);
+        };
+        titleView.Unloaded += (_, _) => content.BatchCommitted -= OnContentLaidOut;
         Shell.SetTitleView(page, titleView);
     }
 
     // Shell places the title view between its own navigation button and toolbar, which differ in width. Pad the
-    // narrower side so that the title is centered in the window.
-    private void CenterInWindow(View titleView, View titleLayout)
+    // narrower side so that the title is centered in the window, but only as much as leaves room for the whole title,
+    // so that a long title is moved off center before it is cut off. When the height is compact, as on a phone in
+    // landscape, the content is inset from the side with a display cutout, such as a camera, and the title is centered
+    // above the content instead.
+    private void CenterTitle(Page page, View content, View titleView, View titleLayout)
     {
-        if (!titleView.IsLoaded)
+        if (!titleView.IsLoaded || !content.IsLoaded)
         {
             return;
         }
 
         (double left, double right) = platformServices.GetWindowGaps(titleView);
-        titleLayout.Margin = new Thickness(Math.Max(0, right - left), 0, Math.Max(0, left - right), 0);
+        (double contentLeft, double contentRight) = LayoutMetrics.IsCompactHeight(page.Window.Width, page.Window.Height)
+            ? platformServices.GetWindowGaps(content)
+            : (0, 0);
+        double availableWidth = page.Window.Width - left - right;
+        double titleWidth = titleLayout.Measure(double.PositiveInfinity, double.PositiveInfinity).Width
+            - titleLayout.Margin.HorizontalThickness;
+        double shift = right - left + contentLeft - contentRight;
+        double padding = Math.Min(Math.Abs(shift), Math.Max(0, availableWidth - titleWidth));
+        titleLayout.Margin = shift > 0 ? new Thickness(padding, 0, 0, 0) : new Thickness(0, 0, padding, 0);
+
+        // Measured without a width limit above, the title is laid out at that width until it is measured again.
+        ((IView)titleLayout).InvalidateMeasure();
+    }
+
+    // The icon takes the color of the other header icons from the Shell foreground color. There is no text, since it
+    // would be shown with the icon on some platforms.
+    private static ToolbarItem CreatePageInformationItem()
+    {
+        ToolbarItem item = new()
+        {
+            IconImageSource = new FontImageSource
+            {
+                Glyph = FluentUI.question_circle_24_regular,
+                FontFamily = FluentUI.FontFamily,
+                Size = 24,
+            },
+        };
+        item.Clicked += OnPageInformationClicked;
+        return item;
+    }
+
+    // The toolbar item has the binding context of its page.
+    private static async void OnPageInformationClicked(object? sender, EventArgs e)
+    {
+        IPageInformationPageModel pageModel = (IPageInformationPageModel)((ToolbarItem)sender!).BindingContext;
+        await Shell.Current!.DisplayAlertAsync(pageModel.Heading, pageModel.Information, MobileTexts.ButtonOk);
     }
 
     private static ToolbarItem CreateOverflowItem(string text, HeaderCommand command)

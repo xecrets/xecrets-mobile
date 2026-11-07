@@ -32,13 +32,6 @@
     xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
 
-    <Style x:Key="PageInformationButtonCorner"
-           TargetType="controls:PageInformationButton">
-        <Setter Property="HorizontalOptions" Value="End" />
-        <Setter Property="VerticalOptions" Value="Center" />
-        <Setter Property="Margin" Value="0" />
-    </Style>
-
     <x:Double x:Key="sizeNone">0</x:Double>
     <x:Double x:Key="size20">2</x:Double>
     <x:Double x:Key="size40">4</x:Double>
@@ -95,20 +88,18 @@
         <OnIdiom.Tablet>32,0,32,32</OnIdiom.Tablet>
     </OnIdiom>
 
-    <OnIdiom x:Key="ContentTitleLayoutPadding"
+    <OnIdiom x:Key="BreadcrumbMargin"
              x:TypeArguments="Thickness"
-             Default="16,8,16,16">
-        <OnIdiom.Desktop>32,12,32,32</OnIdiom.Desktop>
-        <OnIdiom.Tablet>32,12,32,32</OnIdiom.Tablet>
+             Default="0,-8,0,12">
+        <OnIdiom.Desktop>0,-20,0,16</OnIdiom.Desktop>
+        <OnIdiom.Tablet>0,-20,0,16</OnIdiom.Tablet>
     </OnIdiom>
 
-    <!-- ContentTitleLayoutPadding above a text that spans the full page width and down to the bottom of the page,
-         for the breadcrumb, the card and the messages. -->
     <OnIdiom x:Key="FullWidthTextHeaderPadding"
              x:TypeArguments="Thickness"
-             Default="16,8,16,0">
-        <OnIdiom.Desktop>32,12,32,0</OnIdiom.Desktop>
-        <OnIdiom.Tablet>32,12,32,0</OnIdiom.Tablet>
+             Default="16,16,16,0">
+        <OnIdiom.Desktop>32,32,32,0</OnIdiom.Desktop>
+        <OnIdiom.Tablet>32,32,32,0</OnIdiom.Tablet>
     </OnIdiom>
 
     <OnIdiom x:Key="LayoutSpacing"
@@ -144,6 +135,8 @@
         <OnIdiom.Tablet>12</OnIdiom.Tablet>
     </OnIdiom>
 
+    <x:Double x:Key="CompactActionButtonRowSpacing">8</x:Double>
+
     <!-- Between an icon button and the control beside it. -->
     <x:Double x:Key="IconRowSpacing">4</x:Double>
 
@@ -166,7 +159,7 @@
     </OnIdiom>
 
     <!-- The card body padding for a page with icon rows. The rows span the full card width, so that their
-         icons line up with the icons in the card corners, such as PageInformationButtonCorner. A negative
+         icons line up with the icons in the card corners, such as the header actions. A negative
          row margin would do the same visually, but the part of a row outside its parent does not receive
          taps. The other content takes the horizontal padding as IconRowBodyContentMargin. -->
     <OnIdiom x:Key="IconRowBodyPadding"
@@ -434,7 +427,7 @@
     <Style x:Key="Title1"
            TargetType="Label">
         <Setter Property="FontSize"
-                Value="{StaticResource FontSizeTitle1}" />
+                Value="{DynamicResource Title1FontSize}" />
         <Setter Property="LineHeight"
                 Value="1.23" />
         <!-- 32 -->
@@ -582,7 +575,39 @@
         <Setter Property="BackgroundColor" Value="{StaticResource Destructive}" />
     </Style>
 
-    <OnIdiom x:Key="EntryMinimumHeight" x:TypeArguments="x:Double" Default="52" Tablet="60" />
+    <!-- The variants of the dynamic resource EntryMinimumHeight, set by LayoutMetrics.UpdateCompactHeightResources. The
+         compact text fields are as tall as an action button. -->
+    <OnIdiom x:Key="RegularEntryMinimumHeight" x:TypeArguments="x:Double" Default="52" Tablet="60" />
+    <x:Double x:Key="CompactEntryMinimumHeight">40</x:Double>
+
+    <!-- The variants of the dynamic resource PasswordStrengthMargin, for the strength meter below a password text
+         field. The compact meter is on the underline of the text field, and with the stack spacing around it takes no
+         height, so the text fields above and below it are as far apart as any others. -->
+    <OnIdiom x:Key="RegularPasswordStrengthMargin"
+             x:TypeArguments="Thickness"
+             Default="16,-6,0,0">
+        <OnIdiom.Desktop>24,-8,0,0</OnIdiom.Desktop>
+        <OnIdiom.Tablet>24,-8,0,0</OnIdiom.Tablet>
+    </OnIdiom>
+    <Thickness x:Key="CompactPasswordStrengthMargin">16,-22,0,-2</Thickness>
+    <x:Double x:Key="CompactFormSpacing">8</x:Double>
+    <Thickness x:Key="RegularFormMargin">0</Thickness>
+    <Thickness x:Key="CompactFormMargin">0,-4,0,0</Thickness>
+    <!-- The variants of the dynamic resource DetailRowSpacing, between the rows of a table of details, such as on the
+         about page. -->
+    <x:Double x:Key="RegularDetailRowSpacing">8</x:Double>
+    <x:Double x:Key="CompactDetailRowSpacing">5</x:Double>
+    <!-- The variants of the dynamic resource CardBodyHeaderPadding, around a card body header. The compact body header is
+         in the title row of the card, centered vertically with the title. -->
+    <Thickness x:Key="RegularCardBodyHeaderPadding">0,0,0,4</Thickness>
+    <Thickness x:Key="CompactCardBodyHeaderPadding">0</Thickness>
+    <!-- The compact variant of the dynamic resource Title1FontSize, whose regular variant is FontSizeTitle1. A little
+         smaller, to save height. -->
+    <x:Double x:Key="CompactFontSizeTitle1">24</x:Double>
+    <!-- The underline of a text field ends a little in from the sides of the field, such as by the inset of the
+         background on Android or the rounded corners on Windows. The strength meter is inset as much, by the dynamic
+         resource PasswordStrengthInset set by LayoutMetrics.UpdateDensityResources. -->
+    <x:Double x:Key="TextFieldUnderlineInset">4</x:Double>
 
     <!-- Applied to derived types too, such as PasswordTextEntry, so a password looks the same as other text fields. -->
     <Style TargetType="Entry"
@@ -591,7 +616,7 @@
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}" />
         <Setter Property="PlaceholderColor" Value="{AppThemeBinding Light={StaticResource LightMutedText}, Dark={StaticResource DarkMutedText}}" />
         <Setter Property="FontSize" Value="{StaticResource FontSizeBody1}" />
-        <Setter Property="MinimumHeightRequest" Value="{StaticResource EntryMinimumHeight}" />
+        <Setter Property="MinimumHeightRequest" Value="{DynamicResource EntryMinimumHeight}" />
     </Style>
 
     <!-- Applied to derived types too, such as ReadOnlyEditor. -->

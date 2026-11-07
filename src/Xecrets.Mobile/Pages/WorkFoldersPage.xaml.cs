@@ -73,5 +73,8 @@ internal partial class WorkFoldersPage : IQueryAttributable
 
         // The footer is as wide as the folder rows, so that the browse button lines up with the folder buttons.
         FooterStack.WidthRequest = ActionButtonStack.WidthRequest;
+        // The page information and the messages, with their margins, are as wide as the folder rows.
+        NoFoldersBox.WidthRequest = ActionButtonStack.WidthRequest - NoFoldersBox.Margin.HorizontalThickness;
+        Messages.WidthRequest = ActionButtonStack.WidthRequest - Messages.Margin.HorizontalThickness;
     }
 }

@@ -40,7 +40,8 @@
         <Border x:Name="CardBorder"
                 Style="{StaticResource PageInformationCardStyle}">
             <!-- A body header and a footer, when there are any, are added in rows of their own from the code, above and
-                 below the scrolling body. -->
+                 below the scrolling body. When the height is compact, the body header is in the title row instead,
+                 centered in the card. -->
             <Grid x:Name="CardGrid"
                   RowDefinitions="Auto,*"
                   RowSpacing="{StaticResource CardTitleSpacing}">
@@ -50,18 +51,18 @@
                     <ContentView x:Name="BodyHost"
                                  Padding="{Binding BodyPadding, Source={x:Reference Root}, x:DataType=controls:PageCard}" />
                 </controls:FadingScrollView>
-                <Grid Grid.Row="0"
+                <Grid x:Name="TitleRow"
+                      Grid.Row="0"
+                      VerticalOptions="Start"
+                      InputTransparent="True"
+                      CascadeInputTransparent="False"
                       ColumnDefinitions="*,Auto">
-                    <Label Text="{Binding Title, Source={x:Reference Root}, x:DataType=controls:PageCard}"
+                    <Label x:Name="TitleLabel"
+                           Text="{Binding Title, Source={x:Reference Root}, x:DataType=controls:PageCard}"
                            Style="{StaticResource CardTitleStyle}" />
-                    <HorizontalStackLayout Grid.Column="1"
-                                           VerticalOptions="Center">
-                        <ContentView x:Name="HeaderActionsHost"
-                                     VerticalOptions="Center" />
-                        <controls:PageInformationButton Style="{StaticResource PageInformationButtonCorner}"
-                                                        Title="{Binding Title, Source={x:Reference Root}, x:DataType=controls:PageCard}"
-                                                        Message="{Binding Information, Source={x:Reference Root}, x:DataType=controls:PageCard}" />
-                    </HorizontalStackLayout>
+                    <ContentView x:Name="HeaderActionsHost"
+                                 Grid.Column="1"
+                                 VerticalOptions="Center" />
                 </Grid>
             </Grid>
         </Border>

@@ -55,13 +55,12 @@
     <Grid>
         <Grid x:Name="ContentRoot"
               RowDefinitions="Auto,*"
-              Padding="{StaticResource ContentTitleLayoutPadding}"
-              RowSpacing="{StaticResource LayoutSpacing}">
+              Padding="{StaticResource LayoutPadding}">
             <pageControls:PageBreadcrumb Text="{Binding Breadcrumb}" />
             <pageControls:PageCard x:Name="Card"
                                    Grid.Row="1"
-                                   Title="{x:Static modelUtilities:MobileTexts.WorkFoldersContentTitle}"
-                                   Information="{Binding Description}"
+                                   Title="{Binding Heading}"
+                                   IsTitleHiddenWhenCompact="True"
                                    BodyPadding="0">
                 <pageControls:PageCard.HeaderActions>
                     <HorizontalStackLayout VerticalOptions="Center">
@@ -77,8 +76,12 @@
                     </HorizontalStackLayout>
                 </pageControls:PageCard.HeaderActions>
                 <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
-                    <!-- Without any folders, the page information is shown. -->
-                    <Border Margin="{StaticResource IconRowBodyContentMargin}"
+                    <!-- Without any folders, the page information is shown. It and the messages are as wide as the
+                         folder rows, so that they are not too wide to read, nor under the add button when the title is
+                         hidden. -->
+                    <Border x:Name="NoFoldersBox"
+                            Margin="{StaticResource IconRowBodyContentMargin}"
+                            HorizontalOptions="Center"
                             IsVisible="{Binding NoFoldersText, Converter={StaticResource StringNotEmptyConverter}}"
                             BackgroundColor="{AppThemeBinding Light={StaticResource LightOutline}, Dark={StaticResource DarkOutline}}"
                             Stroke="{AppThemeBinding Light={StaticResource LightOutline}, Dark={StaticResource DarkOutline}}"
@@ -87,7 +90,9 @@
                         <Label Text="{Binding NoFoldersText}"
                                FontSize="{StaticResource FontSizeCaption1}" />
                     </Border>
-                    <pageControls:PageMessages Margin="{StaticResource IconRowBodyContentMargin}"
+                    <pageControls:PageMessages x:Name="Messages"
+                                               Margin="{StaticResource IconRowBodyContentMargin}"
+                                               HorizontalOptions="Center"
                                                MessageText="{Binding MessageText}"
                                                StatusText="{Binding StatusText}" />
                     <VerticalStackLayout x:Name="ActionButtonStack"

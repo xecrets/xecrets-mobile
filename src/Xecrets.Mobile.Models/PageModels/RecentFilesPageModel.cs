@@ -55,8 +55,12 @@ public partial class RecentFilesPageModel(
     IWorkFolderFileLauncher fileLauncher,
     ICrashLogService crashLogService,
     IUserInterfaceService userInterfaceService)
-    : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
+    : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel, IPageInformationPageModel
 {
+    public string Heading => MobileTexts.RecentFilesContentTitle;
+
+    public string Information => Description;
+
     private List<RecentFileEntry> _available = [];
 
     public ObservableCollection<RecentFileEntry> Files { get; } = [];

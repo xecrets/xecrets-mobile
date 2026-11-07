@@ -71,7 +71,7 @@ public sealed class BreadcrumbTests
         Assert.That(page.Breadcrumb, Is.EqualTo(string.Join(
             MobileTexts.BreadcrumbSeparator,
             MobileTexts.BreadcrumbHome,
-            MobileTexts.BreadcrumbMyFolders,
+            MobileTexts.BreadcrumbOriginal,
             MobileTexts.BreadcrumbDecryptionPasswords)));
     }
 
@@ -89,8 +89,8 @@ public sealed class BreadcrumbTests
             MobileTexts.BreadcrumbDecryptionPasswords)));
     }
 
-    [TestCase(WorkFolderIntent.Auto, nameof(MobileTexts.BreadcrumbMyFolders))]
-    [TestCase(WorkFolderIntent.Delete, nameof(MobileTexts.BreadcrumbWipe))]
+    [TestCase(WorkFolderIntent.Auto, nameof(MobileTexts.BreadcrumbOriginal))]
+    [TestCase(WorkFolderIntent.Delete, nameof(MobileTexts.BreadcrumbDelete))]
     [TestCase(WorkFolderIntent.Copy, nameof(MobileTexts.BreadcrumbCopy))]
     [TestCase(WorkFolderIntent.Share, nameof(MobileTexts.BreadcrumbEncryptToShare))]
     public void MyFoldersIsNamedForTheOperationItWasOpenedFor(WorkFolderIntent intent, string pageTextName)
@@ -102,8 +102,8 @@ public sealed class BreadcrumbTests
 
         string pageText = pageTextName switch
         {
-            nameof(MobileTexts.BreadcrumbMyFolders) => MobileTexts.BreadcrumbMyFolders,
-            nameof(MobileTexts.BreadcrumbWipe) => MobileTexts.BreadcrumbWipe,
+            nameof(MobileTexts.BreadcrumbOriginal) => MobileTexts.BreadcrumbOriginal,
+            nameof(MobileTexts.BreadcrumbDelete) => MobileTexts.BreadcrumbDelete,
             nameof(MobileTexts.BreadcrumbCopy) => MobileTexts.BreadcrumbCopy,
             nameof(MobileTexts.BreadcrumbEncryptToShare) => MobileTexts.BreadcrumbEncryptToShare,
             _ => throw new ArgumentOutOfRangeException(nameof(pageTextName), pageTextName, @"Unexpected page text."),

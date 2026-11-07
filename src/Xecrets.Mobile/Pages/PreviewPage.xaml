@@ -41,13 +41,11 @@
     <Grid>
         <Grid x:Name="ContentRoot"
               RowDefinitions="Auto,*"
-              Padding="{StaticResource ContentTitleLayoutPadding}"
-              RowSpacing="{StaticResource LayoutSpacing}">
+              Padding="{StaticResource LayoutPadding}">
             <controls:PageBreadcrumb Text="{Binding Breadcrumb}" />
             <controls:PageCard x:Name="Card"
                                Grid.Row="1"
-                               Title="{x:Static modelUtilities:MobileTexts.PreviewContentTitle}"
-                               Information="{x:Static modelUtilities:MobileTexts.DialogTextResult}"
+                               Title="{Binding Heading}"
                                BodyPadding="{StaticResource PageInformationBodyPadding}">
                 <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
                     <VerticalStackLayout>
@@ -80,7 +78,7 @@
                           HorizontalOptions="Center"
                           ColumnDefinitions="*,*"
                           ColumnSpacing="{StaticResource LayoutSpacing}"
-                          RowSpacing="{StaticResource LayoutSpacing}" />
+                          RowSpacing="{StaticResource CompactActionButtonRowSpacing}" />
                 </VerticalStackLayout>
             </controls:PageCard>
         </Grid>

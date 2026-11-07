@@ -40,6 +40,7 @@ using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.PageModels;
 using Xecrets.Mobile.Models.Services;
 using Xecrets.Mobile.Services;
+using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile;
 
@@ -73,6 +74,8 @@ internal partial class App
         _services = services;
         _cultureCoordinator = cultureCoordinator;
         InitializeComponent();
+        LayoutMetrics.UpdateCompactHeightResources(Resources, false);
+        LayoutMetrics.UpdateDensityResources(Resources, 1);
     }
 
     protected override Window CreateWindow(IActivationState? activationState)
@@ -80,7 +83,15 @@ internal partial class App
         Window window = new(new ContentPage());
         window.Created += OnWindowCreated;
         window.Created += InitializeWindowAsync;
+        window.SizeChanged += OnWindowSizeChanged;
         return window;
+    }
+
+    private void OnWindowSizeChanged(object? sender, EventArgs e)
+    {
+        Window window = (Window)sender!;
+        LayoutMetrics.UpdateCompactHeightResources(Resources, LayoutMetrics.IsCompactHeight(window.Width, window.Height));
+        LayoutMetrics.UpdateDensityResources(Resources, window.DisplayDensity);
     }
 
     private static void OnWindowCreated(object? sender, EventArgs e)

@@ -47,8 +47,12 @@ public partial class EditPageModel(
     ICrashLogService crashLogService,
     IProfileService profileService,
     IUserInterfaceService userInterfaceService)
-    : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
+    : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel, IPageInformationPageModel
 {
+    public string Heading => MobileTexts.EditContentTitle;
+
+    public string Information => MobileTexts.EditDescription;
+
     public TextEditorFontModel Font { get; } = new(profileService);
 
     // A hash rather than a copy of the saved text, so that no more copies of the plaintext are kept than needed.

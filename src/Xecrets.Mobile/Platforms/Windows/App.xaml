@@ -29,5 +29,9 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:maui="using:Microsoft.Maui"
     xmlns:local="using:Xecrets.Mobile.Platforms.Windows">
-
+    <maui:MauiWinUIApplication.Resources>
+        <!-- A header icon is an image scaled to this height. The default of 16 leaves the padding of a 24 point
+             glyph inside it, which makes the icon smaller than the other icons in the header. -->
+        <x:Double x:Key="AppBarButtonContentHeight">20</x:Double>
+    </maui:MauiWinUIApplication.Resources>
 </maui:MauiWinUIApplication>

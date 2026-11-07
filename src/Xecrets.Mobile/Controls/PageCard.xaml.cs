@@ -36,9 +36,8 @@ using Microsoft.Maui.Controls;
 namespace Xecrets.Mobile.Controls;
 
 /// <summary>
-/// The card of a page, with a title, optional header actions and a page information button in the top row, a
-/// scrollable body below it, and an optional body header above and footer below the body that stay visible when the
-/// body scrolls.
+/// The card of a page, with a title and optional header actions in the top row, a scrollable body below it, and an
+/// optional body header above and footer below the body that stay visible when the body scrolls.
 /// </summary>
 [ContentProperty(nameof(Body))]
 internal sealed partial class PageCard
@@ -46,15 +45,31 @@ internal sealed partial class PageCard
     public static readonly BindableProperty TitleProperty = BindableProperty.Create(
         nameof(Title), typeof(string), typeof(PageCard), string.Empty);
 
-    public static readonly BindableProperty InformationProperty = BindableProperty.Create(
-        nameof(Information), typeof(string), typeof(PageCard), string.Empty);
-
     public static readonly BindableProperty BodyPaddingProperty = BindableProperty.Create(
         nameof(BodyPadding), typeof(Thickness), typeof(PageCard));
 
     public static readonly BindableProperty HeaderActionsProperty = BindableProperty.Create(
         nameof(HeaderActions), typeof(View), typeof(PageCard),
-        propertyChanged: (bindable, _, newValue) => ((PageCard)bindable).HeaderActionsHost.Content = (View?)newValue);
+        propertyChanged: (bindable, _, newValue) =>
+        {
+            PageCard card = (PageCard)bindable;
+            card.HeaderActionsHost.Content = (View?)newValue;
+            card.UpdateTitleRowVisibility();
+        });
+
+    // For a card whose title is needed to tell what the page is for, even when the height is compact.
+    public static readonly BindableProperty IsTitleAlwaysVisibleProperty = BindableProperty.Create(
+        nameof(IsTitleAlwaysVisible), typeof(bool), typeof(PageCard),
+        propertyChanged: (bindable, _, _) => ((PageCard)bindable).UpdateTitleRowVisibility());
+
+    public static readonly BindableProperty IsTitleHiddenWhenCompactProperty = BindableProperty.Create(
+        nameof(IsTitleHiddenWhenCompact), typeof(bool), typeof(PageCard),
+        propertyChanged: (bindable, _, _) => ((PageCard)bindable).UpdateTitleRowVisibility());
+
+    // From the dynamic resource set by LayoutMetrics.UpdateCompactHeightResources.
+    private static readonly BindableProperty IsCompactHeightProperty = BindableProperty.Create(
+        "IsCompactHeight", typeof(bool), typeof(PageCard),
+        propertyChanged: (bindable, _, _) => ((PageCard)bindable).UpdateTitleRowVisibility());
 
     public static readonly BindableProperty BodyProperty = BindableProperty.Create(
         nameof(Body), typeof(View), typeof(PageCard),
@@ -64,18 +79,7 @@ internal sealed partial class PageCard
     // without them has no extra spacing.
     public static readonly BindableProperty BodyHeaderProperty = BindableProperty.Create(
         nameof(BodyHeader), typeof(View), typeof(PageCard),
-        propertyChanged: (bindable, _, newValue) =>
-        {
-            // Below the title row, moving the rows below it down.
-            Grid cardGrid = ((PageCard)bindable).CardGrid;
-            foreach (BindableObject child in cardGrid.Children.Cast<BindableObject>().Where(child => Grid.GetRow(child) >= 1))
-            {
-                Grid.SetRow(child, Grid.GetRow(child) + 1);
-            }
-
-            cardGrid.RowDefinitions.Insert(1, new RowDefinition(GridLength.Auto));
-            cardGrid.Add((View)newValue, 0, 1);
-        });
+        propertyChanged: (bindable, _, _) => ((PageCard)bindable).UpdateBodyHeaderPlacement());
 
     public static readonly BindableProperty FooterProperty = BindableProperty.Create(
         nameof(Footer), typeof(View), typeof(PageCard),
@@ -89,6 +93,7 @@ internal sealed partial class PageCard
     public PageCard()
     {
         InitializeComponent();
+        SetDynamicResource(IsCompactHeightProperty, "IsCompactHeight");
     }
 
     public string Title
@@ -97,16 +102,22 @@ internal sealed partial class PageCard
         set => SetValue(TitleProperty, value);
     }
 
-    public string Information
-    {
-        get => (string)GetValue(InformationProperty);
-        set => SetValue(InformationProperty, value);
-    }
-
     public Thickness BodyPadding
     {
         get => (Thickness)GetValue(BodyPaddingProperty);
         set => SetValue(BodyPaddingProperty, value);
+    }
+
+    public bool IsTitleAlwaysVisible
+    {
+        get => (bool)GetValue(IsTitleAlwaysVisibleProperty);
+        set => SetValue(IsTitleAlwaysVisibleProperty, value);
+    }
+
+    public bool IsTitleHiddenWhenCompact
+    {
+        get => (bool)GetValue(IsTitleHiddenWhenCompactProperty);
+        set => SetValue(IsTitleHiddenWhenCompactProperty, value);
     }
 
     public View? HeaderActions
@@ -139,5 +150,72 @@ internal sealed partial class PageCard
     public double BodyWidth(double cardWidth)
     {
         return cardWidth - BodyPadding.HorizontalThickness - (2 * CardBorder.StrokeThickness);
+    }
+
+    // When the height is compact, the title is left out to save height, since the breadcrumb or the header shows where
+    // the user is. Header actions keep the row, and the title with them, since they need the space anyway. A card can
+    // also always keep its title. The row spacing below a hidden row stays, as the space above the body. A card can
+    // instead hide only the title and have the header actions over the top of the row below, raised by the row spacing
+    // to where they would be in their own row.
+    private void UpdateTitleRowVisibility()
+    {
+        bool isCompactHeight = (bool)GetValue(IsCompactHeightProperty);
+        bool isOverBody = isCompactHeight && IsTitleHiddenWhenCompact && HeaderActions is not null;
+        TitleRow.IsVisible = !isCompactHeight || HeaderActions is not null || IsTitleAlwaysVisible;
+        TitleLabel.IsVisible = !isOverBody;
+        Grid.SetRow(TitleRow, isOverBody ? 1 : 0);
+        TitleRow.Margin = isOverBody ? new Thickness(0, -CardGrid.RowSpacing, 0, 0) : new Thickness(0);
+        UpdateBodyHeaderPlacement();
+    }
+
+    // When the height is compact and the title row is shown, the body header is in the title row to save height. It
+    // spans the row, so that it is centered in the card as the breadcrumb above it is, not in the space between the
+    // title and the header actions. Otherwise it is in a row of its own below the title row.
+    private void UpdateBodyHeaderPlacement()
+    {
+        if (BodyHeader is not View bodyHeader)
+        {
+            return;
+        }
+
+        bool isInTitleRow = (bool)GetValue(IsCompactHeightProperty) && TitleRow.IsVisible && TitleLabel.IsVisible;
+        if (bodyHeader.Parent == (isInTitleRow ? TitleRow : CardGrid))
+        {
+            return;
+        }
+
+        if (isInTitleRow)
+        {
+            if (bodyHeader.Parent == CardGrid)
+            {
+                CardGrid.Remove(bodyHeader);
+                CardGrid.RowDefinitions.RemoveAt(1);
+                MoveRowsFrom(2, -1);
+            }
+
+            TitleRow.Add(bodyHeader, 0, 0);
+            Grid.SetColumnSpan(bodyHeader, TitleRow.ColumnDefinitions.Count);
+            return;
+        }
+
+        if (bodyHeader.Parent == TitleRow)
+        {
+            TitleRow.Remove(bodyHeader);
+            Grid.SetColumnSpan(bodyHeader, 1);
+        }
+
+        // Below the title row, moving the rows below it down.
+        MoveRowsFrom(1, 1);
+        CardGrid.RowDefinitions.Insert(1, new RowDefinition(GridLength.Auto));
+        CardGrid.Add(bodyHeader, 0, 1);
+    }
+
+    // The title row stays where UpdateTitleRowVisibility puts it.
+    private void MoveRowsFrom(int row, int offset)
+    {
+        foreach (BindableObject child in CardGrid.Children.Cast<BindableObject>().Where(child => child != TitleRow && Grid.GetRow(child) >= row))
+        {
+            Grid.SetRow(child, Grid.GetRow(child) + offset);
+        }
     }
 }

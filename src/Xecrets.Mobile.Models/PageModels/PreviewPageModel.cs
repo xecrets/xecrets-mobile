@@ -51,8 +51,12 @@ public partial class PreviewPageModel(
     IFlowContext flowContext,
     ICrashLogService crashLogService,
     IUserInterfaceService userInterfaceService)
-    : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
+    : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel, IPageInformationPageModel
 {
+    public string Heading => MobileTexts.PreviewContentTitle;
+
+    public string Information => MobileTexts.DialogTextResult;
+
     public string Breadcrumb =>
         BreadcrumbFormatter.Format(flowContext.Origin, MobileTexts.BreadcrumbPreview);
 

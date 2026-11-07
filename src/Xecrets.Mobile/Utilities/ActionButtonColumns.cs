@@ -33,7 +33,6 @@ using System.Linq;
 
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Devices;
 
 namespace Xecrets.Mobile.Utilities;
 
@@ -66,7 +65,7 @@ internal sealed class ActionButtonColumns
 
     public void Update(double pageWidth, double pageHeight)
     {
-        bool isTwoColumns = DeviceInfo.Current.Idiom == DeviceIdiom.Phone && pageWidth > pageHeight;
+        bool isTwoColumns = LayoutMetrics.IsCompactHeight(pageWidth, pageHeight);
         if (isTwoColumns == IsTwoColumns)
         {
             return;

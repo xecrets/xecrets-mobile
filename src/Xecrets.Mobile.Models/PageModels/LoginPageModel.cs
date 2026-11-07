@@ -43,9 +43,11 @@ public partial class LoginPageModel(
     IProfileService profileService,
     IIncomingFileService incomingFileService,
     IUserInterfaceService userInterfaceService)
-    : PageModelBase(userInterfaceService)
+    : PageModelBase(userInterfaceService), IPageInformationPageModel, IBreadcrumbPageModel
 {
     [ObservableProperty] public partial string Email { get; private set; } = string.Empty;
+
+    [ObservableProperty] public partial string Breadcrumb { get; private set; } = string.Empty;
 
     [ObservableProperty] public partial string Heading { get; private set; } = MobileTexts.SignInHeading;
 
@@ -68,6 +70,13 @@ public partial class LoginPageModel(
     public void InitializeVerification(ProfileAction action)
     {
         _verifiedAction = action;
+        string actionBreadcrumb = action switch
+        {
+            ProfileAction.Change => MobileTexts.BreadcrumbChangeProfile,
+            ProfileAction.Delete => MobileTexts.BreadcrumbDeleteProfile,
+            _ => throw new ArgumentOutOfRangeException(nameof(action), action, @"Unknown verified profile action."),
+        };
+        Breadcrumb = BreadcrumbFormatter.Format(FlowOrigin.Home, actionBreadcrumb, MobileTexts.BreadcrumbPassword);
         Heading = MobileTexts.VerifyPasswordHeading;
         Information = MobileTexts.VerifyPasswordDescription;
     }

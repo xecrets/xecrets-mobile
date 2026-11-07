@@ -89,13 +89,11 @@
     <Grid>
         <Grid x:Name="ContentRoot"
               RowDefinitions="Auto,*"
-              Padding="{StaticResource ContentTitleLayoutPadding}"
-              RowSpacing="{StaticResource LayoutSpacing}">
+              Padding="{StaticResource LayoutPadding}">
             <pageControls:PageBreadcrumb Text="{Binding Breadcrumb}" />
             <pageControls:PageCard x:Name="Card"
                                    Grid.Row="1"
-                                   Title="{x:Static modelUtilities:MobileTexts.RecentFilesContentTitle}"
-                                   Information="{Binding Description}"
+                                   Title="{Binding Heading}"
                                    BodyPadding="{StaticResource IconRowBodyPadding}">
                 <pageControls:PageCard.HeaderActions>
                     <HorizontalStackLayout VerticalOptions="Center">
@@ -121,12 +119,13 @@
                                      Command="{Binding ReloadCommand}" />
                     </HorizontalStackLayout>
                 </pageControls:PageCard.HeaderActions>
-                <!-- Outside the scrolling body, so that the filter stays in place when the files are scrolled. The bottom
-                     padding and CardTitleSpacing below it make LayoutSpacing, as between the items of the body. -->
+                <!-- Outside the scrolling body, so that the filter stays in place when the files are scrolled. In a row of
+                     its own, the bottom padding and CardTitleSpacing below it make LayoutSpacing, as between the items of
+                     the body. When the height is compact, it is in the title row, without the padding. -->
                 <pageControls:PageCard.BodyHeader>
                     <ScrollView Orientation="Horizontal"
                                 HorizontalOptions="Center"
-                                Padding="0,0,0,4"
+                                Padding="{DynamicResource CardBodyHeaderPadding}"
                                 InputTransparent="{Binding IsBusy}">
                         <pageControls:FileStateSelector SelectedState="{Binding SelectedState}"
                                                         VerticalOptions="Center" />

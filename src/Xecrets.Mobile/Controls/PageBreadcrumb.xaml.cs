@@ -33,14 +33,20 @@ using Microsoft.Maui.Controls;
 
 namespace Xecrets.Mobile.Controls;
 
+/// <summary>
+/// The trail at the top of a page, first in a layout without spacing around it. It has the space around it as its own
+/// margin, and is hidden without a trail, so that a page is laid out the same with or without it.
+/// </summary>
 internal sealed partial class PageBreadcrumb
 {
     public static readonly BindableProperty TextProperty = BindableProperty.Create(
-        nameof(Text), typeof(string), typeof(PageBreadcrumb));
+        nameof(Text), typeof(string), typeof(PageBreadcrumb), string.Empty,
+        propertyChanged: (bindable, _, newValue) => ((PageBreadcrumb)bindable).IsVisible = !string.IsNullOrEmpty((string?)newValue));
 
     public PageBreadcrumb()
     {
         InitializeComponent();
+        IsVisible = false;
     }
 
     public string Text

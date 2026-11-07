@@ -50,8 +50,12 @@ public partial class WorkFoldersPageModel(
     FolderAccessWorkflow folderAccess,
     FileOperationWorkflow fileOperations,
     ICrashLogService crashLogService,
-    IUserInterfaceService userInterfaceService) : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
+    IUserInterfaceService userInterfaceService)
+    : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel, IPageInformationPageModel
 {
+    public string Heading => MobileTexts.WorkFoldersContentTitle;
+
+    public string Information => Description;
 
     // The hint for the operation the page was opened for, shown once when the page has been shown.
     private string _pendingIntentHint = string.Empty;
@@ -64,8 +68,8 @@ public partial class WorkFoldersPageModel(
         MobileTexts.BreadcrumbHome,
         Intent switch
         {
-            WorkFolderIntent.Auto => MobileTexts.BreadcrumbMyFolders,
-            WorkFolderIntent.Delete => MobileTexts.BreadcrumbWipe,
+            WorkFolderIntent.Auto => MobileTexts.BreadcrumbOriginal,
+            WorkFolderIntent.Delete => MobileTexts.BreadcrumbDelete,
             WorkFolderIntent.Copy => MobileTexts.BreadcrumbCopy,
             WorkFolderIntent.Share => MobileTexts.BreadcrumbEncryptToShare,
             _ => throw new ArgumentOutOfRangeException(nameof(Intent), Intent, @"Unknown work folder intent."),

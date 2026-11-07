@@ -31,14 +31,17 @@
 using CommunityToolkit.Mvvm.Input;
 
 using Xecrets.Mobile.Models.Abstractions;
+using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
 public partial class AboutPageModel(
     IUserInterfaceService userInterfaceService,
-    IBuildInformation buildInformation) : PageModelBase(userInterfaceService)
+    IBuildInformation buildInformation) : PageModelBase(userInterfaceService), IBreadcrumbPageModel
 {
+    public string Breadcrumb => BreadcrumbFormatter.Format(FlowOrigin.Home, MobileTexts.BreadcrumbAbout);
+
     public string ProductName => buildInformation.ProductName;
 
     public string Version => buildInformation.Version;

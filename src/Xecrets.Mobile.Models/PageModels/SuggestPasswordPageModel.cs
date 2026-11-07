@@ -39,8 +39,13 @@ namespace Xecrets.Mobile.Models.PageModels;
 
 public partial class SuggestPasswordPageModel(
     IPasswordSuggestions passwordSuggestions,
-    IUserInterfaceService userInterfaceService) : PageModelBase(userInterfaceService), IStatusTextPageModel
+    IUserInterfaceService userInterfaceService)
+    : PageModelBase(userInterfaceService), IStatusTextPageModel, IPageInformationPageModel
 {
+    public string Heading => MobileTexts.MenuSuggestPassword;
+
+    public string Information => MobileTexts.SuggestPasswordDescription;
+
     [ObservableProperty]
     public partial string Breadcrumb { get; set; } = MobileTexts.BreadcrumbSuggestPassword;
 

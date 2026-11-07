@@ -42,8 +42,12 @@ public partial class ViewPageModel(
     IFlowContext flowContext,
     IProfileService profileService,
     IUserInterfaceService userInterfaceService)
-    : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
+    : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel, IPageInformationPageModel
 {
+    public string Heading => MobileTexts.ViewContentTitle;
+
+    public string Information => MobileTexts.ViewDescription;
+
     public TextEditorFontModel Font { get; } = new(profileService);
 
     public string Breadcrumb => BreadcrumbFormatter.Format(

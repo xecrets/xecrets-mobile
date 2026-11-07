@@ -47,8 +47,17 @@ public static class MobileTexts
     // BreadcrumbSeparator to form the trail shown at the top of the pages that are shared between
     // the encrypted and decrypt flows.
 
+    // "Change local profile"
+    public static string BreadcrumbChangeProfile => MenuChangeProfile;
+
     // "Encrypt / Decrypt: Copy"
     public static string BreadcrumbCopy => HomeButtonEncryptDecryptCopy;
+
+    // "Delete"
+    public static string BreadcrumbDelete => HomeButtonDelete;
+
+    // "Delete local profile"
+    public static string BreadcrumbDeleteProfile => MenuDeleteProfile;
 
     // "Decryption passwords"
     public static string BreadcrumbDecryptionPasswords => DecryptionPasswordsContentTitle;
@@ -62,8 +71,8 @@ public static class MobileTexts
 
     public static string BreadcrumbHome => "Home";
 
-    // "My folders"
-    public static string BreadcrumbMyFolders => WorkFoldersContentTitle;
+    // "Encrypt / Decrypt: Original"
+    public static string BreadcrumbOriginal => HomeButtonEncryptDecryptOriginal;
 
     // "Preview"
     public static string BreadcrumbPreview => PreviewContentTitle;
@@ -77,9 +86,6 @@ public static class MobileTexts
 
     // "View"
     public static string BreadcrumbView => ViewContentTitle;
-
-    // "Overwrite and delete"
-    public static string BreadcrumbWipe => ButtonWipe;
 
     public static string ButtonBrowseElsewhere => "Browse anywhere";
 
@@ -98,8 +104,6 @@ public static class MobileTexts
     public static string ButtonSendTo => "Send to…";
 
     public static string ButtonView => "View";
-
-    public static string ButtonWipe => "Overwrite and delete";
 
     public static string ChangeProfileDescription => "Change the email and password of your local profile. Files encrypted before can still be opened.";
 
@@ -316,14 +320,14 @@ public static class MobileTexts
 
     #region Translated texts
 
+    // "About"
+    public static string BreadcrumbAbout => MenuAbout;
+
     // "Password"
     public static string BreadcrumbPassword => WatermarkPassword;
 
     // "Suggest password"
     public static string BreadcrumbSuggestPassword => MenuSuggestPassword;
-
-    // "Create"
-    public static string ButtonCreate => AppTexts.LabelCreate;
 
     public static string ButtonDecrypt => AppTexts.ButtonDecrypt;
 

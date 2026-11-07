@@ -30,6 +30,7 @@
 
 using Xecrets.Mobile.Abstractions;
 using Xecrets.Mobile.Models.PageModels;
+using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
@@ -40,5 +41,11 @@ internal partial class AboutPage
         InitializeComponent();
         BindingContext = model;
         pageHeaderService.ApplyStandardHeader(this);
+    }
+
+    protected override void OnSizeAllocated(double width, double height)
+    {
+        base.OnSizeAllocated(width, height);
+        ProductNameTitle.IsVisible = !LayoutMetrics.IsCompactHeight(width, height);
     }
 }

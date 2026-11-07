@@ -37,30 +37,28 @@
          them span the full page width, and are all that scrolls. -->
     <Grid RowDefinitions="Auto,*"
           RowSpacing="{StaticResource LayoutSpacing}">
-        <VerticalStackLayout Padding="{StaticResource FullWidthTextHeaderPadding}"
-                             Spacing="{StaticResource LayoutSpacing}">
+        <VerticalStackLayout Padding="{StaticResource FullWidthTextHeaderPadding}">
             <controls:PageBreadcrumb Text="{Binding Breadcrumb}" />
-            <Border Style="{StaticResource PageInformationCardStyle}">
-                <Grid ColumnDefinitions="*,Auto">
-                    <VerticalStackLayout Margin="{StaticResource IconRowBodyLeadingMargin}"
-                                         VerticalOptions="Center">
-                        <Label Text="{Binding FileNameText}"
-                               Style="{StaticResource FileName}" />
-                        <Label Text="{Binding MetadataText}"
-                               Style="{StaticResource ExtraFileInfo}" />
-                    </VerticalStackLayout>
-                    <HorizontalStackLayout Grid.Column="1"
-                                           VerticalOptions="Start">
-                        <controls:TextFontButtons BindingContext="{Binding Font}"
-                                                  IsVisible="{Binding IsVisible, Source={x:Reference TextContent}, x:DataType=ScrollView}" />
-                        <controls:PageInformationButton Style="{StaticResource PageInformationButtonCorner}"
-                                                        Title="{x:Static modelUtilities:MobileTexts.ViewContentTitle}"
-                                                        Message="{x:Static modelUtilities:MobileTexts.ViewDescription}" />
-                    </HorizontalStackLayout>
-                </Grid>
-            </Border>
-            <controls:PageMessages MessageText="{Binding MessageText}"
-                                   StatusText="{Binding StatusText}" />
+            <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
+                <Border Style="{StaticResource PageInformationCardStyle}">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout Margin="{StaticResource IconRowBodyLeadingMargin}"
+                                             VerticalOptions="Center">
+                            <Label Text="{Binding FileNameText}"
+                                   Style="{StaticResource FileName}" />
+                            <Label Text="{Binding MetadataText}"
+                                   Style="{StaticResource ExtraFileInfo}" />
+                        </VerticalStackLayout>
+                        <HorizontalStackLayout Grid.Column="1"
+                                               VerticalOptions="Start">
+                            <controls:TextFontButtons BindingContext="{Binding Font}"
+                                                      IsVisible="{Binding IsVisible, Source={x:Reference TextContent}, x:DataType=ScrollView}" />
+                        </HorizontalStackLayout>
+                    </Grid>
+                </Border>
+                <controls:PageMessages MessageText="{Binding MessageText}"
+                                       StatusText="{Binding StatusText}" />
+            </VerticalStackLayout>
         </VerticalStackLayout>
         <Image Grid.Row="1"
                IsVisible="{Binding IsImageVisible}"

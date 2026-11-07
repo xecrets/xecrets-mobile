@@ -41,8 +41,12 @@ public partial class HomePageModel(
     IProfileService profileService,
     SessionExitService sessionExitService,
     IUserInterfaceService userInterfaceService)
-    : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
+    : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel, IPageInformationPageModel
 {
+    public string Heading => MobileTexts.HomeContentTitle;
+
+    public string Information => MobileTexts.HomeDescription;
+
     public string Breadcrumb => MobileTexts.BreadcrumbHome;
 
     [ObservableProperty]

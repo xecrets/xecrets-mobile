@@ -41,11 +41,13 @@
         </ResourceDictionary>
     </ContentPage.Resources>
     <Grid x:Name="ContentRoot"
-          Padding="{StaticResource LayoutPadding}"
-          RowSpacing="{StaticResource LayoutSpacing}">
+          RowDefinitions="Auto,*"
+          Padding="{StaticResource LayoutPadding}">
+        <controls:PageBreadcrumb Text="{Binding Breadcrumb}" />
         <controls:PageCard x:Name="Card"
+                           Grid.Row="1"
                            Title="{Binding Heading}"
-                           Information="{Binding Information}"
+                           IsTitleAlwaysVisible="True"
                            BodyPadding="{StaticResource IconRowBodyPadding}">
             <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
                 <!-- Visible, so password managers save the password under this email instead of a previous one. As wide

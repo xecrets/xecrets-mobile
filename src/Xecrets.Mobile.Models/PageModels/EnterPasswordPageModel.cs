@@ -50,8 +50,12 @@ public partial class EnterPasswordPageModel(
     IProfileService profileService,
     IFlowContext flowContext,
     IUserInterfaceService userInterfaceService)
-    : PageModelBase(userInterfaceService), IBreadcrumbPageModel
+    : PageModelBase(userInterfaceService), IBreadcrumbPageModel, IPageInformationPageModel
 {
+    public string Heading => MobileTexts.DecryptionPasswordsContentTitle;
+
+    public string Information => Description;
+
     private DecryptionPasswordsIntent _intent = DecryptionPasswordsIntent.Manage;
 
     public string Breadcrumb => _intent switch
