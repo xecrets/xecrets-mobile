@@ -43,7 +43,7 @@ public partial class LoginPageModel(
     IProfileService profileService,
     IIncomingFileService incomingFileService,
     IUserInterfaceService userInterfaceService)
-    : PageModelBase(userInterfaceService)
+    : PageModelBase(userInterfaceService), IPageInformationPageModel
 {
     [ObservableProperty] public partial string Email { get; private set; } = string.Empty;
 

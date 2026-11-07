@@ -32,6 +32,7 @@ using System;
 
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Devices;
 
 using Xecrets.Mobile.Controls;
 
@@ -46,6 +47,39 @@ internal static class LayoutMetrics
     // A form, such as a password entry, is narrower than a list, since a field much wider than what is typed into it
     // only spreads out the form on a tablet or a phone in landscape.
     private const double _formContentColumnMaximumWidth = 600;
+
+    /// <summary>
+    /// Whether there is little height for the content, as on a phone in landscape.
+    /// </summary>
+    public static bool IsCompactHeight(double width, double height)
+    {
+        return DeviceInfo.Current.Idiom == DeviceIdiom.Phone && width > height;
+    }
+
+    /// <summary>
+    /// Sets the dynamic resources that styles and controls use to save height, from their regular or compact variants.
+    /// </summary>
+    public static void UpdateCompactHeightResources(ResourceDictionary resources, bool isCompactHeight)
+    {
+        resources["IsCompactHeight"] = isCompactHeight;
+        resources["EntryMinimumHeight"] = isCompactHeight
+            ? (double)resources["CompactEntryMinimumHeight"]
+            : (double)(OnIdiom<double>)resources["RegularEntryMinimumHeight"];
+        resources["PasswordStrengthMargin"] = isCompactHeight
+            ? (Thickness)resources["CompactPasswordStrengthMargin"]
+            : (Thickness)(OnIdiom<Thickness>)resources["RegularPasswordStrengthMargin"];
+    }
+
+    /// <summary>
+    /// Sets the dynamic resources that depend on the display density, since the platform draws some parts in whole pixels.
+    /// </summary>
+    public static void UpdateDensityResources(ResourceDictionary resources, double density)
+    {
+        // The platform rounds the inset of the underline down to whole pixels, so the meter is inset as much for their
+        // ends to line up at any density.
+        double inset = Math.Floor((double)resources["TextFieldUnderlineInset"] * density) / density;
+        resources["PasswordStrengthInset"] = new Thickness(inset, 0);
+    }
 
     public static void UpdateCenteredFormLayout(double pageWidth, Layout contentRoot, PageCard card, View actionButtonStack)
     {

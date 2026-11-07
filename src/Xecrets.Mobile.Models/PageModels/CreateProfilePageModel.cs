@@ -46,7 +46,7 @@ public partial class CreateProfilePageModel(
     LocalProfileDeletionService deletionService,
     InstallationService installationService,
     IUserInterfaceService userInterfaceService)
-    : PageModelBase(userInterfaceService)
+    : PageModelBase(userInterfaceService), IPageInformationPageModel
 {
     [ObservableProperty]
     public partial string Heading { get; private set; } = MobileTexts.HeadingCreateUserFirstTimeSetup;
@@ -83,6 +83,10 @@ public partial class CreateProfilePageModel(
 
     public bool IsEditable => !IsDelete;
 
+    // Neither changing nor deleting, but setting up a new profile.
+    [ObservableProperty]
+    public partial bool IsSetUp { get; private set; } = true;
+
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(CreateCommand))]
     [NotifyCanExecuteChangedFor(nameof(DeleteCommand))]
@@ -95,6 +99,7 @@ public partial class CreateProfilePageModel(
     public void InitializeChange()
     {
         _isChange = true;
+        IsSetUp = false;
         Heading = MobileTexts.MenuChangeProfile;
         Information = MobileTexts.ChangeProfileDescription;
         ButtonText = MobileTexts.ButtonSave;
@@ -107,6 +112,7 @@ public partial class CreateProfilePageModel(
     public void InitializeDelete()
     {
         IsDelete = true;
+        IsSetUp = false;
         Heading = MobileTexts.MenuDeleteProfile;
         Information = MobileTexts.MessageTextConfirmWipe;
         Email = profileService.CurrentEmail;

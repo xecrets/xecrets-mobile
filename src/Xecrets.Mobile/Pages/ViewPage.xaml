@@ -53,9 +53,6 @@
                                            VerticalOptions="Start">
                         <controls:TextFontButtons BindingContext="{Binding Font}"
                                                   IsVisible="{Binding IsVisible, Source={x:Reference TextContent}, x:DataType=ScrollView}" />
-                        <controls:PageInformationButton Style="{StaticResource PageInformationButtonCorner}"
-                                                        Title="{x:Static modelUtilities:MobileTexts.ViewContentTitle}"
-                                                        Message="{x:Static modelUtilities:MobileTexts.ViewDescription}" />
                     </HorizontalStackLayout>
                 </Grid>
             </Border>

@@ -60,8 +60,7 @@
             <pageControls:PageBreadcrumb Text="{Binding Breadcrumb}" />
             <pageControls:PageCard x:Name="Card"
                                    Grid.Row="1"
-                                   Title="{x:Static modelUtilities:MobileTexts.WorkFoldersContentTitle}"
-                                   Information="{Binding Description}"
+                                   Title="{Binding Heading}"
                                    BodyPadding="0">
                 <pageControls:PageCard.HeaderActions>
                     <HorizontalStackLayout VerticalOptions="Center">

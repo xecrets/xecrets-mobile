@@ -36,9 +36,8 @@ using Microsoft.Maui.Controls;
 namespace Xecrets.Mobile.Controls;
 
 /// <summary>
-/// The card of a page, with a title, optional header actions and a page information button in the top row, a
-/// scrollable body below it, and an optional body header above and footer below the body that stay visible when the
-/// body scrolls.
+/// The card of a page, with a title and optional header actions in the top row, a scrollable body below it, and an
+/// optional body header above and footer below the body that stay visible when the body scrolls.
 /// </summary>
 [ContentProperty(nameof(Body))]
 internal sealed partial class PageCard
@@ -46,15 +45,27 @@ internal sealed partial class PageCard
     public static readonly BindableProperty TitleProperty = BindableProperty.Create(
         nameof(Title), typeof(string), typeof(PageCard), string.Empty);
 
-    public static readonly BindableProperty InformationProperty = BindableProperty.Create(
-        nameof(Information), typeof(string), typeof(PageCard), string.Empty);
-
     public static readonly BindableProperty BodyPaddingProperty = BindableProperty.Create(
         nameof(BodyPadding), typeof(Thickness), typeof(PageCard));
 
     public static readonly BindableProperty HeaderActionsProperty = BindableProperty.Create(
         nameof(HeaderActions), typeof(View), typeof(PageCard),
-        propertyChanged: (bindable, _, newValue) => ((PageCard)bindable).HeaderActionsHost.Content = (View?)newValue);
+        propertyChanged: (bindable, _, newValue) =>
+        {
+            PageCard card = (PageCard)bindable;
+            card.HeaderActionsHost.Content = (View?)newValue;
+            card.UpdateTitleRowVisibility();
+        });
+
+    // For a card whose title is needed to tell what the page is for, even when the height is compact.
+    public static readonly BindableProperty IsTitleAlwaysVisibleProperty = BindableProperty.Create(
+        nameof(IsTitleAlwaysVisible), typeof(bool), typeof(PageCard),
+        propertyChanged: (bindable, _, _) => ((PageCard)bindable).UpdateTitleRowVisibility());
+
+    // From the dynamic resource set by LayoutMetrics.UpdateCompactHeightResources.
+    private static readonly BindableProperty IsCompactHeightProperty = BindableProperty.Create(
+        "IsCompactHeight", typeof(bool), typeof(PageCard),
+        propertyChanged: (bindable, _, _) => ((PageCard)bindable).UpdateTitleRowVisibility());
 
     public static readonly BindableProperty BodyProperty = BindableProperty.Create(
         nameof(Body), typeof(View), typeof(PageCard),
@@ -89,6 +100,7 @@ internal sealed partial class PageCard
     public PageCard()
     {
         InitializeComponent();
+        SetDynamicResource(IsCompactHeightProperty, "IsCompactHeight");
     }
 
     public string Title
@@ -97,16 +109,16 @@ internal sealed partial class PageCard
         set => SetValue(TitleProperty, value);
     }
 
-    public string Information
-    {
-        get => (string)GetValue(InformationProperty);
-        set => SetValue(InformationProperty, value);
-    }
-
     public Thickness BodyPadding
     {
         get => (Thickness)GetValue(BodyPaddingProperty);
         set => SetValue(BodyPaddingProperty, value);
+    }
+
+    public bool IsTitleAlwaysVisible
+    {
+        get => (bool)GetValue(IsTitleAlwaysVisibleProperty);
+        set => SetValue(IsTitleAlwaysVisibleProperty, value);
     }
 
     public View? HeaderActions
@@ -139,5 +151,13 @@ internal sealed partial class PageCard
     public double BodyWidth(double cardWidth)
     {
         return cardWidth - BodyPadding.HorizontalThickness - (2 * CardBorder.StrokeThickness);
+    }
+
+    // When the height is compact, the title is left out to save height, since the breadcrumb or the header shows where
+    // the user is. Header actions keep the row, and the title with them, since they need the space anyway. A card can
+    // also always keep its title. The row spacing below a hidden row stays, as the space above the body.
+    private void UpdateTitleRowVisibility()
+    {
+        TitleRow.IsVisible = !(bool)GetValue(IsCompactHeightProperty) || HeaderActions is not null || IsTitleAlwaysVisible;
     }
 }

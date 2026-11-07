@@ -46,8 +46,12 @@ public partial class EncryptToSharePageModel(
     IFlowContext flowContext,
     ICrashLogService crashLogService,
     IUserInterfaceService userInterfaceService)
-    : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
+    : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel, IPageInformationPageModel
 {
+    public string Heading => MobileTexts.EncryptToShareContentTitle;
+
+    public string Information => MobileTexts.EncryptToShareDescription;
+
     // The file a copy of is encrypted with the password, chosen on the page before.
     private FileReference _file = new("", "");
 

@@ -47,8 +47,7 @@
             <controls:PageBreadcrumb Text="{Binding Breadcrumb}" />
             <controls:PageCard x:Name="Card"
                                Grid.Row="1"
-                               Title="{x:Static modelUtilities:MobileTexts.EncryptToShareContentTitle}"
-                               Information="{x:Static modelUtilities:MobileTexts.EncryptToShareDescription}"
+                               Title="{Binding Heading}"
                                BodyPadding="{StaticResource IconRowBodyPadding}">
                 <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
                     <controls:PasswordEntry Margin="{StaticResource IconRowBodyLeadingMargin}" x:Name="PasswordEntryControl"

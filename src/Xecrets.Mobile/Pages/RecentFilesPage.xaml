@@ -94,8 +94,7 @@
             <pageControls:PageBreadcrumb Text="{Binding Breadcrumb}" />
             <pageControls:PageCard x:Name="Card"
                                    Grid.Row="1"
-                                   Title="{x:Static modelUtilities:MobileTexts.RecentFilesContentTitle}"
-                                   Information="{Binding Description}"
+                                   Title="{Binding Heading}"
                                    BodyPadding="{StaticResource IconRowBodyPadding}">
                 <pageControls:PageCard.HeaderActions>
                     <HorizontalStackLayout VerticalOptions="Center">

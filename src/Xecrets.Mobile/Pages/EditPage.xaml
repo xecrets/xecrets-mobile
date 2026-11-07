@@ -69,9 +69,6 @@
                                          Padding="6,8"
                                          Source="{StaticResource IconSave}"
                                          Command="{Binding SaveCommand}" />
-                            <controls:PageInformationButton Style="{StaticResource PageInformationButtonCorner}"
-                                                            Title="{x:Static modelUtilities:MobileTexts.EditContentTitle}"
-                                                            Message="{x:Static modelUtilities:MobileTexts.EditDescription}" />
                         </HorizontalStackLayout>
                     </Grid>
                 </Border>

@@ -32,7 +32,6 @@ using System;
 using System.Collections.Generic;
 
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Devices;
 
 using Xecrets.Mobile.Abstractions;
 using Xecrets.Mobile.Models.Abstractions;
@@ -44,9 +43,6 @@ namespace Xecrets.Mobile.Pages;
 
 internal partial class CreateProfilePage : IQueryAttributable
 {
-    // The text fields on a phone in landscape, as tall as an action button, instead of the taller default.
-    private const double _compactEntryMinimumHeight = 40;
-
     private readonly IPlatformServices _platformServices;
     private readonly IUserInterfaceService _userInterfaceService;
     private bool _isCompact;
@@ -123,9 +119,7 @@ internal partial class CreateProfilePage : IQueryAttributable
     {
         base.OnSizeAllocated(width, height);
 
-        // Not when deleting, where the information is a warning that should stay on the page, and the form is short.
-        bool isCompact = DeviceInfo.Current.Idiom == DeviceIdiom.Phone && width > height && ((CreateProfilePageModel)BindingContext).IsEditable;
-        UpdateCompactForm(isCompact);
+        UpdateCompactForm(LayoutMetrics.IsCompactHeight(width, height));
         UpdateCenteredContentLayout(width);
     }
 
@@ -134,8 +128,8 @@ internal partial class CreateProfilePage : IQueryAttributable
         LayoutMetrics.UpdateCenteredFormLayout(pageWidth, ContentRoot, Card, ActionButtonStack);
     }
 
-    // On a phone in landscape, lowers the text fields and shows the page information as a transient message instead of
-    // on the page, so that the form fits the height. The information is also shown by the information button.
+    // On a phone in landscape, shows the page information as a transient message instead of on the page, so that the
+    // form fits the height. The information is also shown by the information button.
     private void UpdateCompactForm(bool isCompact)
     {
         if (isCompact == _isCompact)
@@ -144,19 +138,6 @@ internal partial class CreateProfilePage : IQueryAttributable
         }
 
         _isCompact = isCompact;
-        foreach (Entry entry in new[] { EmailEntry, PasswordEntryControl.Entry, ConfirmPasswordEntryControl.Entry })
-        {
-            if (isCompact)
-            {
-                entry.MinimumHeightRequest = _compactEntryMinimumHeight;
-            }
-            else
-            {
-                // Back to the height of the text field style.
-                entry.ClearValue(MinimumHeightRequestProperty);
-            }
-        }
-
         InformationBox.IsVisible = !isCompact;
         if (isCompact && _isAppeared)
         {

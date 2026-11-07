@@ -46,7 +46,7 @@
           RowSpacing="{StaticResource LayoutSpacing}">
         <controls:PageCard x:Name="Card"
                            Title="{Binding Heading}"
-                           Information="{Binding Information}"
+                           IsTitleAlwaysVisible="{Binding IsSetUp}"
                            BodyPadding="{StaticResource IconRowBodyPadding}">
             <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
                 <!-- The page information is always shown, so that what is asked for is not misunderstood. On a phone in
@@ -73,28 +73,25 @@
                                         Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkPassword}"
                                         ToolTipProperties.Text="{x:Static modelUtilities:MobileTexts.ToolTipMasterPassword}"
                                         ReturnType="Next" />
-                <ProgressBar HorizontalOptions="Start"
+                <!-- As wide as the password text field, inset to the ends of its underline. -->
+                <ContentView HorizontalOptions="Start"
                              IsVisible="{Binding IsEditable}"
-                             WidthRequest="{Binding PasswordTextEntry.Width, Source={x:Reference PageRoot}, x:DataType=pages:CreateProfilePage}"
-                             Progress="{Binding PasswordStrength}"
-                             ProgressColor="{Binding PasswordStrengthColor, Converter={StaticResource StrengthColorToColorConverter}}">
-                    <ProgressBar.Margin>
-                        <OnIdiom x:TypeArguments="Thickness"
-                                 Default="16,-6,0,0">
-                            <OnIdiom.Desktop>24,-8,0,0</OnIdiom.Desktop>
-                            <OnIdiom.Tablet>24,-8,0,0</OnIdiom.Tablet>
-                        </OnIdiom>
-                    </ProgressBar.Margin>
-                    <!-- Opacity, not IsVisible, so the space stays reserved and nothing moves when typing starts. -->
-                    <ProgressBar.Triggers>
-                        <DataTrigger TargetType="ProgressBar"
-                                     Binding="{Binding Password}"
-                                     Value="">
-                            <Setter Property="Opacity"
-                                    Value="0" />
-                        </DataTrigger>
-                    </ProgressBar.Triggers>
-                </ProgressBar>
+                             Margin="{DynamicResource PasswordStrengthMargin}"
+                             Padding="{DynamicResource PasswordStrengthInset}"
+                             WidthRequest="{Binding PasswordTextEntry.Width, Source={x:Reference PageRoot}, x:DataType=pages:CreateProfilePage}">
+                    <ProgressBar Progress="{Binding PasswordStrength}"
+                                 ProgressColor="{Binding PasswordStrengthColor, Converter={StaticResource StrengthColorToColorConverter}}">
+                        <!-- Opacity, not IsVisible, so the space stays reserved and nothing moves when typing starts. -->
+                        <ProgressBar.Triggers>
+                            <DataTrigger TargetType="ProgressBar"
+                                         Binding="{Binding Password}"
+                                         Value="">
+                                <Setter Property="Opacity"
+                                        Value="0" />
+                            </DataTrigger>
+                        </ProgressBar.Triggers>
+                    </ProgressBar>
+                </ContentView>
                 <controls:PasswordEntry Margin="{StaticResource IconRowBodyLeadingMargin}" x:Name="ConfirmPasswordEntryControl"
                                         IsVisible="{Binding IsEditable}"
                                         Text="{Binding ConfirmPassword, Mode=TwoWay}"

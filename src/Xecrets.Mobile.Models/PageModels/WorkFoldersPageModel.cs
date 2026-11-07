@@ -50,8 +50,12 @@ public partial class WorkFoldersPageModel(
     FolderAccessWorkflow folderAccess,
     FileOperationWorkflow fileOperations,
     ICrashLogService crashLogService,
-    IUserInterfaceService userInterfaceService) : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
+    IUserInterfaceService userInterfaceService)
+    : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel, IPageInformationPageModel
 {
+    public string Heading => MobileTexts.WorkFoldersContentTitle;
+
+    public string Information => Description;
 
     // The hint for the operation the page was opened for, shown once when the page has been shown.
     private string _pendingIntentHint = string.Empty;

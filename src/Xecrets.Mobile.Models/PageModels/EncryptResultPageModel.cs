@@ -48,11 +48,13 @@ public partial class EncryptResultPageModel(
     IFlowContext flowContext,
     ICrashLogService crashLogService,
     IUserInterfaceService userInterfaceService)
-    : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel
+    : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel, IPageInformationPageModel
 {
     private const string _nonBreakingSpace = "\u00A0";
 
     public string Breadcrumb => BreadcrumbFormatter.Format(flowContext.Origin, Heading);
+
+    public string Information => MobileTexts.DialogTextResult;
 
     public string Heading =>
         Result.EncryptCopyForSharing ? MobileTexts.BreadcrumbEncryptToShare : MobileTexts.BreadcrumbEncryptedCopy;

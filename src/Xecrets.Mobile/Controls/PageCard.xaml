@@ -50,18 +50,14 @@
                     <ContentView x:Name="BodyHost"
                                  Padding="{Binding BodyPadding, Source={x:Reference Root}, x:DataType=controls:PageCard}" />
                 </controls:FadingScrollView>
-                <Grid Grid.Row="0"
+                <Grid x:Name="TitleRow"
+                      Grid.Row="0"
                       ColumnDefinitions="*,Auto">
                     <Label Text="{Binding Title, Source={x:Reference Root}, x:DataType=controls:PageCard}"
                            Style="{StaticResource CardTitleStyle}" />
-                    <HorizontalStackLayout Grid.Column="1"
-                                           VerticalOptions="Center">
-                        <ContentView x:Name="HeaderActionsHost"
-                                     VerticalOptions="Center" />
-                        <controls:PageInformationButton Style="{StaticResource PageInformationButtonCorner}"
-                                                        Title="{Binding Title, Source={x:Reference Root}, x:DataType=controls:PageCard}"
-                                                        Message="{Binding Information, Source={x:Reference Root}, x:DataType=controls:PageCard}" />
-                    </HorizontalStackLayout>
+                    <ContentView x:Name="HeaderActionsHost"
+                                 Grid.Column="1"
+                                 VerticalOptions="Center" />
                 </Grid>
             </Grid>
         </Border>

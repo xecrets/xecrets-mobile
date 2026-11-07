@@ -45,7 +45,7 @@
           RowSpacing="{StaticResource LayoutSpacing}">
         <controls:PageCard x:Name="Card"
                            Title="{Binding Heading}"
-                           Information="{Binding Information}"
+                           IsTitleAlwaysVisible="True"
                            BodyPadding="{StaticResource IconRowBodyPadding}">
             <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
                 <!-- Visible, so password managers save the password under this email instead of a previous one. As wide
