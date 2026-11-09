@@ -36,7 +36,7 @@ internal enum PasswordEntryPurpose
     NewPassword,
     SharePassword,
 
-    // The current password, to confirm that it's the user, so it must be typed and never suggested.
+    // Must be typed and never suggested: the current password, to confirm that it's the user, or a decryption password.
     VerifyPassword,
 
     // The user name (email) next to a password, so password managers save the password under the right one.

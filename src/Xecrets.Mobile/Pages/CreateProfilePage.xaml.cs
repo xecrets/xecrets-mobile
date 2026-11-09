@@ -31,6 +31,7 @@
 using System;
 using System.Collections.Generic;
 
+using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 
 using Xecrets.Mobile.Abstractions;
@@ -90,6 +91,9 @@ internal partial class CreateProfilePage : IQueryAttributable
 
                 // Only the entry, so that the password can still be shown.
                 PasswordEntryControl.Entry.IsEnabled = false;
+
+                // The only field, so Done instead of Next. Not Go, so that the keyboard can't start the deletion.
+                PasswordEntryControl.ReturnType = ReturnType.Done;
                 ((CreateProfilePageModel)BindingContext).InitializeDelete();
                 break;
             case ProfileAction.Unknown:

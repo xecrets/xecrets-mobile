@@ -29,9 +29,12 @@
 #endregion Copyright and GPL License
 
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Threading;
 
 using CommunityToolkit.Mvvm.Input;
 
+using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 
 using Xecrets.Mobile.Abstractions;
@@ -53,7 +56,8 @@ internal partial class EnterPasswordPage : IQueryAttributable
         DeleteCommand = model.DeleteCommand;
         InitializeComponent();
         BindingContext = model;
-        platformServices.ConfigurePasswordEntry(PasswordEntryControl.Entry, PasswordEntryPurpose.ExistingPassword);
+        model.PropertyChanged += OnModelPropertyChanged;
+        platformServices.ConfigurePasswordEntry(PasswordEntryControl.Entry, PasswordEntryPurpose.VerifyPassword);
         pageHeaderService.ApplyStandardHeader(this);
     }
 
@@ -77,6 +81,18 @@ internal partial class EnterPasswordPage : IQueryAttributable
         EnterPasswordPageModel model = (EnterPasswordPageModel)BindingContext;
         model.ErrorText = string.Empty;
         model.CancelWorkFolderRequest();
+    }
+
+    // Pressing Go keeps the keyboard open, also when the add form it was typed into is closed, covering the list.
+    private async void OnModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        bool isAddFormClosed = e.PropertyName == nameof(EnterPasswordPageModel.IsAdding)
+            && !((EnterPasswordPageModel)BindingContext).IsAdding;
+        Entry entry = PasswordEntryControl.Entry;
+        if (isAddFormClosed && entry.IsSoftInputShowing())
+        {
+            await entry.HideSoftInputAsync(CancellationToken.None);
+        }
     }
 
     protected override void OnSizeAllocated(double width, double height)

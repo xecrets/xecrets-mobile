@@ -29,6 +29,7 @@
 #endregion Copyright and GPL License
 
 using System;
+using System.Windows.Input;
 
 using Fonts;
 
@@ -47,6 +48,11 @@ internal sealed partial class PasswordEntry
         string.Empty,
         BindingMode.TwoWay);
 
+    public static readonly BindableProperty ReturnCommandProperty = BindableProperty.Create(
+        nameof(ReturnCommand),
+        typeof(ICommand),
+        typeof(PasswordEntry));
+
     private bool _isPasswordVisible;
 
     public PasswordEntry()
@@ -57,6 +63,10 @@ internal sealed partial class PasswordEntry
             static (PasswordEntry passwordEntry) => passwordEntry.Text,
             BindingMode.TwoWay,
             source: this);
+        PasswordTextEntry.SetBinding(
+            Entry.ReturnCommandProperty,
+            static (PasswordEntry passwordEntry) => passwordEntry.ReturnCommand,
+            source: this);
     }
 
     public Entry Entry => PasswordTextEntry;
@@ -65,6 +75,15 @@ internal sealed partial class PasswordEntry
     {
         get => (string)GetValue(TextProperty);
         set => SetValue(TextProperty, value);
+    }
+
+    /// <summary>
+    /// Runs when the return key is pressed, if the command can execute.
+    /// </summary>
+    public ICommand? ReturnCommand
+    {
+        get => (ICommand?)GetValue(ReturnCommandProperty);
+        set => SetValue(ReturnCommandProperty, value);
     }
 
     public string Placeholder

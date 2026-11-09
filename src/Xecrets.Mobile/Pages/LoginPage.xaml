@@ -60,7 +60,8 @@
                 <controls:PasswordEntry Margin="{StaticResource IconRowBodyLeadingMargin}" x:Name="PasswordEntryControl"
                                         Text="{Binding Password, Mode=TwoWay}"
                                         Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkPassword}"
-                                        ReturnType="Go" />
+                                        ReturnType="Go"
+                                        ReturnCommand="{Binding LoginCommand}" />
                 <Label Margin="{StaticResource IconRowBodyContentMargin}" Text="{Binding ErrorText}"
                        TextColor="Red"
                        IsVisible="{Binding ErrorText, Converter={StaticResource StringNotEmptyConverter}}"

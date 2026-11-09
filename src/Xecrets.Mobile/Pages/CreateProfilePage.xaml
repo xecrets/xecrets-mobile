@@ -100,7 +100,8 @@
                                         Text="{Binding ConfirmPassword, Mode=TwoWay}"
                                         Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkConfirmPassword}"
                                         ToolTipProperties.Text="{x:Static modelUtilities:MobileTexts.ToolTipMasterPassword}"
-                                        ReturnType="Go" />
+                                        ReturnType="Go"
+                                        ReturnCommand="{Binding CreateCommand}" />
                 <Label Margin="{StaticResource IconRowBodyContentMargin}" Text="{Binding ErrorText}"
                        TextColor="Red"
                        IsVisible="{Binding ErrorText, Converter={StaticResource StringNotEmptyConverter}}"
