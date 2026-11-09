@@ -45,14 +45,14 @@
                           ColumnSpacing="12"
                           RowDefinitions="Auto,Auto,Auto,Auto,Auto"
                           RowSpacing="{DynamicResource DetailRowSpacing}">
-                        <Label Text="Version"
+                        <Label Text="{x:Static modelUtilities:MobileTexts.AboutLabelVersion}"
                                Style="{StaticResource Body2Strong}" />
                         <Label Grid.Column="1"
                                Text="{Binding Version}"
                                Style="{StaticResource Body2}" />
 
                         <Label Grid.Row="1"
-                               Text="Publisher"
+                               Text="{x:Static modelUtilities:MobileTexts.AboutLabelPublisher}"
                                Style="{StaticResource Body2Strong}" />
                         <Label Grid.Row="1"
                                Grid.Column="1"
@@ -67,7 +67,7 @@
                         </Label>
 
                         <Label Grid.Row="2"
-                               Text="Platform"
+                               Text="{x:Static modelUtilities:MobileTexts.AboutLabelPlatform}"
                                Style="{StaticResource Body2Strong}" />
                         <Label Grid.Row="2"
                                Grid.Column="1"
@@ -75,7 +75,7 @@
                                Style="{StaticResource Body2}" />
 
                         <Label Grid.Row="3"
-                               Text="License"
+                               Text="{x:Static modelUtilities:MobileTexts.AboutLabelLicense}"
                                Style="{StaticResource Body2Strong}" />
                         <Label Grid.Row="3"
                                Grid.Column="1"
@@ -90,7 +90,7 @@
                         </Label>
 
                         <Label Grid.Row="4"
-                               Text="Source code"
+                               Text="{x:Static modelUtilities:MobileTexts.AboutLabelSourceCode}"
                                Style="{StaticResource Body2Strong}" />
                         <Label Grid.Row="4"
                                Grid.Column="1"

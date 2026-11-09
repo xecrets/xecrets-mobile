@@ -37,7 +37,7 @@
     xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
     xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
     FlyoutBehavior="Flyout"
-    Title="Xecrets.Mobile">
+    Title="{x:Static modelUtilities:MobileTexts.DisplayNameProgram}">
 
     <Shell.Behaviors>
         <toolkit:EventToCommandBehavior
@@ -145,8 +145,7 @@
                              WidthRequest="40"
                              HeightRequest="40"
                              Command="{Binding SetThemeCommand}"
-                             CommandParameter="{x:Static models:ThemePreference.Light}"
-                             SemanticProperties.Description="Light mode" />
+                             CommandParameter="{x:Static models:ThemePreference.Light}" />
                 <ImageButton x:Name="SystemThemeButton"
                              x:DataType="local:AppShell"
                              BindingContext="{x:Reference AppShellRoot}"
@@ -154,8 +153,7 @@
                              WidthRequest="40"
                              HeightRequest="40"
                              Command="{Binding SetThemeCommand}"
-                             CommandParameter="{x:Static models:ThemePreference.System}"
-                             SemanticProperties.Description="Follow system theme" />
+                             CommandParameter="{x:Static models:ThemePreference.System}" />
                 <ImageButton x:Name="DarkThemeButton"
                              x:DataType="local:AppShell"
                              BindingContext="{x:Reference AppShellRoot}"
@@ -163,8 +161,7 @@
                              WidthRequest="40"
                              HeightRequest="40"
                              Command="{Binding SetThemeCommand}"
-                             CommandParameter="{x:Static models:ThemePreference.Dark}"
-                             SemanticProperties.Description="Dark mode" />
+                             CommandParameter="{x:Static models:ThemePreference.Dark}" />
             </HorizontalStackLayout>
         </Grid>
     </Shell.FlyoutFooter>

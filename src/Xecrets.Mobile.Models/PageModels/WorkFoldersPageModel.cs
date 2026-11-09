@@ -79,15 +79,7 @@ public partial class WorkFoldersPageModel(
 
     [ObservableProperty] public partial string StatusText { get; set; } = string.Empty;
 
-    // Making a copy, the folders are only where to start looking for the file.
-    public string Description => Intent switch
-    {
-        WorkFolderIntent.Auto => MobileTexts.WorkFolderDescription,
-        WorkFolderIntent.Delete => MobileTexts.WorkFolderDescription,
-        WorkFolderIntent.Copy => MobileTexts.WorkFolderCopyDescription,
-        WorkFolderIntent.Share => MobileTexts.WorkFolderCopyDescription,
-        _ => throw new ArgumentOutOfRangeException(nameof(Intent), Intent, @"Unknown work folder intent."),
-    };
+    public string Description => MobileTexts.WorkFolderDescription;
 
     /// <summary>
     /// The description, shown on the page itself while there are no folders, to make it easier to find.
@@ -111,7 +103,6 @@ public partial class WorkFoldersPageModel(
     {
         Intent = intent;
         OnPropertyChanged(nameof(Breadcrumb));
-        OnPropertyChanged(nameof(Description));
         _pendingIntentHint = intent switch
         {
             WorkFolderIntent.Auto => string.Empty,

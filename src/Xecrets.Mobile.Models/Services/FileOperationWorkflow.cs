@@ -334,7 +334,11 @@ public sealed class FileOperationWorkflow(
 
 
         await recentFilesService.RemoveFileAsync(file.Id);
-        await userInterfaceService.DisplayTransientMessageAsync(status == FileWipeStatus.OnlyDelete ? MobileTexts.DialogTextFileDeleted : MobileTexts.DialogTextFileOverwritten);
+        // Storage that keeps versions or a trash may keep what was only deleted.
+        string message = status == FileWipeStatus.OnlyDelete
+            ? file.Root.IsWipedForGood() ? MobileTexts.DialogTextFileDeleted : MobileTexts.DialogTextFileDeletedInCloud
+            : MobileTexts.DialogTextFileOverwritten;
+        await userInterfaceService.DisplayTransientMessageAsync(message);
     }
 
     /// <summary>

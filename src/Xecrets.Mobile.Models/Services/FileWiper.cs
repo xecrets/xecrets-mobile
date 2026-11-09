@@ -33,6 +33,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
+using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models.Services;
 
@@ -47,7 +48,7 @@ internal sealed class FileWiper(ICrashLogService crashLogService) : IFileWiper
     /// The notice left in a wiped file, for anyone who finds what storage keeps of it. Not translated, so that it reads
     /// the same wherever it is found.
     /// </summary>
-    public const string DeletedNotice = "Deleted by Xecrets Ez. Ensure to delete all versions of this file permanently.";
+    public static string DeletedNotice => $"Deleted by {MobileTexts.DisplayNameProgram}. Make sure to delete all versions of this file permanently.";
 
     public async Task<bool> CanWipeAsync(IWritableFile file)
     {
