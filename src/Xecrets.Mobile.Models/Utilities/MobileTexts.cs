@@ -221,7 +221,7 @@ public static class MobileTexts
 
     public static string HomeDetailRecentFiles => "Quickly work with recent files";
 
-    public static string HomeDetailReplace => "Encrypt or decrypt and replace the original";
+    public static string HomeDetailReplace => "Encrypt or decrypt in place";
 
     public static string HomeDetailShare => "Encrypt a copy with a new password";
 

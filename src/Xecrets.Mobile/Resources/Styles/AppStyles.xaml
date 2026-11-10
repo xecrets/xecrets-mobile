@@ -315,6 +315,43 @@
                 Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
                 Size="{StaticResource size240}" />
 
+    <!-- The overflow menu in the page header. The items that open a web page all have a globe icon. -->
+    <FontImageSource x:Key="IconWelcomeMenu"
+                Glyph="{x:Static f:FluentUI.hand_wave_24_regular}"
+                FontFamily="{x:Static f:FluentUI.FontFamily}"
+                Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                Size="{StaticResource size240}" />
+    <FontImageSource x:Key="IconHelpMenu"
+                Glyph="{x:Static f:FluentUI.book_globe_24_regular}"
+                FontFamily="{x:Static f:FluentUI.FontFamily}"
+                Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                Size="{StaticResource size240}" />
+    <FontImageSource x:Key="IconSupportMenu"
+                Glyph="{x:Static f:FluentUI.globe_person_24_regular}"
+                FontFamily="{x:Static f:FluentUI.FontFamily}"
+                Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                Size="{StaticResource size240}" />
+    <FontImageSource x:Key="IconXecretsHomeMenu"
+                Glyph="{x:Static f:FluentUI.globe_shield_24_regular}"
+                FontFamily="{x:Static f:FluentUI.FontFamily}"
+                Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                Size="{StaticResource size240}" />
+    <FontImageSource x:Key="IconXecretsDesktopMenu"
+                Glyph="{x:Static f:FluentUI.globe_desktop_24_regular}"
+                FontFamily="{x:Static f:FluentUI.FontFamily}"
+                Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                Size="{StaticResource size240}" />
+    <FontImageSource x:Key="IconGitHubMenu"
+                Glyph="{x:Static f:FluentUI.globe_arrow_forward_24_regular}"
+                FontFamily="{x:Static f:FluentUI.FontFamily}"
+                Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                Size="{StaticResource size240}" />
+    <FontImageSource x:Key="IconThirdPartyLicensesMenu"
+                Glyph="{x:Static f:FluentUI.certificate_24_regular}"
+                FontFamily="{x:Static f:FluentUI.FontFamily}"
+                Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                Size="{StaticResource size240}" />
+
     <Style TargetType="Label">
         <Setter Property="TextColor"
                 Value="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}" />
@@ -346,6 +383,17 @@
                 Value="{StaticResource FontSizeFlyoutItem}" />
         <Setter Property="LineHeight"
                 Value="1" />
+        <!-- On Android, the icon is centered in a 54 wide column, 15 from the text, and the text has a margin of 20.
+             The text is moved to 8 from the icon, as in the overflow menu of the page header. -->
+        <Setter Property="Margin"
+                Value="{OnPlatform Default='0', Android='-7,0,0,0'}" />
+    </Style>
+    <!-- On Android, the items are 48 high as in the overflow menu of the page header instead of 50. Elsewhere, 44 is
+         the height that Shell uses by default. -->
+    <Style TargetType="Grid"
+           Class="FlyoutItemLayoutStyle">
+        <Setter Property="HeightRequest"
+                Value="{OnPlatform Default='44', Android='48'}" />
     </Style>
     <Style x:Key="Caption2"
            TargetType="Label">

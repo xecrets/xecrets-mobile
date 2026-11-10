@@ -223,9 +223,22 @@ internal sealed class PageHeaderService(
             default:
                 throw new ArgumentOutOfRangeException(nameof(command));
         }
+        item.IconImageSource = (ImageSource)Application.Current!.Resources[GetOverflowIconKey(command)];
 
         return item;
     }
+
+    private static string GetOverflowIconKey(HeaderCommand command) => command switch
+    {
+        HeaderCommand.Help => "IconHelpMenu",
+        HeaderCommand.Support => "IconSupportMenu",
+        HeaderCommand.Welcome => "IconWelcomeMenu",
+        HeaderCommand.XecretsHome => "IconXecretsHomeMenu",
+        HeaderCommand.XecretsDesktop => "IconXecretsDesktopMenu",
+        HeaderCommand.GitHub => "IconGitHubMenu",
+        HeaderCommand.ThirdPartyLicenses => "IconThirdPartyLicensesMenu",
+        _ => throw new ArgumentOutOfRangeException(nameof(command)),
+    };
 
     private enum HeaderCommand
     {

@@ -29,23 +29,90 @@
 #endregion Copyright and GPL License
 
 using Android.Content;
+using Android.Views;
+
+using AndroidX.AppCompat.View.Menu;
+using AndroidX.Core.View;
+using AndroidX.DrawerLayout.Widget;
+
 using Microsoft.Maui;
+using Microsoft.Maui.ApplicationModel;
+using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Handlers.Compatibility;
 using Microsoft.Maui.Controls.Platform.Compatibility;
+using Microsoft.Maui.Platform;
+
+using Toolbar = AndroidX.AppCompat.Widget.Toolbar;
+using Window = Android.Views.Window;
 
 namespace Xecrets.Mobile.Platforms.Android;
 
 /// <summary>
-/// A Shell renderer whose flyout renderer ignores drawer updates after its native view is gone.
+/// A Shell renderer whose flyout renderer ignores drawer updates after its native view is gone and keeps the status bar
+/// icons visible over the flyout, and whose toolbar shows the icons of the overflow menu items.
 /// </summary>
 internal sealed class AndroidShellRenderer : ShellRenderer
 {
     protected override IShellFlyoutRenderer CreateShellFlyoutRenderer() =>
         new GuardedShellFlyoutRenderer(this, AndroidContext);
 
-    private sealed class GuardedShellFlyoutRenderer(IShellContext shellContext, Context context)
-        : ShellFlyoutRenderer(shellContext, context)
+    protected override IShellToolbarTracker CreateTrackerForToolbar(Toolbar toolbar) =>
+        new OverflowIconsShellToolbarTracker(this, toolbar, ((IShellContext)this).CurrentDrawerLayout);
+
+    private sealed class OverflowIconsShellToolbarTracker(
+        IShellContext shellContext,
+        Toolbar toolbar,
+        DrawerLayout drawerLayout) : ShellToolbarTracker(shellContext, toolbar, drawerLayout)
     {
+        // Android shows no icons in the overflow menu, and there is no public API to change that. MenuBuilder is
+        // public, but Google considers it internal API.
+        protected override void UpdateToolbarItems(Toolbar toolbar, Page page)
+        {
+            base.UpdateToolbarItems(toolbar, page);
+#pragma warning disable XAOBS001 // MenuBuilder is internal API according to Google.
+            if (toolbar.Menu is MenuBuilder menuBuilder)
+            {
+                menuBuilder.SetOptionalIconsVisible(true);
+            }
+#pragma warning restore XAOBS001
+        }
+
+        // The base tints all icons with the Shell foreground color, which is meant for the toolbar itself and not for
+        // the overflow menu, so the overflow menu icons keep their own color.
+        protected override void UpdateMenuItemIcon(Context context, IMenuItem menuItem, ToolbarItem toolBarItem)
+        {
+            if (toolBarItem.Order != ToolbarItemOrder.Secondary)
+            {
+                base.UpdateMenuItemIcon(context, menuItem, toolBarItem);
+                return;
+            }
+            toolBarItem.IconImageSource.LoadImage(MauiContext, result => menuItem.SetIcon(result?.Value));
+        }
+    }
+
+    private sealed class GuardedShellFlyoutRenderer : ShellFlyoutRenderer
+    {
+        // The flyout reaches under the status bar, and its light background in the light theme hides the light status
+        // bar icons that suit the header. The icons are dark while the flyout is mostly open, and the appearance from
+        // before is restored when it closes.
+        private const float DarkStatusBarIconsSlideOffset = 0.5f;
+
+        private readonly Context _context;
+
+        private float _slideOffset;
+
+        private bool? _lightStatusBarsBeforeFlyout;
+
+        public GuardedShellFlyoutRenderer(IShellContext shellContext, Context context)
+            : base(shellContext, context)
+        {
+            _context = context;
+            DrawerSlide += OnDrawerSlideStatusBar;
+            DrawerOpened += OnDrawerOpenedStatusBar;
+            DrawerClosed += OnDrawerClosedStatusBar;
+            Application.Current!.RequestedThemeChanged += OnRequestedThemeChanged;
+        }
+
         // MAUI can keep notifying a stale Shell's flyout renderer after its native view is gone, for example on a
         // theme change after the activity was recreated, and it then throws ObjectDisposedException.
         protected override void UpdateDrawerLockMode(FlyoutBehavior behavior)
@@ -55,6 +122,56 @@ internal sealed class AndroidShellRenderer : ShellRenderer
                 return;
             }
             base.UpdateDrawerLockMode(behavior);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                DrawerSlide -= OnDrawerSlideStatusBar;
+                DrawerOpened -= OnDrawerOpenedStatusBar;
+                DrawerClosed -= OnDrawerClosedStatusBar;
+                Application.Current!.RequestedThemeChanged -= OnRequestedThemeChanged;
+            }
+            base.Dispose(disposing);
+        }
+
+        private void OnDrawerSlideStatusBar(object? sender, DrawerSlideEventArgs e)
+        {
+            _slideOffset = e.SlideOffset;
+            UpdateStatusBarIcons();
+        }
+
+        private void OnDrawerOpenedStatusBar(object? sender, DrawerOpenedEventArgs e)
+        {
+            _slideOffset = 1;
+            UpdateStatusBarIcons();
+        }
+
+        private void OnDrawerClosedStatusBar(object? sender, DrawerClosedEventArgs e)
+        {
+            _slideOffset = 0;
+            UpdateStatusBarIcons();
+        }
+
+        private void OnRequestedThemeChanged(object? sender, AppThemeChangedEventArgs e) => UpdateStatusBarIcons();
+
+        private void UpdateStatusBarIcons()
+        {
+            Window window = _context.GetActivity()!.Window!;
+            WindowInsetsControllerCompat controller = WindowCompat.GetInsetsController(window, window.DecorView)!;
+            bool darkIcons = _slideOffset >= DarkStatusBarIconsSlideOffset
+                && Application.Current!.RequestedTheme == AppTheme.Light;
+            if (darkIcons && _lightStatusBarsBeforeFlyout is null)
+            {
+                _lightStatusBarsBeforeFlyout = controller.AppearanceLightStatusBars;
+                controller.AppearanceLightStatusBars = true;
+            }
+            else if (!darkIcons && _lightStatusBarsBeforeFlyout is bool lightStatusBars)
+            {
+                controller.AppearanceLightStatusBars = lightStatusBars;
+                _lightStatusBarsBeforeFlyout = null;
+            }
         }
     }
 }
