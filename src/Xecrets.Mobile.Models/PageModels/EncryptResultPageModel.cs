@@ -50,8 +50,6 @@ public partial class EncryptResultPageModel(
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel, IPageInformationPageModel
 {
-    private const string _nonBreakingSpace = "\u00A0";
-
     public string Breadcrumb => BreadcrumbFormatter.Format(flowContext.Origin, Heading);
 
     public string Information => MobileTexts.DialogTextResult;
@@ -186,9 +184,5 @@ public partial class EncryptResultPageModel(
     private bool CanUseCommand()
         => !IsBusy && Result != EncryptionPreparationResult.Empty;
 
-    private static string CreateMetadataText(EncryptionPreparationResult result)
-    {
-        string sizeValue = $"{result.FileSize:N0}".Replace(" ", _nonBreakingSpace, StringComparison.Ordinal);
-
-        return $"{result.ContentType} {string.Format(MobileTexts.FileSizeFormat, sizeValue)}";
-    }}
+    private static string CreateMetadataText(EncryptionPreparationResult result) =>
+        $"{result.ContentType} {result.FileSize.ToSizeText()}";}

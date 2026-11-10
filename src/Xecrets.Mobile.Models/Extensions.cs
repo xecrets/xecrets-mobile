@@ -28,6 +28,8 @@
 
 #endregion Copyright and GPL License
 
+using System.Globalization;
+
 using Xecrets.Common.Models;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
@@ -210,6 +212,30 @@ internal static class Extensions
 
         return string.Format(MobileTexts.DialogTextExceptionFormat, exceptionMessage);
     }
+
+    /// <summary>
+    /// The size as a short text to show, in the largest unit of 1024 that it reaches, up to gigabytes, with the number
+    /// formatted as the current culture does.
+    /// </summary>
+    public static string ToSizeText(this long size) => size switch
+    {
+        < 1L << 10 => string.Format(MobileTexts.FileSizeFormat, ToNumberText(size, "N0")),
+        < 1L << 20 => string.Format(MobileTexts.FileSizeKilobytesFormat, ToUnitsText(size, 10)),
+        < 1L << 30 => string.Format(MobileTexts.FileSizeMegabytesFormat, ToUnitsText(size, 20)),
+        _ => string.Format(MobileTexts.FileSizeGigabytesFormat, ToUnitsText(size, 30)),
+    };
+
+    // The size in units of two to the power of the shift, with at most one decimal.
+    private static string ToUnitsText(long size, int shift) => ToNumberText(size / (double)(1L << shift), "#,0.#");
+
+    // A culture that separates the digit groups with spaces gets non-breaking ones, keeping the number on one line.
+    private static string ToNumberText<T>(T number, string format) where T : IFormattable =>
+        number.ToString(format, CultureInfo.CurrentCulture).Replace(" ", "\u00A0", StringComparison.Ordinal);
+
+    /// <summary>
+    /// The count as a number to show, formatted as the current culture does.
+    /// </summary>
+    public static string ToCountText(this int count) => ToNumberText(count, "N0");
 
     extension(IUserInterfaceService userInterfaceService)
     {

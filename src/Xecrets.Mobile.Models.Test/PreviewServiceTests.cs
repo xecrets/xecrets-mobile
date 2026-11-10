@@ -65,6 +65,7 @@ public sealed class PreviewServiceTests
             transient,
             state,
             new DecryptionPasswordRequestState(),
+            new RunningOperation(new ScriptedUserInterface()),
             new FakeCrashLogService());
 
         bool prepared = await preview.PrepareAsync(new LocalReadableFile(encryptedPath, "x.axx"));

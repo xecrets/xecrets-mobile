@@ -40,6 +40,11 @@ internal sealed class ScriptedUserInterface : IUserInterfaceService
 {
     public Queue<bool> Answers { get; } = new();
 
+    /// <summary>
+    /// When set, answers the next confirmation instead, once the test sets the answer.
+    /// </summary>
+    public TaskCompletionSource<bool>? HeldAnswer { get; set; }
+
     public Queue<SaveChangesChoice> SaveChangesAnswers { get; } = new();
 
     public List<string> Confirmations { get; } = [];
@@ -55,6 +60,11 @@ internal sealed class ScriptedUserInterface : IUserInterfaceService
 
     public List<AppDestination> Destinations { get; } = [];
 
+    /// <summary>
+    /// Done while the app navigates to a destination, before the navigation is done.
+    /// </summary>
+    public Action<AppDestination>? Navigating { get; set; }
+
     public List<object> Payloads { get; } = [];
 
     public int BackCount { get; private set; }
@@ -62,6 +72,8 @@ internal sealed class ScriptedUserInterface : IUserInterfaceService
     public bool IsShellAvailable => true;
     public bool CanProcessIncomingFiles => true;
     public bool CanReceiveIncomingFiles => true;
+    public string CurrentLocation { get; set; } = "";
+    public bool IsNavigating => false;
     public IReadOnlyDictionary<string, string> IconMap => throw new NotSupportedException();
     public Task InvokeOnMainThreadAsync(Func<Task> action) => action();
 
@@ -75,6 +87,12 @@ internal sealed class ScriptedUserInterface : IUserInterfaceService
     {
         Confirmations.Add(message);
         ConfirmationButtons.Add((accept, cancel));
+        if (HeldAnswer is { } held)
+        {
+            HeldAnswer = null;
+            return held.Task;
+        }
+
         return Task.FromResult(Answers.Count > 0 && Answers.Dequeue());
     }
 
@@ -100,6 +118,7 @@ internal sealed class ScriptedUserInterface : IUserInterfaceService
         }
 
         Destinations.Add(destination);
+        Navigating?.Invoke(destination);
         return Task.CompletedTask;
     }
 

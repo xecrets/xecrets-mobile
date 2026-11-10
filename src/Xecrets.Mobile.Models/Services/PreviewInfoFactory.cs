@@ -46,8 +46,8 @@ internal static class PreviewInfoFactory
         string fileName = string.IsNullOrWhiteSpace(displayName)
             ? Path.GetFileName(filePath)
             : displayName;
-        string contentType = FileTypeClassifier.DetectContentType(fileName);
-        PreviewKind kind = GetPreviewKind(fileName, contentType);
+        string contentType = fileName.DetectContentType();
+        PreviewKind kind = GetPreviewKind(fileName.WithoutCopyNumber(), contentType);
 
         if (kind == PreviewKind.External && contentType == FileTypeClassifier.UnknownContentType && LooksLikeTextFile(filePath))
         {

@@ -204,8 +204,9 @@ public partial class EnterPasswordPageModel(
     private static PreviewPreparationStatus ToPreparationStatus(FileOperationOutcome outcome) => outcome.Status switch
     {
         FileOperationStatus.Completed => PreviewPreparationStatus.Prepared,
-        FileOperationStatus.AwaitingPassword => PreviewPreparationStatus.WrongPassword,
+        FileOperationStatus.PasswordNeeded => PreviewPreparationStatus.WrongPassword,
         FileOperationStatus.NotDone => PreviewPreparationStatus.Cancelled,
+        FileOperationStatus.Skipped => PreviewPreparationStatus.Cancelled,
         _ => throw new ArgumentOutOfRangeException(nameof(outcome), outcome.Status, @"Unknown file operation status."),
     };
 

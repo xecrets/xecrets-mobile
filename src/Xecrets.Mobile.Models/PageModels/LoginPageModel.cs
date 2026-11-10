@@ -42,6 +42,7 @@ namespace Xecrets.Mobile.Models.PageModels;
 public partial class LoginPageModel(
     IProfileService profileService,
     IIncomingFileService incomingFileService,
+    IInterruptedSaveService interruptedSaves,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IPageInformationPageModel, IBreadcrumbPageModel
 {
@@ -126,6 +127,8 @@ public partial class LoginPageModel(
             }
 
             await UserInterfaceService.NavigateToAsync(AppDestination.Home);
+            // An app that was ended starts signed out, so a save it was ended in is undone when the profile signs in.
+            await interruptedSaves.RecoverAsync();
             if (await profileService.ShouldShowAsync(DontShowAgain.WelcomeInformation))
             {
                 await UserInterfaceService.NavigateToAsync(AppDestination.Welcome, true);

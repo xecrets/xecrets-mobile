@@ -33,7 +33,6 @@ using System.Text;
 
 using Xecrets.Common.Models;
 using Xecrets.Mobile.Models.Abstractions;
-using Xecrets.Mobile.Models.Data;
 
 namespace Xecrets.Mobile.Models.Services;
 
@@ -43,7 +42,7 @@ namespace Xecrets.Mobile.Models.Services;
 /// Should they come along anyway, or have been written for another <see cref="DeviceSettingsVersion"/>, they are
 /// replaced with new ones. To tell, they hold a salted hash of the device identifier.
 /// </summary>
-public sealed class InstallationService(MobileDataStore dataStore, IFileService fileService, IDeviceIdentity deviceIdentity)
+public sealed class InstallationService(IDeviceSettingsStore dataStore, IFileService fileService, IDeviceIdentity deviceIdentity)
 {
     /// <summary>
     /// The version of the device-specific settings. Increasing it resets them once on every device.

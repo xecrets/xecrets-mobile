@@ -49,6 +49,8 @@ public partial class WorkFoldersPageModel(
     IFileAccess fileAccess,
     FolderAccessWorkflow folderAccess,
     FileOperationWorkflow fileOperations,
+    FolderFilesWorkflow folderFiles,
+    RunningOperation runningOperation,
     ICrashLogService crashLogService,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel, IPageInformationPageModel
@@ -97,6 +99,7 @@ public partial class WorkFoldersPageModel(
     [NotifyCanExecuteChangedFor(nameof(BrowseCommand))]
     [NotifyCanExecuteChangedFor(nameof(RemoveCommand))]
     [NotifyCanExecuteChangedFor(nameof(RenameCommand))]
+    [NotifyCanExecuteChangedFor(nameof(RunFolderFilesCommand))]
     public partial bool IsBusy { get; set; }
 
     public void Initialize(WorkFolderIntent intent)
@@ -191,6 +194,7 @@ public partial class WorkFoldersPageModel(
 
     private async Task RunBusyAsync(WorkFolder? folder)
     {
+        using IDisposable running = runningOperation.Begin();
         try
         {
             IsBusy = true;
@@ -285,6 +289,37 @@ public partial class WorkFoldersPageModel(
         }
     }
 
+    /// <summary>
+    /// Encrypts, decrypts or deletes the files of a folder the user picks, as chosen in the menu of a folder.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanUseCommand))]
+    private async Task RunFolderFilesAsync(FolderFilesRequest request)
+    {
+        using IDisposable running = runningOperation.Begin();
+        try
+        {
+            IsBusy = true;
+            StatusText = string.Empty;
+            await folderFiles.RunAsync(request);
+        }
+        catch (OperationCanceledException)
+        {
+            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextOperationNotCompleted);
+        }
+        catch (Exception ex)
+        {
+            crashLogService.WriteSwallowedException(ex);
+            StatusText = ex.FormatException();
+        }
+        finally
+        {
+            // Picking the folder may have added a folder or moved one to the top, even if the operation did not
+            // complete.
+            await LoadAsync();
+            IsBusy = false;
+        }
+    }
+
     private bool CanUseCommand() => !IsBusy;
 
     /// <summary>
@@ -348,5 +383,56 @@ public partial class WorkFoldersPageModel(
         string.Join(Path.DirectorySeparatorChar, reversedPathSegments.Take(pathDepth).Reverse());
 
     private WorkFolderEntry CreateEntry(WorkFolder folder) =>
-        new(folder, RenameCommand, OpenCommand, RemoveCommand);
+        new(folder, OpenCommand, [
+            new(MobileTexts.MenuEditLabel, "IconEditLabelMenu", RenameCommand, folder),
+            .. CreateFolderFilesMenuItems(folder),
+            new(MobileTexts.MenuRemoveFromList, "IconRemoveFromListMenu", RemoveCommand, folder),
+        ]);
+
+    // Only the operations that change files where they are apply to all files of a folder.
+    private OverflowMenuItem[] CreateFolderFilesMenuItems(WorkFolder folder) => Intent switch
+    {
+        WorkFolderIntent.Auto =>
+        [
+            CreateFolderFilesMenuItem(folder, FileOperation.Encrypt, FolderScope.Folder),
+            CreateFolderFilesMenuItem(folder, FileOperation.Encrypt, FolderScope.FolderAndSubfolders),
+            CreateFolderFilesMenuItem(folder, FileOperation.Decrypt, FolderScope.Folder),
+            CreateFolderFilesMenuItem(folder, FileOperation.Decrypt, FolderScope.FolderAndSubfolders),
+        ],
+        WorkFolderIntent.Delete =>
+        [
+            CreateFolderFilesMenuItem(folder, FileOperation.Delete, FolderScope.Folder),
+            CreateFolderFilesMenuItem(folder, FileOperation.Delete, FolderScope.FolderAndSubfolders),
+        ],
+        WorkFolderIntent.Copy => [],
+        WorkFolderIntent.Share => [],
+        _ => throw new ArgumentOutOfRangeException(nameof(Intent), Intent, @"Unknown work folder intent."),
+    };
+
+    private OverflowMenuItem CreateFolderFilesMenuItem(
+        WorkFolder folder,
+        FileOperation operation,
+        FolderScope scope)
+    {
+        (string text, string iconKey) = (operation, scope) switch
+        {
+            (FileOperation.Encrypt, FolderScope.Folder) =>
+                (MobileTexts.MenuEncryptFolderFiles, "IconEncryptFolderFilesMenu"),
+            (FileOperation.Encrypt, FolderScope.FolderAndSubfolders) =>
+                (MobileTexts.MenuEncryptFolderAndSubfolderFiles, "IconEncryptFolderAndSubfolderFilesMenu"),
+            (FileOperation.Decrypt, FolderScope.Folder) =>
+                (MobileTexts.MenuDecryptFolderFiles, "IconDecryptFolderFilesMenu"),
+            (FileOperation.Decrypt, FolderScope.FolderAndSubfolders) =>
+                (MobileTexts.MenuDecryptFolderAndSubfolderFiles, "IconDecryptFolderAndSubfolderFilesMenu"),
+            (FileOperation.Delete, FolderScope.Folder) =>
+                (MobileTexts.MenuDeleteFolderFiles, "IconDeleteFolderFilesMenu"),
+            (FileOperation.Delete, FolderScope.FolderAndSubfolders) =>
+                (MobileTexts.MenuDeleteFolderAndSubfolderFiles, "IconDeleteFolderAndSubfolderFilesMenu"),
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(operation),
+                (operation, scope),
+                @"Unknown folder files operation."),
+        };
+        return new(text, iconKey, RunFolderFilesCommand, new FolderFilesRequest(folder, operation, scope));
+    }
 }

@@ -102,38 +102,20 @@
                                              BindableLayout.ItemsSource="{Binding Folders}">
                             <BindableLayout.ItemTemplate>
                                 <DataTemplate x:DataType="mobileModels:WorkFolderEntry">
-                                    <!-- Rename leads and remove trails, so that the two are as far apart as
-                                         the row allows and neither is a likely mis-tap for the other. -->
-                                    <Grid ColumnDefinitions="Auto,*,Auto"
+                                    <!-- The menu button lines up with the icons in the card corners, and the folder
+                                         button is inset from the leading edge as the other content is. -->
+                                    <Grid ColumnDefinitions="*,Auto"
+                                          Margin="{StaticResource IconRowBodyLeadingMargin}"
                                           ColumnSpacing="{StaticResource IconRowSpacing}">
-                                        <ImageButton Grid.Column="0"
-                                                     Style="{StaticResource ActionRowIconButtonStyle}"
-                                                     Command="{Binding RenameCommand}"
-                                                     CommandParameter="{Binding Folder}">
-                                            <ImageButton.Source>
-                                                <FontImageSource Glyph="{x:Static f:FluentUI.edit_28_regular}"
-                                                                 FontFamily="{x:Static f:FluentUI.FontFamily}"
-                                                                 Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
-                                                                 Size="28" />
-                                            </ImageButton.Source>
-                                        </ImageButton>
-                                        <pageControls:ActionButton Grid.Column="1"
+                                        <pageControls:ActionButton Grid.Column="0"
                                                                    VerticalOptions="Center"
                                                                    Title="{Binding ListDisplayName}"
                                                                    Icon="{StaticResource IconMyFolderButton}"
                                                                    Command="{Binding OpenCommand}"
                                                                    CommandParameter="{Binding Folder}" />
-                                        <ImageButton Grid.Column="2"
-                                                     Style="{StaticResource ActionRowIconButtonStyle}"
-                                                     Command="{Binding RemoveCommand}"
-                                                     CommandParameter="{Binding Folder}">
-                                            <ImageButton.Source>
-                                                <FontImageSource Glyph="{x:Static f:FluentUI.delete_28_regular}"
-                                                                 FontFamily="{x:Static f:FluentUI.FontFamily}"
-                                                                 Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
-                                                                 Size="28" />
-                                            </ImageButton.Source>
-                                        </ImageButton>
+                                        <pageControls:OverflowMenuButton Grid.Column="1"
+                                                                         Style="{StaticResource ActionRowOverflowMenuButtonStyle}"
+                                                                         Items="{Binding MenuItems}" />
                                     </Grid>
                                 </DataTemplate>
                             </BindableLayout.ItemTemplate>

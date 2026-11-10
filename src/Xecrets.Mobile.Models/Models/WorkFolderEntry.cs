@@ -34,11 +34,13 @@ using Xecrets.Common.Models;
 
 namespace Xecrets.Mobile.Models.Models;
 
+/// <summary>
+/// A folder in My folders as listed, with the items of its menu, which depend on what the page was opened for.
+/// </summary>
 public sealed record WorkFolderEntry(
     WorkFolder Folder,
-    IAsyncRelayCommand<WorkFolder> RenameCommand,
     IAsyncRelayCommand<WorkFolder> OpenCommand,
-    IAsyncRelayCommand<WorkFolder> RemoveCommand)
+    IReadOnlyList<OverflowMenuItem> MenuItems)
 {
     public string ListDisplayName => Folder.ListDisplayName;
 }

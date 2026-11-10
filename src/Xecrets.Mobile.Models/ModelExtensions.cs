@@ -28,18 +28,25 @@
 
 #endregion Copyright and GPL License
 
+using System.Text.RegularExpressions;
+
 using Microsoft.Extensions.DependencyInjection;
 
 using Xecrets.Common.Abstractions;
 using Xecrets.Core.Abstractions;
+using Xecrets.Core.Public;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Data;
 using Xecrets.Mobile.Models.PageModels;
 using Xecrets.Mobile.Models.Services;
+using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Models;
 
-public static class ServiceCollectionExtensions
+/// <summary>
+/// The extensions of the models that the app uses.
+/// </summary>
+public static partial class ModelExtensions
 {
     /// <summary>
     /// Registers the services and page models implemented here. The platform services they depend on are registered
@@ -49,6 +56,8 @@ public static class ServiceCollectionExtensions
     {
         services.AddSingleton<MobileDataStore>();
         services.AddSingleton<IXecretsDataStore>(serviceProvider => serviceProvider.GetRequiredService<MobileDataStore>());
+        services.AddSingleton<IDeviceSettingsStore>(serviceProvider => serviceProvider.GetRequiredService<MobileDataStore>());
+        services.AddSingleton<ISaveInProgressStore>(serviceProvider => serviceProvider.GetRequiredService<MobileDataStore>());
         services.AddSingleton<IDeviceSettings, MobileDeviceSettings>();
         services.AddSingleton<IProfileStore, ProfileStore>();
         services.AddSingleton<ProfileSession>();
@@ -69,6 +78,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IEditSaveService, EditSaveService>();
         services.AddSingleton<FolderAccessWorkflow>();
         services.AddSingleton<FileOperationWorkflow>();
+        services.AddSingleton<FolderFilesWorkflow>();
+        services.AddSingleton<RunningOperation>();
+        services.AddSingleton<IInterruptedSaveService, InterruptedSaveService>();
         services.AddSingleton<GrantCleanupService>();
         services.AddSingleton<InstallationService>();
         services.AddSingleton<IRecentFilesService, RecentFilesService>();
@@ -80,4 +92,30 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
+
+    // A document provider may make a name unique by adding a number in parentheses after the whole name, as
+    // "report-txt.axx (1)", for a type it knows no extension for, such as the generic type of an encrypted file. Such
+    // a name is still classified by the extension before the number.
+    extension(string name)
+    {
+        /// <summary>
+        /// The name without a number a provider added after the extension, as "report-txt.axx" for
+        /// "report-txt.axx (1)". A number before the extension, or in a name without one, is part of the name.
+        /// </summary>
+        public string WithoutCopyNumber() =>
+            CopyNumberAfterExtension().Match(name) is { Success: true } match ? match.Groups[1].Value : name;
+
+        /// <summary>
+        /// Tells if the name is that of an encrypted file, also with a number a provider added after the extension.
+        /// </summary>
+        public bool IsNameEncrypted() => name.WithoutCopyNumber().IsEncrypted();
+
+        /// <summary>
+        /// The content type the name tells, also with a number a provider added after the extension.
+        /// </summary>
+        public string DetectContentType() => FileTypeClassifier.DetectContentType(name.WithoutCopyNumber());
+    }
+
+    [GeneratedRegex(@"^(.*\.[^.\s]+) \(\d+\)$")]
+    private static partial Regex CopyNumberAfterExtension();
 }

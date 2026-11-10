@@ -51,6 +51,7 @@ internal static class MauiAppBuilderExtensions
         builder.ConfigureMauiHandlers(handlers =>
         {
             handlers.AddHandler<FileStateSelector, AndroidFileStateSelectorHandler>();
+            handlers.AddHandler<OverflowMenuButton, AndroidOverflowMenuButtonHandler>();
             handlers.AddHandler<ReadOnlyEditor, AndroidReadOnlyEditorHandler>();
             handlers.AddHandler<PasswordTextEntry, AndroidPasswordTextEntryHandler>();
             handlers.AddHandler<Shell, AndroidShellRenderer>();

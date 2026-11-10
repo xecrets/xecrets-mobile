@@ -28,6 +28,8 @@
 
 #endregion Copyright and GPL License
 
+using System.Text.Json;
+
 using Xecrets.Common;
 using Xecrets.Common.Abstractions;
 using Xecrets.Common.Implementation;
@@ -37,77 +39,14 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Data;
 
-public sealed class MobileDataStore(IFileService fileService, ICrashLogService crashLogService, TimeProvider timeProvider, IProtectedPayload protectedPayload) : IXecretsDataStore
+public sealed class MobileDataStore(IFileService fileService, ICrashLogService crashLogService, TimeProvider timeProvider, IProtectedPayload protectedPayload)
+    : IXecretsDataStore, IDeviceSettingsStore, ILocalProfileStore, ISaveInProgressStore
 {
-    internal const string DataFileName = "xecrets-data.json";
-
     private const string _extraCredentialsPayloadName = "extraCredentials";
 
     private readonly SemaphoreSlim _access = new(1, 1);
 
-    internal const string DeviceSettingsFileName = "xecrets-device.json";
-
-    private string DataPath => Path.Combine(fileService.AppDataDirectory, DataFileName);
-
-    // The device-specific settings are kept in a file of their own, in a directory that is kept out of backups and
-    // transfers, so that they never leave the device.
-    private string DeviceSettingsPath => Path.Combine(fileService.DeviceDirectory, DeviceSettingsFileName);
-
-    private async Task<TResult> ReadAsync<TResult>(Func<ApplicationData, TResult> read)
-    {
-        await _access.WaitAsync();
-        try
-        {
-            return read(await LoadAsync());
-        }
-        finally
-        {
-            _access.Release();
-        }
-    }
-
-    private async Task UpdateAsync(Action<ApplicationData> update)
-    {
-        await _access.WaitAsync();
-        try
-        {
-            ApplicationData document = await LoadAsync();
-            update(document);
-            await SaveAsync(DataPath, document);
-        }
-        finally
-        {
-            _access.Release();
-        }
-    }
-
-    private async Task<TResult> ReadDeviceAsync<TResult>(Func<DeviceSettings, TResult> read)
-    {
-        await _access.WaitAsync();
-        try
-        {
-            return read(await LoadDeviceAsync());
-        }
-        finally
-        {
-            _access.Release();
-        }
-    }
-
-    private async Task UpdateDeviceAsync(Action<DeviceSettings> update)
-    {
-        await _access.WaitAsync();
-        try
-        {
-            DeviceSettings settings = await LoadDeviceAsync();
-            update(settings);
-            await SaveAsync(DeviceSettingsPath, settings);
-        }
-        finally
-        {
-            _access.Release();
-        }
-    }
+    #region IXecretsDataStore
 
     public async Task<IPersistentData<ApplicationSettings>> OpenApplicationSettingsAsync() =>
         ApplicationSettingsData(await ReadAsync(document => document.ApplicationSettings));
@@ -116,14 +55,7 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
     // the read sees either the previous or the new document in full. On Windows, a save that overlaps this read fails,
     // since a file that is open cannot be replaced there. This is in practice not an issue though as this is only called once on startup.
     public IPersistentData<ApplicationSettings> OpenApplicationSettings() =>
-        ApplicationSettingsData(Validate(JsonFile.Load<ApplicationData>(DataPath, OnInvalidJson)).ApplicationSettings);
-
-    private PersistentData<ApplicationSettings> ApplicationSettingsData(ApplicationSettings settings) =>
-        new(settings, async value =>
-        {
-            await UpdateAsync(document => document.ApplicationSettings = value);
-            return JsonFile.Serialize(value);
-        });
+        ApplicationSettingsData(Validate(JsonFile.Load<ApplicationData>(fileService.DataFilePath, OnInvalidJson)).ApplicationSettings);
 
     public async Task<IReadOnlyList<UserSummary>> GetUsersAsync()
     {
@@ -229,6 +161,10 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
     {
         await UpdateAsync(document => document.Users.Remove(FindUser(document, userId)));
         await UpdateDeviceAsync(settings => settings.Profiles.Remove(userId.Value));
+        if (await ReadSaveInProgressAsync() is { } save && save.UserId == userId.Value)
+        {
+            await ClearSaveInProgressAsync();
+        }
     }
 
     public async Task ResetStoreAsync()
@@ -236,7 +172,8 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
         await _access.WaitAsync();
         try
         {
-            foreach (string path in new[] { DataPath, DeviceSettingsPath }.Where(File.Exists))
+            string[] paths = [fileService.DataFilePath, fileService.DeviceSettingsFilePath, fileService.SaveInProgressFilePath];
+            foreach (string path in paths.Where(File.Exists))
             {
                 File.Delete(path);
             }
@@ -247,11 +184,196 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
         }
     }
 
+    #endregion IXecretsDataStore
+
+    #region IDeviceSettingsStore
+
+    public Task<GrantReferences> GetGrantReferencesAsync() =>
+        ReadDeviceAsync(settings => new GrantReferences(
+            settings.Profiles.Values
+                .SelectMany(profile => profile.WorkFolders.Folders)
+                .Select(folder => folder.GrantId)
+                .ToHashSet(),
+            settings.Profiles.Values
+                .SelectMany(profile => profile.RecentFiles)
+                .Where(file => !file.Operation.IsWriteClass())
+                .Select(file => file.Id)
+                .ToHashSet()));
+
+    public Task<DeviceSettings> ReadDeviceSettingsAsync() => ReadDeviceAsync(settings => settings);
+
+    public async Task ReplaceDeviceSettingsAsync(DeviceSettings settings)
+    {
+        await _access.WaitAsync();
+        try
+        {
+            await SaveAsync(fileService.DeviceSettingsFilePath, settings);
+        }
+        finally
+        {
+            _access.Release();
+        }
+    }
+
+    // Reads without _access, for the same reason as OpenApplicationSettings.
+    public Dictionary<string, string> ReadDeviceValues() =>
+        JsonFile.Load<DeviceSettings>(fileService.DeviceSettingsFilePath, OnInvalidDeviceJson).Values;
+
+    public Task UpdateDeviceValuesAsync(Action<Dictionary<string, string>> update) =>
+        UpdateDeviceAsync(settings => update(settings.Values));
+
+    #endregion IDeviceSettingsStore
+
+    #region ILocalProfileStore
+
+    public Task<LocalProfileData> ReadUserAsync(UserId userId) =>
+        ReadAsync(document => FindUser(document, userId));
+
+    public Task UpdateUserAsync(UserId userId, Action<LocalProfileData> update) =>
+        UpdateAsync(document => update(FindUser(document, userId)));
+
+    public Task<ProfileDeviceSettings> ReadProfileDeviceSettingsAsync(UserId userId) =>
+        ReadDeviceAsync(settings => settings.Profiles.GetValueOrDefault(userId.Value) ?? new ProfileDeviceSettings());
+
+    public Task UpdateProfileDeviceSettingsAsync(UserId userId, Action<ProfileDeviceSettings> update) =>
+        UpdateDeviceAsync(deviceSettings =>
+        {
+            Dictionary<string, ProfileDeviceSettings> profiles = deviceSettings.Profiles;
+            if (!profiles.TryGetValue(userId.Value, out ProfileDeviceSettings? settings))
+            {
+                profiles[userId.Value] = settings = new ProfileDeviceSettings();
+            }
+
+            update(settings);
+        });
+
+    #endregion ILocalProfileStore
+
+    #region ISaveInProgressStore
+
+    public async Task<SaveInProgress?> ReadSaveInProgressAsync()
+    {
+        await _access.WaitAsync();
+        try
+        {
+            return File.Exists(fileService.SaveInProgressFilePath)
+                ? JsonSerializer.Deserialize(
+                    await File.ReadAllBytesAsync(fileService.SaveInProgressFilePath),
+                    MobileJsonContext.Default.SaveInProgress)
+                : null;
+        }
+        finally
+        {
+            _access.Release();
+        }
+    }
+
+    public async Task WriteSaveInProgressAsync(SaveInProgress save)
+    {
+        await _access.WaitAsync();
+        try
+        {
+            await SaveTextAsync(
+                fileService.SaveInProgressFilePath,
+                JsonSerializer.Serialize(save, MobileJsonContext.Default.SaveInProgress));
+        }
+        finally
+        {
+            _access.Release();
+        }
+    }
+
+    public async Task ClearSaveInProgressAsync()
+    {
+        await _access.WaitAsync();
+        try
+        {
+            File.Delete(fileService.SaveInProgressFilePath);
+        }
+        finally
+        {
+            _access.Release();
+        }
+    }
+
+    #endregion ISaveInProgressStore
+
+    private async Task<TResult> ReadAsync<TResult>(Func<ApplicationData, TResult> read)
+    {
+        await _access.WaitAsync();
+        try
+        {
+            return read(await LoadAsync());
+        }
+        finally
+        {
+            _access.Release();
+        }
+    }
+
+    private async Task UpdateAsync(Action<ApplicationData> update)
+    {
+        await _access.WaitAsync();
+        try
+        {
+            ApplicationData document = await LoadAsync();
+            update(document);
+            await SaveAsync(fileService.DataFilePath, document);
+        }
+        finally
+        {
+            _access.Release();
+        }
+    }
+
+    private async Task<TResult> ReadDeviceAsync<TResult>(Func<DeviceSettings, TResult> read)
+    {
+        await _access.WaitAsync();
+        try
+        {
+            return read(await LoadDeviceAsync());
+        }
+        finally
+        {
+            _access.Release();
+        }
+    }
+
+    private async Task UpdateDeviceAsync(Action<DeviceSettings> update)
+    {
+        await _access.WaitAsync();
+        try
+        {
+            DeviceSettings settings = await LoadDeviceAsync();
+            update(settings);
+            await SaveAsync(fileService.DeviceSettingsFilePath, settings);
+        }
+        finally
+        {
+            _access.Release();
+        }
+    }
+
+    private PersistentData<ApplicationSettings> ApplicationSettingsData(ApplicationSettings settings) =>
+        new(settings, async value =>
+        {
+            await UpdateAsync(document => document.ApplicationSettings = value);
+            return JsonFile.Serialize(value);
+        });
+
+    // Keeps what tells which version and device the settings belong to.
+    private Task ClearDeviceSettingsAsync() =>
+        UpdateDeviceAsync(settings =>
+        {
+            settings.Values = [];
+            settings.Profiles = [];
+        });
+
     private async Task<ApplicationData> LoadAsync() =>
-        Validate(await JsonFile.LoadAsync<ApplicationData>(DataPath, OnInvalidJson));
+        Validate(await JsonFile.LoadAsync<ApplicationData>(fileService.DataFilePath, OnInvalidJson));
 
     private Task<DeviceSettings> LoadDeviceAsync() =>
-        JsonFile.LoadAsync<DeviceSettings>(DeviceSettingsPath, OnInvalidDeviceJson);
+        JsonFile.LoadAsync<DeviceSettings>(fileService.DeviceSettingsFilePath, OnInvalidDeviceJson);
 
     private void OnInvalidDeviceJson(Exception exception) =>
         crashLogService.WriteCrashLog("Device settings were invalid JSON; resetting to new settings.", exception);
@@ -273,14 +395,16 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
         return document;
     }
 
-    private static async Task SaveAsync<T>(string path, T document)
+    private static Task SaveAsync<T>(string path, T document) => SaveTextAsync(path, JsonFile.Serialize(document));
+
+    // The file is replaced as a whole, so that it is never read written in part.
+    private static async Task SaveTextAsync(string path, string serialized)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         string temporaryPath = $"{path}.tmp";
 
         try
         {
-            string serialized = JsonFile.Serialize(document);
             await File.WriteAllTextAsync(temporaryPath, serialized);
             File.Move(temporaryPath, path, true);
         }
@@ -292,79 +416,6 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
             }
         }
     }
-
-    /// <summary>
-    /// The grants referenced by My folders and the recent files of all profiles on the device, since the grants are
-    /// held by the app rather than by a profile.
-    /// </summary>
-    public Task<GrantReferences> GetGrantReferencesAsync() =>
-        ReadDeviceAsync(settings => new GrantReferences(
-            settings.Profiles.Values
-                .SelectMany(profile => profile.WorkFolders.Folders)
-                .Select(folder => folder.GrantId)
-                .ToHashSet(),
-            settings.Profiles.Values
-                .SelectMany(profile => profile.RecentFiles)
-                .Where(file => !file.Operation.IsWriteClass())
-                .Select(file => file.Id)
-                .ToHashSet()));
-
-    /// <summary>
-    /// The device-specific settings, which are new ones if there are none.
-    /// </summary>
-    public Task<DeviceSettings> ReadDeviceSettingsAsync() => ReadDeviceAsync(settings => settings);
-
-    /// <summary>
-    /// Replaces all the device-specific settings.
-    /// </summary>
-    public async Task ReplaceDeviceSettingsAsync(DeviceSettings settings)
-    {
-        await _access.WaitAsync();
-        try
-        {
-            await SaveAsync(DeviceSettingsPath, settings);
-        }
-        finally
-        {
-            _access.Release();
-        }
-    }
-
-    // Keeps what tells which version and device the settings belong to.
-    private Task ClearDeviceSettingsAsync() =>
-        UpdateDeviceAsync(settings =>
-        {
-            settings.Values = [];
-            settings.Profiles = [];
-        });
-
-    // Reads without _access, for the same reason as OpenApplicationSettings.
-    internal Dictionary<string, string> ReadDeviceValues() =>
-        JsonFile.Load<DeviceSettings>(DeviceSettingsPath, OnInvalidDeviceJson).Values;
-
-    internal Task UpdateDeviceValuesAsync(Action<Dictionary<string, string>> update) =>
-        UpdateDeviceAsync(settings => update(settings.Values));
-
-    internal Task<ProfileDeviceSettings> ReadProfileDeviceSettingsAsync(UserId userId) =>
-        ReadDeviceAsync(settings => settings.Profiles.GetValueOrDefault(userId.Value) ?? new ProfileDeviceSettings());
-
-    internal Task UpdateProfileDeviceSettingsAsync(UserId userId, Action<ProfileDeviceSettings> update) =>
-        UpdateDeviceAsync(deviceSettings =>
-        {
-            Dictionary<string, ProfileDeviceSettings> profiles = deviceSettings.Profiles;
-            if (!profiles.TryGetValue(userId.Value, out ProfileDeviceSettings? settings))
-            {
-                profiles[userId.Value] = settings = new ProfileDeviceSettings();
-            }
-
-            update(settings);
-        });
-
-    internal Task<LocalProfileData> ReadUserAsync(UserId userId) =>
-        ReadAsync(document => FindUser(document, userId));
-
-    internal Task UpdateUserAsync(UserId userId, Action<LocalProfileData> update) =>
-        UpdateAsync(document => update(FindUser(document, userId)));
 
     private static LocalProfileData FindUser(ApplicationData document, UserId userId) =>
         document.Users.Single(user => user.Id == userId.Value);

@@ -31,7 +31,8 @@
 namespace Xecrets.Mobile.Models.Models;
 
 /// <summary>
-/// What became of an operation on a file: the file it was replaced by, nothing at all, or a wait for a password.
+/// What became of an operation on a file: the file it was replaced by, nothing at all, the file was not what the
+/// operation is for, a password is needed for it, or the operation was canceled.
 /// </summary>
 public sealed record FileOperationOutcome
 {
@@ -50,5 +51,13 @@ public sealed record FileOperationOutcome
 
     public static FileOperationOutcome NotDone { get; } = new(FileOperationStatus.NotDone);
 
-    public static FileOperationOutcome AwaitingPassword { get; } = new(FileOperationStatus.AwaitingPassword);
+    /// <summary>
+    /// The file is not what the operation is for, as its contents show: encrypted already, or not encrypted at all. Or
+    /// the user chose not to replace the file of the name the result would have.
+    /// </summary>
+    public static FileOperationOutcome Skipped { get; } = new(FileOperationStatus.Skipped);
+
+    public static FileOperationOutcome PasswordNeeded { get; } = new(FileOperationStatus.PasswordNeeded);
+
+    public static FileOperationOutcome Canceled { get; } = new(FileOperationStatus.Canceled);
 }

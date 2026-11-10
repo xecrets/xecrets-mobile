@@ -34,7 +34,8 @@
              x:Name="Root">
     <!-- The labels are drawn on a shape with the colors of the other buttons, and a transparent button without text
          covers it all, so that the whole button takes the click. Labels over a button take part of it on Windows. The
-         button has no style, since the disabled state of the implicit one would paint over the labels. -->
+         button has visual states of its own, without setters, since the disabled state of the implicit style would
+         paint over the labels. -->
     <Grid BindingContext="{x:Reference Root}"
           MinimumHeightRequest="{StaticResource TwoLineActionButtonHeight}">
         <Grid.Triggers>
@@ -99,13 +100,21 @@
                HeightRequest="{StaticResource ActionButtonIconSize}"
                InputTransparent="True" />
         <Button x:Name="CommandButton"
-                Style="{x:Null}"
                 BackgroundColor="Transparent"
                 BorderWidth="0"
                 CornerRadius="12"
                 Command="{Binding Command}"
                 CommandParameter="{Binding CommandParameter}"
                 SemanticProperties.Description="{Binding Title}"
-                SemanticProperties.Hint="{Binding Description}" />
+                SemanticProperties.Hint="{Binding Description}">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroupList>
+                    <VisualStateGroup x:Name="CommonStates">
+                        <VisualState x:Name="Normal" />
+                        <VisualState x:Name="Disabled" />
+                    </VisualStateGroup>
+                </VisualStateGroupList>
+            </VisualStateManager.VisualStateGroups>
+        </Button>
     </Grid>
 </ContentView>

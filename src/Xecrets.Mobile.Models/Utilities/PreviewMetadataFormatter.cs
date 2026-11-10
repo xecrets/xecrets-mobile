@@ -35,15 +35,8 @@ namespace Xecrets.Mobile.Models.Utilities;
 
 internal static class PreviewMetadataFormatter
 {
-    private const string _nonBreakingSpace = "\u00A0";
-
     /// <summary>
-    /// Describes the type and size of the file being previewed, keeping the size on one line.
+    /// Describes the type and size of the file being previewed.
     /// </summary>
-    public static string Format(IPreviewState state)
-    {
-        string sizeValue = $"{state.FileSize:N0}".Replace(" ", _nonBreakingSpace, StringComparison.Ordinal);
-
-        return $"{state.ContentType} {string.Format(MobileTexts.FileSizeFormat, sizeValue)}";
-    }
+    public static string Format(IPreviewState state) => $"{state.ContentType} {state.FileSize.ToSizeText()}";
 }

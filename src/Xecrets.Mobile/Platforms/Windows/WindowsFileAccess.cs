@@ -45,6 +45,7 @@ using Xecrets.Mobile.Models;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
+using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Platforms.Windows;
 
@@ -70,22 +71,21 @@ internal sealed class WindowsFileAccess(WorkFolderStorage storage, ICrashLogServ
         return file is null ? null : WindowsFileLocation.Locate(file);
     }
 
-    public async Task<WorkFolderResult> PickFolderAsync(string initialFolder)
+    // The folder picker shows only folders, so the user picks a file in the folder instead, seeing the files there.
+    public async Task<WorkFolderResult> PickFolderAsync(string initialFolder, FilePickerKind kind)
     {
-        ThreadGuard.ThrowIfNotMainThread();
-
-        FolderPicker picker = new()
-        {
-            SettingsIdentifier = CreateSettingsIdentifier(initialFolder),
-        };
-        picker.FileTypeFilter.Add("*");
-        InitializeWithWindow.Initialize(picker, GetWindowHandle());
-        StorageFolder? folder = await picker.PickSingleFolderAsync();
-        if (folder is null)
+        FileReference? file = await PickFileAsync(initialFolder, kind);
+        if (file is null)
         {
             return WorkFolderResult.Canceled;
         }
 
+        StorageFolder folder = await StorageFolder.GetFolderFromPathAsync(Path.GetDirectoryName(file.Id)!);
+        return await ToWorkFolderResultAsync(folder);
+    }
+
+    private async Task<WorkFolderResult> ToWorkFolderResultAsync(StorageFolder folder)
+    {
         if (!await CanAccessFolderAsync(folder))
         {
             return WorkFolderResult.NoAccess;
@@ -107,7 +107,30 @@ internal sealed class WindowsFileAccess(WorkFolderStorage storage, ICrashLogServ
             .OrderByDescending(folder => folder.Id.Length)
             .FirstOrDefault();
 
+    public async Task<WorkFolder?> FindFolderOfFolderAsync(string folderId) =>
+        (await storage.LoadFoldersAsync())
+            .Where(folder =>
+                string.Equals(
+                    folderId.TrimEnd(Path.DirectorySeparatorChar),
+                    folder.Id.TrimEnd(Path.DirectorySeparatorChar),
+                    StringComparison.OrdinalIgnoreCase) ||
+                folderId.StartsWith(
+                    folder.Id.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar,
+                    StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(folder => folder.Id.Length)
+            .FirstOrDefault();
+
     public Task<FileReference> GetFileInFolderAsync(WorkFolder folder, FileReference file) => Task.FromResult(file);
+
+    // Listing the folders reads the storage, which is not done on the main thread. Names are compared as NTFS does by
+    // default, ignoring case.
+    public Task<IReadOnlyList<FolderListing>> ListFolderAsync(string folderId, FolderScope scope) =>
+        Task.Run(() => LocalFolderLister.List(
+            new DirectoryInfo(folderId),
+            scope,
+            info => info.FullName,
+            WindowsFileLocation.Locate,
+            StringComparer.OrdinalIgnoreCase));
 
     public Task<string> GetParentFolderAsync(string fileId) => Task.FromResult(Path.GetDirectoryName(fileId) ?? string.Empty);
 
@@ -180,14 +203,15 @@ internal sealed class WindowsFileAccess(WorkFolderStorage storage, ICrashLogServ
 
     public Task<string> GetFolderOfFileAsync(string fileId) => GetParentFolderAsync(fileId);
 
-    public Task<bool> FileExistsInFolderAsync(string folderId, string name) =>
-        Task.FromResult(File.Exists(Path.Combine(folderId, name)));
-
-    public Task<string> SaveInFolderAsync(string folderId, string name, string completedFilePath, bool overwrite) =>
+    public Task<string> SaveInFolderAsync(
+        string folderId,
+        string name,
+        string completedFilePath,
+        string? existingId) =>
         Task.Run(() =>
         {
             string destinationPath = Path.Combine(folderId, name);
-            LocalFileSaver.Save(completedFilePath, destinationPath, overwrite);
+            LocalFileSaver.Save(completedFilePath, destinationPath, overwrite: existingId is not null);
             return destinationPath;
         });
 

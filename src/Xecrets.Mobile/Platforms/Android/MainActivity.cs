@@ -43,6 +43,7 @@ using AndroidUri = Android.Net.Uri;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui;
 using Xecrets.Core.Public;
+using Xecrets.Mobile.Models;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
@@ -152,7 +153,7 @@ public class MainActivity : MauiAppCompatActivity, IActivityResultCallback
             string name = GetDisplayName(uri);
             return (
                 name,
-                contentResolver.GetType(uri) ?? FileTypeClassifier.DetectContentType(name),
+                contentResolver.GetType(uri) ?? name.DetectContentType(),
                 contentResolver.OpenInputStream(uri));
         });
         if (inputStream is null)

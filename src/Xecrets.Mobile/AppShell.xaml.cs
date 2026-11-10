@@ -53,6 +53,7 @@ internal partial class AppShell
     private readonly IXecretsDataStore _dataStore;
     private readonly StartupPageModel _startupPageModel;
     private readonly ProfileSession _profileSession;
+    private readonly RunningOperation _runningOperation;
 
     public AppShell(
         IUserInterfaceService userInterfaceService,
@@ -60,24 +61,37 @@ internal partial class AppShell
         IBuildInformation buildInformation,
         IXecretsDataStore dataStore,
         StartupPageModel startupPageModel,
-        ProfileSession profileSession)
+        ProfileSession profileSession,
+        RunningOperation runningOperation)
     {
         _userInterfaceService = userInterfaceService;
         _sessionExitService = sessionExitService;
         _dataStore = dataStore;
         _startupPageModel = startupPageModel;
         _profileSession = profileSession;
+        _runningOperation = runningOperation;
         InitializeComponent();
+        runningOperation.IsRunningChanged += OnIsRunningChanged;
         SetFlyoutItemIsVisible(DebugMenuItem, buildInformation.IsDebug || buildInformation.IsBeta);
         UpdateThemeButtons(ThemePreference.System);
     }
 
-    // Back navigation from the editor, by the toolbar or the device back button, asks first if there are unsaved
-    // changes. The deferral is taken before the first await, while Shell still waits for the handler. Concurrent, so
-    // that a back navigation while saving is not let through unasked.
+    // Leaving the page of a running operation asks to cancel it instead. Back navigation from the editor, by the
+    // toolbar or the device back button, asks first if there are unsaved changes. The deferral is taken before the first
+    // await, while Shell still waits for the handler. Concurrent, so that a back navigation while saving is not let
+    // through unasked.
     [RelayCommand(AllowConcurrentExecutions = true)]
     private async Task NavigatingAsync(ShellNavigatingEventArgs args)
     {
+        if (IsLeavingRunningOperation(args))
+        {
+            // Canceled before the first await, while Shell still waits for the handler. The user navigates again,
+            // whether the operation is canceled or not.
+            args.Cancel();
+            await _runningOperation.ConfirmCancelAsync();
+            return;
+        }
+
         if (args.Source is not (ShellNavigationSource.Pop or ShellNavigationSource.PopToRoot)
             || CurrentPage?.BindingContext is not EditPageModel { HasUnsavedChanges: true } editPage)
         {
@@ -92,6 +106,21 @@ internal partial class AppShell
 
         deferral.Complete();
     }
+
+    // The user leaves the page of the operation, by going back in any way, or through the flyout. The app's own
+    // navigations, such as on to enter a password, are part of the operation. There is no current location before the
+    // first navigation, when no operation runs.
+    private bool IsLeavingRunningOperation(ShellNavigatingEventArgs args) =>
+        _runningOperation.IsRunning &&
+        !_userInterfaceService.IsNavigating &&
+        _runningOperation.IsRunningAt(args.Current.Location.OriginalString);
+
+    // The flyout can be opened from any page, and leads to signing out, or changing or deleting the profile, so it is
+    // not available while an operation runs.
+    private void OnIsRunningChanged(object? sender, EventArgs e) =>
+        FlyoutBehavior = _runningOperation.IsRunning
+            ? Microsoft.Maui.FlyoutBehavior.Disabled
+            : Microsoft.Maui.FlyoutBehavior.Flyout;
 
     [RelayCommand]
     private async Task NavigatedAsync(ShellNavigatedEventArgs args)

@@ -53,6 +53,7 @@ public partial class RecentFilesPageModel(
     FolderAccessWorkflow folderAccess,
     FileOperationWorkflow fileOperations,
     IWorkFolderFileLauncher fileLauncher,
+    RunningOperation runningOperation,
     ICrashLogService crashLogService,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel, IPageInformationPageModel
@@ -143,7 +144,7 @@ public partial class RecentFilesPageModel(
             }
 
             await recentFilesService.AddAsync(file, RecentFileOperation.InPlace);
-            SelectedState = file.Name.IsEncrypted() ? SelectedFileState.Encrypted : SelectedFileState.Decrypted;
+            SelectedState = file.Name.IsNameEncrypted() ? SelectedFileState.Encrypted : SelectedFileState.Decrypted;
             await LoadAsync();
         }
         catch (OperationCanceledException)
@@ -168,11 +169,16 @@ public partial class RecentFilesPageModel(
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private async Task OpenAsync(RecentFileEntry entry)
     {
+        using IDisposable running = runningOperation.Begin();
         try
         {
             IsBusy = true;
             StatusText = "";
             await RunOnFileAsync(entry, isChanged: false, file => OpenFileAsync(entry, file));
+        }
+        catch (OperationCanceledException)
+        {
+            await UserInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextOperationNotCompleted);
         }
         catch (Exception ex)
         {
@@ -222,11 +228,13 @@ public partial class RecentFilesPageModel(
     private Task ReverseAllAsync() => ReverseFilesAsync([.. Files]);
 
     /// <summary>
-    /// Encrypts or decrypts the files in turn, stopping at the first one that cannot be reached or needs a password. A
-    /// file that nothing is done with, such as one already encrypted, does not stop the others.
+    /// Encrypts or decrypts the files in turn, stopping at the first one that cannot be reached, or that needs a password
+    /// the user does not enter, and when the operation is canceled. A file that nothing is done with, such as one already
+    /// encrypted, does not stop the others.
     /// </summary>
     private async Task ReverseFilesAsync(IReadOnlyList<RecentFileEntry> entries)
     {
+        using IDisposable running = runningOperation.Begin();
         try
         {
             IsBusy = true;
@@ -239,7 +247,8 @@ public partial class RecentFilesPageModel(
                 await RunOnFileAsync(entry, isChanged: true,
                     async file => outcome = await fileOperations.TransformAsync(file, operation, FlowOrigin.RecentFiles));
                 await LoadAsync();
-                if (outcome?.Status is not (FileOperationStatus.Completed or FileOperationStatus.NotDone))
+                if (outcome?.Status is not
+                    (FileOperationStatus.Completed or FileOperationStatus.NotDone or FileOperationStatus.Skipped))
                 {
                     break;
                 }
@@ -384,6 +393,6 @@ public partial class RecentFilesPageModel(
     private static RecentFileEntry CreateEntry(RecentFile recentFile)
     {
         FileReference file = recentFile.ToFileReference();
-        return new RecentFileEntry(file, file.Name.IsEncrypted(), recentFile.Operation);
+        return new RecentFileEntry(file, file.Name.IsNameEncrypted(), recentFile.Operation);
     }
 }

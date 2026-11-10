@@ -41,21 +41,16 @@ public interface IWorkFolderOperationService
     bool HasPendingPasswordRequest { get; }
 
     /// <summary>
-    /// Encrypts the file, returning the file it is replaced by.
+    /// Encrypts the file, or decrypts it with the passwords known, telling the reporter when it is done, and knowing what
+    /// is in the folder of the file from the folder contents of the operation. Returns the file it is replaced by, that
+    /// it is left since the user chose not to replace the file of the name the result would have, or that a password is
+    /// needed, keeping the file for <see cref="DecryptPendingWithPasswordAsync"/>.
     /// </summary>
-    Task<FileReference> EncryptAsync(FileReference file);
-
-    /// <summary>
-    /// Decrypts the file with the passwords known, returning the file it is replaced by, or returns null and keeps the
-    /// file for <see cref="DecryptWithPasswordAsync"/>.
-    /// </summary>
-    Task<FileReference?> DecryptWithKnownPasswordsAsync(FileReference file);
-
-    /// <summary>
-    /// Decrypts the pending file with the password, returning the file it is replaced by, or null when the password is
-    /// wrong.
-    /// </summary>
-    Task<FileReference?> DecryptWithPasswordAsync(string password);
+    Task<FileOperationOutcome> TransformAsync(
+        FileReference file,
+        WorkFolderOperation operation,
+        FolderContents contents,
+        IFileCompletionReporter reporter);
 
     /// <summary>
     /// Encrypts a file that is in none of My folders, saving the result where the user chooses, and then overwrites and
@@ -77,5 +72,16 @@ public interface IWorkFolderOperationService
     /// </summary>
     Task<FileOperationOutcome> DecryptPendingWithPasswordAsync(string password);
 
+    /// <summary>
+    /// Ends the request for a password, whether or not a password has decrypted the file.
+    /// </summary>
     void CancelPasswordRequest();
+
+    /// <summary>
+    /// Waits for the request for a password for the file just found to need one to end. Returns the file it is replaced
+    /// by when a password has decrypted it, that nothing was done when the user has been told why, and otherwise that a
+    /// password is still needed. Taken before the user is asked for the password, since the request may end as soon as
+    /// the user is.
+    /// </summary>
+    Task<FileOperationOutcome> WaitForPasswordRequestAsync();
 }

@@ -45,32 +45,55 @@ internal sealed class WorkFolderOperationService(
     ITransientFileService transientFileService,
     IRecentFilesService recentFilesService,
     IFileAccess fileAccess,
+    IInterruptedSaveService interruptedSaves,
     IFileWiper fileWiper,
+    RunningOperation runningOperation,
     ICrashLogService crashLogService,
     IUserInterfaceService userInterfaceService)
     : IWorkFolderOperationService
 {
-    private FileReference? _pendingFile;
+    private readonly SingleFileCompletionReporter _singleFileReporter = new(recentFilesService, userInterfaceService);
 
-    // Whether the pending file is in none of My folders, so that the result is saved where the user chooses.
-    private bool _isPendingElsewhere;
+    private PasswordRequest? _passwordRequest;
 
-    public bool HasPendingPasswordRequest => _pendingFile is not null;
+    public bool HasPendingPasswordRequest => _passwordRequest is { Outcome: null };
+
+    public async Task<FileOperationOutcome> TransformAsync(
+        FileReference file,
+        WorkFolderOperation operation,
+        FolderContents contents,
+        IFileCompletionReporter reporter) =>
+        operation switch
+        {
+            WorkFolderOperation.Encrypt => await EncryptAsync(file, contents, reporter),
+            WorkFolderOperation.Decrypt =>
+                await DecryptWithKnownPasswordsAsync(file, isElsewhere: false, contents, reporter),
+            _ => throw new ArgumentOutOfRangeException(nameof(operation), operation, @"Unknown work folder operation."),
+        };
 
     /// <summary>
     /// The result is encrypted to a temporary file, which is wiped once it is saved in the folder of the file, or not.
     /// </summary>
-    public async Task<FileReference> EncryptAsync(FileReference file)
+    private async Task<FileOperationOutcome> EncryptAsync(
+        FileReference file,
+        FolderContents contents,
+        IFileCompletionReporter reporter)
     {
         string destinationName = file.Name.ToEncryptedName("");
-        string folderId = await fileAccess.GetFolderOfFileAsync(file.Id);
-        bool overwrite = await ConfirmOverwriteAsync(folderId, destinationName);
+        ListedFolder folder = await contents.GetFolderOfAsync(file);
+        (bool isConfirmed, string? existingId) = await ConfirmOverwriteAsync(folder, destinationName);
+        if (!isConfirmed)
+        {
+            await reporter.ReportReplaceDeclinedAsync();
+            return FileOperationOutcome.Skipped;
+        }
+
         EncryptionPreparationResult encrypted = await encryptionPreparationService.EncryptWithCurrentProfileAsync(
             new ReferencedReadableFile(fileAccess, file));
         string resultId;
         try
         {
-            resultId = await fileAccess.SaveInFolderAsync(folderId, destinationName, encrypted.FilePath, overwrite);
+            resultId = await SaveInFolderAsync(file, folder, destinationName, encrypted.FilePath, existingId);
         }
         finally
         {
@@ -78,9 +101,9 @@ internal sealed class WorkFolderOperationService(
         }
 
         FileReference result = file with { Id = resultId, Name = destinationName };
-        await CompleteAsync(file, result, MobileTexts.DialogTextFileEncrypted);
+        await CompleteAsync(file, result, MobileTexts.DialogTextFileEncrypted, folder, reporter);
 
-        return result;
+        return FileOperationOutcome.Completed(result);
     }
 
     /// <summary>
@@ -114,43 +137,72 @@ internal sealed class WorkFolderOperationService(
         }
     }
 
-    public async Task<FileReference?> DecryptWithKnownPasswordsAsync(FileReference file) =>
-        (await DecryptWithKnownPasswordsAsync(file, isElsewhere: false)).Result;
-
+    // A file elsewhere is in none of My folders, so its folder is never listed.
     public Task<FileOperationOutcome> DecryptElsewhereWithKnownPasswordsAsync(FileReference file) =>
-        DecryptWithKnownPasswordsAsync(file, isElsewhere: true);
+        DecryptWithKnownPasswordsAsync(
+            file,
+            isElsewhere: true,
+            new FolderContents(fileAccess, []),
+            _singleFileReporter);
 
-    public async Task<FileReference?> DecryptWithPasswordAsync(string password) =>
-        (await DecryptPendingWithPasswordAsync(password)).Result;
-
+    /// <summary>
+    /// The file is decrypted the same way as it was started, and the one waiting for it is told what became of it once
+    /// the request ends.
+    /// </summary>
     public async Task<FileOperationOutcome> DecryptPendingWithPasswordAsync(string password)
     {
-        FileReference? file = _pendingFile;
-        if (file is null ||
-            await TryDecryptAsync(file, new Identity(password, []), _isPendingElsewhere) is not { } outcome)
+        if (_passwordRequest is not { Outcome: null } request)
         {
-            return FileOperationOutcome.AwaitingPassword;
+            return FileOperationOutcome.PasswordNeeded;
         }
 
-        _pendingFile = null;
+        Identity identity = new(password, []);
+        FileOperationOutcome? outcome =
+            await TryDecryptAsync(request.File, identity, request.IsElsewhere, request.Contents, request.Reporter);
+        if (outcome is null)
+        {
+            return FileOperationOutcome.PasswordNeeded;
+        }
+
+        request.Outcome = outcome;
         await profileService.RecordExtraPasswordUseAsync(password);
 
         return outcome;
     }
 
-    public void CancelPasswordRequest() => _pendingFile = null;
-
-    private async Task<FileOperationOutcome> DecryptWithKnownPasswordsAsync(FileReference file, bool isElsewhere)
+    /// <summary>
+    /// Ends the request, also when a password has decrypted the file, telling the one waiting for it what became of the
+    /// file, or that a password is still needed when none decrypted it. There is no request when the page for passwords
+    /// is left after it was opened for something else.
+    /// </summary>
+    public void CancelPasswordRequest()
     {
-        _pendingFile = null;
-        if (await TryDecryptAsync(file, profileService.GetIdentity(), isElsewhere) is { } outcome)
+        _passwordRequest?.Completion.SetResult(_passwordRequest.Outcome ?? FileOperationOutcome.PasswordNeeded);
+        _passwordRequest = null;
+    }
+
+    public Task<FileOperationOutcome> WaitForPasswordRequestAsync() => _passwordRequest!.Completion.Task;
+
+    private async Task<FileOperationOutcome> DecryptWithKnownPasswordsAsync(
+        FileReference file,
+        bool isElsewhere,
+        FolderContents contents,
+        IFileCompletionReporter reporter)
+    {
+        _passwordRequest = null;
+        if (await TryDecryptAsync(file, profileService.GetIdentity(), isElsewhere, contents, reporter) is { } outcome)
         {
             return outcome;
         }
 
         foreach (PasswordUsage extraPassword in profileService.GetExtraPasswords())
         {
-            outcome = await TryDecryptAsync(file, new Identity(extraPassword.Password, []), isElsewhere);
+            outcome = await TryDecryptAsync(
+                file,
+                new Identity(extraPassword.Password, []),
+                isElsewhere,
+                contents,
+                reporter);
             if (outcome is null)
             {
                 continue;
@@ -160,23 +212,27 @@ internal sealed class WorkFolderOperationService(
             return outcome;
         }
 
-        _pendingFile = file;
-        _isPendingElsewhere = isElsewhere;
-        return FileOperationOutcome.AwaitingPassword;
+        _passwordRequest = new PasswordRequest(file, isElsewhere, contents, reporter);
+        return FileOperationOutcome.PasswordNeeded;
     }
 
     // Returns null when the file cannot be decrypted with the identity. As for encryption, once the operation elsewhere
     // has started any failure is reported as denied access.
-    private async Task<FileOperationOutcome?> TryDecryptAsync(FileReference file, Identity identity, bool isElsewhere)
+    private async Task<FileOperationOutcome?> TryDecryptAsync(
+        FileReference file,
+        Identity identity,
+        bool isElsewhere,
+        FolderContents contents,
+        IFileCompletionReporter reporter)
     {
         if (!isElsewhere)
         {
-            return await TryDecryptAndSaveAsync(file, identity, isElsewhere);
+            return await TryDecryptAndSaveAsync(file, identity, isElsewhere, contents, reporter);
         }
 
         try
         {
-            return await TryDecryptAndSaveAsync(file, identity, isElsewhere);
+            return await TryDecryptAndSaveAsync(file, identity, isElsewhere, contents, reporter);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -193,15 +249,17 @@ internal sealed class WorkFolderOperationService(
     private async Task<FileOperationOutcome?> TryDecryptAndSaveAsync(
         FileReference file,
         Identity identity,
-        bool isElsewhere)
+        bool isElsewhere,
+        FolderContents contents,
+        IFileCompletionReporter reporter)
     {
         string resultPath = "";
         try
         {
             string resultName;
             FileTimes resultTimes;
-            string folderId = "";
-            bool overwrite = false;
+            ListedFolder? folder = null;
+            string? existingId = null;
             await using (Stream encrypted = await fileAccess.OpenReadAsync(file.Id))
             {
                 using IDecryptionSession session = await OpenDecryptionAsync(encrypted, identity);
@@ -214,8 +272,13 @@ internal sealed class WorkFolderOperationService(
                 resultTimes = new FileTimes(session.CreationTimeUtc, session.LastAccessTimeUtc, session.LastWriteTimeUtc);
                 if (!isElsewhere)
                 {
-                    folderId = await fileAccess.GetFolderOfFileAsync(file.Id);
-                    overwrite = await ConfirmOverwriteAsync(folderId, resultName);
+                    folder = await contents.GetFolderOfAsync(file);
+                    (bool isConfirmed, existingId) = await ConfirmOverwriteAsync(folder, resultName);
+                    if (!isConfirmed)
+                    {
+                        await reporter.ReportReplaceDeclinedAsync();
+                        return FileOperationOutcome.Skipped;
+                    }
                 }
 
                 resultPath = transientFileService.CreateHandoffPath(resultName);
@@ -229,10 +292,12 @@ internal sealed class WorkFolderOperationService(
                     file, resultPath, resultName, MobileTexts.DialogTextFileDecrypted, resultTimes);
             }
 
-            string resultId = await fileAccess.SaveInFolderAsync(folderId, resultName, resultPath, overwrite);
+            // The folder is listed for a file in one of My folders.
+            ListedFolder destination = folder!;
+            string resultId = await SaveInFolderAsync(file, destination, resultName, resultPath, existingId);
             await fileAccess.SetSupportedTimesAsync(resultId, resultTimes);
             FileReference result = file with { Id = resultId, Name = resultName };
-            await CompleteAsync(file, result, MobileTexts.DialogTextFileDecrypted);
+            await CompleteAsync(file, result, MobileTexts.DialogTextFileDecrypted, destination, reporter);
             return FileOperationOutcome.Completed(result);
         }
         finally
@@ -276,24 +341,45 @@ internal sealed class WorkFolderOperationService(
         return await CompleteElsewhereAsync(source, saved, completedText);
     }
 
+    // The source is only wiped once the result is saved, so that a save the app is ended in the middle of can be undone.
+    private Task<string> SaveInFolderAsync(
+        FileReference source,
+        ListedFolder folder,
+        string name,
+        string completedFilePath,
+        string? existingId) =>
+        interruptedSaves.SaveAsync(
+            new SaveInProgress { FolderId = folder.Id, Name = name, SourceId = source.Id },
+            completedFilePath,
+            existingId);
+
     private Task<IDecryptionSession> OpenDecryptionAsync(Stream encrypted, Identity identity) =>
         coreServices.OpenDecryptionAsync(
             encrypted,
-            new DecryptRequest([identity], new Progress<Progress>(_ => { })));
+            new DecryptRequest([identity], runningOperation.CreateProgress()));
 
     /// <summary>
-    /// Wipes the source, and replaces it with the result in the recent files, under whatever ids it is listed. The
-    /// source is removed explicitly, since a file in a trash may still be reported as existing. The source must no
-    /// longer be open, since the wipe may rewrite it. The user is told that the operation is done, and also when the
-    /// source is left.
+    /// Wipes the source, and removes it from the recent files, under whatever ids it is listed. The source is removed
+    /// explicitly, since a file in a trash may still be reported as existing. The source must no longer be open, since
+    /// the wipe may rewrite it. The folder is kept up to date for the files of the operation that follow in it, and the
+    /// reporter is told that the operation is done, and whether the source is left.
     /// </summary>
-    private async Task CompleteAsync(FileReference source, FileReference result, string completedText)
+    private async Task CompleteAsync(
+        FileReference source,
+        FileReference result,
+        string completedText,
+        ListedFolder folder,
+        IFileCompletionReporter reporter)
     {
+        folder.Add(result.Name, result.Id);
         bool isWiped = await TryWipeSourceAsync(source);
+        if (isWiped)
+        {
+            folder.Remove(source.Name);
+        }
+
         await recentFilesService.RemoveFileAsync(source.Id);
-        await recentFilesService.AddAsync(result, RecentFileOperation.InPlace);
-        await userInterfaceService.DisplayTransientMessageAsync(
-            isWiped ? completedText : MobileTexts.DialogTextOriginalNotRemoved);
+        await reporter.ReportReplacedAsync(result, completedText, isWiped);
     }
 
     /// <summary>
@@ -336,10 +422,12 @@ internal sealed class WorkFolderOperationService(
         }
     }
 
+    // The number may be before the extension, or after it, as a provider adds it for a type it knows no extension for.
     private static bool IsProbablyChangedByOsFromSuggestion(string suggestedName, string name) =>
         name.Length > suggestedName.Length &&
-        name.StartsWith(Path.GetFileNameWithoutExtension(suggestedName), StringComparison.OrdinalIgnoreCase) &&
-        name.EndsWith(Path.GetExtension(suggestedName), StringComparison.OrdinalIgnoreCase);
+        (name.WithoutCopyNumber().Equals(suggestedName, StringComparison.OrdinalIgnoreCase) ||
+            (name.StartsWith(Path.GetFileNameWithoutExtension(suggestedName), StringComparison.OrdinalIgnoreCase) &&
+                name.EndsWith(Path.GetExtension(suggestedName), StringComparison.OrdinalIgnoreCase)));
 
     private async Task<FileOperationOutcome> ReportAsync(DestinationStatus status)
     {
@@ -360,22 +448,45 @@ internal sealed class WorkFolderOperationService(
         return FileOperationOutcome.NotDone;
     }
 
-    private async Task<bool> ConfirmOverwriteAsync(string folderId, string destinationName)
+    /// <summary>
+    /// Tells if the result may be saved under the name, which it may when there is no file of the name, or when the user
+    /// confirms replacing it. The id is that of the file the result is to replace, or null when there is none.
+    /// </summary>
+    private async Task<(bool IsConfirmed, string? ExistingId)> ConfirmOverwriteAsync(
+        ListedFolder folder,
+        string destinationName)
     {
-        if (!await fileAccess.FileExistsInFolderAsync(folderId, destinationName))
+        if (folder.FindId(destinationName) is not { } existingId)
         {
-            return false;
+            return (true, null);
         }
 
         bool overwrite = await userInterfaceService.DisplayConfirmationAsync(
             string.Format(MobileTexts.DialogTextConfirmOverwrite, destinationName),
             MobileTexts.LabelYes,
             MobileTexts.LabelNo);
-        if (!overwrite)
-        {
-            throw new OperationCanceledException();
-        }
+        return (overwrite, existingId);
+    }
 
-        return true;
+    /// <summary>
+    /// A file that no known password decrypts, kept while the user is asked for a password, with what became of it.
+    /// </summary>
+    /// <param name="File">The file to decrypt.</param>
+    /// <param name="IsElsewhere">Whether the file is in none of My folders, so that the result is saved where the user
+    /// chooses.</param>
+    /// <param name="Contents">The folders of the operation that the file is decrypted for.</param>
+    /// <param name="Reporter">What is told when the file is decrypted.</param>
+    private sealed record PasswordRequest(
+        FileReference File,
+        bool IsElsewhere,
+        FolderContents Contents,
+        IFileCompletionReporter Reporter)
+    {
+        // Run later, so that the one waiting goes on only after the request has ended, and not while the page for
+        // passwords is still being left.
+        public TaskCompletionSource<FileOperationOutcome> Completion { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public FileOperationOutcome? Outcome { get; set; }
     }
 }

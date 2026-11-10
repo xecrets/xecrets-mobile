@@ -90,7 +90,12 @@ public sealed class FileOperationWorkflowTests
 
     [TestCase(RootProvider.AndroidPhone)]
     [TestCase(RootProvider.ICloudDrive)]
-    public async Task SecureDeleteIsConfirmedWhereTheFileCannotBeRecovered(RootProvider root)
+    [TestCase(RootProvider.Unknown)]
+    [TestCase(RootProvider.GoogleDrive)]
+    [TestCase(RootProvider.OneDrive)]
+    [TestCase(RootProvider.Dropbox)]
+    [TestCase(RootProvider.RemovableStorage)]
+    public async Task SecureDeleteIsAlwaysConfirmed(RootProvider root)
     {
         using TestApp app = new();
         WorkFolder docs = app.AddFolder("docs");
@@ -103,25 +108,6 @@ public sealed class FileOperationWorkflowTests
 
         Assert.That(app.UserInterface.Confirmations, Is.EqualTo([MobileTexts.MessageTextConfirmWipe]));
         Assert.That(app.UserInterface.ConfirmationButtons, Is.EqualTo([(MobileTexts.ButtonOk, MobileTexts.LabelCancel)]));
-        Assert.That(app.Access.Files, Is.Empty);
-    }
-
-    [TestCase(RootProvider.Unknown)]
-    [TestCase(RootProvider.GoogleDrive)]
-    [TestCase(RootProvider.OneDrive)]
-    [TestCase(RootProvider.Dropbox)]
-    [TestCase(RootProvider.RemovableStorage)]
-    public async Task SecureDeleteIsNotConfirmedWhereTheFileMayBeRecovered(RootProvider root)
-    {
-        using TestApp app = new();
-        WorkFolder docs = app.AddFolder("docs");
-        app.AddFile("docs/a.txt");
-        app.Access.PickedRoot = root;
-        app.Access.PickedFiles.Enqueue("docs/a.txt");
-
-        await app.Operations.PickAndRunAsync(WorkFolderIntent.Delete, docs);
-
-        Assert.That(app.UserInterface.Confirmations, Is.Empty);
         Assert.That(app.Access.Files, Is.Empty);
     }
 
@@ -149,7 +135,7 @@ public sealed class FileOperationWorkflowTests
 
         await app.Operations.PickAndRunAsync(WorkFolderIntent.Auto, docs);
 
-        Assert.That(app.UserInterface.TransientMessages, Is.EqualTo([MobileTexts.DialogTextNotEncrypted]));
+        Assert.That(app.UserInterface.Messages, Is.EqualTo([string.Format(MobileTexts.DialogTextNotEncryptedFormat, "x.axx")]));
         Assert.That(app.Access.Files.Keys, Is.EquivalentTo(["docs/x.axx"]));
     }
 
@@ -163,7 +149,7 @@ public sealed class FileOperationWorkflowTests
 
         await app.Operations.PickAndRunAsync(WorkFolderIntent.Auto, docs);
 
-        Assert.That(app.UserInterface.TransientMessages, Is.EqualTo([MobileTexts.DialogTextAlreadyEncrypted]));
+        Assert.That(app.UserInterface.Messages, Is.EqualTo([string.Format(MobileTexts.DialogTextAlreadyEncryptedFormat, "x.txt")]));
         Assert.That(app.Access.Files.Keys, Is.EquivalentTo(["docs/x.txt"]));
     }
 
@@ -179,9 +165,41 @@ public sealed class FileOperationWorkflowTests
             WorkFolderOperation.Decrypt,
             FlowOrigin.MyFolders);
 
-        Assert.That(outcome.Status, Is.EqualTo(FileOperationStatus.NotDone));
-        Assert.That(app.UserInterface.TransientMessages, Is.EqualTo([MobileTexts.DialogTextNotEncrypted]));
+        Assert.That(outcome.Status, Is.EqualTo(FileOperationStatus.Skipped));
+        Assert.That(app.UserInterface.Messages, Is.EqualTo([string.Format(MobileTexts.DialogTextNotEncryptedFormat, "x.axx")]));
         Assert.That(app.UserInterface.Destinations, Is.Empty);
         Assert.That(app.Access.Files.Keys, Is.EquivalentTo(["docs/x.axx"]));
+    }
+
+    [Test]
+    public async Task FolderOfAFileChosenByItselfIsListedOnce()
+    {
+        using TestApp app = new();
+        app.AddFolder("docs");
+        app.AddFile("docs/a.txt");
+        app.AddFile("docs/b.txt");
+
+        FileOperationOutcome outcome = await app.Operations.TransformAsync(
+            new FileReference("docs/a.txt", "a.txt"),
+            WorkFolderOperation.Encrypt,
+            FlowOrigin.MyFolders);
+
+        Assert.That(outcome.Status, Is.EqualTo(FileOperationStatus.Completed));
+        Assert.That(app.Access.FolderLookupCount, Is.EqualTo(1));
+        Assert.That(app.Access.FolderListingCount, Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task DeletingAFileChosenByItselfDoesNotListItsFolder()
+    {
+        using TestApp app = new();
+        app.AddFolder("docs");
+        app.AddFile("docs/a.txt");
+        app.UserInterface.Answers.Enqueue(true);
+
+        await app.Operations.WipeAsync(new FileReference("docs/a.txt", "a.txt"));
+
+        Assert.That(app.Access.Files, Is.Empty);
+        Assert.That(app.Access.FolderListingCount, Is.Zero);
     }
 }

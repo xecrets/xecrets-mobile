@@ -140,8 +140,14 @@
     <!-- Between an icon button and the control beside it. -->
     <x:Double x:Key="IconRowSpacing">4</x:Double>
 
-    <!-- Align a standalone button with the center of a row: 44-unit icon plus 4-unit gap on each side. -->
-    <Thickness x:Key="IconRowActionButtonMargin">48,0</Thickness>
+    <!-- Align a standalone button with the button of a row that trails with an icon: the leading margin of the row, as
+         IconRowBodyLeadingMargin, and the 4-unit gap, the 44-unit icon and its 5-unit margin to the card edge. -->
+    <OnIdiom x:Key="IconRowActionButtonMargin"
+             x:TypeArguments="Thickness"
+             Default="16,0,53,0">
+        <OnIdiom.Desktop>24,0,53,0</OnIdiom.Desktop>
+        <OnIdiom.Tablet>24,0,53,0</OnIdiom.Tablet>
+    </OnIdiom>
 
 
     <OnIdiom x:Key="CardPadding"
@@ -348,6 +354,48 @@
                 Size="{StaticResource size240}" />
     <FontImageSource x:Key="IconThirdPartyLicensesMenu"
                 Glyph="{x:Static f:FluentUI.certificate_24_regular}"
+                FontFamily="{x:Static f:FluentUI.FontFamily}"
+                Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                Size="{StaticResource size240}" />
+
+    <!-- The overflow menu of a folder in My folders. There is no icon of several open locks. -->
+    <FontImageSource x:Key="IconEditLabelMenu"
+                Glyph="{x:Static f:FluentUI.edit_24_regular}"
+                FontFamily="{x:Static f:FluentUI.FontFamily}"
+                Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                Size="{StaticResource size240}" />
+    <FontImageSource x:Key="IconEncryptFolderFilesMenu"
+                Glyph="{x:Static f:FluentUI.lock_closed_24_regular}"
+                FontFamily="{x:Static f:FluentUI.FontFamily}"
+                Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                Size="{StaticResource size240}" />
+    <FontImageSource x:Key="IconEncryptFolderAndSubfolderFilesMenu"
+                Glyph="{x:Static f:FluentUI.lock_multiple_24_regular}"
+                FontFamily="{x:Static f:FluentUI.FontFamily}"
+                Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                Size="{StaticResource size240}" />
+    <FontImageSource x:Key="IconDecryptFolderFilesMenu"
+                Glyph="{x:Static f:FluentUI.lock_open_24_regular}"
+                FontFamily="{x:Static f:FluentUI.FontFamily}"
+                Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                Size="{StaticResource size240}" />
+    <FontImageSource x:Key="IconDecryptFolderAndSubfolderFilesMenu"
+                Glyph="{x:Static f:FluentUI.lock_open_24_regular}"
+                FontFamily="{x:Static f:FluentUI.FontFamily}"
+                Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                Size="{StaticResource size240}" />
+    <FontImageSource x:Key="IconDeleteFolderFilesMenu"
+                Glyph="{x:Static f:FluentUI.document_dismiss_24_regular}"
+                FontFamily="{x:Static f:FluentUI.FontFamily}"
+                Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                Size="{StaticResource size240}" />
+    <FontImageSource x:Key="IconDeleteFolderAndSubfolderFilesMenu"
+                Glyph="{x:Static f:FluentUI.document_multiple_prohibited_24_regular}"
+                FontFamily="{x:Static f:FluentUI.FontFamily}"
+                Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                Size="{StaticResource size240}" />
+    <FontImageSource x:Key="IconRemoveFromListMenu"
+                Glyph="{x:Static f:FluentUI.delete_24_regular}"
                 FontFamily="{x:Static f:FluentUI.FontFamily}"
                 Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
                 Size="{StaticResource size240}" />
@@ -573,13 +621,18 @@
     <OnIdiom x:Key="OneLineActionButtonHeight" x:TypeArguments="x:Double" Default="44" Tablet="52" />
     <OnIdiom x:Key="TwoLineActionButtonHeight" x:TypeArguments="x:Double" Default="60" Tablet="72" />
 
-    <Style x:Key="ActionRowIconButtonStyle"
-           TargetType="ImageButton">
-        <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Padding" Value="8,6" />
-        <Setter Property="MinimumHeightRequest" Value="{StaticResource ActionButtonHeight}" />
+    <!-- The overflow menu button beside an action button in a row, as high as the action button. It keeps a margin
+         to the card edge, so that what shows when it is pointed at or pressed does not touch the edge. The margin is
+         the 4-unit gap to the button beside it, plus the 1-unit card stroke, which is drawn about a unit into the edge
+         the margin starts from, so that the two gaps look the same. -->
+    <Style x:Key="ActionRowOverflowMenuButtonStyle"
+           TargetType="controls:OverflowMenuButton">
+        <Setter Property="Margin" Value="0,0,5,0" />
+        <Setter Property="WidthRequest" Value="44" />
         <Setter Property="HeightRequest" Value="{StaticResource ActionButtonHeight}" />
         <Setter Property="VerticalOptions" Value="Center" />
+        <Setter Property="IconColor"
+                Value="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}" />
     </Style>
 
     <!-- An icon button in the card title row, beside the page information button. -->

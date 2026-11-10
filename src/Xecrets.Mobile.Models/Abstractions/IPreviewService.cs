@@ -40,6 +40,11 @@ public interface IPreviewService
 
     bool HasPendingPasswordRequest { get; }
 
+    /// <summary>
+    /// Ends the request for a password for the file to show, when the user is not to be asked for one after all.
+    /// </summary>
+    void CancelPasswordRequest();
+
     Task PrepareTextAsync(DecryptedFileInfo file, EncryptedWithParameters encryptedWith);
 
     Task<bool> PrepareAsync(IReadableFile encryptedFile);

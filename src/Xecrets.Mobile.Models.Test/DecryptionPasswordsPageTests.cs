@@ -109,7 +109,7 @@ public sealed class DecryptionPasswordsPageTests
         app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
         app.Access.PickedFiles.Enqueue("docs/x.axx");
         app.Core.Password = "unknown";
-        await app.Operations.PickAndRunAsync(WorkFolderIntent.Auto, docs);
+        Task run = app.Operations.PickAndRunAsync(WorkFolderIntent.Auto, docs);
         EnterPasswordPageModel page = app.CreateEnterPasswordPage();
         page.Initialize(DecryptionPasswordsIntent.Manage);
         page.Load();
@@ -123,6 +123,8 @@ public sealed class DecryptionPasswordsPageTests
             app.Profile.ExtraPasswords.Select(extraPassword => extraPassword.Password),
             Is.EqualTo(["unknown"]));
         Assert.That(app.UserInterface.BackCount, Is.Zero);
+        page.CancelWorkFolderRequest();
+        await run;
     }
 
     [TestCase(true)]

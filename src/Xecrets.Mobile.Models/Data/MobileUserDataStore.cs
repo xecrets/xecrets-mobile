@@ -31,10 +31,11 @@
 using Xecrets.Common.Abstractions;
 using Xecrets.Common.Implementation;
 using Xecrets.Common.Models;
+using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Models.Data;
 
-internal sealed class MobileUserDataStore(MobileDataStore store, UserId id, TimeProvider timeProvider, IProtectedPayload protectedPayload) : IUserDataStore
+internal sealed class MobileUserDataStore(ILocalProfileStore store, UserId id, TimeProvider timeProvider, IProtectedPayload protectedPayload) : IUserDataStore
 {
     private const string _extraCredentialsPayloadName = "extraCredentials";
 

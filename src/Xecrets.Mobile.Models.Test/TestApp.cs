@@ -51,7 +51,14 @@ internal sealed class TestApp : IDisposable
         Recent = new RecentFilesService(Session, Flow, Access, CrashLog);
         FolderAccess = new FolderAccessWorkflow(Access, Storage, UserInterface);
         Wiper = new FakeFileWiper(Access);
-        Encryption = new EncryptionPreparationService(new EncryptRequestFactory(Profile), Profile, Transient, Core);
+        Running = new RunningOperation(UserInterface);
+        InterruptedSaves = new InterruptedSaveService(SavesInProgress, Access, Session, CrashLog, UserInterface);
+        Encryption = new EncryptionPreparationService(
+            new EncryptRequestFactory(Profile, Running),
+            Profile,
+            Transient,
+            Core,
+            Running);
         OperationService = new WorkFolderOperationService(
             Core,
             Profile,
@@ -59,7 +66,9 @@ internal sealed class TestApp : IDisposable
             Transient,
             Recent,
             Access,
+            InterruptedSaves,
             Wiper,
+            Running,
             CrashLog,
             UserInterface);
         Operations = new FileOperationWorkflow(
@@ -74,12 +83,15 @@ internal sealed class TestApp : IDisposable
             Encryption,
             new FakeCrashTestService(),
             CrashLog,
+            Running,
             UserInterface);
+        FolderFiles = new FolderFilesWorkflow(Access, FolderAccess, Operations, UserInterface);
         EditSave = new EditSaveService(
             Preview,
-            new EncryptRequestFactory(Profile),
+            new EncryptRequestFactory(Profile, Running),
             Core,
             Access,
+            InterruptedSaves,
             FolderAccess,
             Operations,
             Recent,
@@ -89,6 +101,8 @@ internal sealed class TestApp : IDisposable
     }
 
     public FakeUserDataStore Store { get; } = new();
+
+    public FakeSaveInProgressStore SavesInProgress { get; } = new();
 
     private ProfileSession Session { get; } = new();
 
@@ -124,6 +138,12 @@ internal sealed class TestApp : IDisposable
 
     public FileOperationWorkflow Operations { get; }
 
+    public RunningOperation Running { get; }
+
+    public InterruptedSaveService InterruptedSaves { get; }
+
+    public FolderFilesWorkflow FolderFiles { get; }
+
     public EditSaveService EditSave { get; }
 
     public WorkFolder AddFolder(string path)
@@ -139,10 +159,10 @@ internal sealed class TestApp : IDisposable
         Store.Files.Add(new RecentFile { Id = id, Operation = operation, Name = name });
 
     public RecentFilesPageModel CreateRecentFilesPage() =>
-        new(Recent, Access, Storage, FolderAccess, Operations, Launcher, CrashLog, UserInterface);
+        new(Recent, Access, Storage, FolderAccess, Operations, Launcher, Running, CrashLog, UserInterface);
 
     public WorkFoldersPageModel CreateWorkFoldersPage() =>
-        new(Storage, Access, FolderAccess, Operations, CrashLog, UserInterface);
+        new(Storage, Access, FolderAccess, Operations, FolderFiles, Running, CrashLog, UserInterface);
 
     public EditPageModel CreateEditPage() => new(Preview, EditSave, Flow, CrashLog, Profile, UserInterface);
 

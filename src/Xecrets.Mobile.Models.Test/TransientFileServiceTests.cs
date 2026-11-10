@@ -299,6 +299,8 @@ public sealed class TransientFileServiceTests
         public bool IsShellAvailable { get; init; }
         public bool CanProcessIncomingFiles { get; init; }
         public bool CanReceiveIncomingFiles { get; init; }
+        public string CurrentLocation => "";
+        public bool IsNavigating => false;
         public IReadOnlyDictionary<string, string> IconMap => throw new NotSupportedException();
         public Func<Task> NavigateAsync { get; init; } = () => throw new NotSupportedException();
         public Task InvokeOnMainThreadAsync(Func<Task> action) => action();

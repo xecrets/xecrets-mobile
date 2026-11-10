@@ -38,11 +38,12 @@ namespace Xecrets.Mobile.Models.Test;
 
 internal sealed class FakePreviewService : IPreviewService
 {
-    public bool NeedsPassword { get; init; }
+    public bool NeedsPassword { get; set; }
     public List<string> Prepared { get; } = [];
     public PreviewState Current { get; } = new();
     IPreviewState IPreviewService.Current => Current;
     public bool HasPendingPasswordRequest => NeedsPassword;
+    public void CancelPasswordRequest() => NeedsPassword = false;
     public Task PrepareTextAsync(DecryptedFileInfo file, EncryptedWithParameters encryptedWith) => throw new NotSupportedException();
 
     public async Task<bool> PrepareAsync(IReadableFile encryptedFile)

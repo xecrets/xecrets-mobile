@@ -44,6 +44,7 @@ using Android.Provider;
 using Android.Webkit;
 
 using Xecrets.Core.Public;
+using Xecrets.Mobile.Models;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Services;
 
@@ -112,7 +113,7 @@ internal static class AndroidExtensions
         // Android's own table knows extensions that FileTypeClassifier does not, as file managers do.
         public string OrAndroidContentType(string fileName) =>
             contentType == FileTypeClassifier.UnknownContentType
-                ? MimeTypeMap.Singleton!.GetMimeTypeFromExtension(Path.GetExtension(fileName).TrimStart('.').ToLowerInvariant()) ?? contentType
+                ? MimeTypeMap.Singleton!.GetMimeTypeFromExtension(Path.GetExtension(fileName.WithoutCopyNumber()).TrimStart('.').ToLowerInvariant()) ?? contentType
                 : contentType;
     }
 
@@ -156,15 +157,6 @@ internal static class AndroidExtensions
                     using Stream? input = ContentResolver.OpenInputStream(uri);
                     return input is not null;
                 }, TimeSpan.FromSeconds(3));
-
-        /// <summary>
-        /// Finds the document with the name in the folder, once the provider has listed all of it.
-        /// </summary>
-        public async Task<AndroidUri?> FindChildAsync(string name) =>
-            (await uri.ListChildrenAsync(DocumentsContract.GetDocumentId(uri)!))
-                .FirstOrDefault(child => child.Name == name) is { } found
-                ? DocumentsContract.BuildDocumentUriUsingTree(uri, found.Id)
-                : null;
 
         /// <summary>
         /// Lists the documents in a folder, through the tree grant the uri is built on, off the main thread. A provider
@@ -347,6 +339,7 @@ internal static class AndroidExtensions
                 DocumentsContract.Document.ColumnDocumentId,
                 DocumentsContract.Document.ColumnDisplayName,
                 DocumentsContract.Document.ColumnMimeType,
+                DocumentsContract.Document.ColumnSize,
             ],
             null, null, null) ?? throw new IOException("The folder could not be listed.");
 
@@ -377,7 +370,11 @@ internal static class AndroidExtensions
             List<DocumentChild> children = [];
             while (cursor.MoveToNext())
             {
-                children.Add(new DocumentChild(cursor.GetString(0)!, cursor.GetString(1) ?? "", cursor.GetString(2)));
+                children.Add(new DocumentChild(
+                    cursor.GetString(0)!,
+                    cursor.GetString(1) ?? "",
+                    cursor.GetString(2),
+                    cursor.IsNull(3) ? 0 : cursor.GetLong(3)));
             }
 
             return children;

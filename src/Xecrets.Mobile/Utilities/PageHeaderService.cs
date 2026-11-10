@@ -223,9 +223,29 @@ internal sealed class PageHeaderService(
             default:
                 throw new ArgumentOutOfRangeException(nameof(command));
         }
-        item.IconImageSource = (ImageSource)Application.Current!.Resources[GetOverflowIconKey(command)];
+        item.IconImageSource = CopyIcon(GetOverflowIconKey(command));
 
         return item;
+    }
+
+    // Each item gets an icon of its own, since the icon becomes the logical child of the item. One shared by the items
+    // of all pages belongs to the item that got it last, possibly on a page that is gone, and on Windows the icon is
+    // then made without the context of the app. The color follows the theme as the icon resources do.
+    private static FontImageSource CopyIcon(string key)
+    {
+        ResourceDictionary resources = Application.Current!.Resources;
+        FontImageSource icon = (FontImageSource)resources[key];
+        FontImageSource copy = new()
+        {
+            Glyph = icon.Glyph,
+            FontFamily = icon.FontFamily,
+            Size = icon.Size,
+        };
+        copy.SetAppThemeColor(
+            FontImageSource.ColorProperty,
+            (Color)resources["DarkOnLightBackground"],
+            (Color)resources["LightOnDarkBackground"]);
+        return copy;
     }
 
     private static string GetOverflowIconKey(HeaderCommand command) => command switch

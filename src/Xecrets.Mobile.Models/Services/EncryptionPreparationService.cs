@@ -42,7 +42,8 @@ internal sealed class EncryptionPreparationService(
     EncryptRequestFactory encryptRequestFactory,
     IProfileService profileService,
     ITransientFileService transientFileService,
-    ICoreServices coreServices)
+    ICoreServices coreServices,
+    RunningOperation runningOperation)
     : IEncryptionPreparationService
 {
     public async Task<EncryptionPreparationResult> EncryptWithCurrentProfileAsync(IReadableFile source)
@@ -78,7 +79,7 @@ internal sealed class EncryptionPreparationService(
         await using Stream encrypted = await encryptedSource.OpenReadAsync();
         using IDecryptionSession session = await coreServices.OpenDecryptionAsync(
             encrypted,
-            new DecryptRequest(KnownIdentities(), new Progress<Progress>(_ => { })));
+            new DecryptRequest(KnownIdentities(), runningOperation.CreateProgress()));
         if (!session.IsDecryptable)
         {
             return null;
@@ -121,8 +122,17 @@ internal sealed class EncryptionPreparationService(
     {
         string fileName = originalFileName.ToEncryptedName(string.Empty);
         string temporaryPath = transientFileService.CreateEncryptedOutputPath(fileName);
-        await using FileStream encrypted = File.Create(temporaryPath);
-        await coreServices.EncryptAsync(cleartext, encrypted, request);
+        try
+        {
+            await using FileStream encrypted = File.Create(temporaryPath);
+            await coreServices.EncryptAsync(cleartext, encrypted, request);
+        }
+        catch
+        {
+            // What was encrypted before the operation was canceled, or failed, is not left until the cache is cleaned.
+            await transientFileService.WipeTransientFileAsync(temporaryPath);
+            throw;
+        }
 
         long fileSize = new FileInfo(temporaryPath).Length;
         return new EncryptionPreparationResult(

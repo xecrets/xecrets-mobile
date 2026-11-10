@@ -31,7 +31,6 @@
 using Android.Content;
 using Android.Views;
 
-using AndroidX.AppCompat.View.Menu;
 using AndroidX.Core.View;
 using AndroidX.DrawerLayout.Widget;
 
@@ -64,17 +63,10 @@ internal sealed class AndroidShellRenderer : ShellRenderer
         Toolbar toolbar,
         DrawerLayout drawerLayout) : ShellToolbarTracker(shellContext, toolbar, drawerLayout)
     {
-        // Android shows no icons in the overflow menu, and there is no public API to change that. MenuBuilder is
-        // public, but Google considers it internal API.
         protected override void UpdateToolbarItems(Toolbar toolbar, Page page)
         {
             base.UpdateToolbarItems(toolbar, page);
-#pragma warning disable XAOBS001 // MenuBuilder is internal API according to Google.
-            if (toolbar.Menu is MenuBuilder menuBuilder)
-            {
-                menuBuilder.SetOptionalIconsVisible(true);
-            }
-#pragma warning restore XAOBS001
+            toolbar.Menu!.ShowIcons();
         }
 
         // The base tints all icons with the Shell foreground color, which is meant for the toolbar itself and not for
@@ -86,7 +78,7 @@ internal sealed class AndroidShellRenderer : ShellRenderer
                 base.UpdateMenuItemIcon(context, menuItem, toolBarItem);
                 return;
             }
-            toolBarItem.IconImageSource.LoadImage(MauiContext, result => menuItem.SetIcon(result?.Value));
+            menuItem.SetIcon(toolBarItem.IconImageSource, MauiContext);
         }
     }
 

@@ -35,9 +35,9 @@ using Xecrets.Mobile.Models.Abstractions;
 namespace Xecrets.Mobile.Models.Services;
 
 /// <summary>
-/// Builds requests to encrypt a file.
+/// Builds requests to encrypt a file, as part of the operation that runs, which cancels it when it is canceled.
 /// </summary>
-internal sealed class EncryptRequestFactory(IProfileService profileService)
+internal sealed class EncryptRequestFactory(IProfileService profileService, RunningOperation runningOperation)
 {
     /// <summary>
     /// Encrypts with the current profile password and public key,
@@ -82,6 +82,6 @@ internal sealed class EncryptRequestFactory(IProfileService profileService)
             utcNow,
             utcNow,
             true,
-            new Progress<Progress>(_ => { }));
+            runningOperation.CreateProgress());
     }
 }

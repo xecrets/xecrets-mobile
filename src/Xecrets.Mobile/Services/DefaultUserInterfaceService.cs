@@ -50,6 +50,9 @@ namespace Xecrets.Mobile.Services;
 
 internal class DefaultUserInterfaceService(IBuildInformation buildInformation, EzAppShell ezAppShell) : IUserInterfaceService
 {
+    // The navigations through this service that are not done yet.
+    private int _navigationCount;
+
     protected Shell AppShell => ezAppShell.Shell;
 
     // The shell shown in the app's only window, or null while there is none, as before the shell is created or after
@@ -63,6 +66,10 @@ internal class DefaultUserInterfaceService(IBuildInformation buildInformation, E
         : null;
 
     public bool IsShellAvailable => WindowShell is not null;
+
+    public string CurrentLocation => AppShell.CurrentState.Location.OriginalString;
+
+    public bool IsNavigating => _navigationCount > 0;
 
     public IReadOnlyDictionary<string, string> IconMap { get; } = new Dictionary<string, string>
     {
@@ -177,12 +184,12 @@ internal class DefaultUserInterfaceService(IBuildInformation buildInformation, E
 
     public Task GoBackAsync(object? parameter) => parameter is null
         ? NavigateToRouteAsync("..")
-        : AppShell.GoToAsync(
+        : CountNavigationAsync(() => AppShell.GoToAsync(
             "..",
             new ShellNavigationQueryParameters
             {
                 { nameof(NavigationParameter.Payload), parameter },
-            });
+            }));
 
     public Task OpenBrowserAsync(string url) => Launcher.Default.OpenAsync(
         url.ToSite(buildInformation.IsDebug || buildInformation.IsBeta));
@@ -196,13 +203,27 @@ internal class DefaultUserInterfaceService(IBuildInformation buildInformation, E
         }
     }
 
-    private Task NavigateToRouteAsync(string route) => AppShell.GoToAsync(route);
+    private Task NavigateToRouteAsync(string route) => CountNavigationAsync(() => AppShell.GoToAsync(route));
 
     private Task NavigateToRouteAsync(string route, object parameter) =>
-        AppShell.GoToAsync(
+        CountNavigationAsync(() => AppShell.GoToAsync(
             route,
             new Dictionary<string, object>
             {
                 { nameof(NavigationParameter.Payload), parameter },
-            });
+            }));
+
+    // Shell tells that a navigation is proposed before it is done, so it is counted until it is.
+    private async Task CountNavigationAsync(Func<Task> navigateAsync)
+    {
+        _navigationCount++;
+        try
+        {
+            await navigateAsync();
+        }
+        finally
+        {
+            _navigationCount--;
+        }
+    }
 }

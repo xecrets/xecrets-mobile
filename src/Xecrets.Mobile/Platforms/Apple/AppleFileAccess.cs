@@ -43,6 +43,7 @@ using Xecrets.Common.Models;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
+using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Platforms.Apple;
 
@@ -79,7 +80,8 @@ internal sealed class AppleFileAccess(
         return fileUrl is null ? null : AppleFileLocation.Locate(grants.Add(fileUrl));
     }
 
-    public async Task<WorkFolderResult> PickFolderAsync(string initialFolder)
+    // The folder picker does not tell the files apart by kind.
+    public async Task<WorkFolderResult> PickFolderAsync(string initialFolder, FilePickerKind kind)
     {
         ThreadGuard.ThrowIfNotMainThread();
 
@@ -133,8 +135,36 @@ internal sealed class AppleFileAccess(
     /// </summary>
     public Task<WorkFolder?> FindFolderAsync(string fileId) => grants.FindFolderAsync(fileId, isFolderItself: false);
 
+    public Task<WorkFolder?> FindFolderOfFolderAsync(string folderId) =>
+        grants.FindFolderAsync(folderId, isFolderItself: true);
+
     // A file url does not tell what folder it is reached through, so it is the same in a folder.
     public Task<FileReference> GetFileInFolderAsync(WorkFolder folder, FileReference file) => Task.FromResult(file);
+
+    /// <summary>
+    /// Listing the folders reads the storage, which is not done on the main thread. Names are compared as the volume
+    /// of the folder compares them, which may or may not be by case, and as APFS does, whatever the Unicode form.
+    /// </summary>
+    public async Task<IReadOnlyList<FolderListing>> ListFolderAsync(string folderId, FolderScope scope)
+    {
+        using IDisposable access = new AppleSecurityScope(
+            await grants.GetFolderGrantAsync(folderId, isFolderItself: true));
+
+        NSUrl folderUrl = NSUrl.FromString(folderId)!;
+        AppleNameComparer nameComparer = new(IsCaseSensitive(folderUrl));
+        return await Task.Run(() => LocalFolderLister.List(
+            new DirectoryInfo(folderUrl.Path!),
+            scope,
+            info => NSUrl.FromFilename(info.FullName).AbsoluteString!,
+            file => AppleFileLocation.Locate(NSUrl.FromFilename(file.FullName)),
+            nameComparer));
+    }
+
+    // When the volume cannot tell, names are taken to be the same whatever their case, so that an existing file is not
+    // replaced without asking.
+    private static bool IsCaseSensitive(NSUrl folderUrl) =>
+        folderUrl.TryGetResource(NSUrl.VolumeSupportsCaseSensitiveNamesKey, out NSObject? value) &&
+        ((NSNumber)value!).BoolValue;
 
     public Task<string> GetParentFolderAsync(string fileId) =>
         Task.FromResult(NSUrl.FromString(fileId)?.RemoveLastPathComponent().AbsoluteString ?? "");
@@ -329,21 +359,17 @@ internal sealed class AppleFileAccess(
     public Task<string> GetFolderOfFileAsync(string fileId) =>
         Task.FromResult(NSUrl.FromString(fileId)!.RemoveLastPathComponent().AbsoluteString!);
 
-    public async Task<bool> FileExistsInFolderAsync(string folderId, string name)
-    {
-        NSUrl folderUrl = NSUrl.FromString(folderId)!;
-        using IDisposable access = new AppleSecurityScope(
-            await grants.GetFolderGrantAsync(folderId, isFolderItself: true));
-
-        return File.Exists(Path.Combine(folderUrl.Path!, name));
-    }
-
     /// <summary>
     /// The complete file is saved within one coordinated write, so that the file provider, such as Dropbox, takes the
     /// file only once it is written, or removed.
     /// </summary>
-    public async Task<string> SaveInFolderAsync(string folderId, string name, string completedFilePath, bool overwrite)
+    public async Task<string> SaveInFolderAsync(
+        string folderId,
+        string name,
+        string completedFilePath,
+        string? existingId)
     {
+        bool overwrite = existingId is not null;
         NSUrl fileUrl = NSUrl.FromString(folderId)!.Append(name, false);
         using IDisposable access = new AppleSecurityScope(
             await grants.GetFolderGrantAsync(folderId, isFolderItself: true));

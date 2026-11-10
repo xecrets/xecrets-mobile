@@ -33,7 +33,6 @@ using CommunityToolkit.Mvvm.Input;
 using Xecrets.Core.Models;
 
 using Xecrets.Mobile.Models.Abstractions;
-using Xecrets.Mobile.Models.Data;
 using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.PageModels;
@@ -46,20 +45,17 @@ public partial class DebugPageModel(
     : PageModelBase(userInterfaceService)
 {
     [RelayCommand]
-    private Task ViewSettingsJsonAsync() =>
-        ViewJsonAsync(fileService.AppDataDirectory, MobileDataStore.DataFileName);
+    private Task ViewSettingsJsonAsync() => ViewJsonAsync(fileService.DataFilePath);
 
     [RelayCommand]
-    private Task ViewDeviceSettingsJsonAsync() =>
-        ViewJsonAsync(fileService.DeviceDirectory, MobileDataStore.DeviceSettingsFileName);
+    private Task ViewDeviceSettingsJsonAsync() => ViewJsonAsync(fileService.DeviceSettingsFilePath);
 
-    private async Task ViewJsonAsync(string directory, string fileName)
+    private async Task ViewJsonAsync(string filePath)
     {
-        string filePath = Path.Combine(directory, fileName);
         FileInfo file = new(filePath);
         await previewService.PrepareTextAsync(new DecryptedFileInfo(
             filePath,
-            fileName,
+            file.Name,
             "text/plain",
             file.Length,
             PreviewKind.Text,

@@ -63,7 +63,7 @@ public sealed class BreadcrumbTests
         app.Access.PickedFiles.Enqueue("docs/x.axx");
         app.Core.Password = "unknown";
 
-        await app.Operations.PickAndRunAsync(WorkFolderIntent.Auto, docs);
+        Task run = app.Operations.PickAndRunAsync(WorkFolderIntent.Auto, docs);
 
         EnterPasswordPageModel page = app.CreateEnterPasswordPage();
         page.Initialize((DecryptionPasswordsIntent)app.UserInterface.Payloads.Single());
@@ -73,6 +73,8 @@ public sealed class BreadcrumbTests
             MobileTexts.BreadcrumbHome,
             MobileTexts.BreadcrumbOriginal,
             MobileTexts.BreadcrumbDecryptionPasswords)));
+        page.CancelWorkFolderRequest();
+        await run;
     }
 
     [Test]

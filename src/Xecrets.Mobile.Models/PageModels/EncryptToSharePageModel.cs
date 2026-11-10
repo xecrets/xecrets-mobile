@@ -44,6 +44,7 @@ public partial class EncryptToSharePageModel(
     IFileAccess fileAccess,
     IEncryptionPreparationService encryptionPreparationService,
     IFlowContext flowContext,
+    RunningOperation runningOperation,
     ICrashLogService crashLogService,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel, IPageInformationPageModel
@@ -85,6 +86,7 @@ public partial class EncryptToSharePageModel(
     [RelayCommand(CanExecute = nameof(CanSubmit))]
     private async Task Submit()
     {
+        using IDisposable running = runningOperation.Begin();
         try
         {
             IsBusy = true;
@@ -94,7 +96,7 @@ public partial class EncryptToSharePageModel(
             ReferencedReadableFile source = new(fileAccess, _file);
             EncryptionPreparationResult? result;
 
-            if (_file.Name.IsEncrypted())
+            if (_file.Name.IsNameEncrypted())
             {
                 result = await encryptionPreparationService.ReEncryptWithPasswordAsync(source, password);
                 if (result is null)

@@ -106,10 +106,11 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
     }
 
     /// <summary>
-    /// The tree grant is persisted, and the folder is probed for being writable. A grant that ends up not being used is
-    /// released by the next cleanup.
+    /// The folder picker shows the files in the folders, without letting them be picked, and does not tell them apart by
+    /// kind. The tree grant is persisted, and the folder is probed for being writable. A grant that ends up not being
+    /// used is released by the next cleanup.
     /// </summary>
-    public async Task<WorkFolderResult> PickFolderAsync(string initialFolder)
+    public async Task<WorkFolderResult> PickFolderAsync(string initialFolder, FilePickerKind kind)
     {
         ThreadGuard.ThrowIfNotMainThread();
 
@@ -176,6 +177,10 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
                 .FirstOrDefault();
         });
 
+    // A picked folder is the top of its own tree grant, which is the grant of one of My folders when it is that folder,
+    // so it is found as a file in it is.
+    public Task<WorkFolder?> FindFolderOfFolderAsync(string folderId) => FindFolderAsync(folderId);
+
     // Through the grant of the folder, the provider may tell more of where the file is stored.
     public Task<FileReference> GetFileInFolderAsync(WorkFolder folder, FileReference file) =>
         Task.Run(() => Locate(
@@ -183,6 +188,68 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
                 AndroidUri.Parse(folder.GrantId)!,
                 DocumentsContract.GetDocumentId(AndroidUri.Parse(file.Id)!)!)!,
             file.Name));
+
+    /// <summary>
+    /// The folder is the top of its tree grant, through which the files are listed and reached. Names that start with a
+    /// dot are hidden, as in the system file picker.
+    /// </summary>
+    /// <summary>
+    /// The folder is listed through the tree grant its uri is built on, off the main thread, as is each folder below it
+    /// when the scope includes them.
+    /// </summary>
+    public Task<IReadOnlyList<FolderListing>> ListFolderAsync(string folderId, FolderScope scope) =>
+        Task.Run<IReadOnlyList<FolderListing>>(async () =>
+        {
+            AndroidUri folderUri = AndroidUri.Parse(folderId)!;
+            List<FolderListing> listings = [];
+            await AddListingsAsync(folderUri, DocumentsContract.GetDocumentId(folderUri)!, scope, listings);
+            return listings;
+        });
+
+    /// <summary>
+    /// Hidden files and folders, named with a leading dot, are skipped, as the system picker does. All that is in the
+    /// folder is named, also folders, as found when saving in it. A provider may have more than one document with the
+    /// same name, of which the first is the one found.
+    /// </summary>
+    private async Task AddListingsAsync(
+        AndroidUri treeUri,
+        string folderDocumentId,
+        FolderScope scope,
+        List<FolderListing> listings)
+    {
+        List<FolderFile> files = [];
+        Dictionary<string, string> idsByName = [];
+        List<string> childFolderIds = [];
+        foreach (DocumentChild child in await treeUri.ListChildrenAsync(folderDocumentId))
+        {
+            AndroidUri childUri = DocumentsContract.BuildDocumentUriUsingTree(treeUri, child.Id)!;
+            idsByName.TryAdd(child.Name, childUri.ToString()!);
+            if (child.Name.StartsWith('.'))
+            {
+                continue;
+            }
+
+            if (child.MimeType == DocumentsContract.Document.MimeTypeDir)
+            {
+                childFolderIds.Add(child.Id);
+                continue;
+            }
+
+            files.Add(new FolderFile(Locate(childUri, child.Name), child.Size));
+        }
+
+        string folderId = DocumentsContract.BuildDocumentUriUsingTree(treeUri, folderDocumentId)!.ToString()!;
+        listings.Add(new FolderListing(folderId, files, idsByName));
+        if (scope == FolderScope.Folder)
+        {
+            return;
+        }
+
+        foreach (string childFolderId in childFolderIds)
+        {
+            await AddListingsAsync(treeUri, childFolderId, scope, listings);
+        }
+    }
 
     /// <summary>
     /// The parent of a file in a folder is found through the grant of the folder, and that of a file on local storage
@@ -417,20 +484,20 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
             return DocumentsContract.BuildDocumentUriUsingTree(fileUri, parentDocumentId)!.ToString()!;
         });
 
-    public async Task<bool> FileExistsInFolderAsync(string folderId, string name) =>
-        await AndroidUri.Parse(folderId)!.FindChildAsync(name) is not null;
-
     /// <summary>
-    /// Replaces an existing document with the name, when allowed, and otherwise creates it. The provider is called off
+    /// Replaces the existing document, when given, and otherwise creates one with the name. The provider is called off
     /// the main thread, as for the writable file.
     /// </summary>
-    public Task<string> SaveInFolderAsync(string folderId, string name, string completedFilePath, bool overwrite) =>
+    public Task<string> SaveInFolderAsync(
+        string folderId,
+        string name,
+        string completedFilePath,
+        string? existingId) =>
         Task.Run(async () =>
         {
-            AndroidUri folderUri = AndroidUri.Parse(folderId)!;
-            AndroidUri fileUri =
-                (overwrite ? await folderUri.FindChildAsync(name) : null) ??
-                await CreateDocumentAsync(folderUri, name, GetCreateDocumentType(name));
+            AndroidUri fileUri = existingId is not null
+                ? AndroidUri.Parse(existingId)!
+                : await CreateDocumentAsync(AndroidUri.Parse(folderId)!, name, GetCreateDocumentType(name));
             await WriteDocumentAsync(fileUri, completedFilePath);
             return fileUri.ToString()!;
         });

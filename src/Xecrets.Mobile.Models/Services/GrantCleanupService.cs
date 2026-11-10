@@ -29,7 +29,6 @@
 #endregion Copyright and GPL License
 
 using Xecrets.Mobile.Models.Abstractions;
-using Xecrets.Mobile.Models.Data;
 using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Services;
@@ -40,7 +39,7 @@ namespace Xecrets.Mobile.Models.Services;
 /// files. Should the lists fail to load, nothing is referenced, and all grants are released.
 /// </summary>
 public sealed class GrantCleanupService(
-    MobileDataStore dataStore,
+    IDeviceSettingsStore dataStore,
     IFileAccess fileAccess,
     ICrashLogService crashLogService)
 {

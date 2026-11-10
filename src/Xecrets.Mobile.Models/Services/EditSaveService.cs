@@ -42,6 +42,7 @@ internal sealed class EditSaveService(
     EncryptRequestFactory encryptRequestFactory,
     ICoreServices coreServices,
     IFileAccess fileAccess,
+    IInterruptedSaveService interruptedSaves,
     FolderAccessWorkflow folderAccess,
     FileOperationWorkflow fileOperationWorkflow,
     IRecentFilesService recentFilesService,
@@ -53,14 +54,15 @@ internal sealed class EditSaveService(
     /// <summary>
     /// The edits are encrypted to a temporary file first, which is wiped once saved, or not. The source is then kept
     /// under its backup name while the edits are saved under its own name, and is deleted once they are. Should saving
-    /// fail, the source gets its own name back, so that only the edits are lost.
+    /// fail, the source gets its own name back, so that only the edits are lost, which is also done when the user next
+    /// signs in, should the app be ended while saving.
     /// </summary>
     public async Task<bool> SaveAsync(string text)
     {
         // The source is reached through one of My folders, as it was when editing started.
         FileReference source = flowContext.Source!;
-        string folderId = await fileAccess.GetFolderOfFileAsync(source.Id);
-        if (await fileAccess.FileExistsInFolderAsync(folderId, source.Name.ToBackupName()))
+        ListedFolder folder = await new FolderContents(fileAccess, []).GetFolderOfAsync(source);
+        if (folder.FindId(source.Name.ToBackupName()) is not null)
         {
             return false;
         }
@@ -72,7 +74,16 @@ internal sealed class EditSaveService(
             string backupId = await fileAccess.RenameAsync(source.Id, source.Name.ToBackupName());
             try
             {
-                savedId = await fileAccess.SaveInFolderAsync(folderId, source.Name, encryptedPath, overwrite: false);
+                savedId = await interruptedSaves.SaveAsync(
+                    new SaveInProgress
+                    {
+                        FolderId = folder.Id,
+                        Name = source.Name,
+                        SourceId = backupId,
+                        RestoresSource = true,
+                    },
+                    encryptedPath,
+                    existingId: null);
             }
             catch
             {

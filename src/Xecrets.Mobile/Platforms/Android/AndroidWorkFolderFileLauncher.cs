@@ -34,6 +34,7 @@ using System.Threading.Tasks;
 using Android.Content;
 
 using Xecrets.Core.Public;
+using Xecrets.Mobile.Models;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
@@ -105,7 +106,7 @@ internal class AndroidWorkFolderFileLauncher : IWorkFolderFileLauncher
 
         string? contentType = Platform.AppContext.ContentResolver!.GetType(uri);
         return string.IsNullOrEmpty(contentType) || contentType == "application/octet-stream"
-            ? FileTypeClassifier.DetectContentType(fileName).OrAndroidContentType(fileName)
+            ? fileName.DetectContentType().OrAndroidContentType(fileName)
             : contentType;
     }
 }

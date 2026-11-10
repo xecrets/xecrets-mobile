@@ -163,9 +163,9 @@ public sealed class PendingFileTests
         TestUserInterfaceService userInterface = new() { CanProcessIncomingFiles = true, CanReceiveIncomingFiles = true };
         TestProfileService profile = new();
         TestCoreServices core = new();
-        PreviewService preview = new(core, profile, transient, new PreviewState(), new DecryptionPasswordRequestState(), new FakeCrashLogService());
+        PreviewService preview = new(core, profile, transient, new PreviewState(), new DecryptionPasswordRequestState(), new RunningOperation(new ScriptedUserInterface()), new FakeCrashLogService());
         IncomingFileService incoming = new(profile, transient, preview,
-            new EncryptionPreparationService(new EncryptRequestFactory(profile), profile, transient, core), new FlowContext(), core, new FakeCrashLogService(), userInterface);
+            new EncryptionPreparationService(new EncryptRequestFactory(profile, new RunningOperation(new ScriptedUserInterface())), profile, transient, core, new RunningOperation(new ScriptedUserInterface())), new FlowContext(), core, new FakeCrashLogService(), userInterface);
         await incoming.ReceiveAsync(new TestIncomingFileSource(async () =>
         {
             string path = transient.CreateIncomingPath(name);
@@ -200,7 +200,7 @@ public sealed class PendingFileTests
         await incoming.ProcessPendingAsync();
 
         Assert.That(userInterface.Destinations, Is.Empty);
-        Assert.That(userInterface.Messages, Is.EqualTo([MobileTexts.DialogTextNotEncrypted]));
+        Assert.That(userInterface.Messages, Is.EqualTo([string.Format(MobileTexts.DialogTextNotEncryptedFormat, "input.axx")]));
     }
 
     [TestCase(false)]
@@ -221,7 +221,7 @@ public sealed class PendingFileTests
             File.Delete(path);
         }
 
-        PreviewService preview = new(null!, null!, transient, new PreviewState(), request, new FakeCrashLogService());
+        PreviewService preview = new(null!, null!, transient, new PreviewState(), request, new RunningOperation(new ScriptedUserInterface()), new FakeCrashLogService());
         TestUserInterfaceService userInterface = new();
         EnterPasswordPageModel page = new(
             preview, new TestWorkFolderOperationService(), new TestProfileService(), null!, userInterface)
@@ -250,7 +250,7 @@ public sealed class PendingFileTests
         DecryptionPasswordRequestState request = new();
         TestProfileService profile = new();
         PreviewState state = new();
-        PreviewService preview = new(new TestCoreServices(), profile, transient, state, request, new FakeCrashLogService());
+        PreviewService preview = new(new TestCoreServices(), profile, transient, state, request, new RunningOperation(new ScriptedUserInterface()), new FakeCrashLogService());
         Assert.That(await preview.PrepareImportedAsync(path), Is.EqualTo(PreviewPreparationStatus.WrongPassword));
 
         TestUserInterfaceService userInterface = new();
@@ -281,7 +281,7 @@ public sealed class PendingFileTests
         TestProfileService profile = new();
         DecryptionPasswordRequestState request = new();
         request.Set("old");
-        PreviewService preview = new(null!, profile, null!, new PreviewState(), request, new FakeCrashLogService());
+        PreviewService preview = new(null!, profile, null!, new PreviewState(), request, new RunningOperation(new ScriptedUserInterface()), new FakeCrashLogService());
 
         Assert.That(await preview.PrepareImportedAsync(Path.Combine(_directory, "missing.axx")),
             Is.EqualTo(PreviewPreparationStatus.Cancelled));
@@ -292,7 +292,7 @@ public sealed class PendingFileTests
     public async Task UnreadableImportedInputIsNotTreatedAsMissing()
     {
         PreviewService preview = new(null!, new TestProfileService(), null!,
-            new PreviewState(), new DecryptionPasswordRequestState(), new FakeCrashLogService());
+            new PreviewState(), new DecryptionPasswordRequestState(), new RunningOperation(new ScriptedUserInterface()), new FakeCrashLogService());
 
         await Assert.ThatAsync(async () => await preview.PrepareImportedAsync(_directory),
             Throws.TypeOf<UnauthorizedAccessException>());
@@ -307,7 +307,7 @@ public sealed class PendingFileTests
         DecryptionPasswordRequestState request = new();
         request.Set(path);
         PreviewService preview = new(new TestCoreServices(new DirectoryNotFoundException("output failed")),
-            new TestProfileService(), transient, new PreviewState(), request, new FakeCrashLogService());
+            new TestProfileService(), transient, new PreviewState(), request, new RunningOperation(new ScriptedUserInterface()), new FakeCrashLogService());
 
         await Assert.ThatAsync(async () => await preview.PrepareWithPasswordAsync("password"),
             Throws.TypeOf<DirectoryNotFoundException>().With.Message.EqualTo("output failed"));
@@ -325,7 +325,7 @@ public sealed class PendingFileTests
         await File.WriteAllTextAsync(path, "input");
         request.Set(path);
         TestProfileService profile = new() { IsAuthenticated = true };
-        PreviewService preview = new(null!, profile, transient, new PreviewState(), request, new FakeCrashLogService());
+        PreviewService preview = new(null!, profile, transient, new PreviewState(), request, new RunningOperation(new ScriptedUserInterface()), new FakeCrashLogService());
         TestUserInterfaceService userInterface = new();
         GrantCleanupService grantCleanup = new(
             new MobileDataStore(new TestFileService(_directory), new FakeCrashLogService(), TimeProvider.System,
@@ -351,6 +351,8 @@ public sealed class PendingFileTests
         public bool IsShellAvailable => true;
         public bool CanProcessIncomingFiles { get; init; }
         public bool CanReceiveIncomingFiles { get; init; }
+        public string CurrentLocation => "";
+        public bool IsNavigating => false;
         public IReadOnlyDictionary<string, string> IconMap => throw new NotSupportedException();
         public List<AppDestination> Destinations { get; } = [];
         public List<AppDestination> Replacements { get; } = [];
@@ -464,16 +466,18 @@ public sealed class PendingFileTests
     private sealed class TestWorkFolderOperationService : IWorkFolderOperationService
     {
         public bool HasPendingPasswordRequest => false;
-        public Task<FileReference> EncryptAsync(FileReference file) => throw new NotSupportedException();
-        public Task<FileReference?> DecryptWithKnownPasswordsAsync(FileReference file) =>
-            throw new NotSupportedException();
-        public Task<FileReference?> DecryptWithPasswordAsync(string password) => throw new NotSupportedException();
+        public Task<FileOperationOutcome> TransformAsync(
+            FileReference file,
+            WorkFolderOperation operation,
+            FolderContents contents,
+            IFileCompletionReporter reporter) => throw new NotSupportedException();
         public Task<FileOperationOutcome> EncryptElsewhereAsync(FileReference file) => throw new NotSupportedException();
         public Task<FileOperationOutcome> DecryptElsewhereWithKnownPasswordsAsync(FileReference file) =>
             throw new NotSupportedException();
         public Task<FileOperationOutcome> DecryptPendingWithPasswordAsync(string password) =>
             throw new NotSupportedException();
         public void CancelPasswordRequest() => throw new NotSupportedException();
+        public Task<FileOperationOutcome> WaitForPasswordRequestAsync() => throw new NotSupportedException();
     }
 
     private sealed class TestFileWiper(Action? onWipe = null) : IFileWiper

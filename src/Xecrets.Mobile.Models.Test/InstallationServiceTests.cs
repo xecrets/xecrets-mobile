@@ -179,7 +179,7 @@ public sealed class InstallationServiceTests
 
     private string DeviceDirectory => Path.Combine(_directory, IFileService.DeviceDirectoryName);
 
-    private string SettingsPath => Path.Combine(DeviceDirectory, MobileDataStore.DeviceSettingsFileName);
+    private string SettingsPath => ((IFileService)_fileService).DeviceSettingsFilePath;
 
     private DeviceSettings ReadSettings() => JsonFile.Load<DeviceSettings>(SettingsPath, exception => throw exception);
 

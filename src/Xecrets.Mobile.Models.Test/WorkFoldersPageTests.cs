@@ -128,4 +128,90 @@ public sealed class WorkFoldersPageTests
                 $"iCloud{Path.DirectorySeparatorChar}Work",
             ]));
     }
+
+    [TestCase(WorkFolderIntent.Auto, new[]
+    {
+        nameof(MobileTexts.MenuEditLabel),
+        nameof(MobileTexts.MenuEncryptFolderFiles),
+        nameof(MobileTexts.MenuEncryptFolderAndSubfolderFiles),
+        nameof(MobileTexts.MenuDecryptFolderFiles),
+        nameof(MobileTexts.MenuDecryptFolderAndSubfolderFiles),
+        nameof(MobileTexts.MenuRemoveFromList),
+    })]
+    [TestCase(WorkFolderIntent.Delete, new[]
+    {
+        nameof(MobileTexts.MenuEditLabel),
+        nameof(MobileTexts.MenuDeleteFolderFiles),
+        nameof(MobileTexts.MenuDeleteFolderAndSubfolderFiles),
+        nameof(MobileTexts.MenuRemoveFromList),
+    })]
+    [TestCase(WorkFolderIntent.Copy, new[]
+    {
+        nameof(MobileTexts.MenuEditLabel),
+        nameof(MobileTexts.MenuRemoveFromList),
+    })]
+    [TestCase(WorkFolderIntent.Share, new[]
+    {
+        nameof(MobileTexts.MenuEditLabel),
+        nameof(MobileTexts.MenuRemoveFromList),
+    })]
+    public async Task FolderMenuHasTheItemsForWhatThePageIsOpenedFor(WorkFolderIntent intent, string[] textNames)
+    {
+        using TestApp app = new();
+        app.AddFolder("docs");
+        WorkFoldersPageModel page = app.CreateWorkFoldersPage();
+        page.Initialize(intent);
+
+        await page.LoadCommand.ExecuteAsync(null);
+
+        Assert.That(page.Folders.Single().MenuItems.Select(item => item.Text), Is.EqualTo(textNames.Select(MenuText)));
+    }
+
+    [Test]
+    public async Task ChoosingToEncryptFolderFilesInTheMenuEncryptsThem()
+    {
+        using TestApp app = new();
+        app.AddFolder("docs");
+        app.AddFile("docs/a.txt");
+        app.Access.PickedFolders.Enqueue(FakeFileAccess.Folder("docs"));
+        app.UserInterface.Answers.Enqueue(true);
+        WorkFoldersPageModel page = app.CreateWorkFoldersPage();
+        await page.LoadCommand.ExecuteAsync(null);
+        OverflowMenuItem item = page.Folders.Single().MenuItems
+            .Single(menuItem => menuItem.Text == MobileTexts.MenuEncryptFolderFiles);
+
+        await page.RunFolderFilesCommand.ExecuteAsync((FolderFilesRequest)item.Parameter);
+
+        Assert.That(app.Access.Files.Keys.Single(), Does.EndWith(".axx"));
+        Assert.That(page.IsBusy, Is.False);
+    }
+
+    [Test]
+    public async Task ChoosingToRemoveTheFolderInTheMenuRemovesIt()
+    {
+        using TestApp app = new();
+        app.AddFolder("docs");
+        WorkFoldersPageModel page = app.CreateWorkFoldersPage();
+        await page.LoadCommand.ExecuteAsync(null);
+        OverflowMenuItem item = page.Folders.Single().MenuItems
+            .Single(menuItem => menuItem.Text == MobileTexts.MenuRemoveFromList);
+
+        item.Command.Execute(item.Parameter);
+
+        Assert.That(page.Folders, Is.Empty);
+        Assert.That(app.FolderIds(), Is.Empty);
+    }
+
+    private static string MenuText(string textName) => textName switch
+    {
+        nameof(MobileTexts.MenuEditLabel) => MobileTexts.MenuEditLabel,
+        nameof(MobileTexts.MenuEncryptFolderFiles) => MobileTexts.MenuEncryptFolderFiles,
+        nameof(MobileTexts.MenuEncryptFolderAndSubfolderFiles) => MobileTexts.MenuEncryptFolderAndSubfolderFiles,
+        nameof(MobileTexts.MenuDecryptFolderFiles) => MobileTexts.MenuDecryptFolderFiles,
+        nameof(MobileTexts.MenuDecryptFolderAndSubfolderFiles) => MobileTexts.MenuDecryptFolderAndSubfolderFiles,
+        nameof(MobileTexts.MenuDeleteFolderFiles) => MobileTexts.MenuDeleteFolderFiles,
+        nameof(MobileTexts.MenuDeleteFolderAndSubfolderFiles) => MobileTexts.MenuDeleteFolderAndSubfolderFiles,
+        nameof(MobileTexts.MenuRemoveFromList) => MobileTexts.MenuRemoveFromList,
+        _ => throw new ArgumentOutOfRangeException(nameof(textName), textName, null),
+    };
 }

@@ -74,6 +74,8 @@ internal sealed class FakeFileAccess(WorkFolderStorage storage) : IFileAccess
 
     public int FolderLookupCount { get; private set; }
 
+    public int FolderListingCount { get; private set; }
+
     // The failure to find the folder of a file with, when set, such as when the provider cannot list a folder.
     public Exception? FolderLookupFailure { get; set; }
 
@@ -93,7 +95,7 @@ internal sealed class FakeFileAccess(WorkFolderStorage storage) : IFileAccess
         return Task.FromResult(path is null ? null : new FileReference(path, NameOf(path)) { Root = PickedRoot });
     }
 
-    public Task<WorkFolderResult> PickFolderAsync(string initialFolder)
+    public Task<WorkFolderResult> PickFolderAsync(string initialFolder, FilePickerKind kind)
     {
         FolderPickerStarts.Add(initialFolder);
         return Task.FromResult(PickedFolders.Dequeue());
@@ -106,8 +108,52 @@ internal sealed class FakeFileAccess(WorkFolderStorage storage) : IFileAccess
             .OrderByDescending(folder => folder.Id.Length)
             .FirstOrDefault();
 
+    public async Task<WorkFolder?> FindFolderOfFolderAsync(string folderId) =>
+        (await storage.LoadFoldersAsync())
+            .Where(folder => !RevokedFolderGrants.Contains(folder.GrantId) &&
+                (folderId == folder.Id || folderId.StartsWith(folder.Id + "/", StringComparison.Ordinal)))
+            .OrderByDescending(folder => folder.Id.Length)
+            .FirstOrDefault();
+
     public Task<FileReference> GetFileInFolderAsync(WorkFolder folder, FileReference file) =>
         Task.FromResult(UsesFolderIds ? file with { Id = $"{folder.GrantId}|{PathOf(file.Id)}" } : file);
+
+    // The files are listed by path, as reached through the grant of the folder, if any, one listing per folder that
+    // has files, and always one for the folder itself.
+    public Task<IReadOnlyList<FolderListing>> ListFolderAsync(string folderId, FolderScope scope)
+    {
+        FolderListingCount++;
+        string folderPath = PathOf(folderId);
+        string grant = folderId.Contains('|') ? folderId[..(folderId.IndexOf('|') + 1)] : "";
+        string[] paths = [.. Files.Keys.Where(path => IsListed(folderPath, scope, path)).Order(StringComparer.Ordinal)];
+        string[] folderPaths =
+            [folderPath, .. paths.Select(path => GetParentFolder(path)).Distinct().Except([folderPath])];
+        return Task.FromResult<IReadOnlyList<FolderListing>>(
+        [
+            .. folderPaths.Select(listedPath =>
+            {
+                FolderFile[] files =
+                [
+                    .. paths
+                        .Where(path => GetParentFolder(path) == listedPath)
+                        .Select(path =>
+                            new FolderFile(new FileReference(grant + path, NameOf(path)), Files[path].Length)),
+                ];
+                return new FolderListing(
+                    grant + listedPath,
+                    files,
+                    files.ToDictionary(folderFile => folderFile.File.Name, folderFile => folderFile.File.Id));
+            }),
+        ]);
+    }
+
+    private static bool IsListed(string folderPath, FolderScope scope, string path) =>
+        path.StartsWith(folderPath + "/", StringComparison.Ordinal) && scope switch
+        {
+            FolderScope.Folder => !path[(folderPath.Length + 1)..].Contains('/'),
+            FolderScope.FolderAndSubfolders => true,
+            _ => throw new ArgumentOutOfRangeException(nameof(scope), scope, @"Unknown folder scope."),
+        };
 
     public Task<string> GetParentFolderAsync(string fileId) => Task.FromResult(GetParentFolder(fileId));
 
@@ -213,14 +259,15 @@ internal sealed class FakeFileAccess(WorkFolderStorage storage) : IFileAccess
         return Task.FromResult(fileId.Contains('|') ? $"{fileId[..fileId.IndexOf('|')]}|{folder}" : folder);
     }
 
-    public Task<bool> FileExistsInFolderAsync(string folderId, string name) =>
-        Task.FromResult(Files.ContainsKey(PathIn(folderId, name)));
-
     // As for local storage, a new file is not created where there already is one.
-    public async Task<string> SaveInFolderAsync(string folderId, string name, string completedFilePath, bool overwrite)
+    public async Task<string> SaveInFolderAsync(
+        string folderId,
+        string name,
+        string completedFilePath,
+        string? existingId)
     {
         string path = PathIn(folderId, name);
-        if (!overwrite && Files.ContainsKey(path))
+        if (existingId is null && Files.ContainsKey(path))
         {
             throw new IOException("The file already exists.");
         }

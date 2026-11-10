@@ -50,7 +50,11 @@ internal static class MauiAppBuilderExtensions
         builder.Services.AddSingleton<IWorkFolderFileLauncher, AppleWorkFolderFileLauncher>();
         builder.Services.AddSingleton<IUserInterfaceService, DefaultUserInterfaceService>();
         builder.Services.AddSingleton<IPlatformServices, MacCatalystServices>();
-        builder.ConfigureMauiHandlers(handlers => handlers.AddHandler<FileStateSelector, AppleFileStateSelectorHandler>());
+        builder.ConfigureMauiHandlers(handlers =>
+        {
+            handlers.AddHandler<FileStateSelector, AppleFileStateSelectorHandler>();
+            handlers.AddHandler<OverflowMenuButton, AppleOverflowMenuButtonHandler>();
+        });
         return builder;
     }
 }

@@ -37,7 +37,7 @@ namespace Xecrets.Mobile.Models.Data;
 /// <summary>
 /// Persists Xecrets.Core device settings in <see cref="DeviceSettings.Values"/>.
 /// </summary>
-internal sealed class MobileDeviceSettings(MobileDataStore dataStore) : IDeviceSettings, IClear
+internal sealed class MobileDeviceSettings(IDeviceSettingsStore dataStore) : IDeviceSettings, IClear
 {
     private readonly Lazy<Dictionary<string, string>> _settings =
         new(() => new Dictionary<string, string>(dataStore.ReadDeviceValues()));

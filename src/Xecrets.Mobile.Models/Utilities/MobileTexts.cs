@@ -127,19 +127,33 @@ public static class MobileTexts
 
     public static string DialogTextAccessDeniedOrNotSupported => "The app isn’t allowed to change the file.";
 
-    public static string DialogTextAllowFolderAccessFormat => "Allow the app to access the folder that contains “{0}”?";
+    public static string DialogTextAllowAccessToFolder => "Allow the app to access the folder?";
 
-    public static string DialogTextAlreadyEncrypted => "The file is already encrypted.";
+    public static string DialogTextAlreadyEncryptedFormat => "The file “{0}” is already encrypted.";
 
     public static string DialogTextBackupNameInUse => "Not saved, the folder already has a file named “{0}”. Remove it, and try again.";
 
+    public static string DialogTextCanceled => "Canceled.";
+
     public static string DialogTextCloudVersionsMayRemain => "Earlier versions or the trash may remain in the cloud.";
+
+    public static string DialogTextConfirmCancelOperation => "Cancel the operation?";
+
+    public static string DialogTextConfirmDecryptFiles => "Decrypt the files?";
+
+    public static string DialogTextConfirmDeleteFiles => "Delete the files?";
+
+    public static string DialogTextConfirmEncryptFiles => "Encrypt the files?";
 
     public static string DialogTextConfirmOverwrite => "“{0}” already exists. Replace it?";
 
     public static string DialogTextCopiedToClipboard => "Copied to the clipboard.";
 
+    public static string DialogTextDone => "Done.";
+
     public static string DialogTextExceptionFormat => "An unexpected error “{0}” occurred.";
+
+    public static string DialogTextFileCountAndSizeFormat => "Number of files: {0}. Total size: {1}.";
 
     public static string DialogTextFileDecrypted => "The file is decrypted.";
 
@@ -156,15 +170,24 @@ public static class MobileTexts
 
     public static string DialogTextFileSaved => "The file is saved.";
 
+    public static string DialogTextFilesDecryptedFormat => "Files decrypted: {0}.";
+
+    public static string DialogTextFilesDeletedFormat => "Files deleted: {0}.";
+
+    public static string DialogTextFilesEncryptedFormat => "Files encrypted: {0}.";
+
     public static string DialogTextFolderName => "Enter a label for the folder";
 
     public static string DialogTextFolderNoAccess => "The app can’t access the folder. Choose another one.";
 
     public static string DialogTextIncomingFileAccessDenied => "The app isn’t allowed to open the file.";
 
+    public static string DialogTextInterruptedSaveFormat =>
+        "An operation on “{0}” was interrupted. Check the file, and do it again if needed.";
+
     public static string DialogTextNoAppToOpenFile => "There is no app to open the file.";
 
-    public static string DialogTextNotEncrypted => "The file isn’t encrypted.";
+    public static string DialogTextNotEncryptedFormat => "The file “{0}” isn’t encrypted.";
 
     public static string DialogTextOriginalNotRemoved => "Done, but the original file can’t be removed.";
 
@@ -191,6 +214,12 @@ public static class MobileTexts
     public static string EncryptToShareDescription => "Enter a new password for the encrypted copy. Send the password by a different means than the file.";
 
     public static string FileSizeFormat => "{0} bytes";
+
+    public static string FileSizeGigabytesFormat => "{0} GB";
+
+    public static string FileSizeKilobytesFormat => "{0} KB";
+
+    public static string FileSizeMegabytesFormat => "{0} MB";
 
     public static string FileStateAll => "All";
 
@@ -229,10 +258,24 @@ public static class MobileTexts
 
     public static string MenuChangeProfile => "Change local profile";
 
+    public static string MenuDecryptFolderAndSubfolderFiles => "Decrypt folder and subfolders";
+
+    public static string MenuDecryptFolderFiles => "Decrypt folder";
+
     // "Decryption passwords"
     public static string MenuDecryptionPasswords => DecryptionPasswordsContentTitle;
 
+    public static string MenuDeleteFolderAndSubfolderFiles => "Delete folder and subfolders";
+
+    public static string MenuDeleteFolderFiles => "Delete folder";
+
     public static string MenuDeleteProfile => "Delete local profile";
+
+    public static string MenuEditLabel => "Edit label";
+
+    public static string MenuEncryptFolderAndSubfolderFiles => "Encrypt folder and subfolders";
+
+    public static string MenuEncryptFolderFiles => "Encrypt folder";
 
     // Also used as the label on the About page, see AboutLabelSourceCode.
     public static string MenuGitHub => "Source code";
@@ -241,6 +284,8 @@ public static class MobileTexts
 
     // "Recent files"
     public static string MenuRecentFiles => RecentFilesContentTitle;
+
+    public static string MenuRemoveFromList => "Remove from list";
 
     public static string MenuSignOut => "Sign out";
 

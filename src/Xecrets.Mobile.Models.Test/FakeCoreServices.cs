@@ -39,7 +39,7 @@ namespace Xecrets.Mobile.Models.Test;
 
 /// <summary>
 /// Encrypted contents start with "ENC:", followed by the name of the file encrypted and a line break, and then the
-/// contents of that file.
+/// contents of that file. The progress is reported once the contents are written, as the core reports it as they are.
 /// </summary>
 internal sealed class FakeCoreServices : ICoreServices
 {
@@ -51,11 +51,26 @@ internal sealed class FakeCoreServices : ICoreServices
     public string? Password { get; set; }
 
     /// <summary>
+    /// The password a file of the original name can only be decrypted with, instead of <see cref="Password"/>.
+    /// </summary>
+    public Dictionary<string, string> PasswordsByName { get; } = [];
+
+    /// <summary>
     /// What any file that is decrypted was encrypted with.
     /// </summary>
     public EncryptedWithParameters EncryptedWith { get; set; } = EncryptedWithParameters.Empty;
 
     public List<EncryptRequest> EncryptRequests { get; } = [];
+
+    /// <summary>
+    /// Done when the contents are written while encrypting or decrypting, before the progress is reported.
+    /// </summary>
+    public Action? Writing { get; set; }
+
+    /// <summary>
+    /// Done when a file is opened to be decrypted, before it is known whether it can be.
+    /// </summary>
+    public Action? Opening { get; set; }
 
     public async Task<bool> IsEncryptedAsync(Func<Task<Stream>> openReadAsync)
     {
@@ -67,11 +82,14 @@ internal sealed class FakeCoreServices : ICoreServices
     {
         EncryptRequests.Add(request);
         string contents = await new StreamReader(cleartext).ReadToEndAsync();
-        await encrypted.WriteAsync(Encoding.UTF8.GetBytes($"{_marker}{request.OriginalFileName}\n{contents}"));
+        byte[] bytes = Encoding.UTF8.GetBytes($"{_marker}{request.OriginalFileName}\n{contents}");
+        await encrypted.WriteAsync(bytes);
+        ReportWritten(request.Progress, bytes.Length);
     }
 
     public async Task<IDecryptionSession> OpenDecryptionAsync(Stream encrypted, DecryptRequest request)
     {
+        Opening?.Invoke();
         string contents = await new StreamReader(encrypted).ReadToEndAsync();
         if (!contents.StartsWith(_marker, StringComparison.Ordinal))
         {
@@ -79,13 +97,21 @@ internal sealed class FakeCoreServices : ICoreServices
                 new InvalidDataException());
         }
 
-        if (Password is not null && request.Identities.All(identity => identity.Passphrase != Password))
+        string[] parts = contents[_marker.Length..].Split('\n', 2);
+        string? password = PasswordsByName.GetValueOrDefault(parts[0]) ?? Password;
+        if (password is not null && request.Identities.All(identity => identity.Passphrase != password))
         {
-            return new FakeDecryptionSession(false, string.Empty, string.Empty, EncryptedWithParameters.Empty);
+            return new FakeDecryptionSession(
+                this, request, false, string.Empty, string.Empty, EncryptedWithParameters.Empty);
         }
 
-        string[] parts = contents[_marker.Length..].Split('\n', 2);
-        return new FakeDecryptionSession(true, parts[0], parts[1], EncryptedWith);
+        return new FakeDecryptionSession(this, request, true, parts[0], parts[1], EncryptedWith);
+    }
+
+    private void ReportWritten(IProgress<Progress> progress, int count)
+    {
+        Writing?.Invoke();
+        progress.Report(Progress.CountAdded(count));
     }
 
     public Task<KeyPair> CreateKeyPairAsync(string email, string passphrase, DateTimeOffset createdUtc) =>
@@ -102,6 +128,8 @@ internal sealed class FakeCoreServices : ICoreServices
         throw new NotSupportedException();
 
     private sealed class FakeDecryptionSession(
+        FakeCoreServices core,
+        DecryptRequest request,
         bool isDecryptable,
         string originalFileName,
         string contents,
@@ -114,7 +142,12 @@ internal sealed class FakeCoreServices : ICoreServices
         public DateTime LastAccessTimeUtc => DateTime.UnixEpoch;
         public DateTime LastWriteTimeUtc => DateTime.UnixEpoch;
         public EncryptedWithParameters EncryptedWithParameters => encryptedWith;
-        public Task DecryptAsync(Stream cleartext) => cleartext.WriteAsync(Encoding.UTF8.GetBytes(contents)).AsTask();
+        public async Task DecryptAsync(Stream cleartext)
+        {
+            byte[] bytes = Encoding.UTF8.GetBytes(contents);
+            await cleartext.WriteAsync(bytes);
+            core.ReportWritten(request.Progress, bytes.Length);
+        }
         public void Dispose() { }
     }
 }

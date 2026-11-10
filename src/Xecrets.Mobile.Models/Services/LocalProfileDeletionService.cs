@@ -28,9 +28,9 @@
 
 #endregion Copyright and GPL License
 
+using Xecrets.Common.Abstractions;
 using Xecrets.Core.Abstractions;
 using Xecrets.Mobile.Models.Abstractions;
-using Xecrets.Mobile.Models.Data;
 using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Services;
@@ -44,7 +44,7 @@ public sealed class LocalProfileDeletionService(
     DecryptionPasswordRequestState passwordRequestState,
     ITransientFileService transientFileService,
     GrantCleanupService grantCleanupService,
-    MobileDataStore dataStore,
+    IXecretsDataStore dataStore,
     IDeviceSettings deviceSettings,
     IFileService fileService,
     ICrashLogService crashLogService,

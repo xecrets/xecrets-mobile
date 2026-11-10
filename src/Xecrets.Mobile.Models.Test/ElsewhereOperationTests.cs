@@ -141,7 +141,7 @@ public sealed class ElsewhereOperationTests
         app.Access.PickedFiles.Enqueue("other/x.axx");
         app.Core.Password = "other";
 
-        await app.Operations.PickAndRunAsync(WorkFolderIntent.Auto, null);
+        Task run = app.Operations.PickAndRunAsync(WorkFolderIntent.Auto, null);
 
         Assert.That(app.UserInterface.Destinations, Is.EqualTo([AppDestination.EnterPassword]));
         Assert.That(app.Access.SaveAsStarts, Is.Empty);
@@ -149,8 +149,10 @@ public sealed class ElsewhereOperationTests
         app.Access.PickedFiles.Enqueue("other/a.txt");
         FileOperationOutcome wrong = await app.OperationService.DecryptPendingWithPasswordAsync("wrong");
         FileOperationOutcome outcome = await app.OperationService.DecryptPendingWithPasswordAsync("other");
+        app.OperationService.CancelPasswordRequest();
+        await run;
 
-        Assert.That(wrong.Status, Is.EqualTo(FileOperationStatus.AwaitingPassword));
+        Assert.That(wrong.Status, Is.EqualTo(FileOperationStatus.PasswordNeeded));
         Assert.That(outcome.Status, Is.EqualTo(FileOperationStatus.Completed));
         Assert.That(app.Access.Files.Keys, Is.EquivalentTo(["other/a.txt"]));
         Assert.That(app.OperationService.HasPendingPasswordRequest, Is.False);
@@ -435,11 +437,14 @@ public sealed class ElsewhereOperationTests
     /// The storage may give the file another name when the one suggested is taken. The file is already saved by then,
     /// so the user is only told where.
     /// </summary>
-    [Test]
-    public async Task ResultSavedUnderAChangedNameIsToldWithoutAsking()
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task ResultSavedUnderAChangedNameIsToldWithoutAsking(bool isNumberAfterExtension)
     {
         using TestApp app = new();
-        string changedName = $"{Path.GetFileNameWithoutExtension(_encryptedName)} 2{Path.GetExtension(_encryptedName)}";
+        string changedName = isNumberAfterExtension
+            ? $"{_encryptedName} (1)"
+            : $"{Path.GetFileNameWithoutExtension(_encryptedName)} 2{Path.GetExtension(_encryptedName)}";
         app.AddFile("other/a.txt");
         app.Access.PickedFiles.Enqueue("other/a.txt");
         app.Access.PickedFiles.Enqueue($"saved/{changedName}");

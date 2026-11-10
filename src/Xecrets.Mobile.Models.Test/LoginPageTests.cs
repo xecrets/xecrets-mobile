@@ -103,9 +103,41 @@ public sealed class LoginPageTests
         Assert.That(userInterface.Payloads, Is.EqualTo([action]));
     }
 
-    private static LoginPageModel CreateLoginPage(out ScriptedUserInterface userInterface)
+    [Test]
+    public async Task SigningInUndoesASaveTheAppWasEndedIn()
+    {
+        FakeInterruptedSaveService interruptedSaves = new();
+        LoginPageModel page = CreateLoginPage(out _, interruptedSaves);
+        await page.InitializeCommand.ExecuteAsync(null);
+        page.Password = "password";
+
+        await page.LoginCommand.ExecuteAsync(null);
+
+        Assert.That(interruptedSaves.RecoverCount, Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task VerifyingThePasswordDoesNotUndoASave()
+    {
+        FakeInterruptedSaveService interruptedSaves = new();
+        LoginPageModel page = CreateLoginPage(out _, interruptedSaves);
+        page.InitializeVerification(ProfileAction.Change);
+        page.Password = "password";
+
+        await page.LoginCommand.ExecuteAsync(null);
+
+        Assert.That(interruptedSaves.RecoverCount, Is.Zero);
+    }
+
+    private static LoginPageModel CreateLoginPage(
+        out ScriptedUserInterface userInterface,
+        FakeInterruptedSaveService? interruptedSaves = null)
     {
         userInterface = new ScriptedUserInterface();
-        return new LoginPageModel(new FakeProfileService(), new FakeIncomingFileService(), userInterface);
+        return new LoginPageModel(
+            new FakeProfileService(),
+            new FakeIncomingFileService(),
+            interruptedSaves ?? new FakeInterruptedSaveService(),
+            userInterface);
     }
 }

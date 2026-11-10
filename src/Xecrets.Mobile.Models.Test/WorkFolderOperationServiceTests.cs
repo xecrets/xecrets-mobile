@@ -33,6 +33,7 @@ using NUnit.Framework;
 using Xecrets.Common.Models;
 using Xecrets.Core.Models;
 using Xecrets.Mobile.Models.Models;
+using Xecrets.Mobile.Models.Services;
 using Xecrets.Mobile.Models.Utilities;
 using Xecrets.Texts;
 
@@ -54,7 +55,7 @@ public sealed class WorkFolderOperationServiceTests
         app.AddRecent("other.txt", RecentFileOperation.InPlace);
         string encryptedName = "a.txt".ToEncryptedName("");
 
-        FileReference result = await app.OperationService.EncryptAsync(new FileReference("docs/a.txt", "a.txt"));
+        FileReference? result = (await EncryptAsync(app, new FileReference("docs/a.txt", "a.txt"))).Result;
 
         Assert.That(result, Is.EqualTo(new FileReference($"docs/{encryptedName}", encryptedName)));
         Assert.That(app.Access.Files.Keys, Is.EquivalentTo([$"docs/{encryptedName}"]));
@@ -72,7 +73,7 @@ public sealed class WorkFolderOperationServiceTests
         app.Access.FailingWrites.Add($"docs/{"a.txt".ToEncryptedName("")}");
 
         Assert.That(
-            async () => await app.OperationService.EncryptAsync(new FileReference("docs/a.txt", "a.txt")),
+            async () => await EncryptAsync(app, new FileReference("docs/a.txt", "a.txt")),
             Throws.TypeOf<IOException>());
 
         Assert.That(app.Access.Files.Keys, Is.EquivalentTo(["docs/a.txt"]));
@@ -94,7 +95,7 @@ public sealed class WorkFolderOperationServiceTests
         app.AddRecent("docs/b.txt", RecentFileOperation.InPlace, "b.txt");
         string encryptedName = "a.txt".ToEncryptedName("");
 
-        await app.OperationService.EncryptAsync(new FileReference("grant:docs|docs/a.txt", "a.txt"));
+        await EncryptAsync(app, new FileReference("grant:docs|docs/a.txt", "a.txt"));
 
         Assert.That(app.RecentIds(), Is.EqualTo([$"grant:docs|docs/{encryptedName}", "docs/b.txt"]));
     }
@@ -109,7 +110,7 @@ public sealed class WorkFolderOperationServiceTests
         DateTime written = new(2022, 1, 2, 3, 4, 5, DateTimeKind.Utc);
         app.Access.Times["docs/a.txt"] = new FileTimes(created, accessed, written);
 
-        await app.OperationService.EncryptAsync(new FileReference("docs/a.txt", "a.txt"));
+        await EncryptAsync(app, new FileReference("docs/a.txt", "a.txt"));
 
         EncryptRequest request = app.Core.EncryptRequests.Single();
         Assert.That(
@@ -128,7 +129,7 @@ public sealed class WorkFolderOperationServiceTests
         app.AddFile("docs/a.txt");
         DateTime before = DateTime.UtcNow;
 
-        await app.OperationService.EncryptAsync(new FileReference("docs/a.txt", "a.txt"));
+        await EncryptAsync(app, new FileReference("docs/a.txt", "a.txt"));
 
         EncryptRequest request = app.Core.EncryptRequests.Single();
         Assert.That(request.CreationTimeUtc, Is.InRange(before, DateTime.UtcNow));
@@ -145,7 +146,7 @@ public sealed class WorkFolderOperationServiceTests
         using TestApp app = new();
         app.Access.Files["docs/x.axx"] = "ENC:a.txt\ntext"u8.ToArray();
 
-        await app.OperationService.DecryptWithKnownPasswordsAsync(new FileReference("docs/x.axx", "x.axx"));
+        await DecryptAsync(app, new FileReference("docs/x.axx", "x.axx"));
 
         Assert.That(app.Access.Times["docs/a.txt"],
             Is.EqualTo(new FileTimes(DateTime.UnixEpoch, DateTime.UnixEpoch, DateTime.UnixEpoch)));
@@ -157,8 +158,7 @@ public sealed class WorkFolderOperationServiceTests
         using TestApp app = new(usesFolderIds: true);
         app.Access.Files["docs/x.axx"] = "ENC:a.txt\ntext"u8.ToArray();
 
-        FileReference? result = await app.OperationService.DecryptWithKnownPasswordsAsync(
-            new FileReference("grant:docs|docs/x.axx", "x.axx"));
+        FileReference? result = (await DecryptAsync(app, new FileReference("grant:docs|docs/x.axx", "x.axx"))).Result;
 
         Assert.That(result, Is.EqualTo(new FileReference("grant:docs|docs/a.txt", "a.txt")));
         Assert.That(app.Access.Files.Keys, Is.EquivalentTo(["docs/a.txt"]));
@@ -173,7 +173,7 @@ public sealed class WorkFolderOperationServiceTests
         app.AddFile("docs/a.txt");
         FileReference source = new("docs/a.txt", "a.txt") { Root = RootProvider.OneDrive, FolderPath = ["docs"] };
 
-        FileReference result = await app.OperationService.EncryptAsync(source);
+        FileReference result = (await EncryptAsync(app, source)).Result!;
 
         Assert.That((result.Root, result.FolderPath), Is.EqualTo((RootProvider.OneDrive, source.FolderPath)));
         Assert.That(app.Store.Files.Select(file => (file.Root, file.FolderPath)),
@@ -187,7 +187,7 @@ public sealed class WorkFolderOperationServiceTests
         app.Access.Files["docs/x.axx"] = "ENC:a.txt\ntext"u8.ToArray();
         FileReference source = new("grant:docs|docs/x.axx", "x.axx") { Root = RootProvider.IPhone, FolderPath = ["docs"] };
 
-        FileReference? result = await app.OperationService.DecryptWithKnownPasswordsAsync(source);
+        FileReference? result = (await DecryptAsync(app, source)).Result;
 
         Assert.That((result?.Root, result?.FolderPath), Is.EqualTo((RootProvider.IPhone, source.FolderPath)));
     }
@@ -198,8 +198,7 @@ public sealed class WorkFolderOperationServiceTests
         using TestApp app = new() { Core = { Password = "other" } };
         app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
 
-        FileReference? result = await app.OperationService.DecryptWithKnownPasswordsAsync(
-            new FileReference("docs/x.axx", "x.axx"));
+        FileReference? result = (await DecryptAsync(app, new FileReference("docs/x.axx", "x.axx"))).Result;
 
         Assert.That(result, Is.Null);
         Assert.That(app.OperationService.HasPendingPasswordRequest, Is.True);
@@ -212,10 +211,10 @@ public sealed class WorkFolderOperationServiceTests
         using TestApp app = new();
         app.Access.Files["docs/x.axx"] = "ENC:a.txt\ntext"u8.ToArray();
         app.Core.Password = "other";
-        await app.OperationService.DecryptWithKnownPasswordsAsync(new FileReference("docs/x.axx", "x.axx"));
+        await DecryptAsync(app, new FileReference("docs/x.axx", "x.axx"));
 
-        FileReference? wrong = await app.OperationService.DecryptWithPasswordAsync("wrong");
-        FileReference? result = await app.OperationService.DecryptWithPasswordAsync("other");
+        FileReference? wrong = (await app.OperationService.DecryptPendingWithPasswordAsync("wrong")).Result;
+        FileReference? result = (await app.OperationService.DecryptPendingWithPasswordAsync("other")).Result;
 
         Assert.That(wrong, Is.Null);
         Assert.That(result, Is.EqualTo(new FileReference("docs/a.txt", "a.txt")));
@@ -234,8 +233,7 @@ public sealed class WorkFolderOperationServiceTests
         app.AddRecent("docs/x.axx", RecentFileOperation.InPlace);
         app.Wiper.Fails = true;
 
-        FileReference? result = await app.OperationService.DecryptWithKnownPasswordsAsync(
-            new FileReference("docs/x.axx", "x.axx"));
+        FileReference? result = (await DecryptAsync(app, new FileReference("docs/x.axx", "x.axx"))).Result;
 
         Assert.That(result, Is.EqualTo(new FileReference("docs/a.txt", "a.txt")));
         Assert.That(app.UserInterface.TransientMessages, Is.EqualTo([MobileTexts.DialogTextOriginalNotRemoved]));
@@ -255,25 +253,45 @@ public sealed class WorkFolderOperationServiceTests
         app.AddFile($"docs/{encryptedName}", "existing");
         app.UserInterface.Answers.Enqueue(true);
 
-        await app.OperationService.EncryptAsync(new FileReference("docs/a.txt", "a.txt"));
+        await EncryptAsync(app, new FileReference("docs/a.txt", "a.txt"));
 
         Assert.That(app.Access.FolderLookupCount, Is.EqualTo(1));
         Assert.That(app.Access.Files.Keys, Is.EquivalentTo([$"docs/{encryptedName}"]));
     }
 
     [Test]
-    public void ExistingResultIsOnlyOverwrittenWhenTheUserConfirms()
+    public async Task ExistingResultIsOnlyOverwrittenWhenTheUserConfirms()
     {
         using TestApp app = new();
         string encryptedName = "a.txt".ToEncryptedName("");
         app.AddFile("docs/a.txt");
         app.AddFile($"docs/{encryptedName}", "existing");
 
-        Assert.That(async () => await app.OperationService.EncryptAsync(new FileReference("docs/a.txt", "a.txt")),
-            Throws.InstanceOf<OperationCanceledException>());
+        FileOperationOutcome outcome = await EncryptAsync(app, new FileReference("docs/a.txt", "a.txt"));
+
+        Assert.That(outcome.Status, Is.EqualTo(FileOperationStatus.Skipped));
+        Assert.That(app.UserInterface.TransientMessages, Is.EqualTo([MobileTexts.DialogTextOperationNotCompleted]));
         Assert.That(app.UserInterface.Confirmations,
             Is.EqualTo([string.Format(MobileTexts.DialogTextConfirmOverwrite, encryptedName)]));
         Assert.That(app.UserInterface.ConfirmationButtons, Is.EqualTo([(MobileTexts.LabelYes, MobileTexts.LabelNo)]));
         Assert.That(app.Access.Files.Keys, Is.EquivalentTo(["docs/a.txt", $"docs/{encryptedName}"]));
     }
+
+    // As a file chosen by itself in one of My folders is encrypted, with its folder listed when it is needed.
+    private static Task<FileOperationOutcome> EncryptAsync(TestApp app, FileReference file) =>
+        TransformAsync(app, file, WorkFolderOperation.Encrypt);
+
+    // As a file chosen by itself in one of My folders is decrypted, with its folder listed when it is needed.
+    private static Task<FileOperationOutcome> DecryptAsync(TestApp app, FileReference file) =>
+        TransformAsync(app, file, WorkFolderOperation.Decrypt);
+
+    private static Task<FileOperationOutcome> TransformAsync(
+        TestApp app,
+        FileReference file,
+        WorkFolderOperation operation) =>
+        app.OperationService.TransformAsync(
+            file,
+            operation,
+            new FolderContents(app.Access, []),
+            new SingleFileCompletionReporter(app.Recent, app.UserInterface));
 }

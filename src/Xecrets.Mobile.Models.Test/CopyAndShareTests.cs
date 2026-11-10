@@ -83,7 +83,7 @@ public sealed class CopyAndShareTests
         await app.Operations.PickAndRunAsync(WorkFolderIntent.Copy, null);
 
         Assert.That(app.UserInterface.Destinations, Is.Empty);
-        Assert.That(app.UserInterface.TransientMessages, Is.EqualTo([MobileTexts.DialogTextNotEncrypted]));
+        Assert.That(app.UserInterface.Messages, Is.EqualTo([string.Format(MobileTexts.DialogTextNotEncryptedFormat, "x.axx")]));
     }
 
     [TestCase(WorkFolderIntent.Copy)]
@@ -115,8 +115,8 @@ public sealed class CopyAndShareTests
         Assert.That(app.Flow.Origin, Is.EqualTo(FlowOrigin.Home));
     }
 
-    [TestCase("docs/a.txt", "ENC:a.txt\ntext", nameof(MobileTexts.DialogTextAlreadyEncrypted))]
-    [TestCase("docs/x.axx", "text", nameof(MobileTexts.DialogTextNotEncrypted))]
+    [TestCase("docs/a.txt", "ENC:a.txt\ntext", nameof(MobileTexts.DialogTextAlreadyEncryptedFormat))]
+    [TestCase("docs/x.axx", "text", nameof(MobileTexts.DialogTextNotEncryptedFormat))]
     public async Task SharingAFileWhoseNameDoesNotMatchItsContentsIsRefusedBeforeThePasswordIsAskedFor(
         string path,
         string content,
@@ -129,12 +129,13 @@ public sealed class CopyAndShareTests
         await app.Operations.PickAndRunAsync(WorkFolderIntent.Share, null);
 
         Assert.That(app.UserInterface.Destinations, Is.Empty);
-        Assert.That(app.UserInterface.TransientMessages, Is.EqualTo([expectedText switch
+        string expectedFormat = expectedText switch
         {
-            nameof(MobileTexts.DialogTextAlreadyEncrypted) => MobileTexts.DialogTextAlreadyEncrypted,
-            nameof(MobileTexts.DialogTextNotEncrypted) => MobileTexts.DialogTextNotEncrypted,
+            nameof(MobileTexts.DialogTextAlreadyEncryptedFormat) => MobileTexts.DialogTextAlreadyEncryptedFormat,
+            nameof(MobileTexts.DialogTextNotEncryptedFormat) => MobileTexts.DialogTextNotEncryptedFormat,
             _ => throw new ArgumentOutOfRangeException(nameof(expectedText), expectedText, @"Unknown text."),
-        }]));
+        };
+        Assert.That(app.UserInterface.Messages, Is.EqualTo([string.Format(expectedFormat, Path.GetFileName(path))]));
     }
 
     [Test]
@@ -216,6 +217,7 @@ public sealed class CopyAndShareTests
             app.Access,
             app.Encryption,
             app.Flow,
+            app.Running,
             app.CrashLog,
             app.UserInterface);
         page.Initialize(file);
@@ -233,6 +235,7 @@ public sealed class CopyAndShareTests
             app.Access,
             app.Encryption,
             app.Flow,
+            app.Running,
             app.CrashLog,
             app.UserInterface);
         page.Initialize(new FileReference("docs/a.txt", "a.txt"));

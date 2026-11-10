@@ -49,6 +49,8 @@ internal static class WindowsFileLocation
 
     public static FileReference Locate(StorageFolder folder) => Locate(folder.Path, folder.DisplayName);
 
+    public static FileReference Locate(FileInfo file) => Locate(file.FullName, file.Name);
+
     private static FileReference Locate(string path, string name)
     {
         string folder = Path.GetDirectoryName(path) ?? "";

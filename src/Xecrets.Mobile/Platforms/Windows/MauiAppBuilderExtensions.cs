@@ -29,7 +29,12 @@
 #endregion Copyright and GPL License
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Maui;
+using Microsoft.Maui.Controls;
+using Microsoft.Maui.Handlers;
 using Microsoft.Maui.Hosting;
+
+using WindowsPage = Microsoft.Maui.Controls.PlatformConfiguration.WindowsSpecific.Page;
 
 using System.Runtime.Versioning;
 
@@ -50,7 +55,25 @@ internal static class MauiAppBuilderExtensions
         builder.Services.AddSingleton<IWorkFolderFileLauncher, WindowsWorkFolderFileLauncher>();
         builder.Services.AddSingleton<IUserInterfaceService, WindowsUserInterfaceService>();
         builder.Services.AddSingleton<IPlatformServices, WindowsServices>();
-        builder.ConfigureMauiHandlers(handlers => handlers.AddHandler<FileStateSelector, WindowsFileStateSelectorHandler>());
+        builder.ConfigureMauiHandlers(handlers =>
+        {
+            handlers.AddHandler<FileStateSelector, WindowsFileStateSelectorHandler>();
+            handlers.AddHandler<OverflowMenuButton, WindowsOverflowMenuButtonHandler>();
+        });
+        MapToolbarDynamicOverflow();
         return builder;
     }
+
+    /// <summary>
+    /// The items of the overflow menu in the page header only get their icons when the command bar has dynamic
+    /// overflow when the menu is made. MAUI maps the dynamic overflow of the toolbar only under the name of the page
+    /// property, so the value Shell sets once a page is shown never reaches the command bar, which keeps the value from
+    /// before there was a page. Shell sets it after the items, so the menu is made again.
+    /// </summary>
+    private static void MapToolbarDynamicOverflow() =>
+        ToolbarHandler.Mapper.AppendToMapping(nameof(Toolbar.DynamicOverflowEnabled), (handler, _) =>
+        {
+            handler.UpdateValue(WindowsPage.ToolbarDynamicOverflowEnabledProperty.PropertyName);
+            handler.UpdateValue(nameof(Toolbar.ToolbarItems));
+        });
 }

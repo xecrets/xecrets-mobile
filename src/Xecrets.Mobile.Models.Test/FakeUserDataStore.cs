@@ -40,7 +40,7 @@ internal sealed class FakeUserDataStore : IUserDataStore
 
     public List<WorkFolder> Folders { get; set; } = [];
 
-    public UserId Id => throw new NotSupportedException();
+    public UserId Id { get; set; } = new("me");
 
     public Task<IPersistentData<RecentFileOperations>> LoadRecentFileOperationsAsync() =>
         Task.FromResult<IPersistentData<RecentFileOperations>>(new PersistentData<RecentFileOperations>(

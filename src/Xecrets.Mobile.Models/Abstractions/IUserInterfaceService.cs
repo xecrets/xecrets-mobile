@@ -41,6 +41,16 @@ public interface IUserInterfaceService
     bool CanReceiveIncomingFiles { get; }
 
     /// <summary>
+    /// Where the user is in the app, as the location of the page shown.
+    /// </summary>
+    string CurrentLocation { get; }
+
+    /// <summary>
+    /// Whether the app navigates, as it does through this service, rather than the user, such as by going back.
+    /// </summary>
+    bool IsNavigating { get; }
+
+    /// <summary>
     /// Maps text placeholders, such as "(c)", to icon glyphs.
     /// </summary>
     IReadOnlyDictionary<string, string> IconMap { get; }

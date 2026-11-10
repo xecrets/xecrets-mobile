@@ -102,6 +102,19 @@ public sealed class RecentFilesPageTests
     }
 
     [Test]
+    public async Task FileNamedEncryptedWithANumberAfterTheExtensionIsShownAsEncrypted()
+    {
+        using TestApp app = new();
+        app.AddFile("docs/x-txt.axx (1)", "ENC:x.txt\ntext");
+        app.AddRecent("docs/x-txt.axx (1)", RecentFileOperation.InPlace, "x-txt.axx (1)");
+        RecentFilesPageModel page = app.CreateRecentFilesPage();
+
+        await page.LoadCommand.ExecuteAsync(null);
+
+        Assert.That(page.Files.Single().IsNameEncrypted, Is.True);
+    }
+
+    [Test]
     public async Task FileIsShownByWhereItIsStoredAndItsName()
     {
         using TestApp app = new();
@@ -313,7 +326,7 @@ public sealed class RecentFilesPageTests
         await page.OpenCommand.ExecuteAsync(page.Files[0]);
 
         Assert.That(app.UserInterface.Confirmations,
-            Is.EqualTo([string.Format(MobileTexts.DialogTextAllowFolderAccessFormat, "a.txt")]));
+            Is.EqualTo([MobileTexts.DialogTextAllowAccessToFolder]));
         Assert.That(app.Launcher.Opened, Is.Empty);
         Assert.That(app.RecentIds(), Is.EqualTo(["docs/a.txt"]));
     }
@@ -348,9 +361,10 @@ public sealed class RecentFilesPageTests
         app.Core.Password = "other";
         RecentFilesPageModel page = await LoadedPageAsync(app);
 
-        await page.ReverseCommand.ExecuteAsync(page.Files[1]);
-        await app.OperationService.DecryptWithPasswordAsync("other");
+        Task reverse = page.ReverseCommand.ExecuteAsync(page.Files[1]);
+        await app.OperationService.DecryptPendingWithPasswordAsync("other");
         app.OperationService.CancelPasswordRequest();
+        await reverse;
         await page.LoadCommand.ExecuteAsync(null);
 
         Assert.That(app.RecentIds(), Is.EqualTo(["docs/a.txt", "docs/b.txt"]));
@@ -368,8 +382,9 @@ public sealed class RecentFilesPageTests
         app.Core.Password = "other";
         RecentFilesPageModel page = await LoadedPageAsync(app);
 
-        await page.ReverseCommand.ExecuteAsync(page.Files[0]);
+        Task reverse = page.ReverseCommand.ExecuteAsync(page.Files[0]);
         app.OperationService.CancelPasswordRequest();
+        await reverse;
         await page.LoadCommand.ExecuteAsync(null);
 
         Assert.That(page.Files.Select(file => file.Id), Is.EqualTo([$"docs/{encryptedName}"]));
@@ -393,9 +408,53 @@ public sealed class RecentFilesPageTests
 
         await page.ReverseAllCommand.ExecuteAsync(null);
 
-        Assert.That(app.UserInterface.TransientMessages, Does.Contain(MobileTexts.DialogTextAlreadyEncrypted));
+        Assert.That(app.UserInterface.Messages, Is.EqualTo([string.Format(MobileTexts.DialogTextAlreadyEncryptedFormat, "a.txt")]));
         Assert.That(app.RecentIds(), Is.EqualTo([$"docs/{encryptedName}", "docs/a.txt"]));
         Assert.That(page.Files.Select(file => file.Id), Is.EqualTo(["docs/a.txt"]));
+    }
+
+    [Test]
+    public async Task ReversingAllGoesOnWithTheOthersOnceAPasswordIsEntered()
+    {
+        using TestApp app = new();
+        app.AddFolder("docs");
+        app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
+        app.AddFile("docs/y.axx", "ENC:b.txt\ntext");
+        app.AddRecent("docs/x.axx", RecentFileOperation.InPlace, "x.axx");
+        app.AddRecent("docs/y.axx", RecentFileOperation.InPlace, "y.axx");
+        app.Core.Password = "other";
+        RecentFilesPageModel page = await LoadedPageAsync(app);
+        page.SelectedState = SelectedFileState.Encrypted;
+
+        Task reverse = page.ReverseAllCommand.ExecuteAsync(null);
+        await app.OperationService.DecryptPendingWithPasswordAsync("other");
+        // As the profile does, the password that decrypted the file is kept, so the other file needs no password.
+        app.Profile.ExtraPasswords.Add(new PasswordUsage { Password = "other" });
+        app.OperationService.CancelPasswordRequest();
+        await reverse;
+
+        Assert.That(app.Access.Files.Keys, Is.EquivalentTo(["docs/a.txt", "docs/b.txt"]));
+    }
+
+    [Test]
+    public async Task ReversingAllStopsWhenAPasswordIsNotEntered()
+    {
+        using TestApp app = new();
+        app.AddFolder("docs");
+        app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
+        app.AddFile("docs/y.axx", "ENC:b.txt\ntext");
+        app.AddRecent("docs/x.axx", RecentFileOperation.InPlace, "x.axx");
+        app.AddRecent("docs/y.axx", RecentFileOperation.InPlace, "y.axx");
+        app.Core.Password = "other";
+        RecentFilesPageModel page = await LoadedPageAsync(app);
+        page.SelectedState = SelectedFileState.Encrypted;
+
+        Task reverse = page.ReverseAllCommand.ExecuteAsync(null);
+        app.OperationService.CancelPasswordRequest();
+        await reverse;
+
+        Assert.That(app.UserInterface.Destinations, Is.EqualTo([AppDestination.EnterPassword]));
+        Assert.That(app.Access.Files.Keys, Is.EquivalentTo(["docs/x.axx", "docs/y.axx"]));
     }
 
     [Test]
@@ -410,7 +469,7 @@ public sealed class RecentFilesPageTests
 
         await page.ReverseAllCommand.ExecuteAsync(null);
 
-        Assert.That(app.UserInterface.TransientMessages, Is.EqualTo([MobileTexts.DialogTextNotEncrypted]));
+        Assert.That(app.UserInterface.Messages, Is.EqualTo([string.Format(MobileTexts.DialogTextNotEncryptedFormat, "x.axx")]));
         Assert.That(app.UserInterface.Destinations, Is.Empty);
         Assert.That(page.StatusText, Is.Empty);
         Assert.That(app.RecentIds(), Is.EqualTo(["docs/x.axx"]));

@@ -116,16 +116,50 @@ public sealed class FolderAccessWorkflow(
     /// Lets the user choose a folder and adds it first in My folders. A folder that cannot be used is reported, and the
     /// user chooses again. Returns null when the user cancels.
     /// </summary>
-    public async Task<WorkFolder?> AddFolderAsync(string initialFolder = "")
+    public async Task<WorkFolder?> AddFolderAsync(string initialFolder = "") =>
+        await PickUsableFolderAsync(() => fileAccess.PickFolderAsync(initialFolder, FilePickerKind.Any)) is { } folder
+            ? await storage.AddFolderAsync(folder)
+            : null;
+
+    /// <summary>
+    /// Lets the user pick a folder to change the files of the kind in, starting in the folder. A folder that is one of
+    /// My folders, or in one of them, is used as it is, and a folder in none of them is added first in My folders when
+    /// the user allows access to it, as for the folder of a file. Returns the folder, or null when the user cancels or
+    /// does not allow access.
+    /// </summary>
+    public async Task<WorkFolder?> PickWritableFolderAsync(string initialFolder, FilePickerKind kind)
+    {
+        WorkFolder? picked = await PickUsableFolderAsync(() => fileAccess.PickFolderAsync(initialFolder, kind));
+        if (picked is null)
+        {
+            return null;
+        }
+
+        if (await fileAccess.FindFolderOfFolderAsync(picked.Id) is { } containing)
+        {
+            await storage.MoveFolderToTopAsync(containing);
+            return picked;
+        }
+
+        return await userInterfaceService.DisplayConfirmationAsync(
+            MobileTexts.DialogTextAllowAccessToFolder,
+            MobileTexts.LabelYes,
+            MobileTexts.LabelNo)
+            ? await storage.AddFolderAsync(picked)
+            : null;
+    }
+
+    // A folder that cannot be used is reported, and the user chooses again.
+    private async Task<WorkFolder?> PickUsableFolderAsync(Func<Task<WorkFolderResult>> pickFolderAsync)
     {
         while (true)
         {
-            WorkFolderResult result = await fileAccess.PickFolderAsync(initialFolder);
+            WorkFolderResult result = await pickFolderAsync();
             string message;
             switch (result.Status)
             {
                 case WorkFolderResultStatus.IsValid:
-                    return await storage.AddFolderAsync(result.Folder!);
+                    return result.Folder!;
 
                 case WorkFolderResultStatus.Canceled:
                     return null;
@@ -148,7 +182,7 @@ public sealed class FolderAccessWorkflow(
 
     private async Task<WorkFolder?> RequestFolderAsync(FileReference file) =>
         await userInterfaceService.DisplayConfirmationAsync(
-            string.Format(MobileTexts.DialogTextAllowFolderAccessFormat, file.Name),
+            MobileTexts.DialogTextAllowAccessToFolder,
             MobileTexts.LabelYes,
             MobileTexts.LabelNo)
             ? await AddFolderAsync(await fileAccess.GetParentFolderAsync(file.Id))

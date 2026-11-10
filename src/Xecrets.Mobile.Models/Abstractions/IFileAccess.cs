@@ -54,9 +54,11 @@ public interface IFileAccess
 
     /// <summary>
     /// Lets the user pick a folder to give the app lasting access to, starting in the initial folder if the platform
-    /// allows it. The folder is checked to be writable and its grant is kept, but it is not added to My folders.
+    /// allows it. The files of the kind are those to be changed in the folder, which the platform may show. Where the
+    /// folder picker of the platform shows no files, the user instead picks one of the files, and its folder is picked.
+    /// The folder is checked to be writable and its grant is kept, but it is not added to My folders.
     /// </summary>
-    Task<WorkFolderResult> PickFolderAsync(string initialFolder);
+    Task<WorkFolderResult> PickFolderAsync(string initialFolder, FilePickerKind kind);
 
     /// <summary>
     /// Finds the innermost of My folders that has a grant and contains the file, directly or in a folder below it.
@@ -65,10 +67,24 @@ public interface IFileAccess
     Task<WorkFolder?> FindFolderAsync(string fileId);
 
     /// <summary>
+    /// Finds the innermost of My folders that has a grant and is the folder, or contains it, directly or in a folder
+    /// below it. Returns null when there is none.
+    /// </summary>
+    Task<WorkFolder?> FindFolderOfFolderAsync(string folderId);
+
+    /// <summary>
     /// The file as reached through the grant of a folder known to contain it, which is the reference used to change
     /// it.
     /// </summary>
     Task<FileReference> GetFileInFolderAsync(WorkFolder folder, FileReference file);
+
+    /// <summary>
+    /// Lists a folder reached through one of My folders, whether one of them or as given by
+    /// <see cref="GetFolderOfFileAsync"/>, and each of the folders below it when the scope includes them, one listing
+    /// per folder. A folder that cannot be listed fails the listing, since its files would otherwise be left out
+    /// without the user knowing.
+    /// </summary>
+    Task<IReadOnlyList<FolderListing>> ListFolderAsync(string folderId, FolderScope scope);
 
     /// <summary>
     /// The folder of the file, as a hint where to start a picker, or empty when it cannot be told.
@@ -153,17 +169,12 @@ public interface IFileAccess
     Task<string> GetFolderOfFileAsync(string fileId);
 
     /// <summary>
-    /// Tells if there is a file with the name in the folder, as given by <see cref="GetFolderOfFileAsync"/>.
-    /// </summary>
-    Task<bool> FileExistsInFolderAsync(string folderId, string name);
-
-    /// <summary>
     /// Saves the complete file under the name in the folder, as given by <see cref="GetFolderOfFileAsync"/>, and returns
-    /// the id of the saved file. An existing file is replaced when allowed, and otherwise saving fails if there already
-    /// is one. A partly saved file is removed, so that it is not taken for the result. A file that was replaced is then
-    /// lost. The complete file is left to the caller.
+    /// the id of the saved file. The existing file with the name, as listed in the folder, is replaced when given, and
+    /// otherwise saving fails if there already is one. A partly saved file is removed, so that it is not taken for the
+    /// result. A file that was replaced is then lost. The complete file is left to the caller.
     /// </summary>
-    Task<string> SaveInFolderAsync(string folderId, string name, string completedFilePath, bool overwrite);
+    Task<string> SaveInFolderAsync(string folderId, string name, string completedFilePath, string? existingId);
 
     /// <summary>
     /// Renames a file reached through one of My folders, and returns its id under the new name. Fails if there already

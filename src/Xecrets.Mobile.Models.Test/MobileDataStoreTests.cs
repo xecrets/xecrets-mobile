@@ -413,6 +413,47 @@ public sealed class MobileDataStoreTests
         Assert.That(recentFiles.Files.Single().Operation, Is.EqualTo(RecentFileOperation.Unknown));
     }
 
+    [Test]
+    public async Task SaveInProgressIsKeptUntilCleared()
+    {
+        SaveInProgress save = new()
+        {
+            UserId = "user",
+            FolderId = "folder",
+            Name = "a.txt.axx",
+            SourceId = "source",
+            RestoresSource = true,
+        };
+
+        await _store.WriteSaveInProgressAsync(save);
+        SaveInProgress? kept = await _store.ReadSaveInProgressAsync();
+        await _store.ClearSaveInProgressAsync();
+
+        Assert.That(kept, Is.EqualTo(save));
+        Assert.That(await _store.ReadSaveInProgressAsync(), Is.Null);
+    }
+
+    [Test]
+    public async Task SaveInProgressOfAProfileIsGoneWithIt()
+    {
+        IUserDataStore user = await _store.CreateUserAsync(NewUser("a@example.com", "A", 1));
+        await _store.WriteSaveInProgressAsync(new SaveInProgress { UserId = user.Id.Value });
+
+        await _store.ResetUserAsync(user.Id);
+
+        Assert.That(await _store.ReadSaveInProgressAsync(), Is.Null);
+    }
+
+    [Test]
+    public async Task SaveInProgressIsGoneWithTheStore()
+    {
+        await _store.WriteSaveInProgressAsync(new SaveInProgress { UserId = "user" });
+
+        await _store.ResetStoreAsync();
+
+        Assert.That(await _store.ReadSaveInProgressAsync(), Is.Null);
+    }
+
     private async Task<IUserDataStore> CreateUserWithDeviceSettingsAsync()
     {
         await _store.ReplaceDeviceSettingsAsync(new DeviceSettings { Version = 1, DeviceId = "device" });
@@ -459,8 +500,7 @@ public sealed class MobileDataStoreTests
 
     private string DataPath => Path.Combine(_directory, "xecrets-data.json");
 
-    private string DeviceSettingsPath =>
-        Path.Combine(_directory, IFileService.DeviceDirectoryName, MobileDataStore.DeviceSettingsFileName);
+    private string DeviceSettingsPath => ((IFileService)new TestFileService(_directory)).DeviceSettingsFilePath;
 
     private static NewUserData NewUser(string email, string name, byte marker) =>
         new(email, name, new SignInKey(email, DateTimeOffset.UtcNow, [marker]));

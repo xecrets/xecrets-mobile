@@ -30,9 +30,17 @@
 
 namespace Xecrets.Mobile.Models.Models;
 
+/// <summary>
+/// What became of an operation on a file. A file that needs a password the app does not know is not done, either until
+/// the user enters one, or for good when the user does not. A file whose contents show it is not what the operation is
+/// for is skipped, and the operation goes on with the next. A canceled operation is not done either, and ends any
+/// operation it is part of.
+/// </summary>
 public enum FileOperationStatus
 {
     Completed,
     NotDone,
-    AwaitingPassword,
+    Skipped,
+    PasswordNeeded,
+    Canceled,
 }

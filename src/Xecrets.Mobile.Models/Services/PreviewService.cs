@@ -42,12 +42,15 @@ internal sealed class PreviewService(
     ITransientFileService transientFileService,
     PreviewState previewState,
     DecryptionPasswordRequestState passwordRequestState,
+    RunningOperation runningOperation,
     ICrashLogService crashLogService)
     : IPreviewService
 {
     public IPreviewState Current => previewState;
 
     public bool HasPendingPasswordRequest => passwordRequestState.HasPendingRequest;
+
+    public void CancelPasswordRequest() => passwordRequestState.Clear();
 
     public async Task PrepareTextAsync(DecryptedFileInfo file, EncryptedWithParameters encryptedWith)
     {
@@ -150,7 +153,7 @@ internal sealed class PreviewService(
 
         using IDecryptionSession session = await coreServices.OpenDecryptionAsync(
             encryptedStream,
-            new DecryptRequest([identity], new Progress<Progress>(_ => { })));
+            new DecryptRequest([identity], runningOperation.CreateProgress()));
 
         if (!session.IsDecryptable)
         {
@@ -158,10 +161,17 @@ internal sealed class PreviewService(
         }
 
         string decryptedPath = transientFileService.CreateHandoffPath(session.OriginalFileName);
-        await using (FileStream outputStream =
-                     File.Open(decryptedPath, FileMode.Create, FileAccess.Write, FileShare.Read))
+        try
         {
+            await using FileStream outputStream =
+                File.Open(decryptedPath, FileMode.Create, FileAccess.Write, FileShare.Read);
             await session.DecryptAsync(outputStream);
+        }
+        catch
+        {
+            // What was decrypted before the operation was canceled, or failed, is not left until the cache is cleaned.
+            await transientFileService.WipeTransientFileAsync(decryptedPath);
+            throw;
         }
 
         TryMakeReadOnly(decryptedPath);

@@ -113,9 +113,10 @@ internal sealed class IncomingFileService(
     {
         bool isEncrypted = await coreServices.IsEncryptedAsync(
             () => Task.FromResult<Stream>(File.OpenRead(file.FilePath)));
-        if (!isEncrypted && file.DisplayName.IsEncrypted())
+        if (!isEncrypted && file.DisplayName.IsNameEncrypted())
         {
-            await userInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextNotEncrypted);
+            await userInterfaceService.DisplayMessageAsync(
+                string.Format(MobileTexts.DialogTextNotEncryptedFormat, file.DisplayName));
             return;
         }
 

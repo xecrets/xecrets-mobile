@@ -47,6 +47,15 @@ public interface IFileService
     // Holds the data that only applies to the installation on this device, and is kept out of backups and transfers.
     string DeviceDirectory => Path.Combine(AppDataDirectory, DeviceDirectoryName);
 
+    // The settings and profiles, which go with the app's data.
+    string DataFilePath => Path.Combine(AppDataDirectory, "xecrets-data.json");
+
+    // The device-specific settings are kept in a file of their own, so that they never leave the device.
+    string DeviceSettingsFilePath => Path.Combine(DeviceDirectory, "xecrets-device.json");
+
+    // Mobile only, and of the device, so kept with the device-specific settings, but in a file of its own.
+    string SaveInProgressFilePath => Path.Combine(DeviceDirectory, "xecrets-save-in-progress.json");
+
     Task<bool> OpenInAsync(string filePath, string displayName);
 
     Task SendToAsync(string filePath, string displayName, string contentType);
