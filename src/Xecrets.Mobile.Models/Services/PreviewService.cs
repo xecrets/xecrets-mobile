@@ -30,6 +30,7 @@
 
 using Xecrets.Core.Abstractions;
 using Xecrets.Core.Models;
+using Xecrets.Core.Public;
 using Xecrets.Common.Models;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
@@ -54,8 +55,33 @@ internal sealed class PreviewService(
 
     public async Task PrepareTextAsync(DecryptedFileInfo file, EncryptedWithParameters encryptedWith)
     {
-        string text = await File.ReadAllTextAsync(file.FilePath);
-        previewState.SetText(file, text, encryptedWith);
+        byte[] plaintext = await File.ReadAllBytesAsync(file.FilePath);
+        previewState.SetText(file with { FilePath = "" }, plaintext, encryptedWith);
+    }
+
+    public async Task<DecryptedFileInfo> MaterializeAsync()
+    {
+        DecryptedFileInfo file = previewState.File;
+        if (file.FilePath.Length > 0)
+        {
+            return file;
+        }
+
+        string decryptedPath = transientFileService.CreateHandoffPath(file.OriginalFileName);
+        try
+        {
+            await File.WriteAllBytesAsync(decryptedPath, previewState.Plaintext);
+        }
+        catch
+        {
+            // What was written before it failed is not left until the cache is cleaned.
+            await transientFileService.WipeTransientFileAsync(decryptedPath);
+            throw;
+        }
+
+        TryMakeReadOnly(decryptedPath);
+        previewState.SetDecryptedPath(decryptedPath);
+        return previewState.File;
     }
 
     public async Task<bool> PrepareAsync(IReadableFile encryptedFile)
@@ -160,37 +186,55 @@ internal sealed class PreviewService(
             return PreviewPreparationStatus.WrongPassword;
         }
 
-        string decryptedPath = transientFileService.CreateHandoffPath(session.OriginalFileName);
+        // Text that the app shows and edits itself is kept in memory, and anything else is written to a file.
+        string decryptedPath = "";
+        InMemoryOrFileStream output = new(
+            session.OriginalFileName.WithoutCopyNumber(),
+            new Dictionary<FileCategory, long> { [FileCategory.Text] = PreviewInfoFactory.MaxInlineTextSizeBytes },
+            () =>
+            {
+                decryptedPath = transientFileService.CreateHandoffPath(session.OriginalFileName);
+                return File.Open(decryptedPath, FileMode.Create, FileAccess.Write, FileShare.Read);
+            });
         try
         {
-            await using FileStream outputStream =
-                File.Open(decryptedPath, FileMode.Create, FileAccess.Write, FileShare.Read);
-            await session.DecryptAsync(outputStream);
+            await using (output)
+            {
+                await session.DecryptAsync(output);
+                output.Commit();
+            }
         }
         catch
         {
             // What was decrypted before the operation was canceled, or failed, is not left until the cache is cleaned.
-            await transientFileService.WipeTransientFileAsync(decryptedPath);
+            if (decryptedPath.Length > 0)
+            {
+                await transientFileService.WipeTransientFileAsync(decryptedPath);
+            }
+
             throw;
         }
 
-        TryMakeReadOnly(decryptedPath);
+        bool isInMemory = output.InMemoryCategory is not null;
+        if (!isInMemory)
+        {
+            TryMakeReadOnly(decryptedPath);
+        }
 
         DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(
             decryptedPath,
             session.OriginalFileName,
+            output.Category,
+            isInMemory ? output.Data.Length : new FileInfo(decryptedPath).Length,
             new FileTimes(session.CreationTimeUtc, session.LastAccessTimeUtc, session.LastWriteTimeUtc));
-        if (file.Kind == PreviewKind.Image)
+
+        if (file.Kind == PreviewKind.Text)
         {
-            previewState.SetImage(file, session.EncryptedWithParameters);
-        }
-        else if (file.Kind == PreviewKind.Text)
-        {
-            await PrepareTextAsync(file, session.EncryptedWithParameters);
+            previewState.SetText(file, output.Data.ToArray(), session.EncryptedWithParameters);
         }
         else
         {
-            previewState.SetExternal(file, session.EncryptedWithParameters);
+            previewState.SetFile(file, session.EncryptedWithParameters);
         }
 
         return PreviewPreparationStatus.Prepared;

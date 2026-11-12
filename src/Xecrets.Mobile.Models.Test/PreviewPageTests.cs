@@ -111,8 +111,8 @@ public sealed class PreviewPageTests
             new DateTime(2021, 1, 2, 3, 4, 5, DateTimeKind.Utc),
             new DateTime(2022, 1, 2, 3, 4, 5, DateTimeKind.Utc));
         app.Preview.Current.SetText(
-            app.Preview.Current.File! with { OriginalTimes = original },
-            app.Preview.Current.Text,
+            app.Preview.Current.File with { OriginalTimes = original },
+            Encoding.UTF8.GetBytes(app.Preview.Current.Text),
             EncryptedWithParameters.Empty);
         app.Access.PickedFiles.Enqueue("docs/a.txt");
 
@@ -121,22 +121,84 @@ public sealed class PreviewPageTests
         Assert.That(app.Access.Times["docs/a.txt"], Is.EqualTo(original));
     }
 
+    /// <summary>
+    /// An edited file is saved over through one of My folders, so a file in none of them is not edited.
+    /// </summary>
+    [TestCase("docs/x.axx", true)]
+    [TestCase("downloads/x.axx", false)]
+    public async Task TextCanBeEditedOnlyInMyFolders(string path, bool canEdit)
+    {
+        using TestApp app = new();
+        app.AddFolder("docs");
+        app.AddFile(path);
+        app.Flow.Begin(FlowOrigin.Home, new FileReference(path, "x.axx"));
+        PreviewPageModel page = await CreatePageAsync(app, new TestFileService(hasExternalViewer: true), 4);
+
+        Assert.That(page.EditCommand.CanExecute(null), Is.EqualTo(canEdit));
+        Assert.That(app.UserInterface.Destinations, Is.Empty);
+    }
+
+    [Test]
+    public async Task ReceivedTextCanBeEdited()
+    {
+        using TestApp app = new();
+        app.Flow.Begin(FlowOrigin.ReceivedFile);
+        PreviewPageModel page = await CreatePageAsync(app, new TestFileService(hasExternalViewer: true), 4);
+
+        await page.EditCommand.ExecuteAsync(null);
+
+        Assert.That(app.UserInterface.Destinations, Is.EqualTo([AppDestination.Edit]));
+    }
+
+    /// <summary>
+    /// Text is kept in memory until it is handed over, and is then saved as it was decrypted.
+    /// </summary>
+    [Test]
+    public async Task SavedCopyOfTextIsAsItWasDecrypted()
+    {
+        using TestApp app = new();
+        PreviewPageModel page = await CreatePageAsync(app, new TestFileService(hasExternalViewer: true), 4);
+        byte[] decrypted = [.. Encoding.Unicode.Preamble, .. Encoding.Unicode.GetBytes("Räksmörgås")];
+        app.Preview.Current.SetText(app.Preview.Current.File, [.. decrypted], EncryptedWithParameters.Empty);
+        app.Access.PickedFiles.Enqueue("docs/a.txt");
+
+        Assert.That(app.Transient.RemainingFiles(), Is.Empty);
+
+        await page.SaveAsCommand.ExecuteAsync(null);
+
+        Assert.That(app.Access.Files["docs/a.txt"], Is.EqualTo(decrypted));
+    }
+
     private async Task<PreviewPageModel> CreatePageAsync(TestApp app, TestFileService fileService, long size)
     {
         string path = Path.Combine(_directory, "a.txt");
         File.WriteAllText(path, new string('a', (int)size), Encoding.ASCII);
-        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(path, "a.txt", FileTimes.UtcNow);
+        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(
+            size <= PreviewInfoFactory.MaxInlineTextSizeBytes ? "" : path,
+            "a.txt",
+            FileCategory.Text,
+            size,
+            FileTimes.UtcNow);
         if (file.Kind == PreviewKind.Text)
         {
-            app.Preview.Current.SetText(file, File.ReadAllText(path), EncryptedWithParameters.Empty);
+            app.Preview.Current.SetText(file, File.ReadAllBytes(path), EncryptedWithParameters.Empty);
         }
         else
         {
-            app.Preview.Current.SetExternal(file, EncryptedWithParameters.Empty);
+            app.Preview.Current.SetFile(file, EncryptedWithParameters.Empty);
         }
 
+        // The preview service itself, showing what the test set up, so that text is handed over as it really is.
+        PreviewService preview = new(
+            app.Core,
+            app.Profile,
+            app.Transient,
+            app.Preview.Current,
+            new DecryptionPasswordRequestState(),
+            app.Running,
+            app.CrashLog);
         PreviewPageModel page = new(
-            app.Preview,
+            preview,
             new DecryptedFileViewer(fileService),
             fileService,
             app.FolderAccess,
@@ -162,7 +224,7 @@ public sealed class PreviewPageTests
 
         public Task ViewFileAsync(DecryptedFileInfo file)
         {
-            Viewed.Add(file.DisplayName);
+            Viewed.Add(file.OriginalFileName);
             return Task.CompletedTask;
         }
 

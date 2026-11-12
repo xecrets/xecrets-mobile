@@ -74,7 +74,7 @@ internal abstract class FileServiceBase : IFileService
 
     public virtual Task<bool> CanViewFileAsync(DecryptedFileInfo file) => Task.FromResult(false);
 
-    public virtual async Task ViewFileAsync(DecryptedFileInfo file) => await OpenInAsync(file.FilePath, file.DisplayName);
+    public virtual async Task ViewFileAsync(DecryptedFileInfo file) => await OpenInAsync(file.FilePath, file.OriginalFileName);
 
     // Default for platforms where an incoming file reference is a plain filesystem path (Windows, iOS,
     // MacCatalyst): Xecrets Ez hands off its own decrypted files under CacheDirectory/XecretsHandoff (see

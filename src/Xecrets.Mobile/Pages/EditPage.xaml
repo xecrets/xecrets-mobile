@@ -80,6 +80,8 @@
             <ScrollView Grid.Row="1"
                         BackgroundColor="{AppThemeBinding Light={StaticResource LightSecondaryBackground}, Dark={StaticResource DarkSecondaryBackground}}">
                 <Editor Text="{Binding Text, Mode=TwoWay}"
+                        IsSpellCheckEnabled="False"
+                        IsTextPredictionEnabled="False"
                         AutoSize="TextChanges"
                         BackgroundColor="Transparent"
                         FontSize="{Binding Font.FontSize}">

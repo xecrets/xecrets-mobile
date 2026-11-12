@@ -28,6 +28,8 @@
 
 #endregion Copyright and GPL License
 
+using System.Text;
+
 using Xecrets.Common.Models;
 using Xecrets.Core.Abstractions;
 using Xecrets.Core.Models;
@@ -67,7 +69,8 @@ internal sealed class EditSaveService(
             return false;
         }
 
-        string encryptedPath = await EncryptToTransientAsync(previewService.Current, text);
+        byte[] plaintext = new UTF8Encoding(false).GetBytes(text);
+        string encryptedPath = await EncryptToTransientAsync(previewService.Current, plaintext);
         string savedId;
         try
         {
@@ -97,6 +100,8 @@ internal sealed class EditSaveService(
         {
             await transientFileService.WipeTransientFileAsync(encryptedPath);
         }
+
+        await UpdateSavedAsync(previewService.Current, plaintext);
 
         // The file is a new one, which on some storage gives it a new id, while the old id refers to the replaced
         // file. The saved file is the one saved over and listed from then on, in place of any entry for the
@@ -138,11 +143,12 @@ internal sealed class EditSaveService(
 
     public async Task<bool> SaveCopyAsync(string text)
     {
-        string encryptedPath = await EncryptToTransientAsync(previewService.Current, text);
+        byte[] plaintext = new UTF8Encoding(false).GetBytes(text);
+        string encryptedPath = await EncryptToTransientAsync(previewService.Current, plaintext);
         FileReference? savedCopy;
         try
         {
-            string fileName = previewService.Current.OriginalFileName.ToEncryptedName("");
+            string fileName = previewService.Current.File.OriginalFileName.ToEncryptedName("");
             savedCopy = await fileOperationWorkflow.SaveAsAsync(fileName, encryptedPath, FileTimes.UtcNow);
         }
         finally
@@ -154,6 +160,8 @@ internal sealed class EditSaveService(
         {
             return false;
         }
+
+        await UpdateSavedAsync(previewService.Current, plaintext);
 
         // The saved copy holds the edits, so it is the one saved over and listed from then on, if it was saved in
         // one of My folders. Otherwise, it cannot be changed, and each save is a new copy.
@@ -169,63 +177,35 @@ internal sealed class EditSaveService(
     }
 
     /// <summary>
-    /// Writes the text to the decrypted file being previewed, and prepares its encryption request.
+    /// Encrypts the text from memory to a temporary file, returning its path. The text is encrypted for all the file
+    /// being previewed was encrypted for, and keeps the creation time of the original.
     /// </summary>
-    private async Task<EncryptRequest> PrepareAsync(IPreviewState state, string text)
+    private async Task<string> EncryptToTransientAsync(IPreviewState state, byte[] plaintext)
     {
-        if (state.File is not null)
+        EncryptRequest request = encryptRequestFactory.Create(state.File.OriginalFileName, state.EncryptedWith) with
         {
-            TryClearReadOnly(state.File.FilePath);
-            await File.WriteAllTextAsync(state.File.FilePath, text);
-            TryMakeReadOnly(state.File.FilePath);
-
-            state.UpdateText(text);
-            state.UpdateFileSize(new FileInfo(state.File.FilePath).Length);
-        }
-
-        EncryptRequest request = encryptRequestFactory.Create(state.OriginalFileName, state.EncryptedWith);
-        return state.File is { } file
-            ? request with { CreationTimeUtc = file.OriginalTimes.CreationTimeUtc }
-            : request;
-    }
-
-    /// <summary>
-    /// Writes the text as for <see cref="PrepareAsync"/>, and encrypts it to a temporary file, returning its path.
-    /// </summary>
-    private async Task<string> EncryptToTransientAsync(IPreviewState state, string text)
-    {
-        EncryptRequest request = await PrepareAsync(state, text);
+            CreationTimeUtc = state.File.OriginalTimes.CreationTimeUtc,
+        };
         string encryptedPath =
-            transientFileService.CreateEncryptedOutputPath(state.OriginalFileName.ToEncryptedName(""));
-        await using FileStream cleartext = File.OpenRead(state.DecryptedPath);
+            transientFileService.CreateEncryptedOutputPath(state.File.OriginalFileName.ToEncryptedName(""));
+
+        using MemoryStream cleartext = new(plaintext);
         await using FileStream encrypted = File.Create(encryptedPath);
         await coreServices.EncryptAsync(cleartext, encrypted, request);
         return encryptedPath;
     }
 
-    private void TryClearReadOnly(string filePath)
+    /// <summary>
+    /// The text as it was saved is the text shown from then on. A file it was written to before, to hand it over, no longer
+    /// holds what is shown, so it is wiped.
+    /// </summary>
+    private async Task UpdateSavedAsync(IPreviewState state, byte[] plaintext)
     {
-        try
+        string decryptedPath = state.File.FilePath;
+        state.UpdateText(plaintext);
+        if (decryptedPath.Length > 0)
         {
-            File.SetAttributes(filePath, File.GetAttributes(filePath) & ~FileAttributes.ReadOnly);
-        }
-        catch (Exception ex)
-        {
-            // Best effort. The file write will report the real failure if this matters.
-            crashLogService.WriteSwallowedException(ex);
-        }
-    }
-
-    private void TryMakeReadOnly(string filePath)
-    {
-        try
-        {
-            File.SetAttributes(filePath, File.GetAttributes(filePath) | FileAttributes.ReadOnly);
-        }
-        catch (Exception ex)
-        {
-            // Best effort. Some mobile filesystems do not support this attribute.
-            crashLogService.WriteSwallowedException(ex);
+            await transientFileService.WipeTransientFileAsync(decryptedPath);
         }
     }
 }

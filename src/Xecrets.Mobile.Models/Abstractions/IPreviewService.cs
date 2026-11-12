@@ -45,7 +45,18 @@ public interface IPreviewService
     /// </summary>
     void CancelPasswordRequest();
 
+    /// <summary>
+    /// Reads the entire file into memory for previewing.
+    /// </summary>
+    /// <param name="file"></param>
+    /// <param name="encryptedWith"></param>
+    /// <returns></returns>
     Task PrepareTextAsync(DecryptedFileInfo file, EncryptedWithParameters encryptedWith);
+
+    /// <summary>
+    /// Writes the in-memory text to a temporary file and returns it.
+    /// </summary>
+    Task<DecryptedFileInfo> MaterializeAsync();
 
     Task<bool> PrepareAsync(IReadableFile encryptedFile);
 

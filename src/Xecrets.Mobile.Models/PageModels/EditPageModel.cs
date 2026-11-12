@@ -88,15 +88,13 @@ public partial class EditPageModel(
     private async Task Initialize()
     {
         IPreviewState state = previewService.Current;
-        if (!state.IsReady || state.Kind != PreviewKind.Text)
+        if (state.File.Kind != PreviewKind.Text)
         {
             await UserInterfaceService.GoBackAsync(null);
             return;
         }
 
-        FileNameText = string.IsNullOrWhiteSpace(state.OriginalFileName)
-            ? MobileTexts.DisplayNameProgram
-            : state.OriginalFileName;
+        FileNameText = state.File.OriginalFileName;
         MetadataText = PreviewMetadataFormatter.Format(state);
         Text = state.Text;
         _savedTextHash = HashText(Text);
@@ -145,7 +143,7 @@ public partial class EditPageModel(
     private async Task<bool> TrySaveAsync()
     {
         IPreviewState state = previewService.Current;
-        if (!state.IsReady || state.Kind != PreviewKind.Text)
+        if (state.File.Kind != PreviewKind.Text)
         {
             return false;
         }

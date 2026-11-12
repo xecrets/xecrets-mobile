@@ -38,7 +38,7 @@ namespace Xecrets.Mobile.Platforms.Android;
 /// MAUI makes a read-only editor unfocusable, so its text cannot be selected. This one is selectable instead, and
 /// has no key listener, so it still cannot be changed, does not show the keyboard and offers no cut or paste.
 /// </summary>
-internal sealed class AndroidReadOnlyEditorHandler() : EditorHandler(ReadOnlyMapper)
+internal sealed class AndroidReadOnlyEditorHandler() : AndroidEditorHandler(ReadOnlyMapper)
 {
     // These mappings would make the editor unfocusable again or, by setting the input type, put a key listener back.
     private static readonly IPropertyMapper<IEditor, AndroidReadOnlyEditorHandler> ReadOnlyMapper =

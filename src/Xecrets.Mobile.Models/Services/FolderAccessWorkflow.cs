@@ -98,6 +98,12 @@ public sealed class FolderAccessWorkflow(
     }
 
     /// <summary>
+    /// Tells if the file is in one of My folders, without asking the user.
+    /// </summary>
+    public async Task<bool> IsInFoldersAsync(FileReference file) =>
+        await fileAccess.FindFolderAsync(file.Id) is not null;
+
+    /// <summary>
     /// The file as reached through one of My folders, without asking the user, or null when it is in none of them.
     /// </summary>
     public async Task<FileReference?> FindInFoldersAsync(FileReference file)

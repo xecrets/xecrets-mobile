@@ -54,14 +54,44 @@ internal abstract class AppleServices : PlatformServicesBase
         AppleCrashHandler.Register(crashLogService);
     }
 
+    // Covers the window while the app is in the background, since the snapshot the system saves is taken then.
+    private readonly UIView _cover = new()
+    {
+        BackgroundColor = UIColor.SystemBackground,
+        AutoresizingMask = UIViewAutoresizing.FlexibleDimensions,
+    };
+
+    private bool _isDecryptedContentShown;
+
     public override (double Left, double Right) GetWindowGaps(VisualElement view) => view.GetWindowGaps();
+
+    public override void IsSensitiveContentVisible(bool isShown) => _isDecryptedContentShown = isShown;
 
     protected AppleServices()
     {
+        _ = UIScene.Notifications.ObserveDidEnterBackground((_, args) =>
+            CoverIfContentShown((UIScene)args.Notification.Object!));
+        _ = UIScene.Notifications.ObserveWillEnterForeground((_, _) => _cover.RemoveFromSuperview());
+
         LabelHandler.Mapper.AppendToMapping(nameof(ITextStyle.Font), (handler, view) =>
             ApplyFontWeight(view, handler.PlatformView));
         ButtonHandler.Mapper.AppendToMapping(nameof(ITextStyle.Font), (handler, view) =>
-            ApplyFontWeight(view, handler.PlatformView.TitleLabel!));
+            ApplyFontWeight(view, handler.PlatformView.TitleLabel));
+
+        // Editors show decrypted text, so it is kept from inline predictions and Writing Tools, which have settings of
+        // their own, apart from autocorrection and spell checking.
+        EditorHandler.Mapper.AppendToMapping("Xecrets.ConfigureSensitiveText",(handler, _) =>
+        {
+            if (OperatingSystem.IsIOSVersionAtLeast(17) || OperatingSystem.IsMacCatalyst())
+            {
+                handler.PlatformView.SetInlinePredictionType(UITextInlinePredictionType.No);
+            }
+
+            if (OperatingSystem.IsIOSVersionAtLeast(18) || OperatingSystem.IsMacCatalystVersionAtLeast(18))
+            {
+                handler.PlatformView.WritingToolsBehavior = UIWritingToolsBehavior.None;
+            }
+        });
 
         EntryHandler.Mapper.AppendToMapping(PasswordEntryProperties.ConfigureMapperKey, (handler, view) =>
         {
@@ -83,6 +113,18 @@ internal abstract class AppleServices : PlatformServicesBase
                 _ => throw new InvalidOperationException($"Invalid password entry purpose '{purpose}'."),
             };
         });
+    }
+
+    private void CoverIfContentShown(UIScene scene)
+    {
+        if (!_isDecryptedContentShown)
+        {
+            return;
+        }
+
+        UIWindow window = ((MauiUISceneDelegate)scene.Delegate!).Window!;
+        _cover.Frame = window.Bounds;
+        window.AddSubview(_cover);
     }
 
     private static void ApplyFontWeight(IView view, UILabel platformView)

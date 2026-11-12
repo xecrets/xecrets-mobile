@@ -35,12 +35,15 @@ namespace Xecrets.Mobile.Pages;
 
 internal partial class EditPage
 {
+    private readonly IPlatformServices _platformServices;
+
     private bool _initialized;
 
-    public EditPage(EditPageModel model, IPageHeaderService pageHeaderService)
+    public EditPage(EditPageModel model, IPageHeaderService pageHeaderService, IPlatformServices platformServices)
     {
         InitializeComponent();
         BindingContext = model;
+        _platformServices = platformServices;
         pageHeaderService.ApplyStandardHeader(this);
     }
 
@@ -48,6 +51,7 @@ internal partial class EditPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        _platformServices.IsSensitiveContentVisible(true);
 
         if (_initialized)
         {
@@ -56,5 +60,11 @@ internal partial class EditPage
 
         _initialized = true;
         await ((EditPageModel)BindingContext).InitializeCommand.ExecuteAsync(null);
+    }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        _platformServices.IsSensitiveContentVisible(false);
     }
 }

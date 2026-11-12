@@ -93,7 +93,7 @@ public sealed class HandOverTests
         using TestApp app = new();
         app.Flow.Begin(origin);
         string path = CreateFile(_directory, "a.txt");
-        app.Preview.Current.SetText(new DecryptedFileInfo(path, "a.txt", "text/plain", 4, PreviewKind.Text, FileTimes.UtcNow), "text", EncryptedWithParameters.Empty);
+        app.Preview.Current.SetText(new DecryptedFileInfo(path, "a.txt", "text/plain", 4, PreviewKind.Text, FileTimes.UtcNow), "text"u8.ToArray(), EncryptedWithParameters.Empty);
         PreviewPageModel page = new(
             app.Preview,
             null!,

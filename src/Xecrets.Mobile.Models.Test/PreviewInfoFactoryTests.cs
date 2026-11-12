@@ -28,117 +28,82 @@
 
 #endregion Copyright and GPL License
 
-using System.Text;
-
 using NUnit.Framework;
 
+using Xecrets.Core.Models;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
 
 namespace Xecrets.Mobile.Models.Test;
 
+/// <summary>
+/// How a decrypted file is shown, from what its contents were classified as and whether it is kept in memory.
+/// </summary>
 [TestFixture]
 public sealed class PreviewInfoFactoryTests
 {
-    private string _directory = null!;
-
-    [SetUp]
-    public void SetUp()
-    {
-        _directory = Path.Combine(Path.GetTempPath(), $"xecrets-mobile-test-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(_directory);
-    }
-
-    [TearDown]
-    public void TearDown()
-    {
-        if (Directory.Exists(_directory))
-        {
-            Directory.Delete(_directory, true);
-        }
-    }
+    private const string _handoffPath = "/cache/handoff/file";
 
     [Test]
-    public void RecognizedExtensionWithAllAsciiContentIsNotReclassifiedAsText()
+    public void TextKeptInMemoryIsShownAsText()
     {
-        // A recognized extension (.pdf) must keep its positively-identified content type and External kind even
-        // when its bytes happen to pass the "looks like text" sniff - that sniff exists only for unrecognized
-        // extensions. This pins the fix for the bug where such a file was silently reclassified as text/plain.
-        string filePath = Path.Combine(_directory, "document.pdf");
-        File.WriteAllText(filePath, "%PDF-1.4\n1 0 obj << /Type /Catalog >>\nendobj\n", Encoding.ASCII);
+        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo("", "small.txt", FileCategory.Text, 4, FileTimes.UtcNow);
 
-        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(filePath, "document.pdf", FileTimes.UtcNow);
+        Assert.That(file.ContentType, Is.EqualTo("text/plain"));
+        Assert.That(file.Kind, Is.EqualTo(PreviewKind.Text));
+        Assert.That(file.FileSize, Is.EqualTo(4));
+    }
 
-        Assert.That(file.ContentType, Is.EqualTo("application/pdf"));
+    /// <summary>
+    /// Text over the size cap is written to a file. It is still text, but is left to another app to show.
+    /// </summary>
+    [Test]
+    public void TextWrittenToAFileIsShownExternally()
+    {
+        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(
+            _handoffPath, "large.txt", FileCategory.Text, PreviewInfoFactory.MaxInlineTextSizeBytes + 1, FileTimes.UtcNow);
+
+        Assert.That(file.ContentType, Is.EqualTo("text/plain"));
         Assert.That(file.Kind, Is.EqualTo(PreviewKind.External));
     }
 
-    [Test]
-    public void UnrecognizedExtensionWithTextContentIsClassifiedAsText()
+    [TestCase("notes.xyz")]
+    [TestCase("README")]
+    public void TextWithoutARecognizedExtensionIsPlainText(string fileName)
     {
-        // Files with an extension the detector does not know at all still fall back to sniffing their content -
-        // this is the case the heuristic is meant for.
-        string filePath = Path.Combine(_directory, "notes.xyz");
-        File.WriteAllText(filePath, "Just some plain text notes.", Encoding.ASCII);
-
-        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(filePath, "notes.xyz", FileTimes.UtcNow);
+        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo("", fileName, FileCategory.Text, 4, FileTimes.UtcNow);
 
         Assert.That(file.ContentType, Is.EqualTo("text/plain"));
         Assert.That(file.Kind, Is.EqualTo(PreviewKind.Text));
     }
 
     [Test]
-    public void UnrecognizedExtensionWithBinaryContentStaysExternal()
+    public void TextOfARecognizedTypeKeepsItsContentType()
     {
-        string filePath = Path.Combine(_directory, "blob.xyz");
-        File.WriteAllBytes(filePath, [0x00, 0x01, 0x02, 0xFF, 0xFE, 0xFD]);
+        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo("", "data.json", FileCategory.Text, 4, FileTimes.UtcNow);
 
-        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(filePath, "blob.xyz", FileTimes.UtcNow);
-
-        Assert.That(file.ContentType, Is.EqualTo("application/octet-stream"));
-        Assert.That(file.Kind, Is.EqualTo(PreviewKind.External));
-    }
-
-    [Test]
-    public void TextFileOverTheSizeCapIsClassifiedAsExternal()
-    {
-        // A text file past MaxInlineTextSizeBytes is still exactly what it is - ContentType stays text/plain - it
-        // is just reported as External instead of Text, so the app's internal viewer/editor (which key off Kind,
-        // not size) leave it alone. Nothing is truncated: the whole file is decrypted to disk as usual, Open In and
-        // Save As are unaffected.
-        string filePath = Path.Combine(_directory, "large.txt");
-        File.WriteAllText(filePath, new string('a', (int)PreviewInfoFactory.MaxInlineTextSizeBytes + 1), Encoding.ASCII);
-
-        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(filePath, "large.txt", FileTimes.UtcNow);
-
-        Assert.That(file.ContentType, Is.EqualTo("text/plain"));
-        Assert.That(file.Kind, Is.EqualTo(PreviewKind.External));
-    }
-
-    [Test]
-    public void TextFileAtOrUnderTheSizeCapStaysText()
-    {
-        string filePath = Path.Combine(_directory, "small.txt");
-        File.WriteAllText(filePath, new string('a', (int)PreviewInfoFactory.MaxInlineTextSizeBytes), Encoding.ASCII);
-
-        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(filePath, "small.txt", FileTimes.UtcNow);
-
-        Assert.That(file.ContentType, Is.EqualTo("text/plain"));
+        Assert.That(file.ContentType, Is.EqualTo("application/json"));
         Assert.That(file.Kind, Is.EqualTo(PreviewKind.Text));
     }
 
     [Test]
-    public void RecognizedBinaryOfficeExtensionIsNotReclassifiedAsText()
+    public void ImageIsShownAsAnImage()
     {
-        // A .docx is a zip container, not text, but its bytes could in principle happen to pass the "looks like
-        // text" sniff for a short enough sample. As with .pdf above, a recognized extension must keep its
-        // positively-identified content type and External kind rather than being routed to the inline text viewer.
-        string filePath = Path.Combine(_directory, "report.docx");
-        File.WriteAllBytes(filePath, [0x50, 0x4B, 0x03, 0x04, 0x00, 0x00, 0x00, 0x00]);
+        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(_handoffPath, "photo.png", FileCategory.Image, 4, FileTimes.UtcNow);
 
-        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(filePath, "report.docx", FileTimes.UtcNow);
+        Assert.That(file.ContentType, Is.EqualTo("image/png"));
+        Assert.That(file.Kind, Is.EqualTo(PreviewKind.Image));
+    }
 
-        Assert.That(file.ContentType, Is.EqualTo("application/vnd.openxmlformats-officedocument.wordprocessingml.document"));
+    [TestCase("document.pdf", FileCategory.Pdf, "application/pdf")]
+    [TestCase("report.docx", FileCategory.Other, "application/vnd.openxmlformats-officedocument.wordprocessingml.document")]
+    [TestCase("blob.xyz", FileCategory.Other, "application/octet-stream")]
+    [TestCase("notes.txt", FileCategory.Other, "text/plain")]
+    public void AnythingElseIsShownExternally(string fileName, FileCategory category, string contentType)
+    {
+        DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(_handoffPath, fileName, category, 4, FileTimes.UtcNow);
+
+        Assert.That(file.ContentType, Is.EqualTo(contentType));
         Assert.That(file.Kind, Is.EqualTo(PreviewKind.External));
     }
 }

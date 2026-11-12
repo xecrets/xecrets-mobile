@@ -86,7 +86,7 @@ internal class AndroidFileService : FileServiceBase
         return intent;
     }
 
-    private static string GetContentType(DecryptedFileInfo file) => file.ContentType.OrAndroidContentType(file.DisplayName);
+    private static string GetContentType(DecryptedFileInfo file) => file.ContentType.OrAndroidContentType(file.OriginalFileName);
 
     private static bool TryGetQuickViewIntent(DecryptedFileInfo file, [NotNullWhen(true)] out Intent? quickViewIntent)
     {

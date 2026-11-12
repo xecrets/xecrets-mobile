@@ -46,6 +46,8 @@ internal sealed class FakePreviewService : IPreviewService
     public void CancelPasswordRequest() => NeedsPassword = false;
     public Task PrepareTextAsync(DecryptedFileInfo file, EncryptedWithParameters encryptedWith) => throw new NotSupportedException();
 
+    public Task<DecryptedFileInfo> MaterializeAsync() => Task.FromResult(Current.File);
+
     public async Task<bool> PrepareAsync(IReadableFile encryptedFile)
     {
         await using (await encryptedFile.OpenReadAsync())

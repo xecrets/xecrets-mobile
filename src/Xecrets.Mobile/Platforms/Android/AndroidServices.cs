@@ -37,8 +37,11 @@ using Android.Graphics;
 using AndroidContentCaptureImportance = Android.Views.ViewImportantForContentCapture;
 using AndroidImportantForAutofill = Android.Views.ImportantForAutofill;
 using AndroidView = Android.Views.View;
+using AndroidWindow = Android.Views.Window;
+using AndroidWindowManagerFlags = Android.Views.WindowManagerFlags;
 
 using Microsoft.Maui;
+using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Devices;
 using Microsoft.Maui.Handlers;
@@ -74,6 +77,20 @@ internal class AndroidServices : PlatformServicesBase
         platformView.GetLocationInWindow(location);
         double density = DeviceDisplay.Current.MainDisplayInfo.Density;
         return (location[0] / density, (platformView.RootView!.Width - location[0] - platformView.Width) / density);
+    }
+
+    // A secure window is left out of the recents snapshot, and also of screenshots, screen recording and casting.
+    public override void IsSensitiveContentVisible(bool isShown)
+    {
+        AndroidWindow window = Platform.CurrentActivity!.Window!;
+        if (isShown)
+        {
+            window.AddFlags(AndroidWindowManagerFlags.Secure);
+        }
+        else
+        {
+            window.ClearFlags(AndroidWindowManagerFlags.Secure);
+        }
     }
 
     // Registered as a DI singleton, so this runs exactly once per app lifetime. AppendToMapping

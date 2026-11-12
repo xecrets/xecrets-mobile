@@ -32,8 +32,17 @@ namespace Xecrets.Mobile.Models.Models;
 
 public sealed record DecryptedFileInfo(
     string FilePath,
-    string DisplayName,
+    string OriginalFileName,
     string ContentType,
     long FileSize,
     PreviewKind Kind,
-    FileTimes OriginalTimes);
+    FileTimes OriginalTimes)
+{
+    public static DecryptedFileInfo Empty { get; } = new(
+        string.Empty,
+        string.Empty,
+        string.Empty,
+        0,
+        PreviewKind.Unknown,
+        new FileTimes(default, default, default));
+}

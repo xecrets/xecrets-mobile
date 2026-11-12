@@ -28,6 +28,8 @@
 
 #endregion Copyright and GPL License
 
+using System.Text;
+
 using Xecrets.Core.Models;
 
 using Xecrets.Mobile.Models.Abstractions;
@@ -37,78 +39,59 @@ namespace Xecrets.Mobile.Models.Services;
 
 internal sealed class PreviewState : IPreviewState
 {
-    public PreviewKind Kind { get; private set; } = PreviewKind.Unknown;
+    // The text as it was decrypted, in any encoding, or as it was last saved, and otherwise empty.
+    private byte[] _plaintext = [];
 
-    public string OriginalFileName { get; private set; } = string.Empty;
+    public string Text
+    {
+        get
+        {
+            using StreamReader reader = new(new MemoryStream(_plaintext), new UTF8Encoding(false), detectEncodingFromByteOrderMarks: true);
+            return reader.ReadToEnd();
+        }
+    }
 
-    public string DecryptedPath { get; private set; } = string.Empty;
+    public ReadOnlyMemory<byte> Plaintext => _plaintext;
 
-    public string ContentType { get; private set; } = string.Empty;
-
-    public long FileSize { get; private set; }
-
-    public string Text { get; private set; } = string.Empty;
-
-    public DecryptedFileInfo? File { get; private set; }
+    public DecryptedFileInfo File { get; private set; } = DecryptedFileInfo.Empty;
 
     public EncryptedWithParameters EncryptedWith { get; private set; } = EncryptedWithParameters.Empty;
 
-    public bool IsReady => Kind != PreviewKind.Unknown && !string.IsNullOrWhiteSpace(DecryptedPath);
+    public bool IsReady => File.Kind != PreviewKind.Unknown;
 
-    public void SetImage(DecryptedFileInfo file, EncryptedWithParameters encryptedWith)
+    public void SetText(DecryptedFileInfo file, byte[] plaintext, EncryptedWithParameters encryptedWith)
     {
-        Kind = PreviewKind.Image;
-        SetFile(file, encryptedWith);
-        Text = string.Empty;
+        File = file;
+        EncryptedWith = encryptedWith;
+        _plaintext = plaintext;
     }
 
-    public void SetText(DecryptedFileInfo file, string text, EncryptedWithParameters encryptedWith)
+    /// <summary>
+    /// A file that is not shown as text, so no text is kept.
+    /// </summary>
+    public void SetFile(DecryptedFileInfo file, EncryptedWithParameters encryptedWith)
     {
-        Kind = PreviewKind.Text;
-        SetFile(file, encryptedWith);
-        Text = text;
+        SetText(file, [], encryptedWith);
     }
 
-    public void SetExternal(DecryptedFileInfo file, EncryptedWithParameters encryptedWith)
+    /// <summary>
+    /// The file the text was written to, to hand it over to the platform or another app.
+    /// </summary>
+    public void SetDecryptedPath(string decryptedPath)
     {
-        Kind = PreviewKind.External;
-        SetFile(file, encryptedWith);
-        Text = string.Empty;
+        File = File with { FilePath = decryptedPath };
     }
 
-    public void UpdateText(string text)
+    public void UpdateText(byte[] plaintext)
     {
-        Text = text;
-    }
-
-    public void UpdateFileSize(long fileSize)
-    {
-        FileSize = fileSize;
-        if (File is not null)
-        {
-            File = File with { FileSize = fileSize };
-        }
+        _plaintext = plaintext;
+        File = File with { FilePath = string.Empty, FileSize = _plaintext.Length };
     }
 
     public void Clear()
     {
-        Kind = PreviewKind.Unknown;
-        OriginalFileName = string.Empty;
-        DecryptedPath = string.Empty;
-        ContentType = string.Empty;
-        FileSize = 0;
-        Text = string.Empty;
-        File = null;
+        _plaintext = [];
+        File = DecryptedFileInfo.Empty;
         EncryptedWith = EncryptedWithParameters.Empty;
-    }
-
-    private void SetFile(DecryptedFileInfo file, EncryptedWithParameters encryptedWith)
-    {
-        File = file;
-        EncryptedWith = encryptedWith;
-        OriginalFileName = file.DisplayName;
-        DecryptedPath = file.FilePath;
-        ContentType = file.ContentType;
-        FileSize = file.FileSize;
     }
 }

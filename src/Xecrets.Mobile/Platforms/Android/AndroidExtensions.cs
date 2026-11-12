@@ -42,11 +42,11 @@ using Android.Database;
 using Android.OS;
 using Android.Provider;
 using Android.Webkit;
+using Android.Widget;
 
 using Xecrets.Core.Public;
 using Xecrets.Mobile.Models;
 using Xecrets.Mobile.Models.Abstractions;
-using Xecrets.Mobile.Models.Services;
 
 using AndroidUri = Android.Net.Uri;
 
@@ -126,7 +126,7 @@ internal static class AndroidExtensions
 
             // Google Drive's viewer honors EXTRA_QUICK_VIEW_FEATURES, which hides its "Insert" button, only for
             // ClipData uris.
-            intent.ClipData = ClipData.NewRawUri(string.Empty, uri);
+            intent.ClipData = ClipData.NewRawUri("", uri);
             intent.AddFlags(ActivityFlags.GrantReadUriPermission);
             return intent;
         }
@@ -185,7 +185,7 @@ internal static class AndroidExtensions
             using ICursor? cursor = ContentResolver.Query(
                 uri,
                 [DocumentsContract.Document.ColumnDisplayName],
-                null, null, null)!;
+                null, null, null);
 
             if (cursor is null)
             {
@@ -215,6 +215,41 @@ internal static class AndroidExtensions
             extras.PutBoolean("android.content.extra.IS_SENSITIVE", true);
             clip.Description!.Extras = extras;
             ((ClipboardManager)context.GetSystemService(Context.ClipboardService)!).PrimaryClip = clip;
+        }
+    }
+
+    extension(EditText editText)
+    {
+        /// <summary>
+        /// Does a copy or cut from the text context menu, as Android does but with the copied text marked as
+        /// sensitive, since Android does not mark it. Every copy and cut ends up in the context menu handling: the
+        /// selection toolbar, keyboard shortcuts, the keyboard app and accessibility services.
+        /// </summary>
+        /// <param name="id">The id of the context menu item.</param>
+        /// <returns><see langword="true"/> if the item was a copy or cut, which is then done; otherwise
+        /// <see langword="false"/>.</returns>
+        public bool TryCopyOrCutAsSensitive(int id)
+        {
+            if (id != global::Android.Resource.Id.Copy && id != global::Android.Resource.Id.Cut)
+            {
+                return false;
+            }
+
+            int start = Math.Max(0, Math.Min(editText.SelectionStart, editText.SelectionEnd));
+            int end = Math.Max(0, Math.Max(editText.SelectionStart, editText.SelectionEnd));
+            editText.Context!.CopySensitiveText(editText.Text![start..end]);
+
+            // Collapsing the selection closes the selection toolbar, as Android does after a copy or cut.
+            if (id == global::Android.Resource.Id.Cut)
+            {
+                editText.EditableText!.Delete(start, end);
+            }
+            else
+            {
+                editText.SetSelection(end);
+            }
+
+            return true;
         }
     }
 
@@ -385,15 +420,11 @@ internal static class AndroidExtensions
         }
     }
 
-    private sealed class ChangeObserver : ContentObserver
+    private sealed class ChangeObserver() : ContentObserver(null)
     {
         private readonly TaskCompletionSource _changed = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         // Without a handler, the change is told on a binder thread, which only completes the task.
-        public ChangeObserver()
-            : base(null)
-        {
-        }
 
         public Task Changed => _changed.Task;
 

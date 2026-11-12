@@ -41,23 +41,6 @@ namespace Xecrets.Mobile.Models.Test;
 [TestFixture]
 public sealed class EditSaveServiceTests
 {
-    private string _directory = "";
-
-    [SetUp]
-    public void SetUp() => _directory = Directory.CreateTempSubdirectory().FullName;
-
-    // The decrypted file is left read-only, which keeps it from being deleted on Windows.
-    [TearDown]
-    public void TearDown()
-    {
-        foreach (string file in Directory.EnumerateFiles(_directory))
-        {
-            File.SetAttributes(file, FileAttributes.Normal);
-        }
-
-        Directory.Delete(_directory, recursive: true);
-    }
-
     [Test]
     public async Task SaveEncryptsTheEditedTextOverTheSourceAndListsItInPlaceOfAnyEntryForTheFile()
     {
@@ -206,8 +189,8 @@ public sealed class EditSaveServiceTests
         using TestApp app = CreateEditing("text");
         DateTime created = new(2020, 1, 2, 3, 4, 5, DateTimeKind.Utc);
         app.Preview.Current.SetText(
-            app.Preview.Current.File! with { OriginalTimes = new FileTimes(created, created, created) },
-            "text",
+            app.Preview.Current.File with { OriginalTimes = new FileTimes(created, created, created) },
+            "text"u8.ToArray(),
             EncryptedWithParameters.Empty);
         app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
         app.Flow.Begin(FlowOrigin.Home, new FileReference("docs/x.axx", "x.axx"));
@@ -226,8 +209,8 @@ public sealed class EditSaveServiceTests
     {
         using TestApp app = CreateEditing("text");
         app.Preview.Current.SetText(
-            app.Preview.Current.File!,
-            "text",
+            app.Preview.Current.File,
+            "text"u8.ToArray(),
             new EncryptedWithParameters("password", [app.Profile.GetPublicKey()], []));
         app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
         app.Flow.Begin(FlowOrigin.Home, new FileReference("docs/x.axx", "x.axx"));
@@ -237,17 +220,91 @@ public sealed class EditSaveServiceTests
         Assert.That(app.Core.EncryptRequests.Single().Recipients, Is.EqualTo([app.Profile.GetPublicKey()]));
     }
 
+    /// <summary>
+    /// A file the text was handed over in before it was edited no longer holds what is shown.
+    /// </summary>
+    [Test]
+    public async Task SaveWipesTheFileTheTextWasHandedOverIn()
+    {
+        using TestApp app = CreateEditing("text");
+        string decryptedPath = app.Transient.CreateHandoffPath("a.txt");
+        await File.WriteAllTextAsync(decryptedPath, "text");
+        app.Preview.Current.SetDecryptedPath(decryptedPath);
+        app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
+        app.Flow.Begin(FlowOrigin.Home, new FileReference("docs/x.axx", "x.axx"));
+
+        await app.EditSave.SaveAsync("edited");
+
+        Assert.That(app.Preview.Current.File.FilePath, Is.Empty);
+        Assert.That(app.Preview.Current.File.FilePath, Is.Empty);
+        Assert.That(app.Transient.RemainingFiles(), Is.Empty);
+    }
+
+    [Test]
+    public void FailedSaveKeepsTheTextShown()
+    {
+        using TestApp app = CreateEditing("text");
+        app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
+        app.Access.FailingWrites.Add("docs/x.axx");
+        app.Flow.Begin(FlowOrigin.Home, new FileReference("docs/x.axx", "x.axx"));
+
+        Assert.That(async () => await app.EditSave.SaveAsync("edited"), Throws.TypeOf<IOException>());
+
+        Assert.That(app.Preview.Current.Text, Is.EqualTo("text"));
+    }
+
+    [Test]
+    public async Task SavedTextIsShownWithItsSizeAsUtf8()
+    {
+        using TestApp app = CreateEditing("text");
+        app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
+        app.Flow.Begin(FlowOrigin.Home, new FileReference("docs/x.axx", "x.axx"));
+
+        await app.EditSave.SaveAsync("Räksmörgås");
+
+        Assert.That(app.Preview.Current.Text, Is.EqualTo("Räksmörgås"));
+        Assert.That(app.Preview.Current.File.FileSize, Is.EqualTo(Encoding.UTF8.GetByteCount("Räksmörgås")));
+    }
+
+    [Test]
+    public async Task CopyKeepsTheCreationTimeOfTheOriginal()
+    {
+        using TestApp app = CreateEditing("text");
+        DateTime created = new(2020, 1, 2, 3, 4, 5, DateTimeKind.Utc);
+        app.Preview.Current.SetText(
+            app.Preview.Current.File with { OriginalTimes = new FileTimes(created, created, created) },
+            "text"u8.ToArray(),
+            EncryptedWithParameters.Empty);
+        app.AddFolder("docs");
+        app.Access.PickedFiles.Enqueue("docs/copy.axx");
+
+        await app.EditSave.SaveCopyAsync("edited");
+
+        Assert.That(app.Core.EncryptRequests.Single().CreationTimeUtc, Is.EqualTo(created));
+        Assert.That(app.Preview.Current.Text, Is.EqualTo("edited"));
+        Assert.That(app.Transient.RemainingFiles(), Is.Empty);
+    }
+
+    [Test]
+    public async Task CopyThatIsNotSavedKeepsTheTextShown()
+    {
+        using TestApp app = CreateEditing("text");
+        app.Access.PickedFiles.Enqueue(null);
+
+        Assert.That(await app.EditSave.SaveCopyAsync("edited"), Is.False);
+
+        Assert.That(app.Preview.Current.Text, Is.EqualTo("text"));
+    }
+
     private TestApp CreateEditing(string text, bool usesFolderIds = false) =>
         CreateEditing(text, EncryptedWithParameters.Empty, usesFolderIds);
 
     private TestApp CreateEditing(string text, EncryptedWithParameters encryptedWith, bool usesFolderIds = false)
     {
-        string path = Path.Combine(_directory, "a.txt");
-        File.WriteAllText(path, text);
         TestApp app = new(usesFolderIds);
         app.Preview.Current.SetText(
-            new DecryptedFileInfo(path, "a.txt", "text/plain", text.Length, PreviewKind.Text, FileTimes.UtcNow),
-            text,
+            new DecryptedFileInfo("", "a.txt", "text/plain", text.Length, PreviewKind.Text, FileTimes.UtcNow),
+            Encoding.UTF8.GetBytes(text),
             encryptedWith);
         return app;
     }

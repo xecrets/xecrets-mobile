@@ -38,5 +38,5 @@ internal static class PreviewMetadataFormatter
     /// <summary>
     /// Describes the type and size of the file being previewed.
     /// </summary>
-    public static string Format(IPreviewState state) => $"{state.ContentType} {state.FileSize.ToSizeText()}";
+    public static string Format(IPreviewState state) => $"{state.File.ContentType} {state.File.FileSize.ToSizeText()}";
 }

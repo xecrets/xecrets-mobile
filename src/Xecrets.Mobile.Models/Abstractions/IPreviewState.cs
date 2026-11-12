@@ -36,19 +36,9 @@ namespace Xecrets.Mobile.Models.Abstractions;
 
 public interface IPreviewState
 {
-    PreviewKind Kind { get; }
-
-    string OriginalFileName { get; }
-
-    string DecryptedPath { get; }
-
-    string ContentType { get; }
-
-    long FileSize { get; }
-
     string Text { get; }
 
-    DecryptedFileInfo? File { get; }
+    DecryptedFileInfo File { get; }
 
     /// <summary>
     /// What the file was encrypted with, so that edits are encrypted for the same recipients and master keys.
@@ -57,9 +47,11 @@ public interface IPreviewState
 
     bool IsReady { get; }
 
-    void UpdateText(string text);
-
-    void UpdateFileSize(long fileSize);
+    /// <summary>
+    /// Makes the text saved, as it was written, the text shown. A file that the text was written to before is then no
+    /// longer its file.
+    /// </summary>
+    void UpdateText(byte[] plaintext);
 
     void Clear();
 }

@@ -43,23 +43,6 @@ namespace Xecrets.Mobile.Models.Test;
 [TestFixture]
 public sealed class EditPageTests
 {
-    private string _directory = string.Empty;
-
-    [SetUp]
-    public void SetUp() => _directory = Directory.CreateTempSubdirectory().FullName;
-
-    // The decrypted file is left read-only, which keeps it from being deleted on Windows.
-    [TearDown]
-    public void TearDown()
-    {
-        foreach (string file in Directory.EnumerateFiles(_directory))
-        {
-            File.SetAttributes(file, FileAttributes.Normal);
-        }
-
-        Directory.Delete(_directory, recursive: true);
-    }
-
     [Test]
     public async Task LeavingWithoutChangesDoesNotAsk()
     {
@@ -228,10 +211,8 @@ public sealed class EditPageTests
 
     private TestApp CreateEditing()
     {
-        string path = Path.Combine(_directory, "a.txt");
-        File.WriteAllText(path, "text");
         TestApp app = new();
-        app.Preview.Current.SetText(new DecryptedFileInfo(path, "a.txt", "text/plain", 4, PreviewKind.Text, FileTimes.UtcNow), "text", EncryptedWithParameters.Empty);
+        app.Preview.Current.SetText(new DecryptedFileInfo("", "a.txt", "text/plain", 4, PreviewKind.Text, FileTimes.UtcNow), "text"u8.ToArray(), EncryptedWithParameters.Empty);
         return app;
     }
 }

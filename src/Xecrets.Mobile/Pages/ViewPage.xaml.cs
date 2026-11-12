@@ -35,12 +35,15 @@ namespace Xecrets.Mobile.Pages;
 
 internal partial class ViewPage
 {
+    private readonly IPlatformServices _platformServices;
+
     private bool _initialized;
 
-    public ViewPage(ViewPageModel model, IPageHeaderService pageHeaderService)
+    public ViewPage(ViewPageModel model, IPageHeaderService pageHeaderService, IPlatformServices platformServices)
     {
         InitializeComponent();
         BindingContext = model;
+        _platformServices = platformServices;
         pageHeaderService.ApplyStandardHeader(this);
     }
 
@@ -48,6 +51,7 @@ internal partial class ViewPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        _platformServices.IsSensitiveContentVisible(true);
 
         if (_initialized)
         {
@@ -56,5 +60,11 @@ internal partial class ViewPage
 
         _initialized = true;
         await ((ViewPageModel)BindingContext).InitializeCommand.ExecuteAsync(null);
+    }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        _platformServices.IsSensitiveContentVisible(false);
     }
 }

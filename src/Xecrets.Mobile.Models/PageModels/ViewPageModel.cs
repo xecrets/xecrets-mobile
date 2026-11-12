@@ -83,22 +83,20 @@ public partial class ViewPageModel(
     private async Task Initialize()
     {
         IPreviewState state = previewService.Current;
-        if (!state.IsReady || (state.Kind != PreviewKind.Image && state.Kind != PreviewKind.Text))
+        if (state.File.Kind != PreviewKind.Image && state.File.Kind != PreviewKind.Text)
         {
             await UserInterfaceService.GoBackAsync(null);
             return;
         }
 
-        FileNameText = string.IsNullOrWhiteSpace(state.OriginalFileName)
-            ? MobileTexts.DisplayNameProgram
-            : state.OriginalFileName;
+        FileNameText = state.File.OriginalFileName;
         MetadataText = PreviewMetadataFormatter.Format(state);
-        ImageFilePath = state is { Kind: PreviewKind.Image, File: not null }
+        ImageFilePath = state.File.Kind == PreviewKind.Image
             ? state.File.FilePath
             : string.Empty;
         Text = state.Text;
-        IsImageVisible = state.Kind == PreviewKind.Image;
-        IsTextVisible = state.Kind == PreviewKind.Text;
+        IsImageVisible = state.File.Kind == PreviewKind.Image;
+        IsTextVisible = state.File.Kind == PreviewKind.Text;
         await Font.LoadAsync();
     }
 }

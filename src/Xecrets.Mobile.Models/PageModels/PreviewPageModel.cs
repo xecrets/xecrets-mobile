@@ -78,6 +78,11 @@ public partial class PreviewPageModel(
     [NotifyCanExecuteChangedFor(nameof(ViewCommand))]
     private partial FileViewMode ViewMode { get; set; }
 
+    // An edited file is saved over through one of My folders, or as a copy when it was received from another app.
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(EditCommand))]
+    private partial bool IsSavable { get; set; }
+
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ViewCommand))]
     [NotifyCanExecuteChangedFor(nameof(EditCommand))]
@@ -91,6 +96,7 @@ public partial class PreviewPageModel(
     private async Task Initialize()
     {
         ViewMode = FileViewMode.Unavailable;
+        IsSavable = false;
 
         IPreviewState state = previewService.Current;
         if (!state.IsReady)
@@ -99,12 +105,11 @@ public partial class PreviewPageModel(
             return;
         }
 
-        FileNameText = string.IsNullOrWhiteSpace(state.OriginalFileName)
-            ? MobileTexts.DisplayNameProgram
-            : state.OriginalFileName;
+        FileNameText = state.File.OriginalFileName;
         MetadataText = PreviewMetadataFormatter.Format(state);
         StatusText = "";
-        ViewMode = await decryptedFileViewer.GetViewModeAsync(state.File!);
+        ViewMode = await decryptedFileViewer.GetViewModeAsync(state.File);
+        IsSavable = flowContext.Source is not { } source || await folderAccess.IsInFoldersAsync(source);
     }
 
     [RelayCommand(CanExecute = nameof(CanView))]
@@ -118,7 +123,7 @@ public partial class PreviewPageModel(
             return;
         }
 
-        DecryptedFileInfo file = state.File!;
+        DecryptedFileInfo file = state.File;
 
         if (ViewMode == FileViewMode.Internal)
         {
@@ -151,8 +156,8 @@ public partial class PreviewPageModel(
     }
 
     /// <summary>
-    /// Edits the text. An edited file is saved over, so the file is first reached through one of My folders, which the
-    /// user is asked to add when there is none. A file received from another app can only be saved as a copy.
+    /// Edits the text. An edited file is saved over, so the file is reached through the one of My folders it is in. A
+    /// file received from another app can only be saved as a copy.
     /// </summary>
     [RelayCommand(CanExecute = nameof(CanEdit))]
     private async Task Edit()
@@ -169,7 +174,7 @@ public partial class PreviewPageModel(
             StatusText = "";
             if (flowContext.Source is { } source)
             {
-                FileReference? reachable = await folderAccess.EnsureFolderAccessAsync(source);
+                FileReference? reachable = await folderAccess.FindInFoldersAsync(source);
                 if (reachable is null)
                 {
                     return;
@@ -205,13 +210,12 @@ public partial class PreviewPageModel(
             return;
         }
 
-        DecryptedFileInfo file = state.File!;
-
         try
         {
             IsBusy = true;
             StatusText = "";
-            if (await fileService.OpenInAsync(file.FilePath, file.DisplayName))
+            DecryptedFileInfo file = await previewService.MaterializeAsync();
+            if (await fileService.OpenInAsync(file.FilePath, file.OriginalFileName))
             {
                 await recentFilesService.AddFlowSourceAsync(RecentFileOperation.DecryptCopyOpenIn);
             }
@@ -240,13 +244,12 @@ public partial class PreviewPageModel(
             return;
         }
 
-        DecryptedFileInfo file = state.File!;
-
         try
         {
             IsBusy = true;
             StatusText = "";
-            if (await fileOperationWorkflow.SaveAsAsync(file.DisplayName, file.FilePath, file.OriginalTimes) is not null)
+            DecryptedFileInfo file = await previewService.MaterializeAsync();
+            if (await fileOperationWorkflow.SaveAsAsync(file.OriginalFileName, file.FilePath, file.OriginalTimes) is not null)
             {
                 await recentFilesService.AddFlowSourceAsync(RecentFileOperation.DecryptCopySaveAs);
                 await GoHomeIfStartedThereAsync();
@@ -276,15 +279,14 @@ public partial class PreviewPageModel(
             return;
         }
 
-        DecryptedFileInfo file = state.File!;
-
         try
         {
             IsBusy = true;
             StatusText = "";
+            DecryptedFileInfo file = await previewService.MaterializeAsync();
             await fileService.SendToAsync(
                 file.FilePath,
-                file.DisplayName,
+                file.OriginalFileName,
                 "");
             await recentFilesService.AddFlowSourceAsync(RecentFileOperation.DecryptCopySendTo);
         }
@@ -338,5 +340,5 @@ public partial class PreviewPageModel(
         => !IsBusy;
 
     private bool CanEdit()
-        => !IsBusy && previewService.Current is { IsReady: true, Kind: PreviewKind.Text };
+        => !IsBusy && IsSavable && previewService.Current.File.Kind == PreviewKind.Text;
 }

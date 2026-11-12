@@ -49,4 +49,10 @@ internal interface IPlatformServices
     /// device-independent units, measured on the platform view.
     /// </summary>
     (double Left, double Right) GetWindowGaps(VisualElement view);
+
+    /// <summary>
+    /// Tells whether sensitive content is shown, which is then kept out of the snapshot of the app that the system
+    /// saves for switching between apps.
+    /// </summary>
+    void IsSensitiveContentVisible(bool isShown);
 }

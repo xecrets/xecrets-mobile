@@ -28,8 +28,6 @@
 
 #endregion Copyright and GPL License
 
-using System;
-
 using Android.Content;
 using Android.Text.Method;
 using Android.Views;
@@ -43,12 +41,8 @@ namespace Xecrets.Mobile.Platforms.Android;
 /// a shown password copied or cut from it as sensitive, so that the system's confirmation of the copy does not show
 /// it. It can also be kept out of autofill entirely.
 /// </summary>
-internal sealed class PasswordEditText : MauiAppCompatEditText
+internal sealed class PasswordEditText(Context context) : MauiAppCompatEditText(context)
 {
-    public PasswordEditText(Context context) : base(context)
-    {
-    }
-
     /// <summary>
     /// Keeps the entry out of autofill, so nothing is suggested, filled or offered to be saved. Since Android 14,
     /// autofill also triggers on views that are not important for autofill, but never on views without an autofill
@@ -58,31 +52,8 @@ internal sealed class PasswordEditText : MauiAppCompatEditText
 
     public override AutofillType AutofillType => IsAutofillExcluded ? AutofillType.None : base.AutofillType;
 
-    // Every copy and cut ends up here: the selection toolbar, keyboard shortcuts, the keyboard app and
-    // accessibility services.
-    public override bool OnTextContextMenuItem(int id)
-    {
-        // A hidden password is copied as the dots it is shown as, so only a shown one needs marking.
-        if ((id != global::Android.Resource.Id.Copy && id != global::Android.Resource.Id.Cut)
-            || TransformationMethod is PasswordTransformationMethod)
-        {
-            return base.OnTextContextMenuItem(id);
-        }
-
-        int start = Math.Max(0, Math.Min(SelectionStart, SelectionEnd));
-        int end = Math.Max(0, Math.Max(SelectionStart, SelectionEnd));
-        Context!.CopySensitiveText(Text![start..end]);
-
-        // Collapsing the selection closes the selection toolbar, as Android does after a copy or cut.
-        if (id == global::Android.Resource.Id.Cut)
-        {
-            EditableText!.Delete(start, end);
-        }
-        else
-        {
-            SetSelection(end);
-        }
-
-        return true;
-    }
+    // A hidden password is copied as the dots it is shown as, so only a shown one needs marking.
+    public override bool OnTextContextMenuItem(int id) =>
+        (TransformationMethod is not PasswordTransformationMethod && this.TryCopyOrCutAsSensitive(id))
+        || base.OnTextContextMenuItem(id);
 }

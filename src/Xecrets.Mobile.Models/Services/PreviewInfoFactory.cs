@@ -28,7 +28,9 @@
 
 #endregion Copyright and GPL License
 
+using Xecrets.Core.Models;
 using Xecrets.Core.Public;
+
 using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Services;
@@ -39,53 +41,32 @@ internal static class PreviewInfoFactory
     // viewed externally, if possible.
     public const long MaxInlineTextSizeBytes = 2 * 1024 * 1024;
 
-    private const int TextSampleSizeBytes = 4096;
-
-    public static DecryptedFileInfo CreateInfo(string filePath, string displayName, FileTimes originalTimes)
+    /// <summary>
+    /// Describes a decrypted file of the category its contents were classified as. Text is only shown and edited in
+    /// the app while it is kept in memory, which it is when there is no file path.
+    /// </summary>
+    public static DecryptedFileInfo CreateInfo(
+        string filePath,
+        string originalFileName,
+        FileCategory category,
+        long fileSize,
+        FileTimes originalTimes)
     {
-        string fileName = string.IsNullOrWhiteSpace(displayName)
-            ? Path.GetFileName(filePath)
-            : displayName;
-        string contentType = fileName.DetectContentType();
-        PreviewKind kind = GetPreviewKind(fileName.WithoutCopyNumber(), contentType);
-
-        if (kind == PreviewKind.External && contentType == FileTypeClassifier.UnknownContentType && LooksLikeTextFile(filePath))
+        string contentType = originalFileName.DetectContentType();
+        if (category == FileCategory.Text && contentType == FileTypeClassifier.UnknownContentType)
         {
-            kind = PreviewKind.Text;
             contentType = "text/plain";
         }
 
-        long fileSize = new FileInfo(filePath).Length;
-        if (kind == PreviewKind.Text && fileSize > MaxInlineTextSizeBytes)
+        PreviewKind kind = category switch
         {
-            kind = PreviewKind.External;
-        }
+            FileCategory.Text => filePath.Length == 0 ? PreviewKind.Text : PreviewKind.External,
+            FileCategory.Image => PreviewKind.Image,
+            FileCategory.Pdf => PreviewKind.External,
+            FileCategory.Other => PreviewKind.External,
+            _ => throw new ArgumentOutOfRangeException(nameof(category), category, null),
+        };
 
-        return new DecryptedFileInfo(filePath, fileName, contentType, fileSize, kind, originalTimes);
-    }
-
-    private static PreviewKind GetPreviewKind(string fileName, string contentType)
-    {
-        return FileTypeClassifier.IsTextExtension(fileName)
-            ? PreviewKind.Text
-            : contentType.StartsWith("text/", StringComparison.OrdinalIgnoreCase)
-            ? PreviewKind.Text
-            : FileTypeClassifier.IsImageExtension(fileName)
-            ? PreviewKind.Image
-            : contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) ? PreviewKind.Image : PreviewKind.External;
-    }
-
-    private static bool LooksLikeTextFile(string filePath)
-    {
-        if (!File.Exists(filePath))
-        {
-            return false;
-        }
-
-        Span<byte> buffer = stackalloc byte[TextSampleSizeBytes];
-        using FileStream stream = File.OpenRead(filePath);
-        int bytesRead = stream.ReadAtLeast(buffer, buffer.Length, throwOnEndOfStream: false);
-
-        return FileTypeClassifier.LooksLikeText(buffer[..bytesRead]);
+        return new DecryptedFileInfo(filePath, originalFileName, contentType, fileSize, kind, originalTimes);
     }
 }
