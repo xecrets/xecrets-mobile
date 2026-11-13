@@ -32,14 +32,12 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
-using Xecrets.Mobile.Models.Services;
 using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
 public partial class HomePageModel(
     IProfileService profileService,
-    SessionExitService sessionExitService,
     ITransientFileService transientFileService,
     IPreviewService previewService,
     IEncryptedState encryptedState,
@@ -71,7 +69,6 @@ public partial class HomePageModel(
     [NotifyCanExecuteChangedFor(nameof(InAppCommand))]
     [NotifyCanExecuteChangedFor(nameof(EncryptToShareCommand))]
     [NotifyCanExecuteChangedFor(nameof(WipeCommand))]
-    [NotifyCanExecuteChangedFor(nameof(SignOutCommand))]
     public partial bool IsBusy { get; set; }
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
@@ -89,9 +86,6 @@ public partial class HomePageModel(
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private Task EncryptToShare() =>
         UserInterfaceService.NavigateToAsync(AppDestination.WorkFolders, WorkFolderIntent.Share);
-
-    [RelayCommand(CanExecute = nameof(CanUseCommand))]
-    private Task SignOut() => sessionExitService.ExitAsync();
 
     /// <summary>
     /// Ends the preview and the encrypted copy shown, if any, and starts a background sweep of the temporary files that

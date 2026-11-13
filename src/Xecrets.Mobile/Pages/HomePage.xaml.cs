@@ -81,15 +81,9 @@ internal partial class HomePage
         UpdateCenteredContentLayout(width);
     }
 
-    protected override bool OnBackButtonPressed()
-    {
-        if (Model.SignOutCommand.CanExecute(null))
-        {
-            Dispatcher.Dispatch(() => _ = Model.SignOutCommand.ExecuteAsync(null));
-        }
-
-        return true;
-    }
+    // Back is ignored here, so that a back press meant for the page above, such as a double press, neither signs out
+    // nor leaves the app. Signing out is done from the menu.
+    protected override bool OnBackButtonPressed() => true;
 
     private void UpdateCenteredContentLayout(double pageWidth)
     {

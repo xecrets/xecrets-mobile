@@ -111,7 +111,6 @@ public sealed class HomePageTests
     private static HomePageModel CreatePage(TestApp app, bool isDebug) =>
         new(
             new FakeProfileService(),
-            null!,
             app.Transient,
             app.Preview,
             app.Encrypted,
