@@ -402,6 +402,9 @@ public static class MobileTexts
     // "Ok"
     public static string ButtonOk => AppTexts.LabelOk;
 
+    // "Reset!"
+    public static string ButtonReset => AppTexts.ButtonReset;
+
     // "Save As…"
     public static string ButtonSaveAs => AppTexts.ButtonSaveAs.ToSentenceCase();
 
@@ -430,6 +433,9 @@ public static class MobileTexts
     // "Set up a local profile"
     public static string HeadingCreateUserFirstTimeSetup => AppTexts.HeadingCreateUserFirstTimeSetup;
 
+    // "Reset password!"
+    public static string HeadingEmergencyReset => AppTexts.HeadingEmergencyReset;
+
     public static string LabelCancel => AppTexts.LabelCancel;
 
     public static string LabelNo => AppTexts.LabelNo;
@@ -450,6 +456,9 @@ public static class MobileTexts
     // "This operation cannot be undone.", confirming any operation that cannot be undone, not only wiping.
     public static string MessageTextConfirmWipe => AppTexts.MessageTextConfirmWipe;
 
+    // "Forgot your password?", offering the password reset after repeated wrong passwords when signing in.
+    public static string MessageTextForgotPassword => AppTexts.MessageTextForgotPassword;
+
     // "Sign in to Xecrets Ez"
     public static string SignInHeading => AppTexts.SignInHeading;
 
@@ -457,6 +466,9 @@ public static class MobileTexts
 
     // "Not used for sending emails. It's an identifier for your local profile in the software and for sharing with others."
     public static string ToolTipEmail => AppTexts.ToolTipEmail;
+
+    // "Set a new master password. Warning! The old password is still needed to decrypt previously encrypted files!"
+    public static string ToolTipEmergencyReset => AppTexts.ToolTipEmergencyReset;
 
     // "Your master password. Make it strong, write it down and keep it safe."
     public static string ToolTipMasterPassword => AppTexts.ToolTipMasterPassword;

@@ -86,9 +86,13 @@ internal partial class AppShell
         if (IsLeavingRunningOperation(args))
         {
             // Canceled before the first await, while Shell still waits for the handler. The user navigates again,
-            // whether the operation is canceled or not.
+            // whether the operation is canceled or not. One that cannot be canceled is just not left.
             args.Cancel();
-            await _runningOperation.ConfirmCancelAsync();
+            if (_runningOperation.IsCancelable)
+            {
+                await _runningOperation.ConfirmCancelAsync();
+            }
+
             return;
         }
 

@@ -129,6 +129,97 @@ public sealed class LoginPageTests
         Assert.That(interruptedSaves.RecoverCount, Is.Zero);
     }
 
+    [Test]
+    public async Task NoPasswordResetIsOfferedBeforeTheThirdWrongPassword()
+    {
+        LoginPageModel page = CreateLoginPage(out ScriptedUserInterface userInterface);
+        await page.InitializeCommand.ExecuteAsync(null);
+
+        await SignInWithWrongPasswordAsync(page, 2);
+
+        Assert.That(userInterface.Confirmations, Is.Empty);
+    }
+
+    [Test]
+    public async Task PasswordResetIsOfferedOnTheThirdAndThenEveryFifthWrongPassword()
+    {
+        LoginPageModel page = CreateLoginPage(out ScriptedUserInterface userInterface);
+        await page.InitializeCommand.ExecuteAsync(null);
+
+        await SignInWithWrongPasswordAsync(page, 12);
+        int offeredAfterTwelve = userInterface.Confirmations.Count;
+        await SignInWithWrongPasswordAsync(page, 1);
+
+        Assert.That(offeredAfterTwelve, Is.EqualTo(2));
+        Assert.That(userInterface.Confirmations,
+            Is.EqualTo(Enumerable.Repeat(MobileTexts.MessageTextForgotPassword, 3)));
+        Assert.That(userInterface.ConfirmationButtons[0], Is.EqualTo((MobileTexts.LabelYes, MobileTexts.LabelNo)));
+        Assert.That(userInterface.Destinations, Is.Empty);
+    }
+
+    [Test]
+    public async Task WrongPasswordsAreCountedAgainWhenThePageAppearsAgain()
+    {
+        LoginPageModel page = CreateLoginPage(out ScriptedUserInterface userInterface);
+        await page.InitializeCommand.ExecuteAsync(null);
+        await SignInWithWrongPasswordAsync(page, 2);
+
+        await page.InitializeCommand.ExecuteAsync(null);
+        await SignInWithWrongPasswordAsync(page, 2);
+
+        Assert.That(userInterface.Confirmations, Is.Empty);
+    }
+
+    [Test]
+    public async Task PasswordResetIsNotOfferedWhenVerifyingThePassword()
+    {
+        LoginPageModel page = CreateLoginPage(out ScriptedUserInterface userInterface);
+        page.InitializeVerification(ProfileAction.Change);
+
+        await SignInWithWrongPasswordAsync(page, 3);
+
+        Assert.That(userInterface.Confirmations, Is.Empty);
+    }
+
+    [Test]
+    public async Task PasswordResetCanceledAtTheWarningStaysOnThePage()
+    {
+        LoginPageModel page = CreateLoginPage(out ScriptedUserInterface userInterface);
+        userInterface.Answers.Enqueue(true);
+        userInterface.Answers.Enqueue(false);
+        await page.InitializeCommand.ExecuteAsync(null);
+
+        await SignInWithWrongPasswordAsync(page, 3);
+
+        Assert.That(userInterface.Confirmations,
+            Is.EqualTo([MobileTexts.MessageTextForgotPassword, MobileTexts.ToolTipEmergencyReset]));
+        Assert.That(userInterface.ConfirmationButtons[1], Is.EqualTo((MobileTexts.ButtonReset, MobileTexts.LabelCancel)));
+        Assert.That(userInterface.Destinations, Is.Empty);
+    }
+
+    [Test]
+    public async Task ConfirmedPasswordResetOpensThePasswordResetPage()
+    {
+        LoginPageModel page = CreateLoginPage(out ScriptedUserInterface userInterface);
+        userInterface.Answers.Enqueue(true);
+        userInterface.Answers.Enqueue(true);
+        await page.InitializeCommand.ExecuteAsync(null);
+
+        await SignInWithWrongPasswordAsync(page, 3);
+
+        Assert.That(userInterface.Destinations, Is.EqualTo([AppDestination.ResetPassword]));
+        Assert.That(userInterface.Payloads, Is.Empty);
+    }
+
+    private static async Task SignInWithWrongPasswordAsync(LoginPageModel page, int times)
+    {
+        for (int i = 0; i < times; ++i)
+        {
+            page.Password = "wrong";
+            await page.LoginCommand.ExecuteAsync(null);
+        }
+    }
+
     private static LoginPageModel CreateLoginPage(
         out ScriptedUserInterface userInterface,
         FakeInterruptedSaveService? interruptedSaves = null)

@@ -44,6 +44,9 @@ public sealed class ProfileSession
 
     internal IPersistentData<ExtraCredentials>? ExtraCredentials { get; private set; }
 
+    // The other key pairs among the private keys that could be decrypted, such as one kept from before a password reset.
+    internal IReadOnlyList<KeyPair> PrivateKeyPairs { get; set; } = [];
+
     public IUserDataStore? UserStore { get; private set; }
 
     public string Email => ProfileKeyPair?.Email ?? string.Empty;
@@ -52,12 +55,14 @@ public sealed class ProfileSession
         KeyPair keyPair,
         string password,
         IPersistentData<ExtraCredentials> extraCredentials,
-        IUserDataStore userStore)
+        IUserDataStore userStore,
+        IReadOnlyList<KeyPair> privateKeyPairs)
     {
         ProfileKeyPair = keyPair;
         Password = password;
         ExtraCredentials = extraCredentials;
         UserStore = userStore;
+        PrivateKeyPairs = privateKeyPairs;
     }
 
     public void SignOut()
@@ -65,6 +70,7 @@ public sealed class ProfileSession
         ProfileKeyPair = null;
         Password = string.Empty;
         ExtraCredentials = null;
+        PrivateKeyPairs = [];
         UserStore = null;
     }
 
@@ -75,6 +81,8 @@ public sealed class ProfileSession
             throw new InvalidOperationException("No authenticated profile is available.");
         }
 
-        return new Identity(Password, [ProfileKeyPair]);
+        // The other key pairs are only used for decryption, as files are encrypted only with the password and the
+        // public key of the profile.
+        return new Identity(Password, [ProfileKeyPair, .. PrivateKeyPairs]);
     }
 }

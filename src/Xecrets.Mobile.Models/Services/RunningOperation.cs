@@ -35,10 +35,11 @@ using Xecrets.Mobile.Models.Utilities;
 namespace Xecrets.Mobile.Models.Services;
 
 /// <summary>
-/// The operation on files that a page runs, which the user may cancel by leaving the page while it runs. One runs at a
-/// time, since a page does not start another while it is busy, and the user cannot leave it without being asked. The
-/// operation is canceled where it can stop without leaving a file of the user changed in part: between the files, and
-/// while a file is encrypted or decrypted to a temporary file, but not while a result is saved, or an original wiped.
+/// The operation that a page runs, on files or on the profile, which the user may cancel by leaving the page while it
+/// runs. One runs at a time, since a page does not start another while it is busy, and the user cannot leave it without
+/// being asked. The operation is canceled where it can stop without leaving a file of the user changed in part: between
+/// the files, and while a file is encrypted or decrypted to a temporary file, but not while a result is saved, or an
+/// original wiped. An operation that cannot be canceled at all, such as one on the profile, is not left until it ends.
 /// </summary>
 public sealed class RunningOperation(IUserInterfaceService userInterfaceService)
 {
@@ -55,11 +56,17 @@ public sealed class RunningOperation(IUserInterfaceService userInterfaceService)
     public bool IsRunning => _current is not null;
 
     /// <summary>
+    /// Whether the operation running can be canceled, so that the user is asked when leaving its page.
+    /// </summary>
+    public bool IsCancelable => _current is { IsCancelable: true };
+
+    /// <summary>
     /// Begins the operation of the page shown, which ends when the scope returned is disposed.
     /// </summary>
-    public IDisposable Begin()
+    /// <param name="cancelable">Whether the operation can be canceled.</param>
+    public IDisposable Begin(bool cancelable = true)
     {
-        _current = new Scope(this, userInterfaceService.CurrentLocation);
+        _current = new Scope(this, userInterfaceService.CurrentLocation, cancelable);
         IsRunningChanged?.Invoke(this, EventArgs.Empty);
         return _current;
     }
@@ -115,11 +122,13 @@ public sealed class RunningOperation(IUserInterfaceService userInterfaceService)
         IsRunningChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    private sealed class Scope(RunningOperation owner, string location) : IDisposable
+    private sealed class Scope(RunningOperation owner, string location, bool isCancelable) : IDisposable
     {
         private readonly CancellationTokenSource _cancellation = new();
 
         public string Location { get; } = location;
+
+        public bool IsCancelable { get; } = isCancelable;
 
         public CancellationToken Token => _cancellation.Token;
 

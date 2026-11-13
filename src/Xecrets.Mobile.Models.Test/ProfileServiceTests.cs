@@ -36,6 +36,7 @@ using Xecrets.Common.Abstractions;
 using Xecrets.Common.Implementation;
 using Xecrets.Common.Models;
 using Xecrets.Core.Abstractions;
+using Xecrets.Core.Models;
 using Xecrets.Core.Public;
 using Xecrets.Mobile.Models.Data;
 using Xecrets.Mobile.Models.Models;
@@ -188,6 +189,139 @@ public sealed class ProfileServiceTests
         _profileService.SignOut();
         Assert.That((await _profileService.LoginAsync("old password")).Status, Is.EqualTo(ProfileActionStatus.Success));
         Assert.That(_profileService.CurrentEmail, Is.EqualTo("old@example.com"));
+    }
+
+    [Test]
+    public async Task SignInKeepsTheProfileKeyPairAmongThePrivateKeys()
+    {
+        IUserDataStore userStore = await _store.OpenUserAsync((await _store.GetUsersAsync()).Single().Id);
+
+        PrivateKeyData privateKeys = (await userStore.LoadPrivateKeysAsync()).Value;
+
+        Assert.That(privateKeys.Accounts.SelectMany(account => account.Keys).Single().Email,
+            Is.EqualTo("old@example.com"));
+    }
+
+    [Test]
+    public async Task ResetProfileSignsOutAndOnlyTheNewPasswordSignsIn()
+    {
+        _profileService.SignOut();
+
+        await _profileService.ResetProfileAsync("new password");
+
+        Assert.That(_profileService.IsAuthenticated, Is.False);
+        Assert.That((await _profileService.LoginAsync("old password")).Status, Is.EqualTo(ProfileActionStatus.WrongPassword));
+        Assert.That((await _profileService.LoginAsync("new password")).Status, Is.EqualTo(ProfileActionStatus.Success));
+        Assert.That(_profileService.CurrentEmail, Is.EqualTo("old@example.com"));
+    }
+
+    [Test]
+    public async Task ResetProfileClearsTheExtraPasswords()
+    {
+        await _profileService.AddExtraPasswordAsync("extra password");
+        _profileService.SignOut();
+
+        await _profileService.ResetProfileAsync("new password");
+        await _profileService.LoginAsync("new password");
+        Assert.That(_profileService.GetExtraPasswords(), Is.Empty);
+
+        await _profileService.AddExtraPasswordAsync("added password");
+        _profileService.SignOut();
+        await _profileService.LoginAsync("new password");
+        Assert.That(
+            _profileService.GetExtraPasswords().Select(extraPassword => extraPassword.Password),
+            Is.EqualTo(new[] { "added password", }));
+    }
+
+    [Test]
+    public async Task SignInThatFailsToSaveThePrivateKeysLeavesTheProfileSignedOut()
+    {
+        _profileService.SignOut();
+        // With a new key pair, signing in saves it among the private keys.
+        await _profileService.ResetProfileAsync("new password");
+        BlockSaving();
+
+        Assert.That(async () => await _profileService.LoginAsync("new password"), Throws.Exception);
+        Assert.That(_profileService.IsAuthenticated, Is.False);
+    }
+
+    [Test]
+    public async Task AfterResetProfileTheOldPasswordAddedOpensFilesForTheOldKeyPairFromThenOn()
+    {
+        byte[] encrypted = await EncryptForAsync(_profileService.GetPublicKey());
+        _profileService.SignOut();
+        await _profileService.ResetProfileAsync("new password");
+        await _profileService.LoginAsync("new password");
+        Assert.That(await IsDecryptableAsync(encrypted), Is.False);
+
+        await _profileService.AddExtraPasswordAsync("old password");
+        Assert.That(await IsDecryptableAsync(encrypted), Is.True);
+
+        await _profileService.RemoveExtraPasswordAsync("old password");
+        _profileService.SignOut();
+        await _profileService.LoginAsync("new password");
+        Assert.That(await IsDecryptableAsync(encrypted), Is.True);
+    }
+
+    [Test]
+    public async Task AfterResetProfileTheOldPasswordFirstUsedOpensFilesForTheOldKeyPairAtOnce()
+    {
+        byte[] encrypted = await EncryptForAsync(_profileService.GetPublicKey());
+        _profileService.SignOut();
+        await _profileService.ResetProfileAsync("new password");
+        await _profileService.LoginAsync("new password");
+
+        await _profileService.RecordExtraPasswordUseAsync("old password");
+
+        Assert.That(await IsDecryptableAsync(encrypted), Is.True);
+    }
+
+    [Test]
+    public async Task ChangeProfileKeepsOpeningFilesForAnOldKeyPairAfterResetProfile()
+    {
+        byte[] encrypted = await EncryptForAsync(_profileService.GetPublicKey());
+        _profileService.SignOut();
+        await _profileService.ResetProfileAsync("new password");
+        await _profileService.LoginAsync("new password");
+        await _profileService.AddExtraPasswordAsync("old password");
+        await _profileService.RemoveExtraPasswordAsync("old password");
+
+        await _profileService.ChangeProfileAsync("old@example.com", "newer password");
+        await _profileService.RemoveExtraPasswordAsync("new password");
+        _profileService.SignOut();
+        await _profileService.LoginAsync("newer password");
+
+        Assert.That(_profileService.GetExtraPasswords(), Is.Empty);
+        Assert.That(await IsDecryptableAsync(encrypted), Is.True);
+    }
+
+    // Every file is saved by writing a temporary file next to it first, which fails where a directory has its name.
+    private void BlockSaving()
+    {
+        foreach (string path in Directory.GetFiles(_directory, "*", SearchOption.AllDirectories))
+        {
+            Directory.CreateDirectory($"{path}.tmp");
+        }
+    }
+
+    private static async Task<byte[]> EncryptForAsync(PublicKey publicKey)
+    {
+        DateTime utcNow = DateTime.UtcNow;
+        using MemoryStream encrypted = new();
+        await CoreServices.EncryptAsync(
+            new MemoryStream([1, 2, 3]),
+            encrypted,
+            new EncryptRequest("file password", [publicKey], [], "a.txt", utcNow, utcNow, utcNow, true,
+                new Progress<Progress>(_ => { })));
+        return encrypted.ToArray();
+    }
+
+    private async Task<bool> IsDecryptableAsync(byte[] encrypted)
+    {
+        using IDecryptionSession session = await CoreServices.OpenDecryptionAsync(
+            new MemoryStream(encrypted),
+            new DecryptRequest([_profileService.GetIdentity()], new Progress<Progress>(_ => { })));
+        return session.IsDecryptable;
     }
 
     private static ICoreServices CreateCoreServices()

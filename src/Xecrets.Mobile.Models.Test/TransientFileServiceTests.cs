@@ -433,6 +433,7 @@ public sealed class TransientFileServiceTests
         public Task<ProfileActionResult> CreateProfileAsync(string email, string password) => throw new NotSupportedException();
         public Task<ProfileActionResult> ChangeProfileAsync(string email, string password) => throw new NotSupportedException();
         public Task<ProfileActionResult> LoginAsync(string password) => throw new NotSupportedException();
+        public Task ResetProfileAsync(string password) => throw new NotSupportedException();
         public void SignOut() => throw new NotSupportedException();
         public Identity GetIdentity() => throw new NotSupportedException();
         public IReadOnlyList<PasswordUsage> GetExtraPasswords() => throw new NotSupportedException();

@@ -49,7 +49,7 @@ internal partial class CreateProfilePage : IQueryAttributable
     private bool _isCompact;
     private bool _isAppeared;
 
-    public Entry PasswordTextEntry => PasswordEntryControl.Entry;
+    public Entry PasswordTextEntry => NewPasswordControl.PasswordTextEntry;
 
     public CreateProfilePage(
         CreateProfilePageModel model,
@@ -62,8 +62,8 @@ internal partial class CreateProfilePage : IQueryAttributable
         _userInterfaceService = userInterfaceService;
         InitializeComponent();
         platformServices.ConfigurePasswordEntry(EmailEntry, PasswordEntryPurpose.UserName);
-        platformServices.ConfigurePasswordEntry(PasswordEntryControl.Entry, PasswordEntryPurpose.NewPassword);
-        platformServices.ConfigurePasswordEntry(ConfirmPasswordEntryControl.Entry, PasswordEntryPurpose.NewPassword);
+        platformServices.ConfigurePasswordEntry(NewPasswordControl.PasswordEntry.Entry, PasswordEntryPurpose.NewPassword);
+        platformServices.ConfigurePasswordEntry(NewPasswordControl.ConfirmPasswordEntry.Entry, PasswordEntryPurpose.NewPassword);
         pageHeaderService.ApplyStandardHeader(this);
     }
 
@@ -86,14 +86,14 @@ internal partial class CreateProfilePage : IQueryAttributable
                 // As on the verification page, Shell applies the query before the handlers are created. Without a user
                 // name and a new password, it's not a form for password managers to save.
                 PasswordEntryProperties.SetPurpose(EmailEntry, null);
-                _platformServices.ConfigurePasswordEntry(PasswordEntryControl.Entry, PasswordEntryPurpose.VerifyPassword);
-                _platformServices.ConfigurePasswordEntry(ConfirmPasswordEntryControl.Entry, PasswordEntryPurpose.VerifyPassword);
+                _platformServices.ConfigurePasswordEntry(NewPasswordControl.PasswordEntry.Entry, PasswordEntryPurpose.VerifyPassword);
+                _platformServices.ConfigurePasswordEntry(NewPasswordControl.ConfirmPasswordEntry.Entry, PasswordEntryPurpose.VerifyPassword);
 
                 // Only the entry, so that the password can still be shown.
-                PasswordEntryControl.Entry.IsEnabled = false;
+                NewPasswordControl.PasswordEntry.Entry.IsEnabled = false;
 
                 // The only field, so Done instead of Next. Not Go, so that the keyboard can't start the deletion.
-                PasswordEntryControl.ReturnType = ReturnType.Done;
+                NewPasswordControl.PasswordEntry.ReturnType = ReturnType.Done;
                 Model.InitializeDelete();
                 break;
             case ProfileAction.Unknown:

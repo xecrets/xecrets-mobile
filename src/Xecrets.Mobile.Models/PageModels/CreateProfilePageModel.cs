@@ -36,7 +36,6 @@ using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
 using Xecrets.Mobile.Models.Utilities;
 using Xecrets.Words.Abstractions;
-using Xecrets.Words.Model;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
@@ -45,8 +44,9 @@ public partial class CreateProfilePageModel(
     IStrengthMeter strengthMeter,
     LocalProfileDeletionService deletionService,
     InstallationService installationService,
+    RunningOperation runningOperation,
     IUserInterfaceService userInterfaceService)
-    : PageModelBase(userInterfaceService), IPageInformationPageModel, IBreadcrumbPageModel
+    : NewPasswordPageModelBase(strengthMeter, userInterfaceService), IPageInformationPageModel, IBreadcrumbPageModel
 {
     [ObservableProperty]
     public partial string Breadcrumb { get; private set; } = string.Empty;
@@ -61,27 +61,13 @@ public partial class CreateProfilePageModel(
     public partial string Email { get; set; } = string.Empty;
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(CreateCommand))]
-    public partial string Password { get; set; } = string.Empty;
-
-    [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(CreateCommand))]
-    public partial string ConfirmPassword { get; set; } = string.Empty;
-
-    [ObservableProperty]
-    public partial double PasswordStrength { get; set; }
-
-    [ObservableProperty]
-    public partial StrengthColor PasswordStrengthColor { get; set; }
-
-    [ObservableProperty]
     public partial string ErrorText { get; set; } = string.Empty;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsEditable))]
     public partial bool IsDelete { get; private set; }
 
-    public bool IsEditable => !IsDelete;
+    public override bool IsEditable => !IsDelete;
 
     [ObservableProperty]
     public partial bool IsHeadingAlwaysVisible { get; private set; } = true;
@@ -148,7 +134,7 @@ public partial class CreateProfilePageModel(
             IsBusy = true;
             ErrorText = string.Empty;
 
-            if (Password != ConfirmPassword)
+            if (!IsConfirmed)
             {
                 ErrorText = MobileTexts.DialogValidationConfirmPassword;
                 return;
@@ -162,7 +148,7 @@ public partial class CreateProfilePageModel(
             }
 
             ProfileActionResult result = _isChange
-                ? await profileService.ChangeProfileAsync(Email, Password)
+                ? await ChangeProfileAsync()
                 : await profileService.CreateProfileAsync(Email, Password);
             if (!result.Succeeded)
             {
@@ -190,13 +176,16 @@ public partial class CreateProfilePageModel(
         }
     }
 
-    private bool CanCreate()
-        => !IsBusy && Password.Length > 0 && ConfirmPassword.Length > 0;
-
-    partial void OnPasswordChanged(string value)
+    // Changed, the private keys are re-encrypted, which takes a while. Leaving the page is not possible meanwhile, nor
+    // signing out from the menu.
+    private async Task<ProfileActionResult> ChangeProfileAsync()
     {
-        int strength = strengthMeter.StrengthPercent(value);
-        PasswordStrength = strength / 100.0;
-        PasswordStrengthColor = strengthMeter.ToStrengthColor(strength);
+        using IDisposable running = runningOperation.Begin(cancelable: false);
+        return await profileService.ChangeProfileAsync(Email, Password);
     }
+
+    private bool CanCreate()
+        => !IsBusy && HasPasswords;
+
+    protected override void OnPasswordsChanged() => CreateCommand.NotifyCanExecuteChanged();
 }

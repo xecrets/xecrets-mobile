@@ -54,6 +54,8 @@ public interface IProfileService
 
     Task<ProfileActionResult> LoginAsync(string password);
 
+    Task ResetProfileAsync(string password);
+
     void SignOut();
 
     Identity GetIdentity();

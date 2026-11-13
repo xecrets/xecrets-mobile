@@ -39,7 +39,6 @@
     <ContentPage.Resources>
         <ResourceDictionary>
             <utilities:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
-            <utilities:StrengthColorToColorConverter x:Key="StrengthColorToColorConverter" />
         </ResourceDictionary>
     </ContentPage.Resources>
     <Grid x:Name="ContentRoot"
@@ -72,37 +71,8 @@
                        Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkEmail}"
                        Keyboard="Email"
                        ReturnType="Next" />
-                <controls:PasswordEntry Margin="{StaticResource IconRowBodyLeadingMargin}" x:Name="PasswordEntryControl"
-                                        Text="{Binding Password, Mode=TwoWay}"
-                                        Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkPassword}"
-                                        ToolTipProperties.Text="{x:Static modelUtilities:MobileTexts.ToolTipMasterPassword}"
-                                        ReturnType="Next" />
-                <!-- As wide as the password text field, inset to the ends of its underline. -->
-                <ContentView HorizontalOptions="Start"
-                             IsVisible="{Binding IsEditable}"
-                             Margin="{DynamicResource PasswordStrengthMargin}"
-                             Padding="{DynamicResource PasswordStrengthInset}"
-                             WidthRequest="{Binding PasswordTextEntry.Width, Source={x:Reference PageRoot}, x:DataType=pages:CreateProfilePage}">
-                    <ProgressBar Progress="{Binding PasswordStrength}"
-                                 ProgressColor="{Binding PasswordStrengthColor, Converter={StaticResource StrengthColorToColorConverter}}">
-                        <!-- Opacity, not IsVisible, so the space stays reserved and nothing moves when typing starts. -->
-                        <ProgressBar.Triggers>
-                            <DataTrigger TargetType="ProgressBar"
-                                         Binding="{Binding Password}"
-                                         Value="">
-                                <Setter Property="Opacity"
-                                        Value="0" />
-                            </DataTrigger>
-                        </ProgressBar.Triggers>
-                    </ProgressBar>
-                </ContentView>
-                <controls:PasswordEntry Margin="{StaticResource IconRowBodyLeadingMargin}" x:Name="ConfirmPasswordEntryControl"
-                                        IsVisible="{Binding IsEditable}"
-                                        Text="{Binding ConfirmPassword, Mode=TwoWay}"
-                                        Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkConfirmPassword}"
-                                        ToolTipProperties.Text="{x:Static modelUtilities:MobileTexts.ToolTipMasterPassword}"
-                                        ReturnType="Go"
-                                        ReturnCommand="{Binding CreateCommand}" />
+                <controls:NewPasswordFields x:Name="NewPasswordControl"
+                                            ReturnCommand="{Binding CreateCommand}" />
                 <Label Margin="{StaticResource IconRowBodyContentMargin}" Text="{Binding ErrorText}"
                        TextColor="Red"
                        IsVisible="{Binding ErrorText, Converter={StaticResource StringNotEmptyConverter}}"

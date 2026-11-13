@@ -68,6 +68,12 @@ public partial class LoginPageModel(
     // verifies the password before the profile is changed or deleted.
     private ProfileAction _verifiedAction = ProfileAction.Unknown;
 
+    private const int WrongPasswordsBeforeReset = 3;
+
+    private const int WrongPasswordsBetweenResets = 5;
+
+    private int _wrongPasswordsBeforeReset = WrongPasswordsBeforeReset;
+
     public void InitializeVerification(ProfileAction action)
     {
         _verifiedAction = action;
@@ -94,6 +100,7 @@ public partial class LoginPageModel(
         // page goes away, and the Shell root page is kept, so the last password must not still be there after sign out.
         Password = string.Empty;
         ErrorText = string.Empty;
+        _wrongPasswordsBeforeReset = WrongPasswordsBeforeReset;
 
         SignInKey? profile = await profileService.LoadProfileAsync();
         if (profile is null)
@@ -117,6 +124,12 @@ public partial class LoginPageModel(
             if (!result.Succeeded)
             {
                 ErrorText = MobileTexts.DialogValidationWrongPassword;
+                if (_verifiedAction == ProfileAction.Unknown && --_wrongPasswordsBeforeReset == 0)
+                {
+                    _wrongPasswordsBeforeReset = WrongPasswordsBetweenResets;
+                    await OfferPasswordResetAsync();
+                }
+
                 return;
             }
 
@@ -143,4 +156,23 @@ public partial class LoginPageModel(
     }
 
     private bool CanLogin() => !IsBusy && Password.Length > 0;
+
+    // As on the desktop, the reset gives a new password and key pair, but the old password is still needed for files
+    // encrypted with it.
+    private async Task OfferPasswordResetAsync()
+    {
+        if (!await UserInterfaceService.DisplayConfirmationAsync(
+                MobileTexts.MessageTextForgotPassword, MobileTexts.LabelYes, MobileTexts.LabelNo))
+        {
+            return;
+        }
+
+        if (!await UserInterfaceService.DisplayConfirmationAsync(
+                MobileTexts.ToolTipEmergencyReset, MobileTexts.ButtonReset, MobileTexts.LabelCancel))
+        {
+            return;
+        }
+
+        await UserInterfaceService.NavigateToAsync(AppDestination.ResetPassword);
+    }
 }

@@ -35,6 +35,7 @@ using CommunityToolkit.Mvvm.Input;
 
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
+using Xecrets.Mobile.Models.Services;
 using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models.PageModels;
@@ -49,6 +50,7 @@ public partial class EnterPasswordPageModel(
     IWorkFolderOperationService workFolderOperationService,
     IProfileService profileService,
     IFlowContext flowContext,
+    RunningOperation runningOperation,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IBreadcrumbPageModel, IPageInformationPageModel
 {
@@ -133,19 +135,25 @@ public partial class EnterPasswordPageModel(
     [RelayCommand(CanExecute = nameof(CanSubmit))]
     private async Task Submit()
     {
-        if (_intent == DecryptionPasswordsIntent.Manage)
-        {
-            await profileService.AddExtraPasswordAsync(Password);
-            Password = string.Empty;
-            IsAdding = false;
-            ShowPasswords();
-            return;
-        }
-
         try
         {
             IsBusy = true;
             ErrorText = string.Empty;
+
+            if (_intent == DecryptionPasswordsIntent.Manage)
+            {
+                // Added, the password decrypts private keys, which takes a while. Leaving the page is not possible
+                // meanwhile, nor signing out from the menu.
+                using (runningOperation.Begin(cancelable: false))
+                {
+                    await profileService.AddExtraPasswordAsync(Password);
+                }
+
+                Password = string.Empty;
+                IsAdding = false;
+                ShowPasswords();
+                return;
+            }
 
             bool isWorkFolderRequest = workFolderOperationService.HasPendingPasswordRequest;
             PreviewPreparationStatus status = isWorkFolderRequest

@@ -306,7 +306,7 @@ public sealed class PendingFileTests
         DecryptionPasswordRequestState request = new();
         PreviewService preview = new(new TestCoreServices(), new TestProfileService(), transient, new PreviewState(), request, new RunningOperation(new ScriptedUserInterface()), new FakeCrashLogService());
         await preview.PrepareImportedAsync(encryptedFile);
-        EnterPasswordPageModel page = new(preview, new TestWorkFolderOperationService(), new TestProfileService(), null!, new TestUserInterfaceService());
+        EnterPasswordPageModel page = new(preview, new TestWorkFolderOperationService(), new TestProfileService(), null!, new RunningOperation(new ScriptedUserInterface()), new TestUserInterfaceService());
 
         page.CancelPreviewRequest();
         await WhenSweptAsync(transient);
@@ -337,7 +337,8 @@ public sealed class PendingFileTests
         PreviewService preview = new(null!, null!, transient, new PreviewState(), request, new RunningOperation(new ScriptedUserInterface()), new FakeCrashLogService());
         TestUserInterfaceService userInterface = new();
         EnterPasswordPageModel page = new(
-            preview, new TestWorkFolderOperationService(), new TestProfileService(), null!, userInterface)
+            preview, new TestWorkFolderOperationService(), new TestProfileService(), null!,
+            new RunningOperation(new ScriptedUserInterface()), userInterface)
         {
             Password = "password",
         };
@@ -367,7 +368,8 @@ public sealed class PendingFileTests
         Assert.That(await preview.PrepareImportedAsync(encryptedFile), Is.EqualTo(PreviewPreparationStatus.WrongPassword));
 
         TestUserInterfaceService userInterface = new();
-        EnterPasswordPageModel page = new(preview, new TestWorkFolderOperationService(), profile, null!, userInterface)
+        EnterPasswordPageModel page = new(preview, new TestWorkFolderOperationService(), profile, null!,
+            new RunningOperation(new ScriptedUserInterface()), userInterface)
         {
             Password = "wrong",
         };
@@ -533,6 +535,7 @@ public sealed class PendingFileTests
         public Task<ProfileActionResult> CreateProfileAsync(string email, string password) => throw new NotSupportedException();
         public Task<ProfileActionResult> ChangeProfileAsync(string email, string password) => throw new NotSupportedException();
         public Task<ProfileActionResult> LoginAsync(string password) => throw new NotSupportedException();
+        public Task ResetProfileAsync(string password) => throw new NotSupportedException();
         public void SignOut() => IsAuthenticated = false;
         public Identity GetIdentity() => new(IsAuthenticated ? "password" : "profile", []);
         public IReadOnlyList<PasswordUsage> GetExtraPasswords() => [];

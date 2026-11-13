@@ -28,9 +28,12 @@
 
 #endregion Copyright and GPL License
 
+using System.Runtime.ExceptionServices;
+
 using Xecrets.Core.Abstractions;
 using Xecrets.Core.Models;
 using Xecrets.Common.Abstractions;
+using Xecrets.Common.Implementation;
 using Xecrets.Common.Models;
 using Xecrets.Mobile.Models.Data;
 
@@ -96,18 +99,22 @@ internal sealed class ProfileService(
             keyPair.Email,
             keyPair.Email);
 
-        ProfileActionResult result = await LoginAsync(password);
+        // With the old password too, the private keys encrypted with it are re-encrypted with the new one.
+        ProfileActionResult result = await SignInAsync(password, [oldPassword]);
         if (result.Succeeded && !string.Equals(oldPassword, password, StringComparison.Ordinal))
         {
             // Always a change, adding the password or counting its use, so the extra credentials are saved and thus
-            // protected with the new password.
-            await RecordExtraPasswordUseAsync(oldPassword);
+            // protected with the new password. The private keys are already updated with it when signing in.
+            await CountExtraPasswordUseAsync(oldPassword);
         }
 
         return result;
     }
 
-    public async Task<ProfileActionResult> LoginAsync(string password)
+    public Task<ProfileActionResult> LoginAsync(string password)
+        => SignInAsync(password, []);
+
+    private async Task<ProfileActionResult> SignInAsync(string password, IReadOnlyList<string> previousPasswords)
     {
         SignInKey? profile = await profileStore.LoadAsync();
         if (profile is null)
@@ -122,11 +129,87 @@ internal sealed class ProfileService(
 
         UserSummary user = (await dataStore.GetUsersAsync())[0];
         IUserDataStore userStore = await dataStore.OpenUserAsync(user.Id);
-        Identity identity = new(password, [loadedKeyPair.KeyPair]);
-        IXecretsProtection protection = new CoreXecretsProtection(coreServices, identity);
-        IPersistentData<ExtraCredentials> extraCredentials = await userStore.LoadExtraCredentialsAsync(protection);
-        session.SignIn(loadedKeyPair.KeyPair, password, extraCredentials, userStore);
+        IPersistentData<ExtraCredentials> extraCredentials =
+            await LoadExtraCredentialsAsync(userStore, password, loadedKeyPair.KeyPair);
+
+        // Signed in only when the private keys are updated, so that it is not if that fails.
+        IReadOnlyList<KeyPair> privateKeyPairs = await UpdatePrivateKeysAsync(
+            userStore,
+            loadedKeyPair.KeyPair,
+            password,
+            [.. previousPasswords, .. ExtraPasswords(extraCredentials)]);
+        session.SignIn(loadedKeyPair.KeyPair, password, extraCredentials, userStore, privateKeyPairs);
         return new ProfileActionResult(ProfileActionStatus.Success);
+    }
+
+    // As on the desktop, the old key pair is kept, among the private keys since it was signed in with, but a new one is
+    // used from now on. The extra passwords are encrypted with the forgotten password, and are cleared. It's signed out,
+    // and the new password signs in.
+    public async Task ResetProfileAsync(string password)
+    {
+        UserSummary user = (await dataStore.GetUsersAsync())[0];
+        IUserDataStore userStore = await dataStore.OpenUserAsync(user.Id);
+        SignInKey oldKey = (await userStore.GetSignInKeysAsync())[0];
+
+        KeyPair keyPair = await coreServices.CreateKeyPairAsync(oldKey.Email, password, DateTimeOffset.UtcNow);
+        await userStore.ReplaceSignInKeyAsync(
+            oldKey,
+            new SignInKey(keyPair.Email, keyPair.CreatedUtc, keyPair.EncryptedBytes),
+            keyPair.Email,
+            keyPair.Email);
+
+        // Saved even though unchanged, as the old ones cannot be decrypted, so that they are replaced.
+        await using IEditScope<ExtraCredentials> credentials =
+            (await LoadExtraCredentialsAsync(userStore, password, keyPair)).BeginEdit();
+        credentials.Value.Passwords = [];
+        await credentials.SaveAsync(force: true);
+    }
+
+    private Task<IPersistentData<ExtraCredentials>> LoadExtraCredentialsAsync(
+        IUserDataStore userStore,
+        string password,
+        KeyPair keyPair) =>
+        userStore.LoadExtraCredentialsAsync(
+            new CoreXecretsProtection(coreServices, new Identity(password, [keyPair])));
+
+    private static IEnumerable<string> ExtraPasswords(IPersistentData<ExtraCredentials> extraCredentials) =>
+        extraCredentials.Value.Passwords.Select(extraPassword => extraPassword.Password);
+
+    private async Task UpdateSessionPrivateKeysAsync() =>
+        session.PrivateKeyPairs = await UpdatePrivateKeysAsync(
+            session.UserStore!,
+            session.ProfileKeyPair!,
+            session.Password,
+            [.. ExtraPasswords(session.ExtraCredentials!)]);
+
+    // The profile key pair is kept among the private keys, and all of them that the profile password or the other
+    // passwords decrypt are re-encrypted with the profile password, and returned to be used for decryption. A key pair
+    // kept from before a password reset is thus decrypted once the old password is added, and from then on with the
+    // profile password.
+    private async Task<IReadOnlyList<KeyPair>> UpdatePrivateKeysAsync(
+        IUserDataStore userStore,
+        KeyPair profileKeyPair,
+        string password,
+        IReadOnlyList<string> otherPasswords)
+    {
+        IPersistentData<PrivateKeyData> privateKeys = await userStore.LoadPrivateKeysAsync();
+        string json = JsonFile.Serialize(privateKeys.Value);
+        PrivateKeyImportRequest request = new(
+            [password, .. otherPasswords],
+            password,
+            profileKeyPair.Email,
+            [profileKeyPair]);
+
+        PrivateKeyImportResult result = await Task.Run(() => coreServices.ImportPrivateKeys(json, request));
+        if (result.ReEncryptedAccountsJson != json)
+        {
+            await using IEditScope<PrivateKeyData> editablePrivateKeys = privateKeys.BeginEdit();
+            editablePrivateKeys.Value.Accounts =
+                JsonFile.Deserialize<PrivateKeyData>(result.ReEncryptedAccountsJson, ExceptionDispatchInfo.Throw)
+                    .Accounts;
+        }
+
+        return result.LoadedKeyPairs;
     }
 
     public void SignOut()
@@ -138,7 +221,17 @@ internal sealed class ProfileService(
     public IReadOnlyList<PasswordUsage> GetExtraPasswords()
         => session.ExtraCredentials!.Value.Passwords;
 
+    // As when adding a password, a new one also decrypts any private keys encrypted with it.
     public async Task RecordExtraPasswordUseAsync(string password)
+    {
+        if (await CountExtraPasswordUseAsync(password))
+        {
+            await UpdateSessionPrivateKeysAsync();
+        }
+    }
+
+    // Returns true if the password is new among the extra passwords.
+    private async Task<bool> CountExtraPasswordUseAsync(string password)
     {
         await using IEditScope<ExtraCredentials> credentials = session.ExtraCredentials!.BeginEdit();
 
@@ -146,7 +239,7 @@ internal sealed class ProfileService(
         if (entry is null)
         {
             AddNewExtraPassword(credentials.Value, password, usageCount: 1);
-            return;
+            return true;
         }
 
         entry.UsageCount++;
@@ -155,17 +248,24 @@ internal sealed class ProfileService(
             .. credentials.Value.Passwords
                 .OrderByDescending(extraPassword => extraPassword.UsageCount)
         ];
+        return false;
     }
 
-    // A password added in advance is not counted as used until it decrypts a file.
+    // A password added in advance is not counted as used until it decrypts a file. Added, it also decrypts any private
+    // keys encrypted with it, such as one kept from before a password reset.
     public async Task AddExtraPasswordAsync(string password)
     {
-        await using IEditScope<ExtraCredentials> credentials = session.ExtraCredentials!.BeginEdit();
-
-        if (FindExtraPassword(credentials.Value, password) is null)
+        await using (IEditScope<ExtraCredentials> credentials = session.ExtraCredentials!.BeginEdit())
         {
+            if (FindExtraPassword(credentials.Value, password) is not null)
+            {
+                return;
+            }
+
             AddNewExtraPassword(credentials.Value, password, usageCount: 0);
         }
+
+        await UpdateSessionPrivateKeysAsync();
     }
 
     public async Task RemoveExtraPasswordAsync(string password)

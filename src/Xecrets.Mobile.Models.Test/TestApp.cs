@@ -45,7 +45,7 @@ internal sealed class TestApp : IDisposable
 {
     public TestApp(bool usesFolderIds = false)
     {
-        Session.SignIn(null!, "password", null!, Store);
+        Session.SignIn(null!, "password", null!, Store, []);
         Storage = new WorkFolderStorage(Session);
         Access = new FakeFileAccess(Storage) { UsesFolderIds = usesFolderIds };
         Recent = new RecentFilesService(Session, Flow, Access, CrashLog);
@@ -169,7 +169,7 @@ internal sealed class TestApp : IDisposable
     public EditPageModel CreateEditPage() => new(Preview, EditSave, Flow, CrashLog, Profile, UserInterface);
 
     public EnterPasswordPageModel CreateEnterPasswordPage() =>
-        new(Preview, OperationService, Profile, Flow, UserInterface);
+        new(Preview, OperationService, Profile, Flow, Running, UserInterface);
 
     public List<string> RecentIds() => [.. Store.Files.Select(file => file.Id)];
 

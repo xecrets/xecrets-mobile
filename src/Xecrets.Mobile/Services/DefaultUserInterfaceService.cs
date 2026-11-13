@@ -177,6 +177,7 @@ internal class DefaultUserInterfaceService(IBuildInformation buildInformation, E
             AppDestination.Welcome => "welcome",
             AppDestination.VerifyPassword => "verify-password",
             AppDestination.ChangeProfile => "change-profile",
+            AppDestination.ResetPassword => "reset-password",
             AppDestination.Startup => "//startup",
             _ => throw new ArgumentOutOfRangeException(nameof(destination), destination, @"Unknown app destination."),
         };

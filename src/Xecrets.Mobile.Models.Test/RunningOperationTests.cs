@@ -227,6 +227,30 @@ public sealed class RunningOperationTests
         Assert.That(changes, Is.EqualTo([true, false]));
     }
 
+    [Test]
+    public void OperationIsCancelableUnlessBegunAsNot()
+    {
+        RunningOperation running = new(new ScriptedUserInterface());
+
+        bool isCancelable;
+        using (running.Begin())
+        {
+            isCancelable = running.IsCancelable;
+        }
+
+        bool isNotCancelable;
+        bool isRunning;
+        using (running.Begin(cancelable: false))
+        {
+            isNotCancelable = !running.IsCancelable;
+            isRunning = running.IsRunning;
+        }
+
+        Assert.That(isCancelable, Is.True);
+        Assert.That(isNotCancelable, Is.True);
+        Assert.That(isRunning, Is.True);
+    }
+
     // When done for the given time, the user is asked to cancel, and confirms it.
     private static Action CancelOnCall(TestApp app, int call)
     {
