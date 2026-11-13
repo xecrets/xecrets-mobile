@@ -58,6 +58,9 @@ public partial class EditPageModel(
     // A hash rather than a copy of the saved text, so that no more copies of the plaintext are kept than needed.
     private byte[] _savedTextHash = [];
 
+    // Once only, since the page appears again when returned to, and the text may have been edited by then.
+    private bool _initialized;
+
     public string Breadcrumb => BreadcrumbFormatter.Format(
         flowContext.Origin,
         MobileTexts.BreadcrumbPreview,
@@ -87,6 +90,12 @@ public partial class EditPageModel(
     [RelayCommand]
     private async Task Initialize()
     {
+        if (_initialized)
+        {
+            return;
+        }
+
+        _initialized = true;
         IPreviewState state = previewService.Current;
         if (state.File.Kind != PreviewKind.Text)
         {

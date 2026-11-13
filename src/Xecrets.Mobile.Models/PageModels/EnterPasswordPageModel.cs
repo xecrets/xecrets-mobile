@@ -100,7 +100,8 @@ public partial class EnterPasswordPageModel(
         OnPropertyChanged(nameof(Breadcrumb));
     }
 
-    public void Load()
+    [RelayCommand]
+    internal void Load()
     {
         ErrorText = _intent == DecryptionPasswordsIntent.Add
             && (previewService.HasPendingPasswordRequest || workFolderOperationService.HasPendingPasswordRequest)
@@ -210,7 +211,15 @@ public partial class EnterPasswordPageModel(
         _ => throw new ArgumentOutOfRangeException(nameof(outcome), outcome.Status, @"Unknown file operation status."),
     };
 
-    public void CancelWorkFolderRequest() => workFolderOperationService.CancelPasswordRequest();
+    [RelayCommand]
+    private void Leave()
+    {
+        ErrorText = string.Empty;
+        CancelWorkFolderRequest();
+        CancelPreviewRequest();
+    }
 
-    public void CancelPreviewRequest() => previewService.CancelPasswordRequest();
+    internal void CancelWorkFolderRequest() => workFolderOperationService.CancelPasswordRequest();
+
+    internal void CancelPreviewRequest() => previewService.CancelPasswordRequest();
 }

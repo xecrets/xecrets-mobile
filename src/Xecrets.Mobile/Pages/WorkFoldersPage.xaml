@@ -25,27 +25,28 @@
     The source repository can be found at https://github.com/xecrets/xecrets-mobile please go there for more information,
     suggestions and contributions. You may also visit https://www.axantum.com for more information about the author.
 -->
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:f="clr-namespace:Fonts"
-             xmlns:pageControls="clr-namespace:Xecrets.Mobile.Controls"
-             xmlns:mobileModels="clr-namespace:Xecrets.Mobile.Models.Models;assembly=Xecrets.Mobile.Models"
-             xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
-             xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
-             xmlns:system="clr-namespace:System;assembly=System.Runtime"
-             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
-             xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
-             xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
-             x:Class="Xecrets.Mobile.Pages.WorkFoldersPage"
-             x:ClassModifier="internal"
-             x:Name="PageRoot"
-             x:DataType="pageModels:WorkFoldersPageModel">
+<pages:PageBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                xmlns:f="clr-namespace:Fonts"
+                xmlns:pageControls="clr-namespace:Xecrets.Mobile.Controls"
+                xmlns:mobileModels="clr-namespace:Xecrets.Mobile.Models.Models;assembly=Xecrets.Mobile.Models"
+                xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
+                xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
+                xmlns:system="clr-namespace:System;assembly=System.Runtime"
+                xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+                xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
+                xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
+                x:Class="Xecrets.Mobile.Pages.WorkFoldersPage"
+                x:ClassModifier="internal"
+                x:TypeArguments="pageModels:WorkFoldersPageModel"
+                x:Name="PageRoot"
+                x:DataType="pageModels:WorkFoldersPageModel">
     <ContentPage.Behaviors>
         <toolkit:EventToCommandBehavior x:TypeArguments="system:EventArgs"
                                         x:DataType="pages:WorkFoldersPage"
                                         BindingContext="{x:Reference PageRoot}"
                                         EventName="Appearing"
-                                        Command="{Binding LoadCommand}" />
+                                        Command="{Binding Model.LoadCommand}" />
     </ContentPage.Behaviors>
     <ContentPage.Resources>
         <ResourceDictionary>
@@ -143,4 +144,4 @@
                            HorizontalOptions="Center"
                            VerticalOptions="Center" />
     </Grid>
-</ContentPage>
+</pages:PageBase>

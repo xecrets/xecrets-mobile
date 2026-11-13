@@ -30,8 +30,6 @@
 
 using System.Collections.Generic;
 
-using CommunityToolkit.Mvvm.Input;
-
 using Microsoft.Maui.Controls;
 
 using Xecrets.Mobile.Abstractions;
@@ -43,13 +41,10 @@ namespace Xecrets.Mobile.Pages;
 
 internal partial class SuggestPasswordPage : IQueryAttributable
 {
-    public IRelayCommand InitializeCommand { get; }
-
     public SuggestPasswordPage(SuggestPasswordPageModel model, IPageHeaderService pageHeaderService)
+        : base(model)
     {
-        InitializeCommand = model.InitializeCommand;
         InitializeComponent();
-        BindingContext = model;
         pageHeaderService.ApplyStandardHeader(this);
     }
 
@@ -57,7 +52,7 @@ internal partial class SuggestPasswordPage : IQueryAttributable
     {
         if (query.TryGetValue(nameof(NavigationParameter.Payload), out object? payload))
         {
-            ((SuggestPasswordPageModel)BindingContext).SetParentBreadcrumb((string)payload);
+            Model.SetParentBreadcrumb((string)payload);
         }
     }
 

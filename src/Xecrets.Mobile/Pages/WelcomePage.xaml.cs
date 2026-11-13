@@ -43,9 +43,9 @@ namespace Xecrets.Mobile.Pages;
 internal partial class WelcomePage : IQueryAttributable
 {
     public WelcomePage(WelcomePageModel model, IProfileService profileService, IPageHeaderService pageHeaderService)
+        : base(model)
     {
         InitializeComponent();
-        BindingContext = model;
         pageHeaderService.ApplyStandardHeaderTitle(this, profileService.IsAuthenticated ? profileService.CurrentEmail : string.Empty);
     }
 
@@ -53,7 +53,7 @@ internal partial class WelcomePage : IQueryAttributable
     {
         if (query.TryGetValue(nameof(NavigationParameter.Payload), out object? payload))
         {
-            ((WelcomePageModel)BindingContext).Initialize((bool)payload);
+            Model.Initialize((bool)payload);
         }
     }
 

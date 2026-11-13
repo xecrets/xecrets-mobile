@@ -24,14 +24,26 @@
     The source repository can be found at https://github.com/xecrets/xecrets-mobile please go there for more information,
     suggestions and contributions. You may also visit https://www.axantum.com for more information about the author.
 -->
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
-             xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
-             xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
-             x:Class="Xecrets.Mobile.Pages.ThirdPartyLicensesPage"
-             x:ClassModifier="internal"
-             x:DataType="pageModels:ThirdPartyLicensesPageModel">
+<pages:PageBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
+                xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
+                xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
+                xmlns:system="clr-namespace:System;assembly=System.Runtime"
+                xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+                xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
+                x:Class="Xecrets.Mobile.Pages.ThirdPartyLicensesPage"
+                x:ClassModifier="internal"
+                x:TypeArguments="pageModels:ThirdPartyLicensesPageModel"
+                x:Name="PageRoot"
+                x:DataType="pageModels:ThirdPartyLicensesPageModel">
+    <ContentPage.Behaviors>
+        <toolkit:EventToCommandBehavior x:TypeArguments="system:EventArgs"
+                                        x:DataType="pages:ThirdPartyLicensesPage"
+                                        BindingContext="{x:Reference PageRoot}"
+                                        EventName="Appearing"
+                                        Command="{Binding Model.InitializeCommand}" />
+    </ContentPage.Behaviors>
     <!-- The title and the explanation stay in place, and only the notices in the card scroll. Aligned to the top, so
          that the card is only as tall as the notices when they fit. -->
     <Grid RowDefinitions="Auto,*"
@@ -56,4 +68,4 @@
             </controls:FadingScrollView>
         </Border>
     </Grid>
-</ContentPage>
+</pages:PageBase>

@@ -88,6 +88,7 @@ public static partial class ModelExtensions
         services.AddSingleton<WorkFolderStorage>();
 
         services.AddTransient<StartupPageModel>();
+        services.AddTransient<CrashPageModel>();
         services.AddTransient<LoginPageModel>();
         services.AddTransient<HomePageModel>();
 

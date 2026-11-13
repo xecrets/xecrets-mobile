@@ -29,7 +29,6 @@
 #endregion Copyright and GPL License
 
 using System.Collections.Generic;
-using CommunityToolkit.Mvvm.Input;
 
 using Microsoft.Maui.Controls;
 
@@ -42,19 +41,16 @@ namespace Xecrets.Mobile.Pages;
 
 internal partial class WorkFoldersPage : IQueryAttributable
 {
-    public IAsyncRelayCommand LoadCommand { get; }
-
     public WorkFoldersPage(WorkFoldersPageModel model, IPageHeaderService pageHeaderService)
+        : base(model)
     {
-        LoadCommand = model.LoadCommand;
         InitializeComponent();
-        BindingContext = model;
         pageHeaderService.ApplyStandardHeader(this);
     }
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
-        ((WorkFoldersPageModel)BindingContext).Initialize(
+        Model.Initialize(
             query.TryGetValue(nameof(NavigationParameter.Payload), out object? intent)
                 ? (WorkFolderIntent)intent
                 : WorkFolderIntent.Auto);

@@ -24,14 +24,16 @@
     The source repository can be found at https://github.com/xecrets/xecrets-mobile please go there for more information,
     suggestions and contributions. You may also visit https://www.axantum.com for more information about the author.
 -->
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
-             xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
-             xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
-             x:Class="Xecrets.Mobile.Pages.AboutPage"
-             x:ClassModifier="internal"
-             x:DataType="pageModels:AboutPageModel">
+<pages:PageBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
+                xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
+                xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
+                xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
+                x:Class="Xecrets.Mobile.Pages.AboutPage"
+                x:ClassModifier="internal"
+                x:TypeArguments="pageModels:AboutPageModel"
+                x:DataType="pageModels:AboutPageModel">
     <controls:FadingScrollView FadeColor="{AppThemeBinding Light={StaticResource LightBackground}, Dark={StaticResource DarkBackground}}">
         <VerticalStackLayout Padding="{StaticResource LayoutPadding}">
             <controls:PageBreadcrumb Text="{Binding Breadcrumb}" />
@@ -119,4 +121,4 @@
             </VerticalStackLayout>
         </VerticalStackLayout>
     </controls:FadingScrollView>
-</ContentPage>
+</pages:PageBase>

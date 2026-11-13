@@ -28,65 +28,19 @@
 
 #endregion Copyright and GPL License
 
-using System.Threading.Tasks;
-
-using CommunityToolkit.Mvvm.Input;
-
 using Xecrets.Mobile.Abstractions;
-using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.PageModels;
-using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
 internal partial class CrashPage
 {
-    private readonly StartupPageModel _startupPageModel;
-    private readonly IUserInterfaceService _userInterfaceService;
-    private readonly ICrashLogService _crashLogService;
-    private bool _initialized;
-
-    public CrashPage(
-        StartupPageModel startupPageModel,
-        IPlatformServices platformServices,
-        IUserInterfaceService userInterfaceService,
-        ICrashLogService crashLogService)
+    public CrashPage(CrashPageModel model, IPlatformServices platformServices)
+        : base(model)
     {
-        _startupPageModel = startupPageModel;
-        _userInterfaceService = userInterfaceService;
-        _crashLogService = crashLogService;
         PlatformAdditionalInformation = platformServices.CrashPageAdditionalInformation;
         InitializeComponent();
-        BindingContext = this;
     }
 
     public string PlatformAdditionalInformation { get; }
-
-    // ReSharper disable once AsyncVoidMethod
-    protected override async void OnAppearing()
-    {
-        base.OnAppearing();
-        if (_initialized)
-        {
-            return;
-        }
-
-        _initialized = true;
-        string report = _crashLogService.ReadCurrent();
-        CrashReportEditor.Text = report;
-        // The page itself tells the user that the report was copied.
-        await _userInterfaceService.SetSensitiveClipboardTextAsync(report, confirm: false);
-    }
-
-    [RelayCommand]
-    private Task Report() => _userInterfaceService.OpenBrowserAsync(MobileTexts.XecretsSupportUrl);
-
-    [RelayCommand]
-    private Task Help() => _userInterfaceService.OpenBrowserAsync(MobileTexts.XecretsHelpUrl);
-
-    [RelayCommand]
-    private async Task Continue()
-    {
-        await _startupPageModel.ContinueAfterCrashCommand.ExecuteAsync(null);
-    }
 }

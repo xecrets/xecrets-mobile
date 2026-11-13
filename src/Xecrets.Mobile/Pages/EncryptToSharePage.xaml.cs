@@ -45,16 +45,16 @@ internal partial class EncryptToSharePage : IQueryAttributable
         EncryptToSharePageModel model,
         IPlatformServices platformServices,
         IPageHeaderService pageHeaderService)
+        : base(model)
     {
         InitializeComponent();
-        BindingContext = model;
         platformServices.ConfigurePasswordEntry(PasswordEntryControl.Entry, PasswordEntryPurpose.SharePassword);
         pageHeaderService.ApplyStandardHeader(this);
     }
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
-        ((EncryptToSharePageModel)BindingContext).Initialize(
+        Model.Initialize(
             (FileReference)query[nameof(NavigationParameter.Payload)]);
     }
 

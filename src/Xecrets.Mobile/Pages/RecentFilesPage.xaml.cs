@@ -28,10 +28,7 @@
 
 #endregion Copyright and GPL License
 
-using CommunityToolkit.Mvvm.Input;
-
 using Xecrets.Mobile.Abstractions;
-using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.PageModels;
 using Xecrets.Mobile.Utilities;
 
@@ -39,32 +36,11 @@ namespace Xecrets.Mobile.Pages;
 
 internal partial class RecentFilesPage
 {
-    private readonly RecentFilesPageModel _model;
-
-    public IAsyncRelayCommand<RecentFileEntry> ReverseCommand { get; }
-
-    public IAsyncRelayCommand<RecentFileEntry> OpenCommand { get; }
-
-    public IAsyncRelayCommand<RecentFileEntry> RemoveCommand { get; }
-
-    public IAsyncRelayCommand<RecentFileEntry> ShowFullPathCommand { get; }
-
     public RecentFilesPage(RecentFilesPageModel model, IPageHeaderService pageHeaderService)
+        : base(model)
     {
-        _model = model;
-        ReverseCommand = model.ReverseCommand;
-        OpenCommand = model.OpenCommand;
-        RemoveCommand = model.RemoveCommand;
-        ShowFullPathCommand = model.ShowFullPathCommand;
         InitializeComponent();
-        BindingContext = model;
         pageHeaderService.ApplyStandardHeader(this);
-    }
-
-    protected override void OnAppearing()
-    {
-        base.OnAppearing();
-        _model.LoadCommand.Execute(null);
     }
 
     protected override void OnSizeAllocated(double width, double height)

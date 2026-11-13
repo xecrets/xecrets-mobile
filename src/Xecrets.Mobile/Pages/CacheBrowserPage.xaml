@@ -24,25 +24,26 @@
     The source repository can be found at https://github.com/xecrets/xecrets-mobile please go there for more information,
     suggestions and contributions. You may also visit https://www.axantum.com for more information about the author.
 -->
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
-             xmlns:models="clr-namespace:Xecrets.Mobile.Models.Models;assembly=Xecrets.Mobile.Models"
-             xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
-             xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
-             xmlns:system="clr-namespace:System;assembly=System.Runtime"
-             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
-             xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
-             x:Class="Xecrets.Mobile.Pages.CacheBrowserPage"
-             x:ClassModifier="internal"
-             x:Name="PageRoot"
-             x:DataType="pageModels:CacheBrowserPageModel">
+<pages:PageBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
+                xmlns:models="clr-namespace:Xecrets.Mobile.Models.Models;assembly=Xecrets.Mobile.Models"
+                xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
+                xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
+                xmlns:system="clr-namespace:System;assembly=System.Runtime"
+                xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+                xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
+                x:Class="Xecrets.Mobile.Pages.CacheBrowserPage"
+                x:ClassModifier="internal"
+                x:TypeArguments="pageModels:CacheBrowserPageModel"
+                x:Name="PageRoot"
+                x:DataType="pageModels:CacheBrowserPageModel">
     <ContentPage.Behaviors>
         <toolkit:EventToCommandBehavior x:TypeArguments="system:EventArgs"
                                         x:DataType="pages:CacheBrowserPage"
                                         BindingContext="{x:Reference PageRoot}"
                                         EventName="Appearing"
-                                        Command="{Binding LoadCommand}" />
+                                        Command="{Binding Model.LoadCommand}" />
     </ContentPage.Behaviors>
     <ContentPage.Resources>
         <ResourceDictionary>
@@ -91,4 +92,4 @@
             </VerticalStackLayout>
         </VerticalStackLayout>
     </controls:FadingScrollView>
-</ContentPage>
+</pages:PageBase>

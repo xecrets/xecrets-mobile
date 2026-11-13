@@ -25,15 +25,17 @@
     The source repository can be found at https://github.com/xecrets/xecrets-mobile please go there for more information,
     suggestions and contributions. You may also visit https://www.axantum.com for more information about the author.
 -->
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
-             xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
-             xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
-             xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
-             x:Class="Xecrets.Mobile.Pages.EncryptToSharePage"
-             x:ClassModifier="internal"
-             x:DataType="pageModels:EncryptToSharePageModel">
+<pages:PageBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
+                xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
+                xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
+                xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
+                xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
+                x:Class="Xecrets.Mobile.Pages.EncryptToSharePage"
+                x:ClassModifier="internal"
+                x:TypeArguments="pageModels:EncryptToSharePageModel"
+                x:DataType="pageModels:EncryptToSharePageModel">
     <ContentPage.Resources>
         <ResourceDictionary>
             <utilities:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
@@ -70,4 +72,4 @@
                            HorizontalOptions="Center"
                            VerticalOptions="Center" />
     </Grid>
-</ContentPage>
+</pages:PageBase>

@@ -28,8 +28,6 @@
 
 #endregion Copyright and GPL License
 
-using CommunityToolkit.Mvvm.Input;
-
 using Xecrets.Mobile.Abstractions;
 using Xecrets.Mobile.Models.PageModels;
 
@@ -37,13 +35,10 @@ namespace Xecrets.Mobile.Pages;
 
 internal partial class CacheBrowserPage
 {
-    public IAsyncRelayCommand LoadCommand { get; }
-
     public CacheBrowserPage(CacheBrowserPageModel model, IPageHeaderService pageHeaderService)
+        : base(model)
     {
-        LoadCommand = model.LoadCommand;
         InitializeComponent();
-        BindingContext = model;
         pageHeaderService.ApplyStandardHeader(this);
     }
 }

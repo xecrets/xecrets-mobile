@@ -37,9 +37,9 @@ namespace Xecrets.Mobile.Pages;
 internal partial class AboutPage
 {
     public AboutPage(AboutPageModel model, IPageHeaderService pageHeaderService)
+        : base(model)
     {
         InitializeComponent();
-        BindingContext = model;
         pageHeaderService.ApplyStandardHeader(this);
     }
 

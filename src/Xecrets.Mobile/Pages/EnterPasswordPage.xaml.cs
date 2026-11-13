@@ -32,8 +32,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Threading;
 
-using CommunityToolkit.Mvvm.Input;
-
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 
@@ -46,16 +44,13 @@ namespace Xecrets.Mobile.Pages;
 
 internal partial class EnterPasswordPage : IQueryAttributable
 {
-    public IAsyncRelayCommand<string> DeleteCommand { get; }
-
     public EnterPasswordPage(
         EnterPasswordPageModel model,
         IPlatformServices platformServices,
         IPageHeaderService pageHeaderService)
+        : base(model)
     {
-        DeleteCommand = model.DeleteCommand;
         InitializeComponent();
-        BindingContext = model;
         model.PropertyChanged += OnModelPropertyChanged;
         platformServices.ConfigurePasswordEntry(PasswordEntryControl.Entry, PasswordEntryPurpose.VerifyPassword);
         pageHeaderService.ApplyStandardHeader(this);
@@ -63,32 +58,16 @@ internal partial class EnterPasswordPage : IQueryAttributable
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
-        ((EnterPasswordPageModel)BindingContext).Initialize(
+        Model.Initialize(
             query.TryGetValue(nameof(NavigationParameter.Payload), out object? intent)
                 ? (DecryptionPasswordsIntent)intent
                 : DecryptionPasswordsIntent.Manage);
     }
 
-    protected override void OnAppearing()
-    {
-        base.OnAppearing();
-        ((EnterPasswordPageModel)BindingContext).Load();
-    }
-
-    protected override void OnDisappearing()
-    {
-        base.OnDisappearing();
-        EnterPasswordPageModel model = (EnterPasswordPageModel)BindingContext;
-        model.ErrorText = string.Empty;
-        model.CancelWorkFolderRequest();
-        model.CancelPreviewRequest();
-    }
-
     // Pressing Go keeps the keyboard open, also when the add form it was typed into is closed, covering the list.
     private async void OnModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        bool isAddFormClosed = e.PropertyName == nameof(EnterPasswordPageModel.IsAdding)
-            && !((EnterPasswordPageModel)BindingContext).IsAdding;
+        bool isAddFormClosed = e.PropertyName == nameof(EnterPasswordPageModel.IsAdding) && !Model.IsAdding;
         Entry entry = PasswordEntryControl.Entry;
         if (isAddFormClosed && entry.IsSoftInputShowing())
         {

@@ -43,15 +43,15 @@ namespace Xecrets.Mobile.Pages;
 internal partial class EncryptResultPage : IQueryAttributable
 {
     public EncryptResultPage(EncryptResultPageModel model, IPageHeaderService pageHeaderService)
+        : base(model)
     {
         InitializeComponent();
-        BindingContext = model;
         pageHeaderService.ApplyStandardHeader(this);
     }
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
-        ((EncryptResultPageModel)BindingContext).Initialize(
+        Model.Initialize(
             (EncryptionPreparationResult)query[nameof(NavigationParameter.Payload)]);
     }
 

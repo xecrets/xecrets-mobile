@@ -35,8 +35,8 @@ namespace Xecrets.Mobile.Pages;
 internal partial class StartupPage
 {
     public StartupPage(StartupPageModel model)
+        : base(model)
     {
         InitializeComponent();
-        BindingContext = model;
     }
 }

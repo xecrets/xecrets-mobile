@@ -36,9 +36,9 @@ namespace Xecrets.Mobile.Pages;
 internal partial class DebugPage
 {
     public DebugPage(DebugPageModel model, IPageHeaderService pageHeaderService)
+        : base(model)
     {
         InitializeComponent();
-        BindingContext = model;
         pageHeaderService.ApplyStandardHeader(this);
     }
 }

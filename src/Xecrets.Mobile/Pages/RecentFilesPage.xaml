@@ -24,21 +24,30 @@
     The source repository can be found at https://github.com/xecrets/xecrets-mobile please go there for more information,
     suggestions and contributions. You may also visit https://www.axantum.com for more information about the author.
 -->
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:f="clr-namespace:Fonts"
-             xmlns:behaviors="clr-namespace:Xecrets.Mobile.Behaviors"
-             xmlns:pageControls="clr-namespace:Xecrets.Mobile.Controls"
-             xmlns:mobileModels="clr-namespace:Xecrets.Mobile.Models.Models;assembly=Xecrets.Mobile.Models"
-             xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
-             xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
-             xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
-             xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
-             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
-             x:Class="Xecrets.Mobile.Pages.RecentFilesPage"
-             x:ClassModifier="internal"
-             x:Name="PageRoot"
-             x:DataType="pageModels:RecentFilesPageModel">
+<pages:PageBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                xmlns:f="clr-namespace:Fonts"
+                xmlns:behaviors="clr-namespace:Xecrets.Mobile.Behaviors"
+                xmlns:pageControls="clr-namespace:Xecrets.Mobile.Controls"
+                xmlns:mobileModels="clr-namespace:Xecrets.Mobile.Models.Models;assembly=Xecrets.Mobile.Models"
+                xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
+                xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
+                xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
+                xmlns:system="clr-namespace:System;assembly=System.Runtime"
+                xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
+                xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+                x:Class="Xecrets.Mobile.Pages.RecentFilesPage"
+                x:ClassModifier="internal"
+                x:TypeArguments="pageModels:RecentFilesPageModel"
+                x:Name="PageRoot"
+                x:DataType="pageModels:RecentFilesPageModel">
+    <ContentPage.Behaviors>
+        <toolkit:EventToCommandBehavior x:TypeArguments="system:EventArgs"
+                                        x:DataType="pages:RecentFilesPage"
+                                        BindingContext="{x:Reference PageRoot}"
+                                        EventName="Appearing"
+                                        Command="{Binding Model.LoadCommand}" />
+    </ContentPage.Behaviors>
     <ContentPage.Resources>
         <ResourceDictionary>
             <utilities:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
@@ -163,7 +172,7 @@
                                                      Padding="8"
                                                      Source="{StaticResource IconEncryptFile}"
                                                      IsVisible="{Binding IsInPlace}"
-                                                     Command="{Binding ReverseCommand,
+                                                     Command="{Binding Model.ReverseCommand,
                                                            Source={x:Reference PageRoot},
                                                            x:DataType=pages:RecentFilesPage}"
                                                      CommandParameter="{Binding .}">
@@ -181,7 +190,7 @@
                                                      Padding="8"
                                                      Source="{StaticResource IconViewFile}"
                                                      IsVisible="{Binding IsViewed}"
-                                                     Command="{Binding OpenCommand,
+                                                     Command="{Binding Model.OpenCommand,
                                                            Source={x:Reference PageRoot},
                                                            x:DataType=pages:RecentFilesPage}"
                                                      CommandParameter="{Binding .}" />
@@ -190,7 +199,7 @@
                                                      Padding="8"
                                                      Source="{StaticResource IconOpenFile}"
                                                      IsVisible="{Binding IsOther}"
-                                                     Command="{Binding OpenCommand,
+                                                     Command="{Binding Model.OpenCommand,
                                                            Source={x:Reference PageRoot},
                                                            x:DataType=pages:RecentFilesPage}"
                                                      CommandParameter="{Binding .}">
@@ -214,11 +223,11 @@
                                                 <toolkit:TouchBehavior BindingContext="{Binding BindingContext,
                                                                              Source={x:Reference EntryBorder},
                                                                              x:DataType=Border}"
-                                                                       Command="{Binding OpenCommand,
+                                                                       Command="{Binding Model.OpenCommand,
                                                                              Source={x:Reference PageRoot},
                                                                              x:DataType=pages:RecentFilesPage}"
                                                                        CommandParameter="{Binding .}"
-                                                                       LongPressCommand="{Binding ShowFullPathCommand,
+                                                                       LongPressCommand="{Binding Model.ShowFullPathCommand,
                                                                              Source={x:Reference PageRoot},
                                                                              x:DataType=pages:RecentFilesPage}"
                                                                        LongPressCommandParameter="{Binding .}" />
@@ -240,7 +249,7 @@
                                                      Background="Transparent"
                                                      Padding="8"
                                                      Source="{StaticResource IconRemoveFile}"
-                                                     Command="{Binding RemoveCommand,
+                                                     Command="{Binding Model.RemoveCommand,
                                                            Source={x:Reference PageRoot},
                                                            x:DataType=pages:RecentFilesPage}"
                                                      CommandParameter="{Binding .}">
@@ -258,4 +267,4 @@
                            HorizontalOptions="Center"
                            VerticalOptions="Center" />
     </Grid>
-</ContentPage>
+</pages:PageBase>

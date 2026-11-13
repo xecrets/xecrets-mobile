@@ -24,17 +24,18 @@
     The source repository can be found at https://github.com/xecrets/xecrets-mobile please go there for more information,
     suggestions and contributions. You may also visit https://www.axantum.com for more information about the author.
 -->
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
-             xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
-             xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
-             xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
-             xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
-             x:Class="Xecrets.Mobile.Pages.CreateProfilePage"
-             x:ClassModifier="internal"
-             x:Name="PageRoot"
-             x:DataType="pageModels:CreateProfilePageModel">
+<pages:PageBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
+                xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
+                xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
+                xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
+                xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
+                x:Class="Xecrets.Mobile.Pages.CreateProfilePage"
+                x:ClassModifier="internal"
+                x:TypeArguments="pageModels:CreateProfilePageModel"
+                x:Name="PageRoot"
+                x:DataType="pageModels:CreateProfilePageModel">
     <ContentPage.Resources>
         <ResourceDictionary>
             <utilities:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
@@ -120,4 +121,4 @@
             </VerticalStackLayout>
         </controls:PageCard>
     </Grid>
-</ContentPage>
+</pages:PageBase>

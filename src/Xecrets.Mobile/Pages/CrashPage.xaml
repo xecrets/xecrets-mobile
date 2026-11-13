@@ -24,16 +24,28 @@
     The source repository can be found at https://github.com/xecrets/xecrets-mobile please go there for more information,
     suggestions and contributions. You may also visit https://www.axantum.com for more information about the author.
 -->
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
-             xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
-             xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
-             xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
-             x:Class="Xecrets.Mobile.Pages.CrashPage"
-             x:ClassModifier="internal"
-             x:DataType="pages:CrashPage"
-             Shell.NavBarIsVisible="False">
+<pages:PageBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
+                xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
+                xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
+                xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
+                xmlns:system="clr-namespace:System;assembly=System.Runtime"
+                xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+                xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
+                x:Class="Xecrets.Mobile.Pages.CrashPage"
+                x:ClassModifier="internal"
+                x:TypeArguments="pageModels:CrashPageModel"
+                x:Name="PageRoot"
+                x:DataType="pageModels:CrashPageModel"
+                Shell.NavBarIsVisible="False">
+    <ContentPage.Behaviors>
+        <toolkit:EventToCommandBehavior x:TypeArguments="system:EventArgs"
+                                        x:DataType="pages:CrashPage"
+                                        BindingContext="{x:Reference PageRoot}"
+                                        EventName="Appearing"
+                                        Command="{Binding Model.InitializeCommand}" />
+    </ContentPage.Behaviors>
     <ContentPage.Resources>
         <ResourceDictionary>
             <utilities:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
@@ -58,10 +70,12 @@
                    HorizontalOptions="Center"
                    Style="{StaticResource Title1}" />
             <Label Text="{x:Static modelUtilities:MobileTexts.CrashPageExplanation}" />
-            <Label Text="{Binding PlatformAdditionalInformation}"
+            <Label x:DataType="pages:CrashPage"
+                   BindingContext="{x:Reference PageRoot}"
+                   Text="{Binding PlatformAdditionalInformation}"
                    IsVisible="{Binding PlatformAdditionalInformation, Converter={StaticResource StringNotEmptyConverter}}" />
         </VerticalStackLayout>
-        <controls:ReadOnlyEditor x:Name="CrashReportEditor"
-                                 Grid.Row="2" />
+        <controls:ReadOnlyEditor Grid.Row="2"
+                                 Text="{Binding CrashReport, Mode=OneWay}" />
     </Grid>
-</ContentPage>
+</pages:PageBase>

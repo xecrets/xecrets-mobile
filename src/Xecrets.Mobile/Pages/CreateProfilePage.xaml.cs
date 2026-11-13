@@ -56,11 +56,11 @@ internal partial class CreateProfilePage : IQueryAttributable
         IPlatformServices platformServices,
         IUserInterfaceService userInterfaceService,
         IPageHeaderService pageHeaderService)
+        : base(model)
     {
         _platformServices = platformServices;
         _userInterfaceService = userInterfaceService;
         InitializeComponent();
-        BindingContext = model;
         platformServices.ConfigurePasswordEntry(EmailEntry, PasswordEntryPurpose.UserName);
         platformServices.ConfigurePasswordEntry(PasswordEntryControl.Entry, PasswordEntryPurpose.NewPassword);
         platformServices.ConfigurePasswordEntry(ConfirmPasswordEntryControl.Entry, PasswordEntryPurpose.NewPassword);
@@ -80,7 +80,7 @@ internal partial class CreateProfilePage : IQueryAttributable
             case ProfileAction.Create:
                 break;
             case ProfileAction.Change:
-                ((CreateProfilePageModel)BindingContext).InitializeChange();
+                Model.InitializeChange();
                 break;
             case ProfileAction.Delete:
                 // As on the verification page, Shell applies the query before the handlers are created. Without a user
@@ -94,7 +94,7 @@ internal partial class CreateProfilePage : IQueryAttributable
 
                 // The only field, so Done instead of Next. Not Go, so that the keyboard can't start the deletion.
                 PasswordEntryControl.ReturnType = ReturnType.Done;
-                ((CreateProfilePageModel)BindingContext).InitializeDelete();
+                Model.InitializeDelete();
                 break;
             case ProfileAction.Unknown:
             default:
@@ -151,6 +151,6 @@ internal partial class CreateProfilePage : IQueryAttributable
 
     private void ShowInformation()
     {
-        _ = _userInterfaceService.DisplayTransientMessageAsync(((CreateProfilePageModel)BindingContext).Information);
+        _ = _userInterfaceService.DisplayTransientMessageAsync(Model.Information);
     }
 }

@@ -37,29 +37,18 @@ internal partial class ViewPage
 {
     private readonly IPlatformServices _platformServices;
 
-    private bool _initialized;
-
     public ViewPage(ViewPageModel model, IPageHeaderService pageHeaderService, IPlatformServices platformServices)
+        : base(model)
     {
         InitializeComponent();
-        BindingContext = model;
         _platformServices = platformServices;
         pageHeaderService.ApplyStandardHeader(this);
     }
 
-    // ReSharper disable once AsyncVoidMethod
-    protected override async void OnAppearing()
+    protected override void OnAppearing()
     {
         base.OnAppearing();
         _platformServices.IsSensitiveContentVisible(true);
-
-        if (_initialized)
-        {
-            return;
-        }
-
-        _initialized = true;
-        await ((ViewPageModel)BindingContext).InitializeCommand.ExecuteAsync(null);
     }
 
     protected override void OnDisappearing()

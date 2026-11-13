@@ -36,17 +36,9 @@ namespace Xecrets.Mobile.Pages;
 internal partial class ThirdPartyLicensesPage
 {
     public ThirdPartyLicensesPage(ThirdPartyLicensesPageModel model, IPageHeaderService pageHeaderService)
+        : base(model)
     {
         InitializeComponent();
-        BindingContext = model;
         pageHeaderService.ApplyStandardHeader(this);
-    }
-
-    // ReSharper disable once AsyncVoidMethod
-    protected override async void OnAppearing()
-    {
-        base.OnAppearing();
-
-        await ((ThirdPartyLicensesPageModel)BindingContext).InitializeCommand.ExecuteAsync(null);
     }
 }

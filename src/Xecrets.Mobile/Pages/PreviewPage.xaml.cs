@@ -39,19 +39,11 @@ internal partial class PreviewPage
     private readonly ActionButtonColumns _actionButtonColumns;
 
     public PreviewPage(PreviewPageModel model, IPageHeaderService pageHeaderService)
+        : base(model)
     {
         InitializeComponent();
-        BindingContext = model;
         pageHeaderService.ApplyStandardHeader(this);
         _actionButtonColumns = new ActionButtonColumns(ActionButtonStack, ActionButtonGrid);
-    }
-
-    // ReSharper disable once AsyncVoidMethod
-    protected override async void OnAppearing()
-    {
-        base.OnAppearing();
-
-        await ((PreviewPageModel)BindingContext).InitializeCommand.ExecuteAsync(null);
     }
 
     protected override void OnSizeAllocated(double width, double height)

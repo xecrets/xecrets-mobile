@@ -50,6 +50,9 @@ public partial class ViewPageModel(
 
     public TextEditorFontModel Font { get; } = new(profileService);
 
+    // Once only, since the page appears again when returned to.
+    private bool _initialized;
+
     public string Breadcrumb => BreadcrumbFormatter.Format(
         flowContext.Origin,
         MobileTexts.BreadcrumbPreview,
@@ -82,6 +85,12 @@ public partial class ViewPageModel(
     [RelayCommand]
     private async Task Initialize()
     {
+        if (_initialized)
+        {
+            return;
+        }
+
+        _initialized = true;
         IPreviewState state = previewService.Current;
         if (state.File.Kind != PreviewKind.Image && state.File.Kind != PreviewKind.Text)
         {

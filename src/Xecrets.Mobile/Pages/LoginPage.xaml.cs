@@ -52,11 +52,11 @@ internal partial class LoginPage : IQueryAttributable
         LoginPageModel model,
         IPlatformServices platformServices,
         IPageHeaderService pageHeaderService)
+        : base(model)
     {
         _platformServices = platformServices;
         _pageHeaderService = pageHeaderService;
         InitializeComponent();
-        BindingContext = model;
         platformServices.ConfigurePasswordEntry(EmailEntry, PasswordEntryPurpose.UserName);
         platformServices.ConfigurePasswordEntry(PasswordEntryControl.Entry, PasswordEntryPurpose.ExistingPassword);
         pageHeaderService.ApplyStandardHeader(this);
@@ -78,7 +78,7 @@ internal partial class LoginPage : IQueryAttributable
                 // get this configuration when they connect. Without a user name, it's not a sign-in form.
                 PasswordEntryProperties.SetPurpose(EmailEntry, null);
                 _platformServices.ConfigurePasswordEntry(PasswordEntryControl.Entry, PasswordEntryPurpose.VerifyPassword);
-                ((LoginPageModel)BindingContext).InitializeVerification(action);
+                Model.InitializeVerification(action);
                 break;
             case ProfileAction.Unknown:
             case ProfileAction.Create:
@@ -93,9 +93,8 @@ internal partial class LoginPage : IQueryAttributable
     {
         base.OnAppearing();
 
-        LoginPageModel model = (LoginPageModel)BindingContext;
-        await model.InitializeCommand.ExecuteAsync(null);
-        _pageHeaderService.ApplyStandardHeaderTitle(this, model.Email);
+        await Model.InitializeCommand.ExecuteAsync(null);
+        _pageHeaderService.ApplyStandardHeaderTitle(this, Model.Email);
     }
 
     protected override void OnSizeAllocated(double width, double height)
