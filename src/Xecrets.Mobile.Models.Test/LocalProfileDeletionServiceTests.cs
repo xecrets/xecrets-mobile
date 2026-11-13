@@ -79,7 +79,7 @@ public sealed class LocalProfileDeletionServiceTests
         }
 
         deviceSettings["key"] = "value";
-        await File.WriteAllTextAsync(transient.CreateHandoffPath("secret.txt"), "secret");
+        await File.WriteAllTextAsync(transient.CreateHandoffFile("secret.txt").FilePath, "secret");
         Directory.CreateDirectory(Path.Combine(fileService.DeviceDirectory, "WorkFolderGrants"));
 
         FakeProfileService profile = new();
@@ -119,9 +119,9 @@ public sealed class LocalProfileDeletionServiceTests
         public string AppDataDirectory => appDataDirectory;
         public string CacheDirectory => cacheDirectory;
         public Task<bool> OpenInAsync(string filePath, string displayName) => throw new NotSupportedException();
-        public Task SendToAsync(string filePath, string displayName, string contentType) => throw new NotSupportedException();
+        public Task<bool> SendToAsync(string filePath, string displayName, string contentType) => throw new NotSupportedException();
         public Task<bool> CanViewFileAsync(DecryptedFileInfo file) => throw new NotSupportedException();
-        public Task ViewFileAsync(DecryptedFileInfo file) => throw new NotSupportedException();
+        public Task<bool> ViewFileAsync(DecryptedFileInfo file) => throw new NotSupportedException();
         public bool IsSelfHandoffReference(string reference) => false;
     }
 }

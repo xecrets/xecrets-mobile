@@ -109,7 +109,7 @@ internal partial class App
         {
             await _services.GetRequiredService<InstallationService>().EnsureAsync();
         }
-        await _transientFileService.MaybeWipeTrackedFilesAsync();
+        await _transientFileService.SweepAllAsync();
         await _services.GetRequiredService<GrantCleanupService>().RunAsync();
         await _cultureCoordinator.ApplySavedAsync();
 

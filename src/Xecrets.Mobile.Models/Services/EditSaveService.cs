@@ -70,7 +70,7 @@ internal sealed class EditSaveService(
         }
 
         byte[] plaintext = new UTF8Encoding(false).GetBytes(text);
-        string encryptedPath = await EncryptToTransientAsync(previewService.Current, plaintext);
+        ITransientFile encrypted = await EncryptToTransientAsync(previewService.Current, plaintext);
         string savedId;
         try
         {
@@ -85,7 +85,7 @@ internal sealed class EditSaveService(
                         SourceId = backupId,
                         RestoresSource = true,
                     },
-                    encryptedPath,
+                    encrypted.FilePath,
                     existingId: null);
             }
             catch
@@ -98,10 +98,10 @@ internal sealed class EditSaveService(
         }
         finally
         {
-            await transientFileService.WipeTransientFileAsync(encryptedPath);
+            encrypted.Dispose();
         }
 
-        await UpdateSavedAsync(previewService.Current, plaintext);
+        previewService.Current.UpdateText(plaintext);
 
         // The file is a new one, which on some storage gives it a new id, while the old id refers to the replaced
         // file. The saved file is the one saved over and listed from then on, in place of any entry for the
@@ -144,16 +144,16 @@ internal sealed class EditSaveService(
     public async Task<bool> SaveCopyAsync(string text)
     {
         byte[] plaintext = new UTF8Encoding(false).GetBytes(text);
-        string encryptedPath = await EncryptToTransientAsync(previewService.Current, plaintext);
+        ITransientFile encrypted = await EncryptToTransientAsync(previewService.Current, plaintext);
         FileReference? savedCopy;
         try
         {
             string fileName = previewService.Current.File.OriginalFileName.ToEncryptedName("");
-            savedCopy = await fileOperationWorkflow.SaveAsAsync(fileName, encryptedPath, FileTimes.UtcNow);
+            savedCopy = await fileOperationWorkflow.SaveAsAsync(fileName, encrypted.FilePath, FileTimes.UtcNow);
         }
         finally
         {
-            await transientFileService.WipeTransientFileAsync(encryptedPath);
+            encrypted.Dispose();
         }
 
         if (savedCopy is null)
@@ -161,7 +161,7 @@ internal sealed class EditSaveService(
             return false;
         }
 
-        await UpdateSavedAsync(previewService.Current, plaintext);
+        previewService.Current.UpdateText(plaintext);
 
         // The saved copy holds the edits, so it is the one saved over and listed from then on, if it was saved in
         // one of My folders. Otherwise, it cannot be changed, and each save is a new copy.
@@ -177,35 +177,30 @@ internal sealed class EditSaveService(
     }
 
     /// <summary>
-    /// Encrypts the text from memory to a temporary file, returning its path. The text is encrypted for all the file
-    /// being previewed was encrypted for, and keeps the creation time of the original.
+    /// Encrypts the text from memory to a temporary file. The text is encrypted for all the file being previewed was
+    /// encrypted for, and keeps the creation time of the original.
     /// </summary>
-    private async Task<string> EncryptToTransientAsync(IPreviewState state, byte[] plaintext)
+    private async Task<ITransientFile> EncryptToTransientAsync(IPreviewState state, byte[] plaintext)
     {
         EncryptRequest request = encryptRequestFactory.Create(state.File.OriginalFileName, state.EncryptedWith) with
         {
             CreationTimeUtc = state.File.OriginalTimes.CreationTimeUtc,
         };
-        string encryptedPath =
-            transientFileService.CreateEncryptedOutputPath(state.File.OriginalFileName.ToEncryptedName(""));
-
-        using MemoryStream cleartext = new(plaintext);
-        await using FileStream encrypted = File.Create(encryptedPath);
-        await coreServices.EncryptAsync(cleartext, encrypted, request);
-        return encryptedPath;
-    }
-
-    /// <summary>
-    /// The text as it was saved is the text shown from then on. A file it was written to before, to hand it over, no longer
-    /// holds what is shown, so it is wiped.
-    /// </summary>
-    private async Task UpdateSavedAsync(IPreviewState state, byte[] plaintext)
-    {
-        string decryptedPath = state.File.FilePath;
-        state.UpdateText(plaintext);
-        if (decryptedPath.Length > 0)
+        ITransientFile encryptedFile =
+            transientFileService.CreateEncryptedOutputFile(state.File.OriginalFileName.ToEncryptedName(""));
+        try
         {
-            await transientFileService.WipeTransientFileAsync(decryptedPath);
+            using MemoryStream cleartext = new(plaintext);
+            await using FileStream encrypted = File.Create(encryptedFile.FilePath);
+            await coreServices.EncryptAsync(cleartext, encrypted, request);
         }
+        catch
+        {
+            // What was encrypted before the operation was canceled, or failed, is not left until the cache is cleaned.
+            encryptedFile.Dispose();
+            throw;
+        }
+
+        return encryptedFile;
     }
 }

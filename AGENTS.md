@@ -106,8 +106,15 @@ and action SHAs in `.github/workflows/ci.yml`. Do not introduce dependencies on
 - Before writing any catch, guard, null check, null-conditional chain, `is not ... return` or other early return, name the concrete, realistic cause for it in the context where the code runs, such as a user action, provider or OS behavior, I/O, persisted data from earlier versions, or a documented framework behavior. If there is none, leave it out. For example, a handler that `Dispose` unsubscribes needs no check that the object is still alive.
 - Nullable annotations in the .NET bindings for Android and iOS APIs are often generic rather than a real contract. When a value cannot be null in context, use the null-forgiving operator instead of a check, after confirming with the native source or the decompiled code if unsure. For example, write `context.GetActivity()!.Window!` for a renderer created with the activity as context, and `WindowCompat.GetInsetsController(window, window.DecorView)!`, which never returns null.
 - Keep comments and XML documentation concise and factual. Add docs for public types and members when they improve readability.
+- XML documentation on an interface, type or method states its contract, no more and no less, clearly and unambiguously: what it does, what it returns and what the caller must assume. Do not describe a possibility. When something may be the case once the method returns, the contract states it as the case, since that is what the caller must assume. For example, write `<returns>True if the file is still in use, false if it is no longer used.</returns>`, not `<returns>Whether the app the file was sent to may still read it afterwards.</returns>`.
+- Comments that describe a type or a non-private member are XML comments, such as `/// <summary>`. Plain `//` comments are only for code inside methods and for private members.
+- Document public members, including the public members of internal types, with XML comments that state their contract. An implementation of an interface member, or an override, has the same contract, so it does not get a contract comment of its own. It gets `/// <inheritdoc/>`, and a `<remarks>` section only when it needs to say how the contract is met in that case.
 - Do not add verbose, AI-style explanatory comments. Comments should explain *why* non-obvious code is the way it is, not *what* the code does or restate what it already says. For example, do not add a comment on a method that throws `NotSupportedException` explaining that it throws because the operation is not supported — that's already obvious from the code.
 - Do not restate an API's documentation in comments, such as that a column may be null or that unsupported values are ignored. Handling the documented behavior needs no comment that repeats the documentation.
+
+## Testing
+
+- When behavior is meant to change, change the affected tests and write the new ones first, then the code, so the tests check the implementation. Do not adapt a test that fails because of an unplanned behavior change; report the failure instead.
 
 ## MAUI And XAML Practices
 

@@ -44,7 +44,7 @@ public partial class EncryptResultPageModel(
     IFileService fileService,
     FileOperationWorkflow fileOperationWorkflow,
     IRecentFilesService recentFilesService,
-    ITransientFileService transientFileService,
+    IEncryptedState encryptedState,
     IFlowContext flowContext,
     ICrashLogService crashLogService,
     IUserInterfaceService userInterfaceService)
@@ -84,6 +84,7 @@ public partial class EncryptResultPageModel(
 
     public void Initialize(EncryptionPreparationResult result)
     {
+        encryptedState.Set(result);
         Result = result;
         FileNameText = result.DisplayName;
         MetadataText = CreateMetadataText(result);
@@ -133,10 +134,11 @@ public partial class EncryptResultPageModel(
             IsBusy = true;
             StatusText = "";
             EncryptionPreparationResult result = Result;
-            await fileService.SendToAsync(
-                result.FilePath,
-                result.DisplayName,
-                result.ContentType);
+            if (await fileService.SendToAsync(result.FilePath, result.DisplayName, result.ContentType))
+            {
+                result.File.MarkHandedOff();
+            }
+
             await recentFilesService.AddFlowSourceAsync(result.EncryptCopyForSharing
                 ? RecentFileOperation.EncryptWithSendTo
                 : RecentFileOperation.EncryptCopySendTo);
@@ -159,7 +161,7 @@ public partial class EncryptResultPageModel(
     [RelayCommand]
     private async Task Close()
     {
-        await ClearResultAsync();
+        ClearResult();
         await UserInterfaceService.GoBackAsync(null);
     }
 
@@ -170,15 +172,15 @@ public partial class EncryptResultPageModel(
     /// </summary>
     private async Task GoHomeAsync()
     {
-        await ClearResultAsync();
+        ClearResult();
         await UserInterfaceService.NavigateToAsync(AppDestination.Home);
     }
 
-    private async Task ClearResultAsync()
+    // A copy that is still in use by the app it was sent to is kept when its file is disposed.
+    private void ClearResult()
     {
-        string filePath = Result.FilePath;
+        encryptedState.Clear();
         Result = EncryptionPreparationResult.Empty;
-        await transientFileService.WipeTransientFileAsync(filePath);
     }
 
     private bool CanUseCommand()

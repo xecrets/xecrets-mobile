@@ -33,6 +33,7 @@ using System.Text;
 using NUnit.Framework;
 
 using Xecrets.Core.Models;
+using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
 
@@ -102,10 +103,10 @@ public sealed class PreviewServiceTests
         using FakeTransientFileService transient = new();
         PreviewState state = new();
         PreviewService preview = CreatePreview(transient, state);
-        string encryptedPath = Path.Combine(_directory, "x.axx");
-        await File.WriteAllBytesAsync(encryptedPath, Encoding.UTF8.GetBytes("ENC:a.txt\ntext"));
+        ITransientFile encryptedFile = transient.CreateIncomingFile("x.axx");
+        await File.WriteAllBytesAsync(encryptedFile.FilePath, Encoding.UTF8.GetBytes("ENC:a.txt\ntext"));
 
-        PreviewPreparationStatus status = await preview.PrepareImportedAsync(encryptedPath);
+        PreviewPreparationStatus status = await preview.PrepareImportedAsync(encryptedFile);
 
         Assert.That(status, Is.EqualTo(PreviewPreparationStatus.Prepared));
         Assert.That(state.File.Kind, Is.EqualTo(PreviewKind.Text));
@@ -186,6 +187,37 @@ public sealed class PreviewServiceTests
 
         Assert.That(await File.ReadAllBytesAsync(file.FilePath), Is.EqualTo(utf8));
         Assert.That(file.FileSize, Is.EqualTo(utf8.Length));
+    }
+
+    /// <summary>
+    /// Once shown, the encrypted file is not needed.
+    /// </summary>
+    [Test]
+    public async Task OnlyTheDecryptedFileIsLeftOnceShown()
+    {
+        using FakeTransientFileService transient = new();
+        PreviewState state = new();
+        PreviewService preview = CreatePreview(transient, state);
+
+        await preview.PrepareAsync(await CreateEncryptedAsync("a.pdf", "%PDF-1.4"));
+
+        Assert.That(transient.RemainingFiles(), Is.EqualTo([state.File.FilePath]));
+    }
+
+    [Test]
+    public async Task FailedMaterializingLeavesNoPartialFile()
+    {
+        using FakeTransientFileService transient = new();
+        PreviewState state = new();
+        PreviewService preview = CreatePreview(transient, state);
+        state.SetText(
+            new DecryptedFileInfo("", new string('a', 300), "text/plain", 4, PreviewKind.Text, FileTimes.UtcNow),
+            "text"u8.ToArray(),
+            EncryptedWithParameters.Empty);
+
+        await Assert.ThatAsync(async () => await preview.MaterializeAsync(), Throws.InstanceOf<IOException>());
+
+        Assert.That(transient.RemainingFiles(), Is.Empty);
     }
 
     [Test]

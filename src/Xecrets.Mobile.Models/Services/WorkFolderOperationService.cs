@@ -97,7 +97,7 @@ internal sealed class WorkFolderOperationService(
         }
         finally
         {
-            await transientFileService.WipeTransientFileAsync(encrypted.FilePath);
+            encrypted.File.Dispose();
         }
 
         FileReference result = file with { Id = resultId, Name = destinationName };
@@ -127,7 +127,7 @@ internal sealed class WorkFolderOperationService(
             }
             finally
             {
-                await transientFileService.WipeTransientFileAsync(encrypted.FilePath);
+                encrypted.File.Dispose();
             }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -253,7 +253,8 @@ internal sealed class WorkFolderOperationService(
         FolderContents contents,
         IFileCompletionReporter reporter)
     {
-        string resultPath = "";
+        // Made only once the file is found to be decryptable, and replacing any file of its name is confirmed.
+        ITransientFile? resultFile = null;
         try
         {
             string resultName;
@@ -281,20 +282,20 @@ internal sealed class WorkFolderOperationService(
                     }
                 }
 
-                resultPath = transientFileService.CreateHandoffPath(resultName);
-                await using FileStream decrypted = File.Create(resultPath);
+                resultFile = transientFileService.CreateHandoffFile(resultName);
+                await using FileStream decrypted = File.Create(resultFile.FilePath);
                 await session.DecryptAsync(decrypted);
             }
 
             if (isElsewhere)
             {
                 return await ExportResultAsync(
-                    file, resultPath, resultName, MobileTexts.DialogTextFileDecrypted, resultTimes);
+                    file, resultFile.FilePath, resultName, MobileTexts.DialogTextFileDecrypted, resultTimes);
             }
 
             // The folder is listed for a file in one of My folders.
             ListedFolder destination = folder!;
-            string resultId = await SaveInFolderAsync(file, destination, resultName, resultPath, existingId);
+            string resultId = await SaveInFolderAsync(file, destination, resultName, resultFile.FilePath, existingId);
             await fileAccess.SetSupportedTimesAsync(resultId, resultTimes);
             FileReference result = file with { Id = resultId, Name = resultName };
             await CompleteAsync(file, result, MobileTexts.DialogTextFileDecrypted, destination, reporter);
@@ -302,10 +303,7 @@ internal sealed class WorkFolderOperationService(
         }
         finally
         {
-            if (resultPath.Length > 0)
-            {
-                await transientFileService.WipeTransientFileAsync(resultPath);
-            }
+            resultFile?.Dispose();
         }
     }
 

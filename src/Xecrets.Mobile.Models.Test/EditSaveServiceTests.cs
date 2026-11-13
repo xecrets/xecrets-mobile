@@ -34,6 +34,7 @@ using NUnit.Framework;
 
 using Xecrets.Common.Models;
 using Xecrets.Core.Models;
+using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Test;
@@ -227,9 +228,9 @@ public sealed class EditSaveServiceTests
     public async Task SaveWipesTheFileTheTextWasHandedOverIn()
     {
         using TestApp app = CreateEditing("text");
-        string decryptedPath = app.Transient.CreateHandoffPath("a.txt");
-        await File.WriteAllTextAsync(decryptedPath, "text");
-        app.Preview.Current.SetDecryptedPath(decryptedPath);
+        ITransientFile decryptedFile = app.Transient.CreateHandoffFile("a.txt");
+        await File.WriteAllTextAsync(decryptedFile.FilePath, "text");
+        app.Preview.Current.SetDecryptedFile(decryptedFile);
         app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
         app.Flow.Begin(FlowOrigin.Home, new FileReference("docs/x.axx", "x.axx"));
 
@@ -237,6 +238,40 @@ public sealed class EditSaveServiceTests
 
         Assert.That(app.Preview.Current.File.FilePath, Is.Empty);
         Assert.That(app.Preview.Current.File.FilePath, Is.Empty);
+        Assert.That(app.Transient.RemainingFiles(), Is.Empty);
+    }
+
+    /// <summary>
+    /// The app the text was handed off to may still read the file, so it is kept, although it no longer holds what is
+    /// shown.
+    /// </summary>
+    [Test]
+    public async Task SaveKeepsTheFileTheTextWasHandedOffIn()
+    {
+        using TestApp app = CreateEditing("text");
+        ITransientFile decryptedFile = app.Transient.CreateHandoffFile("a.txt");
+        await File.WriteAllTextAsync(decryptedFile.FilePath, "text");
+        app.Preview.Current.SetDecryptedFile(decryptedFile);
+        app.Preview.Current.MarkHandedOff();
+        app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
+        app.Flow.Begin(FlowOrigin.Home, new FileReference("docs/x.axx", "x.axx"));
+
+        await app.EditSave.SaveAsync("edited");
+
+        Assert.That(app.Preview.Current.File.FilePath, Is.Empty);
+        Assert.That(app.Transient.RemainingFiles(), Is.EqualTo([decryptedFile.FilePath]));
+    }
+
+    [Test]
+    public void FailedEncryptionLeavesNoPartialFile()
+    {
+        using TestApp app = CreateEditing("text");
+        app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
+        app.Flow.Begin(FlowOrigin.Home, new FileReference("docs/x.axx", "x.axx"));
+        app.Core.Writing = () => throw new IOException("Encryption failed.");
+
+        Assert.That(async () => await app.EditSave.SaveAsync("edited"), Throws.TypeOf<IOException>());
+
         Assert.That(app.Transient.RemainingFiles(), Is.Empty);
     }
 

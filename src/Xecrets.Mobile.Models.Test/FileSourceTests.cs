@@ -78,7 +78,7 @@ public sealed class FileSourceTests
         string outputPath = Path.Combine(_directory, "imported.txt");
         await File.WriteAllTextAsync(sourcePath, "content");
         await using MemoryStream input = new(Encoding.UTF8.GetBytes("content"));
-        ITransientFileService transient = new TestTransientFileService(outputPath);
+        TestTransientFileService transient = new(outputPath);
         IIncomingFileSource source = kind switch
         {
             "stream" => new StreamIncomingFileSource(input, "display.txt", "text/plain", transient),
@@ -90,7 +90,8 @@ public sealed class FileSourceTests
         Assert.That(File.Exists(outputPath), Is.False);
         IncomingFileInfo imported = await source.ImportAsync();
 
-        Assert.That(imported, Is.EqualTo(new IncomingFileInfo(outputPath, "display.txt", "text/plain")));
+        Assert.That(imported, Is.EqualTo(new IncomingFileInfo(transient.File, "display.txt", "text/plain")));
+        Assert.That(imported.FilePath, Is.EqualTo(outputPath));
         Assert.That(await File.ReadAllTextAsync(outputPath), Is.EqualTo("content"));
         Assert.That(input.CanRead, Is.True);
         await using FileStream exclusive = File.Open(outputPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
@@ -98,14 +99,19 @@ public sealed class FileSourceTests
 
     private sealed class TestTransientFileService(string incomingPath) : ITransientFileService
     {
-        public string CreateIncomingPath(string originalFileName) => incomingPath;
-        public string CreateHandoffPath(string originalFileName) => throw new NotSupportedException();
-        public string CreateEncryptedInputPath(string originalFileName) => throw new NotSupportedException();
-        public string CreateEncryptedOutputPath(string originalFileName) => throw new NotSupportedException();
-        public Task WipeTransientFileAsync(string filePath) => throw new NotSupportedException();
-        public Task RunExclusiveAsync(Func<Task> operation) => throw new NotSupportedException();
-        public Task MaybeWipeTrackedFilesAsync() => throw new NotSupportedException();
+        public ITransientFile File { get; } = new TestTransientFile(incomingPath);
+        public ITransientFile CreateIncomingFile(string originalFileName) => File;
+        public ITransientFile CreateHandoffFile(string originalFileName) => throw new NotSupportedException();
+        public ITransientFile CreateEncryptedInputFile(string originalFileName) => throw new NotSupportedException();
+        public ITransientFile CreateEncryptedOutputFile(string originalFileName) => throw new NotSupportedException();
+        public Task SweepAllAsync() => throw new NotSupportedException();
+        public Task SweepAsync(TimeSpan maxAge) => throw new NotSupportedException();
+    }
 
-        public Task WipeTrackedFilesAsync() => throw new NotSupportedException();
+    private sealed class TestTransientFile(string filePath) : ITransientFile
+    {
+        public string FilePath => filePath;
+        public void MarkHandedOff() => throw new NotSupportedException();
+        public void Dispose() => throw new NotSupportedException();
     }
 }

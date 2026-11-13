@@ -55,7 +55,7 @@ public sealed class LocalProfileDeletionService(
     {
         previewService.Current.Clear();
         passwordRequestState.Clear();
-        await transientFileService.WipeTrackedFilesAsync();
+        await transientFileService.SweepAllAsync();
         profileService.SignOut();
         await dataStore.ResetStoreAsync();
 

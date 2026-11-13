@@ -60,7 +60,10 @@ public interface IPreviewService
 
     Task<bool> PrepareAsync(IReadableFile encryptedFile);
 
-    Task<PreviewPreparationStatus> PrepareImportedAsync(string encryptedFilePath);
+    /// <summary>
+    /// Prepares the preview of a received encrypted file, and takes over the file, which the caller must not dispose.
+    /// </summary>
+    Task<PreviewPreparationStatus> PrepareImportedAsync(ITransientFile encryptedFile);
 
     Task<PreviewPreparationStatus> PrepareWithPasswordAsync(string password);
 }

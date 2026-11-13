@@ -81,6 +81,7 @@ internal partial class EnterPasswordPage : IQueryAttributable
         EnterPasswordPageModel model = (EnterPasswordPageModel)BindingContext;
         model.ErrorText = string.Empty;
         model.CancelWorkFolderRequest();
+        model.CancelPreviewRequest();
     }
 
     // Pressing Go keeps the keyboard open, also when the add form it was typed into is closed, covering the list.

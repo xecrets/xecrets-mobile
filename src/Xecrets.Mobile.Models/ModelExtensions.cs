@@ -64,6 +64,7 @@ public static partial class ModelExtensions
         services.AddSingleton<IFileWiper, FileWiper>();
         services.AddSingleton<ITransientFileService, TransientFileService>();
         services.AddSingleton<PreviewState>();
+        services.AddSingleton<IEncryptedState, EncryptedState>();
         services.AddSingleton<DecryptionPasswordRequestState>();
         services.AddSingleton<IFlowContext, FlowContext>();
         services.AddSingleton<IProfileService, ProfileService>();

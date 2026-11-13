@@ -122,6 +122,8 @@ internal sealed class TestApp : IDisposable
 
     public FakePreviewService Preview { get; } = new();
 
+    public EncryptedState Encrypted { get; } = new();
+
     public FakeTransientFileService Transient { get; } = new();
 
     public FakeFileLauncher Launcher { get; } = new();

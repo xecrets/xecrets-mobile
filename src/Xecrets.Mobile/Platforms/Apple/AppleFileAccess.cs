@@ -244,20 +244,18 @@ internal sealed class AppleFileAccess(
     /// </summary>
     public async Task<Stream> OpenReadAsync(string fileId)
     {
-        string copyPath = transientFileService.CreateHandoffPath(NSUrl.FromString(fileId)!.LastPathComponent!);
+        ITransientFile copy = transientFileService.CreateHandoffFile(NSUrl.FromString(fileId)!.LastPathComponent!);
         try
         {
             await ReadResolvedAsync(fileId, coordinatedUrl =>
-                NSFileManager.DefaultManager.Copy(coordinatedUrl, NSUrl.FromFilename(copyPath), out NSError copyError)
+                NSFileManager.DefaultManager.Copy(coordinatedUrl, NSUrl.FromFilename(copy.FilePath), out NSError copyError)
                     ? true
                     : throw new NSErrorException(copyError));
-            return new OwningStream(
-                File.OpenRead(copyPath),
-                () => transientFileService.WipeTransientFileAsync(copyPath));
+            return new OwningStream(copy);
         }
         catch
         {
-            await transientFileService.WipeTransientFileAsync(copyPath);
+            copy.Dispose();
             throw;
         }
     }

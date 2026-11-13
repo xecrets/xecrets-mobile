@@ -28,118 +28,172 @@
 
 #endregion Copyright and GPL License
 
+using System.Collections.Concurrent;
+using System.Threading.Channels;
+
 using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Models.Services;
 
-public sealed class TransientFileService(IFileService fileService, IFileWiper fileWiper, ICrashLogService crashLogService)
-    : ITransientFileService
+/// <summary>
+/// Each temporary file is in a folder of its own, named by a GUID, inside a fixed folder for its kind. Sweeps wipe the
+/// GUID folders as a whole. The fixed folders are only removed by a sweep of the whole cache, since a new file may be
+/// created in one at any time. A handed-off file's folder gets the time it is disposed, which its age is measured from.
+/// </summary>
+public sealed class TransientFileService : ITransientFileService
 {
-    private readonly SemaphoreSlim _gate = new(1, 1);
+    private readonly IFileService _fileService;
 
-    // Created by CreatePath only when needed, so that nothing is left in the cache before there are files in it.
-    private readonly string _rootDirectory = Path.Combine(fileService.CacheDirectory, "XecretsHandoff");
+    private readonly IFileWiper _fileWiper;
 
-    public string CreateHandoffPath(string originalFileName)
-        => CreatePath(Guid.NewGuid().ToString("N"), originalFileName);
+    private readonly ICrashLogService _crashLogService;
 
-    public string CreateIncomingPath(string originalFileName)
-        => CreatePath(Path.Combine("incoming", Guid.NewGuid().ToString("N")), originalFileName);
+    // Created only when needed, so that nothing is left in the cache before there are files in it.
+    private readonly string _handoffDirectory;
 
-    public string CreateEncryptedInputPath(string originalFileName)
-        => CreatePath(Path.Combine("decrypt", Guid.NewGuid().ToString("N")), originalFileName);
+    // The folders of the files in use, which sweeps leave. A folder is added before it is created, so that no sweep
+    // finds it unregistered.
+    private readonly ConcurrentDictionary<string, byte> _foldersInUse = new();
 
-    public string CreateEncryptedOutputPath(string originalFileName)
-        => CreatePath(Path.Combine("encrypt", Guid.NewGuid().ToString("N")), originalFileName);
+    private readonly Channel<SweepRequest> _requests =
+        Channel.CreateUnbounded<SweepRequest>(new UnboundedChannelOptions { SingleReader = true });
 
-    private string CreatePath(string scope, string originalFileName)
+    public TransientFileService(IFileService fileService, IFileWiper fileWiper, ICrashLogService crashLogService)
     {
-        string fileName = CreateFriendlyFileName(originalFileName);
-        string sessionDirectory = Path.Combine(_rootDirectory, scope);
-        Directory.CreateDirectory(sessionDirectory);
+        _fileService = fileService;
+        _fileWiper = fileWiper;
+        _crashLogService = crashLogService;
+        _handoffDirectory = Path.Combine(fileService.CacheDirectory, "XecretsHandoff");
 
-        return Path.Combine(sessionDirectory, fileName);
+        // In the background, so that wiping large files does not hold up the user interface. The loop is async void, so
+        // that an exception escaping it ends the app through the crash handlers, instead of faulting a task nobody
+        // observes, which would stop all sweeps unnoticed and leave those waiting for one hanging.
+        _ = Task.Run(SweepRequested);
     }
 
-    public async Task WipeTransientFileAsync(string filePath)
-    {
-        if (File.Exists(filePath))
-        {
-            await TryWipeAsync(filePath);
-        }
+    public ITransientFile CreateHandoffFile(string originalFileName)
+        => Create(_handoffDirectory, originalFileName);
 
-        try
+    public ITransientFile CreateIncomingFile(string originalFileName)
+        => Create(Path.Combine(_handoffDirectory, "incoming"), originalFileName);
+
+    public ITransientFile CreateEncryptedInputFile(string originalFileName)
+        => Create(Path.Combine(_handoffDirectory, "decrypt"), originalFileName);
+
+    public ITransientFile CreateEncryptedOutputFile(string originalFileName)
+        => Create(Path.Combine(_handoffDirectory, "encrypt"), originalFileName);
+
+    public Task SweepAllAsync()
+    {
+        _foldersInUse.Clear();
+        return RequestSweep(_fileService.CacheDirectory, TimeSpan.Zero);
+    }
+
+    public Task SweepAsync(TimeSpan maxAge) => RequestSweep(_handoffDirectory, maxAge);
+
+    private ITransientFile Create(string kindDirectory, string originalFileName)
+    {
+        string directory = Path.Combine(kindDirectory, Guid.NewGuid().ToString("N"));
+        _foldersInUse[directory] = 0;
+        Directory.CreateDirectory(directory);
+
+        return new TransientFile(this, Path.Combine(directory, CreateFriendlyFileName(originalFileName)));
+    }
+
+    private void Release(string directory, bool isHandedOff)
+    {
+        if (!isHandedOff)
         {
-            string? directoryPath = Path.GetDirectoryName(filePath);
-            if (!string.IsNullOrWhiteSpace(directoryPath) && Directory.Exists(directoryPath))
+            if (_foldersInUse.TryRemove(directory, out _))
             {
-                Directory.Delete(directoryPath, recursive: true);
+                _ = RequestSweep(directory, TimeSpan.Zero);
             }
-        }
-        catch (Exception ex)
-        {
-            crashLogService.WriteSwallowedException(ex);
-        }
-    }
 
-    public async Task RunExclusiveAsync(Func<Task> operation)
-    {
-        await _gate.WaitAsync();
-        try
-        {
-            await operation();
+            return;
         }
-        finally
-        {
-            _gate.Release();
-        }
-    }
 
-    public async Task MaybeWipeTrackedFilesAsync()
-    {
-        // Wiping is opportunistic
-        if (!await _gate.WaitAsync(TimeSpan.Zero))
+        // A sweep of the whole cache, at sign-out, has ended the use of all files and wipes this folder too.
+        if (!_foldersInUse.ContainsKey(directory))
         {
             return;
         }
 
-        try
-        {
-            await WipeTrackedFilesCoreAsync();
-        }
-        finally
-        {
-            _gate.Release();
-        }
+        // Set while still registered, so that no sweep finds the folder unregistered with the time it was created.
+        Directory.SetLastWriteTimeUtc(directory, DateTime.UtcNow);
+        _foldersInUse.TryRemove(directory, out _);
     }
 
-    public Task WipeTrackedFilesAsync() => RunExclusiveAsync(WipeTrackedFilesCoreAsync);
-
-    // Not even an empty cache directory is left behind. A missing one is not an error, as it is only created when needed.
-    private async Task WipeTrackedFilesCoreAsync()
+    private Task RequestSweep(string startDirectory, TimeSpan maxAge)
     {
-        if (Directory.Exists(fileService.CacheDirectory))
+        SweepRequest request = new(startDirectory, maxAge);
+        _requests.Writer.TryWrite(request);
+        return request.Completion.Task;
+    }
+
+    private async void SweepRequested()
+    {
+        await foreach (SweepRequest request in _requests.Reader.ReadAllAsync())
         {
-            await WipeDirectoryAsync(fileService.CacheDirectory);
+            // The cache is only made when needed, and the OS, or the user, may clear it at any time.
+            if (Directory.Exists(request.StartDirectory))
+            {
+                // Not even an empty cache directory is left behind when all of it is wiped.
+                bool removesFolders = request.StartDirectory == _fileService.CacheDirectory;
+                await SweepDirectoryAsync(request.StartDirectory, request.MaxAge, removesFolders);
+            }
+
+            request.Completion.SetResult();
         }
     }
+
+    private async Task SweepDirectoryAsync(string directory, TimeSpan maxAge, bool removesFolders)
+    {
+        if (IsFileDirectory(directory))
+        {
+            if (!_foldersInUse.ContainsKey(directory) && IsOlderThan(Directory.GetLastWriteTimeUtc(directory), maxAge))
+            {
+                await WipeDirectoryAsync(directory);
+            }
+
+            return;
+        }
+
+        if (!TryList(directory, out string[] subdirectories, out string[] files))
+        {
+            return;
+        }
+
+        foreach (string subdirectory in subdirectories)
+        {
+            await SweepDirectoryAsync(subdirectory, maxAge, removesFolders);
+        }
+
+        foreach (string file in files)
+        {
+            if (IsOlderThan(File.GetLastWriteTimeUtc(file), maxAge))
+            {
+                await TryWipeAsync(file);
+            }
+        }
+
+        if (removesFolders)
+        {
+            TryDeleteIfEmpty(directory);
+        }
+    }
+
+    private static bool IsFileDirectory(string directory) =>
+        Guid.TryParseExact(Path.GetFileName(directory), "N", out _);
+
+    private static bool IsOlderThan(DateTime lastWriteTimeUtc, TimeSpan maxAge) =>
+        DateTime.UtcNow - lastWriteTimeUtc >= maxAge;
 
     // Recursive post-order descent: fully wipe each subdirectory (and try to remove it) before touching
     // this directory's own files, then try to remove this directory once everything under it is gone.
     private async Task WipeDirectoryAsync(string directory)
     {
-        string[] subdirectories;
-        string[] files;
-        try
+        if (!TryList(directory, out string[] subdirectories, out string[] files))
         {
-            subdirectories = Directory.GetDirectories(directory);
-            files = Directory.GetFiles(directory);
-        }
-        catch (Exception ex)
-        {
-            // The directory lives in the cache, which the OS (or the user, via "Clear cache") can reclaim
-            // at any time - if it's already gone, there's nothing left to do here.
-            crashLogService.WriteSwallowedException(ex);
             return;
         }
 
@@ -156,6 +210,25 @@ public sealed class TransientFileService(IFileService fileService, IFileWiper fi
         TryDeleteIfEmpty(directory);
     }
 
+    private bool TryList(string directory, out string[] subdirectories, out string[] files)
+    {
+        try
+        {
+            subdirectories = Directory.GetDirectories(directory);
+            files = Directory.GetFiles(directory);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            // The directory lives in the cache, which the OS (or the user, via "Clear cache") can reclaim
+            // at any time - if it's already gone, there's nothing left to do here.
+            _crashLogService.WriteSwallowedException(ex);
+            subdirectories = [];
+            files = [];
+            return false;
+        }
+    }
+
     private async Task TryWipeAsync(string path)
     {
         try
@@ -163,12 +236,12 @@ public sealed class TransientFileService(IFileService fileService, IFileWiper fi
             File.SetAttributes(path, FileAttributes.Normal);
 
             // Should the wipe fail, the wiper still deletes the file if possible.
-            await fileWiper.WipeAsync(new LocalWritableFile(path), isOnDevice: true);
+            await _fileWiper.WipeAsync(new LocalWritableFile(path), isOnDevice: true);
         }
         catch (Exception ex)
         {
             // Best effort.
-            crashLogService.WriteSwallowedException(ex);
+            _crashLogService.WriteSwallowedException(ex);
         }
     }
 
@@ -184,7 +257,7 @@ public sealed class TransientFileService(IFileService fileService, IFileWiper fi
         catch (Exception ex)
         {
             // Best effort.
-            crashLogService.WriteSwallowedException(ex);
+            _crashLogService.WriteSwallowedException(ex);
         }
     }
 
@@ -208,5 +281,21 @@ public sealed class TransientFileService(IFileService fileService, IFileWiper fi
 
         string sanitized = new(buffer);
         return string.IsNullOrWhiteSpace(sanitized) ? "decrypted.bin" : sanitized;
+    }
+
+    private sealed record SweepRequest(string StartDirectory, TimeSpan MaxAge)
+    {
+        public TaskCompletionSource Completion { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    }
+
+    private sealed class TransientFile(TransientFileService owner, string filePath) : ITransientFile
+    {
+        private bool _isHandedOff;
+
+        public string FilePath => filePath;
+
+        public void MarkHandedOff() => _isHandedOff = true;
+
+        public void Dispose() => owner.Release(Path.GetDirectoryName(filePath)!, _isHandedOff);
     }
 }

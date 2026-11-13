@@ -40,10 +40,18 @@ public sealed class TextIncomingFileSource(
 {
     public async Task<IncomingFileInfo> ImportAsync()
     {
-        string incomingPath = transientFileService.CreateIncomingPath(displayName);
+        ITransientFile incomingFile = transientFileService.CreateIncomingFile(displayName);
+        try
+        {
+            await File.WriteAllTextAsync(incomingFile.FilePath, text);
+        }
+        catch
+        {
+            // What was written before it failed is not left until the cache is cleaned.
+            incomingFile.Dispose();
+            throw;
+        }
 
-        await File.WriteAllTextAsync(incomingPath, text);
-
-        return new IncomingFileInfo(incomingPath, displayName, "text/plain");
+        return new IncomingFileInfo(incomingFile, displayName, "text/plain");
     }
 }

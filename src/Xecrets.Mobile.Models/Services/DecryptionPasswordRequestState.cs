@@ -28,21 +28,30 @@
 
 #endregion Copyright and GPL License
 
+using Xecrets.Mobile.Models.Abstractions;
+
 namespace Xecrets.Mobile.Models.Services;
 
+/// <summary>
+/// The encrypted file to preview, while the user is asked for its password. <see cref="Clear"/> disposes the file.
+/// </summary>
 public sealed class DecryptionPasswordRequestState
 {
-    public string EncryptedPath { get; private set; } = string.Empty;
+    private ITransientFile? _encryptedFile;
 
-    public bool HasPendingRequest => EncryptedPath.Length > 0;
+    public string EncryptedPath => _encryptedFile?.FilePath ?? "";
 
-    public void Set(string encryptedPath)
+    public bool HasPendingRequest => _encryptedFile is not null;
+
+    public void Set(ITransientFile encryptedFile)
     {
-        EncryptedPath = encryptedPath;
+        _encryptedFile = encryptedFile;
     }
 
     public void Clear()
     {
-        EncryptedPath = string.Empty;
+        ITransientFile? encryptedFile = _encryptedFile;
+        _encryptedFile = null;
+        encryptedFile?.Dispose();
     }
 }

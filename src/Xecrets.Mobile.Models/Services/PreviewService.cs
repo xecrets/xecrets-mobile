@@ -67,40 +67,47 @@ internal sealed class PreviewService(
             return file;
         }
 
-        string decryptedPath = transientFileService.CreateHandoffPath(file.OriginalFileName);
+        ITransientFile decryptedFile = transientFileService.CreateHandoffFile(file.OriginalFileName);
         try
         {
-            await File.WriteAllBytesAsync(decryptedPath, previewState.Plaintext);
+            await File.WriteAllBytesAsync(decryptedFile.FilePath, previewState.Plaintext);
         }
         catch
         {
             // What was written before it failed is not left until the cache is cleaned.
-            await transientFileService.WipeTransientFileAsync(decryptedPath);
+            decryptedFile.Dispose();
             throw;
         }
 
-        TryMakeReadOnly(decryptedPath);
-        previewState.SetDecryptedPath(decryptedPath);
+        TryMakeReadOnly(decryptedFile.FilePath);
+        previewState.SetDecryptedFile(decryptedFile);
         return previewState.File;
     }
 
     public async Task<bool> PrepareAsync(IReadableFile encryptedFile)
     {
-        string encryptedPath = transientFileService.CreateEncryptedInputPath(encryptedFile.FileName);
-        await using (Stream inputStream = await encryptedFile.OpenReadAsync())
-        await using (FileStream outputStream =
-                     File.Open(encryptedPath, FileMode.Create, FileAccess.Write, FileShare.Read))
+        ITransientFile encryptedCopy = transientFileService.CreateEncryptedInputFile(encryptedFile.FileName);
+        try
         {
+            await using Stream inputStream = await encryptedFile.OpenReadAsync();
+            await using FileStream outputStream =
+                File.Open(encryptedCopy.FilePath, FileMode.Create, FileAccess.Write, FileShare.Read);
             await inputStream.CopyToAsync(outputStream);
         }
+        catch
+        {
+            // What was copied before it failed is not left until the cache is cleaned.
+            encryptedCopy.Dispose();
+            throw;
+        }
 
-        return await PrepareWithKnownPasswordsAsync(encryptedPath)
+        return await PrepareWithKnownPasswordsAsync(encryptedCopy)
             == PreviewPreparationStatus.Prepared;
     }
 
-    public async Task<PreviewPreparationStatus> PrepareImportedAsync(string encryptedFilePath)
+    public async Task<PreviewPreparationStatus> PrepareImportedAsync(ITransientFile encryptedFile)
     {
-        return await PrepareWithKnownPasswordsAsync(encryptedFilePath);
+        return await PrepareWithKnownPasswordsAsync(encryptedFile);
     }
 
     public async Task<PreviewPreparationStatus> PrepareWithPasswordAsync(string password)
@@ -129,11 +136,39 @@ internal sealed class PreviewService(
         return status;
     }
 
-    private async Task<PreviewPreparationStatus> PrepareWithKnownPasswordsAsync(
-        string encryptedPath)
+    /// <summary>
+    /// Tries the known passwords on the encrypted file. On a wrong password, the file is kept for the password request,
+    /// and otherwise it is disposed. The file of any earlier request is disposed.
+    /// </summary>
+    private async Task<PreviewPreparationStatus> PrepareWithKnownPasswordsAsync(ITransientFile encryptedFile)
     {
         passwordRequestState.Clear();
 
+        PreviewPreparationStatus status;
+        try
+        {
+            status = await TryKnownPasswordsAsync(encryptedFile.FilePath);
+        }
+        catch
+        {
+            encryptedFile.Dispose();
+            throw;
+        }
+
+        if (status == PreviewPreparationStatus.WrongPassword)
+        {
+            passwordRequestState.Set(encryptedFile);
+        }
+        else
+        {
+            encryptedFile.Dispose();
+        }
+
+        return status;
+    }
+
+    private async Task<PreviewPreparationStatus> TryKnownPasswordsAsync(string encryptedPath)
+    {
         PreviewPreparationStatus status = await TryPrepareAsync(
             encryptedPath,
             profileService.GetIdentity());
@@ -163,7 +198,6 @@ internal sealed class PreviewService(
             return status;
         }
 
-        passwordRequestState.Set(encryptedPath);
         return PreviewPreparationStatus.WrongPassword;
     }
 
@@ -187,14 +221,14 @@ internal sealed class PreviewService(
         }
 
         // Text that the app shows and edits itself is kept in memory, and anything else is written to a file.
-        string decryptedPath = "";
+        ITransientFile? decryptedFile = null;
         InMemoryOrFileStream output = new(
             session.OriginalFileName.WithoutCopyNumber(),
             new Dictionary<FileCategory, long> { [FileCategory.Text] = PreviewInfoFactory.MaxInlineTextSizeBytes },
             () =>
             {
-                decryptedPath = transientFileService.CreateHandoffPath(session.OriginalFileName);
-                return File.Open(decryptedPath, FileMode.Create, FileAccess.Write, FileShare.Read);
+                decryptedFile = transientFileService.CreateHandoffFile(session.OriginalFileName);
+                return File.Open(decryptedFile.FilePath, FileMode.Create, FileAccess.Write, FileShare.Read);
             });
         try
         {
@@ -207,38 +241,36 @@ internal sealed class PreviewService(
         catch
         {
             // What was decrypted before the operation was canceled, or failed, is not left until the cache is cleaned.
-            if (decryptedPath.Length > 0)
-            {
-                await transientFileService.WipeTransientFileAsync(decryptedPath);
-            }
-
+            decryptedFile?.Dispose();
             throw;
         }
 
-        bool isInMemory = output.InMemoryCategory is not null;
-        if (!isInMemory)
+        if (decryptedFile is null)
         {
-            TryMakeReadOnly(decryptedPath);
+            DecryptedFileInfo text = PreviewInfoFactory.CreateInfo(
+                "",
+                session.OriginalFileName,
+                output.Category,
+                output.Data.Length,
+                CreateTimes(session));
+            previewState.SetText(text, output.Data.ToArray(), session.EncryptedWithParameters);
+            return PreviewPreparationStatus.Prepared;
         }
 
+        TryMakeReadOnly(decryptedFile.FilePath);
         DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(
-            decryptedPath,
+            decryptedFile.FilePath,
             session.OriginalFileName,
             output.Category,
-            isInMemory ? output.Data.Length : new FileInfo(decryptedPath).Length,
-            new FileTimes(session.CreationTimeUtc, session.LastAccessTimeUtc, session.LastWriteTimeUtc));
-
-        if (file.Kind == PreviewKind.Text)
-        {
-            previewState.SetText(file, output.Data.ToArray(), session.EncryptedWithParameters);
-        }
-        else
-        {
-            previewState.SetFile(file, session.EncryptedWithParameters);
-        }
+            new FileInfo(decryptedFile.FilePath).Length,
+            CreateTimes(session));
+        previewState.SetFile(file, session.EncryptedWithParameters, decryptedFile);
 
         return PreviewPreparationStatus.Prepared;
     }
+
+    private static FileTimes CreateTimes(IDecryptionSession session) =>
+        new(session.CreationTimeUtc, session.LastAccessTimeUtc, session.LastWriteTimeUtc);
 
     private void TryMakeReadOnly(string filePath)
     {

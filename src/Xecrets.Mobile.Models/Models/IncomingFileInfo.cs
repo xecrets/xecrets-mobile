@@ -28,9 +28,15 @@
 
 #endregion Copyright and GPL License
 
+using Xecrets.Mobile.Models.Abstractions;
+
 namespace Xecrets.Mobile.Models.Models;
 
+/// <param name="File">The copy of the received file, which whoever handles the file must dispose.</param>
 public sealed record IncomingFileInfo(
-    string FilePath,
+    ITransientFile File,
     string DisplayName,
-    string ContentType);
+    string ContentType)
+{
+    public string FilePath => File.FilePath;
+}

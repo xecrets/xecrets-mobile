@@ -28,56 +28,42 @@
 
 #endregion Copyright and GPL License
 
-using System;
 using System.IO;
-using System.Threading.Tasks;
+
+using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Platforms.Apple;
 
 /// <summary>
-/// A stream on a file the app made for it, which is released, such as wiped, once the stream is disposed
-/// asynchronously. A stream disposed synchronously leaves the file to be wiped with the other transient files, since a
-/// wipe cannot be waited for then.
+/// A stream that reads a temporary file, and disposes the file when the stream is disposed.
 /// </summary>
-internal sealed class OwningStream(Stream stream, Func<Task> releaseAsync) : Stream
+internal sealed class OwningStream(ITransientFile file) : Stream
 {
-    private bool _isOwning = true;
+    private readonly FileStream _stream = File.OpenRead(file.FilePath);
 
-    public override bool CanRead => stream.CanRead;
+    public override bool CanRead => _stream.CanRead;
 
-    public override bool CanSeek => stream.CanSeek;
+    public override bool CanSeek => _stream.CanSeek;
 
-    public override bool CanWrite => stream.CanWrite;
+    public override bool CanWrite => _stream.CanWrite;
 
-    public override long Length => stream.Length;
+    public override long Length => _stream.Length;
 
     public override long Position
     {
-        get => stream.Position;
-        set => stream.Position = value;
+        get => _stream.Position;
+        set => _stream.Position = value;
     }
 
-    public override void Flush() => stream.Flush();
+    public override void Flush() => _stream.Flush();
 
-    public override int Read(byte[] buffer, int offset, int count) => stream.Read(buffer, offset, count);
+    public override int Read(byte[] buffer, int offset, int count) => _stream.Read(buffer, offset, count);
 
-    public override long Seek(long offset, SeekOrigin origin) => stream.Seek(offset, origin);
+    public override long Seek(long offset, SeekOrigin origin) => _stream.Seek(offset, origin);
 
-    public override void SetLength(long value) => stream.SetLength(value);
+    public override void SetLength(long value) => _stream.SetLength(value);
 
-    public override void Write(byte[] buffer, int offset, int count) => stream.Write(buffer, offset, count);
-
-    public override async ValueTask DisposeAsync()
-    {
-        await stream.DisposeAsync();
-        if (_isOwning)
-        {
-            _isOwning = false;
-            await releaseAsync();
-        }
-
-        await base.DisposeAsync();
-    }
+    public override void Write(byte[] buffer, int offset, int count) => _stream.Write(buffer, offset, count);
 
     protected override void Dispose(bool disposing)
     {
@@ -85,7 +71,8 @@ internal sealed class OwningStream(Stream stream, Func<Task> releaseAsync) : Str
         {
             if (disposing)
             {
-                stream.Dispose();
+                _stream.Dispose();
+                file.Dispose();
             }
         }
         finally

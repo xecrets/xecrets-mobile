@@ -211,4 +211,6 @@ public partial class EnterPasswordPageModel(
     };
 
     public void CancelWorkFolderRequest() => workFolderOperationService.CancelPasswordRequest();
+
+    public void CancelPreviewRequest() => previewService.CancelPasswordRequest();
 }

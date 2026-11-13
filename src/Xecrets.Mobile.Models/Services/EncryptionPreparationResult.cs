@@ -28,21 +28,39 @@
 
 #endregion Copyright and GPL License
 
+using Xecrets.Mobile.Models.Abstractions;
+
 namespace Xecrets.Mobile.Models.Services;
 
+/// <param name="File">The encrypted file, which whoever handles the result must dispose.</param>
 /// <param name="EncryptCopyForSharing">The file is encrypted with a password chosen for sharing it, rather than for the
 /// current profile.</param>
 public sealed record EncryptionPreparationResult(
-    string FilePath,
+    ITransientFile File,
     string DisplayName,
     string ContentType,
     long FileSize,
     bool EncryptCopyForSharing)
 {
     public static EncryptionPreparationResult Empty { get; } = new(
-        string.Empty,
+        new NoFile(),
         string.Empty,
         string.Empty,
         0,
         false);
+
+    public string FilePath => File.FilePath;
+
+    private sealed class NoFile : ITransientFile
+    {
+        public string FilePath => "";
+
+        public void MarkHandedOff()
+        {
+        }
+
+        public void Dispose()
+        {
+        }
+    }
 }

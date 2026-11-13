@@ -30,27 +30,43 @@
 
 namespace Xecrets.Mobile.Models.Abstractions;
 
+/// <summary>
+/// Creates the temporary files in the cache, and wipes them. Sweeps run in the background, one at a time, in the order
+/// requested. The task a sweep returns completes when the sweep is done.
+/// </summary>
 public interface ITransientFileService
 {
-    string CreateHandoffPath(string originalFileName);
-
-    string CreateIncomingPath(string originalFileName);
-
-    string CreateEncryptedInputPath(string originalFileName);
-
-    string CreateEncryptedOutputPath(string originalFileName);
+    /// <summary>
+    /// Creates a file in use, for a decrypted file to be shown or handed off to another app.
+    /// </summary>
+    /// <param name="originalFileName">The name of the file, with characters not valid in a file name replaced.</param>
+    ITransientFile CreateHandoffFile(string originalFileName);
 
     /// <summary>
-    /// Wipes a file created at one of the paths given, and deletes the folder made for it.
+    /// Creates a file in use, for a copy of a file received from another app.
     /// </summary>
-    Task WipeTransientFileAsync(string filePath);
-
-    Task RunExclusiveAsync(Func<Task> operation);
-
-    Task MaybeWipeTrackedFilesAsync();
+    /// <param name="originalFileName">The name of the file, with characters not valid in a file name replaced.</param>
+    ITransientFile CreateIncomingFile(string originalFileName);
 
     /// <summary>
-    /// As <see cref="MaybeWipeTrackedFilesAsync"/>, but waits for any operation in progress instead of skipping.
+    /// Creates a file in use, for a copy of an encrypted file to be decrypted.
     /// </summary>
-    Task WipeTrackedFilesAsync();
+    /// <param name="originalFileName">The name of the file, with characters not valid in a file name replaced.</param>
+    ITransientFile CreateEncryptedInputFile(string originalFileName);
+
+    /// <summary>
+    /// Creates a file in use, for a file being encrypted.
+    /// </summary>
+    /// <param name="originalFileName">The name of the file, with characters not valid in a file name replaced.</param>
+    ITransientFile CreateEncryptedOutputFile(string originalFileName);
+
+    /// <summary>
+    /// Ends the use of all files, and wipes everything in the cache.
+    /// </summary>
+    Task SweepAllAsync();
+
+    /// <summary>
+    /// Wipes the temporary files that are not in use and were disposed at least <paramref name="maxAge"/> ago.
+    /// </summary>
+    Task SweepAsync(TimeSpan maxAge);
 }

@@ -58,4 +58,14 @@ internal class WindowsFileService : FileServiceBase
 
         return status == LaunchQuerySupportStatus.Available;
     }
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// MAUI's Share returns when the share UI is shown, so the file is still in use.
+    /// </remarks>
+    public override async Task<bool> SendToAsync(string filePath, string displayName, string contentType)
+    {
+        await ShareAsync(filePath, displayName, contentType);
+        return true;
+    }
 }

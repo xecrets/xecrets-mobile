@@ -41,6 +41,8 @@ namespace Xecrets.Mobile.Models.Test;
 [TestFixture]
 public sealed class TransientFileServiceTests
 {
+    private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(5);
+
     private string _cacheDirectory = "";
 
     [SetUp]
@@ -50,117 +52,217 @@ public sealed class TransientFileServiceTests
     [TearDown]
     public void TearDown()
     {
-        if (Directory.Exists(_cacheDirectory))
+        if (!Directory.Exists(_cacheDirectory))
         {
-            Directory.Delete(_cacheDirectory, recursive: true);
+            return;
         }
+
+        foreach (string file in Directory.GetFiles(_cacheDirectory, "*", SearchOption.AllDirectories))
+        {
+            File.SetAttributes(file, FileAttributes.Normal);
+        }
+
+        Directory.Delete(_cacheDirectory, recursive: true);
     }
 
     [Test]
-    public async Task SuspendedWipeReturnsControlAndExcludesIncomingCopy()
+    public async Task ReleasedFileIsWiped()
     {
-        TaskCompletionSource releaseWipe = new();
-        int wipeCount = 0;
+        TransientFileService transient = CreateService(_ => Task.CompletedTask);
+        ITransientFile file = transient.CreateEncryptedOutputFile("a.txt.axx");
+        await File.WriteAllTextAsync(file.FilePath, "encrypted");
+
+        file.Dispose();
+        await WhenSweptAsync(transient);
+
+        Assert.That(Directory.Exists(Path.GetDirectoryName(file.FilePath)), Is.False);
+    }
+
+    [Test]
+    public async Task FileInUseIsNotSwept()
+    {
+        TransientFileService transient = CreateService(_ => Task.CompletedTask);
+        ITransientFile file = transient.CreateIncomingFile("a.txt");
+        await File.WriteAllTextAsync(file.FilePath, "received");
+        Directory.SetLastWriteTimeUtc(Path.GetDirectoryName(file.FilePath)!, DateTime.UtcNow.AddDays(-1));
+
+        await transient.SweepAsync(TimeSpan.Zero).WaitAsync(_timeout);
+
+        Assert.That(File.Exists(file.FilePath), Is.True);
+    }
+
+    [Test]
+    public async Task HandedOffFileIsKeptUntilReleasedLongerAgoThanTheMaxAge()
+    {
+        TransientFileService transient = CreateService(_ => Task.CompletedTask);
+        ITransientFile file = transient.CreateHandoffFile("a.txt");
+        await File.WriteAllTextAsync(file.FilePath, "decrypted");
+        file.MarkHandedOff();
+        file.Dispose();
+
+        await transient.SweepAsync(TimeSpan.FromHours(1)).WaitAsync(_timeout);
+        Assert.That(File.Exists(file.FilePath), Is.True);
+
+        string directory = Path.GetDirectoryName(file.FilePath)!;
+        Directory.SetLastWriteTimeUtc(directory, DateTime.UtcNow.AddHours(-2));
+        await transient.SweepAsync(TimeSpan.FromHours(1)).WaitAsync(_timeout);
+        Assert.That(Directory.Exists(directory), Is.False);
+    }
+
+    /// <summary>
+    /// A file may be handed off long after it was made, such as when a preview has been open for a while.
+    /// </summary>
+    [Test]
+    public async Task AgeOfHandedOffFileStartsWhenItIsReleased()
+    {
+        TransientFileService transient = CreateService(_ => Task.CompletedTask);
+        ITransientFile file = transient.CreateHandoffFile("a.txt");
+        await File.WriteAllTextAsync(file.FilePath, "decrypted");
+        Directory.SetLastWriteTimeUtc(Path.GetDirectoryName(file.FilePath)!, DateTime.UtcNow.AddHours(-2));
+        file.MarkHandedOff();
+        file.Dispose();
+
+        await transient.SweepAsync(TimeSpan.FromHours(1)).WaitAsync(_timeout);
+
+        Assert.That(File.Exists(file.FilePath), Is.True);
+    }
+
+    /// <summary>
+    /// The folders that the files are made in are left during use, since a new file may be made in one at any time.
+    /// </summary>
+    [Test]
+    public async Task SweepDuringUseKeepsTheFoldersTheFilesAreMadeIn()
+    {
+        TransientFileService transient = CreateService(_ => Task.CompletedTask);
+        ITransientFile file = transient.CreateIncomingFile("a.txt");
+        await File.WriteAllTextAsync(file.FilePath, "received");
+        file.Dispose();
+
+        await transient.SweepAsync(TimeSpan.Zero).WaitAsync(_timeout);
+
+        Assert.That(Directory.Exists(Path.GetDirectoryName(file.FilePath)), Is.False);
+        Assert.That(Directory.Exists(Path.Combine(_cacheDirectory, "XecretsHandoff", "incoming")), Is.True);
+    }
+
+    [Test]
+    public async Task SweepAllReleasesFilesInUseAndWipesEverything()
+    {
+        TransientFileService transient = CreateService(_ => Task.CompletedTask);
+        ITransientFile file = transient.CreateHandoffFile("a.txt");
+        await File.WriteAllTextAsync(file.FilePath, "decrypted");
+
+        await transient.SweepAllAsync().WaitAsync(_timeout);
+
+        Assert.That(Directory.Exists(_cacheDirectory), Is.False);
+    }
+
+    [Test]
+    public async Task FileReleasedAfterSweepAllIsGone()
+    {
+        TransientFileService transient = CreateService(_ => Task.CompletedTask);
+        ITransientFile file = transient.CreateHandoffFile("a.txt");
+        await File.WriteAllTextAsync(file.FilePath, "decrypted");
+        file.MarkHandedOff();
+        await transient.SweepAllAsync().WaitAsync(_timeout);
+
+        file.Dispose();
+        await WhenSweptAsync(transient);
+
+        Assert.That(Directory.Exists(_cacheDirectory), Is.False);
+    }
+
+    [Test]
+    public async Task SweepsAreDoneOneAtATimeInTheOrderAsked()
+    {
+        TaskCompletionSource wipeStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource releaseWipe = new(TaskCreationOptions.RunContinuationsAsynchronously);
         TransientFileService transient = CreateService(async _ =>
         {
-            wipeCount++;
-            await releaseWipe.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            wipeStarted.TrySetResult();
+            await releaseWipe.Task;
         });
-        await File.WriteAllTextAsync(transient.CreateIncomingPath("first.txt"), "first");
-        await File.WriteAllTextAsync(transient.CreateIncomingPath("second.txt"), "second");
-        IncomingFileService incoming = CreateIncomingService(transient);
-        bool copyStarted = false;
+        ITransientFile first = transient.CreateHandoffFile("first.txt");
+        await File.WriteAllTextAsync(first.FilePath, "first");
+        ITransientFile second = transient.CreateHandoffFile("second.txt");
+        await File.WriteAllTextAsync(second.FilePath, "second");
 
-        Task cleanup = transient.MaybeWipeTrackedFilesAsync();
-        Task receive = incoming.ReceiveAsync(new TestIncomingFileSource(async () =>
-        {
-            copyStarted = true;
-            string path = transient.CreateIncomingPath("new.txt");
-            await File.WriteAllTextAsync(path, "new");
-            return new IncomingFileInfo(path, "new.txt", "text/plain");
-        }));
-        try
-        {
-            Assert.That(cleanup.IsCompleted, Is.False);
-            Assert.That(wipeCount, Is.EqualTo(1));
-            Assert.That(copyStarted, Is.False);
-        }
-        finally
-        {
-            releaseWipe.SetResult();
-        }
-        await Task.WhenAll(cleanup, receive).WaitAsync(TimeSpan.FromSeconds(5));
-        Assert.That(wipeCount, Is.EqualTo(2));
-        Assert.That(Directory.GetFiles(_cacheDirectory, "*", SearchOption.AllDirectories), Has.Length.EqualTo(1));
+        first.Dispose();
+        await wipeStarted.Task.WaitAsync(_timeout);
+        second.Dispose();
+        Task later = transient.SweepAsync(TimeSpan.Zero);
+        Assert.That(later.IsCompleted, Is.False);
+
+        releaseWipe.SetResult();
+        await later.WaitAsync(_timeout);
+        Assert.That(File.Exists(first.FilePath), Is.False);
+        Assert.That(File.Exists(second.FilePath), Is.False);
     }
 
     [Test]
-    public async Task WipeSkipsWithoutBlockingWhileIncomingCopyHoldsGateThenRunsOnceItIsFree()
+    public async Task FileBeingReceivedIsNotSwept()
     {
-        TaskCompletionSource releaseCopy = new();
-        bool wiped = false;
-        TransientFileService transient = CreateService(_ =>
-        {
-            wiped = true;
-            return Task.CompletedTask;
-        });
-        IncomingFileService incoming = CreateIncomingService(transient);
+        TaskCompletionSource copying = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource releaseCopy = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TransientFileService transient = CreateService(_ => Task.CompletedTask);
+        IncomingFileService incoming = CreateIncomingService();
+        string path = "";
         Task receive = incoming.ReceiveAsync(new TestIncomingFileSource(async () =>
         {
-            string path = transient.CreateIncomingPath("new.txt");
+            ITransientFile file = transient.CreateIncomingFile("new.txt");
+            path = file.FilePath;
             await File.WriteAllTextAsync(path, "new");
+            copying.SetResult();
             await releaseCopy.Task;
-            return new IncomingFileInfo(path, "new.txt", "text/plain");
+            return new IncomingFileInfo(file, "new.txt", "text/plain");
         }));
+        await copying.Task.WaitAsync(_timeout);
 
-        // The gate is held by the in-flight "receive"; wipe must not wait for it - it skips immediately,
-        // leaving cleanup for another opportunity, so it can never end up deadlocked behind a caller that
-        // holds the gate across navigation.
-        await transient.MaybeWipeTrackedFilesAsync().WaitAsync(TimeSpan.FromSeconds(5));
-        Assert.That(wiped, Is.False);
+        await transient.SweepAsync(TimeSpan.Zero).WaitAsync(_timeout);
+        Assert.That(File.Exists(path), Is.True);
 
         releaseCopy.SetResult();
-        await receive.WaitAsync(TimeSpan.FromSeconds(5));
-
-        // Once the gate is free again, a wipe actually runs.
-        await transient.MaybeWipeTrackedFilesAsync().WaitAsync(TimeSpan.FromSeconds(5));
-        Assert.That(wiped, Is.True);
-        Assert.That(Directory.Exists(Path.Combine(_cacheDirectory, "XecretsHandoff")), Is.False);
+        await receive.WaitAsync(_timeout);
+        Assert.That(File.Exists(path), Is.True);
     }
 
     [Test]
     public async Task IncomingFailureReleasesGate()
     {
         TransientFileService transient = CreateService(_ => Task.CompletedTask);
-        IncomingFileService incoming = CreateIncomingService(transient);
+        IncomingFileService incoming = CreateIncomingService();
         await Assert.ThatAsync(async () => await incoming.ReceiveAsync(new TestIncomingFileSource(async () =>
         {
             await Task.Yield();
             throw new IOException("Copy failed.");
         })), Throws.TypeOf<IOException>());
-        await transient.MaybeWipeTrackedFilesAsync().WaitAsync(TimeSpan.FromSeconds(5));
+
+        bool imported = false;
+        await incoming.ReceiveAsync(new TestIncomingFileSource(() =>
+        {
+            imported = true;
+            return Task.FromResult(new IncomingFileInfo(transient.CreateIncomingFile("new.txt"), "new.txt", "text/plain"));
+        })).WaitAsync(_timeout);
+        Assert.That(imported, Is.True);
     }
 
     [Test]
-    public async Task WipeFailureContinuesAndReleasesGate()
+    public async Task WipeFailureContinuesWithTheOtherFiles()
     {
         int wipeCount = 0;
         TransientFileService transient = CreateService(async _ =>
         {
-            wipeCount++;
+            Interlocked.Increment(ref wipeCount);
             await Task.Yield();
             throw new IOException("Wipe failed.");
         });
-        await File.WriteAllTextAsync(transient.CreateIncomingPath("first.txt"), "first");
-        await File.WriteAllTextAsync(transient.CreateIncomingPath("second.txt"), "second");
-        await transient.MaybeWipeTrackedFilesAsync().WaitAsync(TimeSpan.FromSeconds(5));
+        await File.WriteAllTextAsync(transient.CreateIncomingFile("first.txt").FilePath, "first");
+        await File.WriteAllTextAsync(transient.CreateIncomingFile("second.txt").FilePath, "second");
+        await transient.SweepAllAsync().WaitAsync(_timeout);
         Assert.That(wipeCount, Is.EqualTo(2));
 
         // Even though overwrite itself failed for both files, they must still have been removed - the wipe
         // always tries to delete, not just when overwrite succeeded.
         Assert.That(Directory.Exists(Path.Combine(_cacheDirectory, "XecretsHandoff")), Is.False);
-
-        await transient.RunExclusiveAsync(() => Task.CompletedTask).WaitAsync(TimeSpan.FromSeconds(5));
     }
 
     [Test]
@@ -172,7 +274,7 @@ public sealed class TransientFileServiceTests
         await File.WriteAllTextAsync(Path.Combine(directory, "legacy-file"), "legacy");
         TransientFileService transient = CreateService(_ => Task.CompletedTask);
 
-        await transient.MaybeWipeTrackedFilesAsync();
+        await transient.SweepAllAsync().WaitAsync(_timeout);
 
         Assert.That(File.Exists(Path.Combine(_cacheDirectory, "legacy-file")), Is.False);
         Assert.That(Directory.Exists(directory), Is.False);
@@ -184,7 +286,7 @@ public sealed class TransientFileServiceTests
         Directory.Delete(_cacheDirectory);
         TransientFileService transient = CreateService(_ => Task.CompletedTask);
 
-        await transient.MaybeWipeTrackedFilesAsync();
+        await transient.SweepAllAsync().WaitAsync(_timeout);
 
         Assert.That(Directory.Exists(_cacheDirectory), Is.False);
     }
@@ -193,11 +295,11 @@ public sealed class TransientFileServiceTests
     public async Task WipeRemovesReadOnlyFiles()
     {
         TransientFileService transient = CreateService(_ => Task.CompletedTask);
-        string path = transient.CreateHandoffPath("opened.txt");
+        string path = transient.CreateHandoffFile("opened.txt").FilePath;
         await File.WriteAllTextAsync(path, "decrypted");
         File.SetAttributes(path, FileAttributes.ReadOnly);
 
-        await transient.MaybeWipeTrackedFilesAsync();
+        await transient.SweepAllAsync().WaitAsync(_timeout);
 
         Assert.That(Directory.Exists(_cacheDirectory), Is.False);
     }
@@ -206,7 +308,7 @@ public sealed class TransientFileServiceTests
     [TestCase(false, true)]
     [TestCase(true, false)]
     [TestCase(true, true)]
-    public async Task IncomingProcessingHoldsGateAcrossNavigationAndWipeSkipsMeanwhile(bool pending, bool fail)
+    public async Task IncomingFileWaitingForSignInIsNotSwept(bool pending, bool fail)
     {
         TaskCompletionSource releaseNavigation = new();
         TaskCompletionSource navigationStarted = new();
@@ -226,46 +328,48 @@ public sealed class TransientFileServiceTests
                 }
             }
         };
-        IncomingFileService incoming = new(new TestProfileService(), transient, null!, null!, null!, null!, new FakeCrashLogService(), userInterface);
+        IncomingFileService incoming = new(new TestProfileService(), null!, null!, null!, null!, new FakeCrashLogService(), userInterface);
         Task processing = incoming.ReceiveAsync(new TestIncomingFileSource(async () =>
         {
-            string path = transient.CreateIncomingPath("new.txt");
-            await File.WriteAllTextAsync(path, "new");
-            return new IncomingFileInfo(path, "new.txt", "text/plain");
+            ITransientFile file = transient.CreateIncomingFile("new.txt");
+            await File.WriteAllTextAsync(file.FilePath, "new");
+            return new IncomingFileInfo(file, "new.txt", "text/plain");
         }));
         if (pending)
         {
             await processing;
             processing = incoming.ProcessPendingAsync();
         }
-        await navigationStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await navigationStarted.Task.WaitAsync(_timeout);
 
-        // The gate is held across the still-in-flight navigation. A concurrent wipe must not block waiting
-        // for it - it skips immediately (proven here by the tracked directory surviving the call) rather
-        // than risk deadlocking behind a caller that will not release the gate until navigation completes.
-        await transient.MaybeWipeTrackedFilesAsync().WaitAsync(TimeSpan.FromSeconds(5));
-        Assert.That(Directory.Exists(Path.Combine(_cacheDirectory, "XecretsHandoff")), Is.True);
+        // The received file is waiting for the user to sign in, so a sweep leaves it.
+        await transient.SweepAsync(TimeSpan.Zero).WaitAsync(_timeout);
+        Assert.That(Directory.GetFiles(_cacheDirectory, "*", SearchOption.AllDirectories), Has.Length.EqualTo(1));
 
         releaseNavigation.SetResult();
         if (fail)
         {
-            await Assert.ThatAsync(async () => await processing.WaitAsync(TimeSpan.FromSeconds(5)), Throws.TypeOf<IOException>());
+            await Assert.ThatAsync(async () => await processing.WaitAsync(_timeout), Throws.TypeOf<IOException>());
         }
         else
         {
-            await processing.WaitAsync(TimeSpan.FromSeconds(5));
+            await processing.WaitAsync(_timeout);
         }
 
-        // Now that processing has finished and released the gate, a wipe actually runs.
-        await transient.MaybeWipeTrackedFilesAsync().WaitAsync(TimeSpan.FromSeconds(5));
+        await transient.SweepAllAsync().WaitAsync(_timeout);
         Assert.That(Directory.Exists(Path.Combine(_cacheDirectory, "XecretsHandoff")), Is.False);
     }
+
+    // Sweeps are done in the order asked for, so one asked for now is done once those asked for before it are. With
+    // the largest age, it wipes nothing itself.
+    private static Task WhenSweptAsync(TransientFileService transient) =>
+        transient.SweepAsync(TimeSpan.MaxValue).WaitAsync(_timeout);
 
     private TransientFileService CreateService(Func<IWritableFile, Task> onOverwriteAsync)
         => new(new TestFileService(_cacheDirectory), new TestFileWiper(onOverwriteAsync), new FakeCrashLogService());
 
-    private static IncomingFileService CreateIncomingService(ITransientFileService transient)
-        => new(null!, transient, null!, null!, null!, null!, new FakeCrashLogService(), new TestUserInterfaceService { CanReceiveIncomingFiles = true });
+    private static IncomingFileService CreateIncomingService()
+        => new(null!, null!, null!, null!, null!, new FakeCrashLogService(), new TestUserInterfaceService { CanReceiveIncomingFiles = true });
 
     // The real wiper, calling the action when a file is opened to be overwritten, so that a failure of the action is
     // a failure during the wipe.
@@ -349,9 +453,9 @@ public sealed class TransientFileServiceTests
         public string AppDataDirectory => throw new NotSupportedException();
         public string PlatformId => throw new NotSupportedException();
         public Task<bool> OpenInAsync(string filePath, string displayName) => throw new NotSupportedException();
-        public Task SendToAsync(string filePath, string displayName, string contentType) => throw new NotSupportedException();
+        public Task<bool> SendToAsync(string filePath, string displayName, string contentType) => throw new NotSupportedException();
         public Task<bool> CanViewFileAsync(DecryptedFileInfo file) => throw new NotSupportedException();
-        public Task ViewFileAsync(DecryptedFileInfo file) => throw new NotSupportedException();
+        public Task<bool> ViewFileAsync(DecryptedFileInfo file) => throw new NotSupportedException();
         public bool IsSelfHandoffReference(string reference) => throw new NotSupportedException();
     }
 }

@@ -36,5 +36,6 @@ public interface IDecryptedFileViewer
 {
     Task<FileViewMode> GetViewModeAsync(DecryptedFileInfo file);
 
-    Task ViewAsync(DecryptedFileInfo file);
+    /// <returns>True if the file is still in use, false if it is no longer used.</returns>
+    Task<bool> ViewAsync(DecryptedFileInfo file);
 }

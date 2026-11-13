@@ -169,12 +169,74 @@ public sealed class PreviewPageTests
         Assert.That(app.Access.Files["docs/a.txt"], Is.EqualTo(decrypted));
     }
 
+    /// <summary>
+    /// A file that is not handed off to another app is not needed once the preview is closed.
+    /// </summary>
+    [Test]
+    public async Task FileShownIsRemovedWhenClosed()
+    {
+        using TestApp app = new();
+        PreviewPageModel page = await CreatePageAsync(app, new TestFileService(hasExternalViewer: true), PreviewInfoFactory.MaxInlineTextSizeBytes + 1);
+
+        await page.CloseCommand.ExecuteAsync(null);
+
+        Assert.That(app.Transient.RemainingFiles(), Is.Empty);
+    }
+
+    [Test]
+    public async Task FileShownIsRemovedWhenAnotherIsShown()
+    {
+        using TestApp app = new();
+        await CreatePageAsync(app, new TestFileService(hasExternalViewer: true), PreviewInfoFactory.MaxInlineTextSizeBytes + 1);
+
+        app.Preview.Current.SetText(
+            new DecryptedFileInfo("", "b.txt", "text/plain", 4, PreviewKind.Text, FileTimes.UtcNow),
+            "text"u8.ToArray(),
+            EncryptedWithParameters.Empty);
+
+        Assert.That(app.Transient.RemainingFiles(), Is.Empty);
+    }
+
+    /// <summary>
+    /// The app the file was handed off to may still read it once the preview is closed, unless it was done with it
+    /// when the handing off was.
+    /// </summary>
+    [TestCase(nameof(PreviewPageModel.SendToCommand), true)]
+    [TestCase(nameof(PreviewPageModel.SendToCommand), false)]
+    [TestCase(nameof(PreviewPageModel.ViewCommand), true)]
+    [TestCase(nameof(PreviewPageModel.ViewCommand), false)]
+    [TestCase(nameof(PreviewPageModel.OpenInCommand), true)]
+    public async Task FileHandedOffIsKeptWhenClosedOnlyWhileTheAppMayReadIt(string command, bool mayStillRead)
+    {
+        using TestApp app = new();
+        PreviewPageModel page = await CreatePageAsync(app, new TestFileService(hasExternalViewer: true, mayStillRead), PreviewInfoFactory.MaxInlineTextSizeBytes + 1);
+        string path = app.Preview.Current.File.FilePath;
+
+        await (command switch
+        {
+            nameof(PreviewPageModel.SendToCommand) => page.SendToCommand.ExecuteAsync(null),
+            nameof(PreviewPageModel.ViewCommand) => page.ViewCommand.ExecuteAsync(null),
+            nameof(PreviewPageModel.OpenInCommand) => page.OpenInCommand.ExecuteAsync(null),
+            _ => throw new ArgumentOutOfRangeException(nameof(command)),
+        });
+        await page.CloseCommand.ExecuteAsync(null);
+
+        Assert.That(File.Exists(path), Is.EqualTo(mayStillRead));
+    }
+
     private async Task<PreviewPageModel> CreatePageAsync(TestApp app, TestFileService fileService, long size)
     {
         string path = Path.Combine(_directory, "a.txt");
         File.WriteAllText(path, new string('a', (int)size), Encoding.ASCII);
+        bool isText = size <= PreviewInfoFactory.MaxInlineTextSizeBytes;
+        ITransientFile? decryptedFile = isText ? null : app.Transient.CreateHandoffFile("a.txt");
+        if (decryptedFile is not null)
+        {
+            File.Copy(path, decryptedFile.FilePath);
+        }
+
         DecryptedFileInfo file = PreviewInfoFactory.CreateInfo(
-            size <= PreviewInfoFactory.MaxInlineTextSizeBytes ? "" : path,
+            decryptedFile?.FilePath ?? "",
             "a.txt",
             FileCategory.Text,
             size,
@@ -185,7 +247,7 @@ public sealed class PreviewPageTests
         }
         else
         {
-            app.Preview.Current.SetFile(file, EncryptedWithParameters.Empty);
+            app.Preview.Current.SetFile(file, EncryptedWithParameters.Empty, decryptedFile!);
         }
 
         // The preview service itself, showing what the test set up, so that text is handed over as it really is.
@@ -212,20 +274,21 @@ public sealed class PreviewPageTests
         return page;
     }
 
-    private sealed class TestFileService(bool hasExternalViewer) : IFileService
+    // Whether the app a file is handed off to may still read it afterwards.
+    private sealed class TestFileService(bool hasExternalViewer, bool mayStillRead = true) : IFileService
     {
         public List<string> Viewed { get; } = [];
         public string PlatformId => "test";
         public string AppDataDirectory => throw new NotSupportedException();
         public string CacheDirectory => throw new NotSupportedException();
-        public Task<bool> OpenInAsync(string filePath, string displayName) => throw new NotSupportedException();
-        public Task SendToAsync(string filePath, string displayName, string contentType) => throw new NotSupportedException();
+        public Task<bool> OpenInAsync(string filePath, string displayName) => Task.FromResult(mayStillRead);
+        public Task<bool> SendToAsync(string filePath, string displayName, string contentType) => Task.FromResult(mayStillRead);
         public Task<bool> CanViewFileAsync(DecryptedFileInfo file) => Task.FromResult(hasExternalViewer);
 
-        public Task ViewFileAsync(DecryptedFileInfo file)
+        public Task<bool> ViewFileAsync(DecryptedFileInfo file)
         {
             Viewed.Add(file.OriginalFileName);
-            return Task.CompletedTask;
+            return Task.FromResult(mayStillRead);
         }
 
         public bool IsSelfHandoffReference(string reference) => false;

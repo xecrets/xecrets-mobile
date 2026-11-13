@@ -67,12 +67,16 @@ internal class AndroidFileService : FileServiceBase
         return Task.FromResult(false);
     }
 
-    public override Task ViewFileAsync(DecryptedFileInfo file)
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Returns when the viewer is started. It reads the file through the grant, so the file is still in use.
+    /// </remarks>
+    public override Task<bool> ViewFileAsync(DecryptedFileInfo file)
     {
         ThreadGuard.ThrowIfNotMainThread();
 
         CreateQuickViewIntent(file, GetContentType(file)).StartQuickView();
-        return Task.CompletedTask;
+        return Task.FromResult(true);
     }
 
     private static AndroidUri GetUri(string filePath) =>
@@ -122,7 +126,12 @@ internal class AndroidFileService : FileServiceBase
         return Task.FromResult(viewIntent.TryStartExternalChooser(displayName));
     }
 
-    public override Task SendToAsync(string filePath, string displayName, string contentType)
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Returns when the chooser is started, and the chosen app reads the file through the grant, so the file is still
+    /// in use.
+    /// </remarks>
+    public override Task<bool> SendToAsync(string filePath, string displayName, string contentType)
     {
         ThreadGuard.ThrowIfNotMainThread();
 
@@ -133,8 +142,7 @@ internal class AndroidFileService : FileServiceBase
         sendIntent.PutExtra(Intent.ExtraStream, uri);
         sendIntent.AddFlags(ActivityFlags.GrantReadUriPermission);
 
-        sendIntent.TryStartExternalChooser(displayName);
-        return Task.CompletedTask;
+        return Task.FromResult(sendIntent.TryStartExternalChooser(displayName));
     }
 
     private static (AndroidUri Uri, string ContentType) PrepareHandoff(

@@ -58,7 +58,7 @@ internal sealed class FakePreviewService : IPreviewService
         return !NeedsPassword;
     }
 
-    public Task<PreviewPreparationStatus> PrepareImportedAsync(string encryptedFilePath) =>
+    public Task<PreviewPreparationStatus> PrepareImportedAsync(ITransientFile encryptedFile) =>
         throw new NotSupportedException();
     public Task<PreviewPreparationStatus> PrepareWithPasswordAsync(string password) =>
         throw new NotSupportedException();

@@ -43,11 +43,11 @@ internal partial class HomePage
     private string _headerEmail;
 
     public HomePage(HomePageModel model, IProfileService profileService, IPageHeaderService pageHeaderService)
+        : base(model)
     {
         _profileService = profileService;
         _pageHeaderService = pageHeaderService;
         InitializeComponent();
-        BindingContext = model;
         pageHeaderService.ApplyStandardHeader(this);
         _headerEmail = profileService.CurrentEmail;
         _actionButtonColumns = new ActionButtonColumns(ActionButtonStack, ActionButtonGrid);
@@ -70,7 +70,7 @@ internal partial class HomePage
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
-        ((HomePageModel)BindingContext).StatusText = string.Empty;
+        Model.StatusText = string.Empty;
     }
 
     protected override void OnSizeAllocated(double width, double height)
@@ -83,10 +83,9 @@ internal partial class HomePage
 
     protected override bool OnBackButtonPressed()
     {
-        HomePageModel model = (HomePageModel)BindingContext;
-        if (model.SignOutCommand.CanExecute(null))
+        if (Model.SignOutCommand.CanExecute(null))
         {
-            Dispatcher.Dispatch(() => _ = model.SignOutCommand.ExecuteAsync(null));
+            Dispatcher.Dispatch(() => _ = Model.SignOutCommand.ExecuteAsync(null));
         }
 
         return true;

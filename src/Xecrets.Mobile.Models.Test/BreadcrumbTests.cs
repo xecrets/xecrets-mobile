@@ -47,7 +47,7 @@ public sealed class BreadcrumbTests
     {
         using TestApp app = new();
         app.Flow.Begin(origin);
-        EncryptResultPageModel page = new(null!, app.Operations, app.Recent, app.Transient, app.Flow, app.CrashLog, app.UserInterface);
+        EncryptResultPageModel page = new(null!, app.Operations, app.Recent, app.Encrypted, app.Flow, app.CrashLog, app.UserInterface);
 
         page.Initialize(EncryptionPreparationResult.Empty with { EncryptCopyForSharing = encryptCopyForSharing });
 

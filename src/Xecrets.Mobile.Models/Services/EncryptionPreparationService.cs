@@ -85,27 +85,20 @@ internal sealed class EncryptionPreparationService(
             return null;
         }
 
-        string cleartextPath = transientFileService.CreateHandoffPath(session.OriginalFileName);
-        try
+        using ITransientFile cleartextFile = transientFileService.CreateHandoffFile(session.OriginalFileName);
+        await using (FileStream decrypted = File.Create(cleartextFile.FilePath))
         {
-            await using (FileStream decrypted = File.Create(cleartextPath))
-            {
-                await session.DecryptAsync(decrypted);
-            }
+            await session.DecryptAsync(decrypted);
+        }
 
-            EncryptRequest request = encryptRequestFactory.Create(session.OriginalFileName, password, session.EncryptedWithParameters) with
-            {
-                CreationTimeUtc = session.CreationTimeUtc,
-                LastAccessTimeUtc = session.LastAccessTimeUtc,
-                LastWriteTimeUtc = session.LastWriteTimeUtc,
-            };
-            await using FileStream cleartext = File.OpenRead(cleartextPath);
-            return await EncryptAsync(cleartext, session.OriginalFileName, request, true);
-        }
-        finally
+        EncryptRequest request = encryptRequestFactory.Create(session.OriginalFileName, password, session.EncryptedWithParameters) with
         {
-            await transientFileService.WipeTransientFileAsync(cleartextPath);
-        }
+            CreationTimeUtc = session.CreationTimeUtc,
+            LastAccessTimeUtc = session.LastAccessTimeUtc,
+            LastWriteTimeUtc = session.LastWriteTimeUtc,
+        };
+        await using FileStream cleartext = File.OpenRead(cleartextFile.FilePath);
+        return await EncryptAsync(cleartext, session.OriginalFileName, request, true);
     }
 
     private List<Identity> KnownIdentities() =>
@@ -121,22 +114,22 @@ internal sealed class EncryptionPreparationService(
         bool encryptCopyForSharing)
     {
         string fileName = originalFileName.ToEncryptedName(string.Empty);
-        string temporaryPath = transientFileService.CreateEncryptedOutputPath(fileName);
+        ITransientFile encryptedFile = transientFileService.CreateEncryptedOutputFile(fileName);
         try
         {
-            await using FileStream encrypted = File.Create(temporaryPath);
+            await using FileStream encrypted = File.Create(encryptedFile.FilePath);
             await coreServices.EncryptAsync(cleartext, encrypted, request);
         }
         catch
         {
             // What was encrypted before the operation was canceled, or failed, is not left until the cache is cleaned.
-            await transientFileService.WipeTransientFileAsync(temporaryPath);
+            encryptedFile.Dispose();
             throw;
         }
 
-        long fileSize = new FileInfo(temporaryPath).Length;
+        long fileSize = new FileInfo(encryptedFile.FilePath).Length;
         return new EncryptionPreparationResult(
-            temporaryPath,
+            encryptedFile,
             fileName,
             EncryptedFileType.ContentType,
             fileSize,

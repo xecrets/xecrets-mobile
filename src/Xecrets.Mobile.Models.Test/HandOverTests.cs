@@ -32,6 +32,7 @@ using NUnit.Framework;
 
 using Xecrets.Common.Models;
 using Xecrets.Core.Models;
+using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.PageModels;
 using Xecrets.Mobile.Models.Services;
@@ -57,15 +58,15 @@ public sealed class HandOverTests
     {
         using TestApp app = new();
         app.Flow.Begin(FlowOrigin.Home);
-        string path = CreateFile(Path.Combine(_directory, "result"), "a.txt.axx");
-        EncryptResultPageModel page = new(null!, app.Operations, app.Recent, app.Transient, app.Flow, app.CrashLog, app.UserInterface);
-        page.Initialize(new EncryptionPreparationResult(path, "a.txt.axx", "application/octet-stream", 4, false));
+        ITransientFile file = CreateEncryptedFile(app);
+        EncryptResultPageModel page = new(null!, app.Operations, app.Recent, app.Encrypted, app.Flow, app.CrashLog, app.UserInterface);
+        page.Initialize(new EncryptionPreparationResult(file, "a.txt.axx", "application/octet-stream", 4, false));
         app.Access.PickedFiles.Enqueue("a.txt.axx");
 
         await page.SaveAsCommand.ExecuteAsync(null);
 
         Assert.That(app.UserInterface.Destinations, Is.EqualTo([AppDestination.Home]));
-        Assert.That(File.Exists(path), Is.False);
+        Assert.That(File.Exists(file.FilePath), Is.False);
     }
 
     [Test]
@@ -73,15 +74,48 @@ public sealed class HandOverTests
     {
         using TestApp app = new();
         app.Flow.Begin(FlowOrigin.Home);
-        string path = CreateFile(Path.Combine(_directory, "result"), "a.txt.axx");
-        EncryptResultPageModel page = new(null!, app.Operations, app.Recent, app.Transient, app.Flow, app.CrashLog, app.UserInterface);
-        page.Initialize(new EncryptionPreparationResult(path, "a.txt.axx", "application/octet-stream", 4, false));
+        ITransientFile file = CreateEncryptedFile(app);
+        EncryptResultPageModel page = new(null!, app.Operations, app.Recent, app.Encrypted, app.Flow, app.CrashLog, app.UserInterface);
+        page.Initialize(new EncryptionPreparationResult(file, "a.txt.axx", "application/octet-stream", 4, false));
         app.Access.PickedFiles.Enqueue(null);
 
         await page.SaveAsCommand.ExecuteAsync(null);
 
         Assert.That(app.UserInterface.Destinations, Is.Empty);
-        Assert.That(File.Exists(path), Is.True);
+        Assert.That(File.Exists(file.FilePath), Is.True);
+    }
+
+    /// <summary>
+    /// The app the copy was sent to may still read it, unless it was done with it once the sending was.
+    /// </summary>
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task EncryptedCopySentIsKeptWhenClosedOnlyWhileTheAppItWasSentToMayReadIt(bool mayStillRead)
+    {
+        using TestApp app = new();
+        app.Flow.Begin(FlowOrigin.Home);
+        ITransientFile file = CreateEncryptedFile(app);
+        EncryptResultPageModel page = new(new SendingFileService(mayStillRead), app.Operations, app.Recent, app.Encrypted, app.Flow, app.CrashLog, app.UserInterface);
+        page.Initialize(new EncryptionPreparationResult(file, "a.txt.axx", "application/octet-stream", 4, false));
+
+        await page.SendToCommand.ExecuteAsync(null);
+        await page.CloseCommand.ExecuteAsync(null);
+
+        Assert.That(File.Exists(file.FilePath), Is.EqualTo(mayStillRead));
+    }
+
+    [Test]
+    public async Task EncryptedCopyClosedIsRemoved()
+    {
+        using TestApp app = new();
+        app.Flow.Begin(FlowOrigin.Home);
+        ITransientFile file = CreateEncryptedFile(app);
+        EncryptResultPageModel page = new(null!, app.Operations, app.Recent, app.Encrypted, app.Flow, app.CrashLog, app.UserInterface);
+        page.Initialize(new EncryptionPreparationResult(file, "a.txt.axx", "application/octet-stream", 4, false));
+
+        await page.CloseCommand.ExecuteAsync(null);
+
+        Assert.That(File.Exists(file.FilePath), Is.False);
     }
 
     [TestCase(FlowOrigin.Home, true)]
@@ -120,5 +154,24 @@ public sealed class HandOverTests
         string path = Path.Combine(directory, name);
         File.WriteAllText(path, "text");
         return path;
+    }
+
+    private static ITransientFile CreateEncryptedFile(TestApp app)
+    {
+        ITransientFile file = app.Transient.CreateEncryptedOutputFile("a.txt.axx");
+        File.WriteAllText(file.FilePath, "text");
+        return file;
+    }
+
+    private sealed class SendingFileService(bool mayStillRead) : IFileService
+    {
+        public string PlatformId => "test";
+        public string AppDataDirectory => throw new NotSupportedException();
+        public string CacheDirectory => throw new NotSupportedException();
+        public Task<bool> OpenInAsync(string filePath, string displayName) => throw new NotSupportedException();
+        public Task<bool> SendToAsync(string filePath, string displayName, string contentType) => Task.FromResult(mayStillRead);
+        public Task<bool> CanViewFileAsync(DecryptedFileInfo file) => throw new NotSupportedException();
+        public Task<bool> ViewFileAsync(DecryptedFileInfo file) => throw new NotSupportedException();
+        public bool IsSelfHandoffReference(string reference) => false;
     }
 }

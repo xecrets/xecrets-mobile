@@ -56,13 +56,16 @@ public interface IFileService
     // Mobile only, and of the device, so kept with the device-specific settings, but in a file of its own.
     string SaveInProgressFilePath => Path.Combine(DeviceDirectory, "xecrets-save-in-progress.json");
 
+    /// <returns>True if the file was opened, and is then still in use, false if it was not opened.</returns>
     Task<bool> OpenInAsync(string filePath, string displayName);
 
-    Task SendToAsync(string filePath, string displayName, string contentType);
+    /// <returns>True if the file is still in use, false if it is no longer used.</returns>
+    Task<bool> SendToAsync(string filePath, string displayName, string contentType);
 
     Task<bool> CanViewFileAsync(DecryptedFileInfo file);
 
-    Task ViewFileAsync(DecryptedFileInfo file);
+    /// <returns>True if the file is still in use, false if it is no longer used.</returns>
+    Task<bool> ViewFileAsync(DecryptedFileInfo file);
 
     // Returns true when reference identifies a file that Xecrets Ez itself created and handed off to the platform
     // (e.g. via OpenInAsync/SendToAsync), rather than a file that genuinely originated in another app. The meaning

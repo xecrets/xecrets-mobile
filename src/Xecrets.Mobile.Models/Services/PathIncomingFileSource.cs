@@ -41,14 +41,21 @@ public sealed class PathIncomingFileSource(
 {
     public async Task<IncomingFileInfo> ImportAsync()
     {
-        string incomingPath = transientFileService.CreateIncomingPath(displayName);
-
-        await using (FileStream inputStream = File.OpenRead(sourcePath))
-        await using (FileStream outputStream = File.Open(incomingPath, FileMode.Create, FileAccess.Write, FileShare.Read))
+        ITransientFile incomingFile = transientFileService.CreateIncomingFile(displayName);
+        try
         {
+            await using FileStream inputStream = File.OpenRead(sourcePath);
+            await using FileStream outputStream =
+                File.Open(incomingFile.FilePath, FileMode.Create, FileAccess.Write, FileShare.Read);
             await inputStream.CopyToAsync(outputStream);
         }
+        catch
+        {
+            // What was copied before it failed is not left until the cache is cleaned.
+            incomingFile.Dispose();
+            throw;
+        }
 
-        return new IncomingFileInfo(incomingPath, displayName, contentType);
+        return new IncomingFileInfo(incomingFile, displayName, contentType);
     }
 }

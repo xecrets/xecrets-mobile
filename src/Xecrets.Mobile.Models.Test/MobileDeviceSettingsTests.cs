@@ -131,9 +131,9 @@ public sealed class MobileDeviceSettingsTests
         public string AppDataDirectory => directory;
         public string CacheDirectory => directory;
         public Task<bool> OpenInAsync(string filePath, string displayName) => throw new NotSupportedException();
-        public Task SendToAsync(string filePath, string displayName, string contentType) => throw new NotSupportedException();
+        public Task<bool> SendToAsync(string filePath, string displayName, string contentType) => throw new NotSupportedException();
         public Task<bool> CanViewFileAsync(DecryptedFileInfo file) => throw new NotSupportedException();
-        public Task ViewFileAsync(DecryptedFileInfo file) => throw new NotSupportedException();
+        public Task<bool> ViewFileAsync(DecryptedFileInfo file) => throw new NotSupportedException();
         public bool IsSelfHandoffReference(string reference) => false;
     }
 }

@@ -48,14 +48,26 @@ namespace Xecrets.Mobile.Models.Test;
 [TestFixture]
 public sealed class PendingFileTests
 {
+    private readonly List<TransientFileService> _transients = [];
+
     private string _directory = string.Empty;
 
     [SetUp]
-    public void SetUp() => _directory = Directory.CreateTempSubdirectory().FullName;
+    public void SetUp()
+    {
+        _directory = Directory.CreateTempSubdirectory().FullName;
+        _transients.Clear();
+    }
 
     [TearDown]
-    public void TearDown()
+    public async Task TearDown()
     {
+        // Files are wiped in the background, which is done once the sweeps asked for after them are.
+        foreach (TransientFileService transient in _transients)
+        {
+            await WhenSweptAsync(transient);
+        }
+
         // A wipe removes the cache directory itself once it is empty.
         if (!Directory.Exists(_directory))
         {
@@ -79,15 +91,16 @@ public sealed class PendingFileTests
         TransientFileService transient = CreateTransientService();
         TestUserInterfaceService userInterface = new() { CanReceiveIncomingFiles = true };
         TestProfileService profile = new() { IsAuthenticated = authenticated };
-        IncomingFileService incoming = new(profile, transient, null!, null!, null!, null!, new FakeCrashLogService(), userInterface);
-        string path = transient.CreateIncomingPath(name);
+        IncomingFileService incoming = new(profile,null!, null!, null!, null!, new FakeCrashLogService(), userInterface);
+        ITransientFile incomingFile = transient.CreateIncomingFile(name);
+        string path = incomingFile.FilePath;
         await incoming.ReceiveAsync(new TestIncomingFileSource(async () =>
         {
             await File.WriteAllTextAsync(path, "input");
-            return new IncomingFileInfo(path, name, "application/octet-stream");
+            return new IncomingFileInfo(incomingFile, name, "application/octet-stream");
         }));
 
-        await transient.MaybeWipeTrackedFilesAsync();
+        await transient.SweepAllAsync();
         await incoming.ProcessPendingAsync();
 
         // Recreating the file must not revive a request that was already discarded.
@@ -104,15 +117,15 @@ public sealed class PendingFileTests
     {
         TransientFileService transient = CreateTransientService();
         TestUserInterfaceService userInterface = new() { CanProcessIncomingFiles = true, CanReceiveIncomingFiles = true };
-        IncomingFileService incoming = new(new TestProfileService(), transient, null!, null!, null!, null!, new FakeCrashLogService(), userInterface);
+        IncomingFileService incoming = new(new TestProfileService(),null!, null!, null!, null!, new FakeCrashLogService(), userInterface);
         int receivedCount = 0;
 
         Task Receive(string name) => incoming.ReceiveAsync(new TestIncomingFileSource(async () =>
         {
             receivedCount++;
-            string path = transient.CreateIncomingPath(name);
-            await File.WriteAllTextAsync(path, name);
-            return new IncomingFileInfo(path, name, "text/plain");
+            ITransientFile file = transient.CreateIncomingFile(name);
+            await File.WriteAllTextAsync(file.FilePath, name);
+            return new IncomingFileInfo(file, name, "text/plain");
         }));
 
         await Task.WhenAll(Receive("first.txt"), Receive("second.txt"));
@@ -126,13 +139,13 @@ public sealed class PendingFileTests
     {
         TransientFileService transient = CreateTransientService();
         TestUserInterfaceService userInterface = new();
-        IncomingFileService incoming = new(new TestProfileService(), transient, null!, null!, null!, null!, new FakeCrashLogService(), userInterface);
+        IncomingFileService incoming = new(new TestProfileService(),null!, null!, null!, null!, new FakeCrashLogService(), userInterface);
         int receivedCount = 0;
 
         await incoming.ReceiveAsync(new TestIncomingFileSource(() =>
         {
             receivedCount++;
-            return Task.FromResult(new IncomingFileInfo("unused", "file.txt", "text/plain"));
+            return Task.FromResult(new IncomingFileInfo(null!, "file.txt", "text/plain"));
         }));
 
         Assert.That(receivedCount, Is.Zero);
@@ -144,7 +157,7 @@ public sealed class PendingFileTests
     {
         TransientFileService transient = CreateTransientService();
         TestUserInterfaceService userInterface = new() { CanReceiveIncomingFiles = true };
-        IncomingFileService incoming = new(new TestProfileService(), transient, null!, null!, null!, null!, new FakeCrashLogService(), userInterface);
+        IncomingFileService incoming = new(new TestProfileService(),null!, null!, null!, null!, new FakeCrashLogService(), userInterface);
 
         await incoming.ReceiveMessageAsync(MobileTexts.DialogTextIncomingFileAccessDenied);
         await incoming.ProcessPendingAsync();
@@ -164,13 +177,13 @@ public sealed class PendingFileTests
         TestProfileService profile = new();
         TestCoreServices core = new();
         PreviewService preview = new(core, profile, transient, new PreviewState(), new DecryptionPasswordRequestState(), new RunningOperation(new ScriptedUserInterface()), new FakeCrashLogService());
-        IncomingFileService incoming = new(profile, transient, preview,
+        IncomingFileService incoming = new(profile,preview,
             new EncryptionPreparationService(new EncryptRequestFactory(profile, new RunningOperation(new ScriptedUserInterface())), profile, transient, core, new RunningOperation(new ScriptedUserInterface())), new FlowContext(), core, new FakeCrashLogService(), userInterface);
         await incoming.ReceiveAsync(new TestIncomingFileSource(async () =>
         {
-            string path = transient.CreateIncomingPath(name);
-            await File.WriteAllBytesAsync(path, isEncrypted ? [0xe0] : [0x00]);
-            return new IncomingFileInfo(path, name, "application/octet-stream");
+            ITransientFile file = transient.CreateIncomingFile(name);
+            await File.WriteAllBytesAsync(file.FilePath, isEncrypted ? [0xe0] : [0x00]);
+            return new IncomingFileInfo(file, name, "application/octet-stream");
         }));
         Assert.That(userInterface.Destinations, Is.EqualTo([AppDestination.Login]));
 
@@ -189,18 +202,117 @@ public sealed class PendingFileTests
         TestUserInterfaceService userInterface = new() { CanProcessIncomingFiles = true, CanReceiveIncomingFiles = true };
         TestProfileService profile = new() { IsAuthenticated = true };
         TestCoreServices core = new();
-        IncomingFileService incoming = new(profile, transient, null!, null!, new FlowContext(), core, new FakeCrashLogService(), userInterface);
+        IncomingFileService incoming = new(profile,null!, null!, new FlowContext(), core, new FakeCrashLogService(), userInterface);
+        string path = "";
         await incoming.ReceiveAsync(new TestIncomingFileSource(async () =>
         {
-            string path = transient.CreateIncomingPath("input.axx");
+            ITransientFile file = transient.CreateIncomingFile("input.axx");
+            path = file.FilePath;
             await File.WriteAllBytesAsync(path, [0x00]);
-            return new IncomingFileInfo(path, "input.axx", "application/octet-stream");
+            return new IncomingFileInfo(file, "input.axx", "application/octet-stream");
         }));
 
         await incoming.ProcessPendingAsync();
 
         Assert.That(userInterface.Destinations, Is.Empty);
         Assert.That(userInterface.Messages, Is.EqualTo([string.Format(MobileTexts.DialogTextNotEncryptedFormat, "input.axx")]));
+        await WhenSweptAsync(transient);
+        Assert.That(File.Exists(path), Is.False);
+    }
+
+    [Test]
+    public async Task ReceivedFileIsWipedOnceEncrypted()
+    {
+        TransientFileService transient = CreateTransientService();
+        TestUserInterfaceService userInterface = new() { CanProcessIncomingFiles = true, CanReceiveIncomingFiles = true };
+        TestProfileService profile = new() { IsAuthenticated = true };
+        TestCoreServices core = new();
+        IncomingFileService incoming = new(profile,null!,
+            new EncryptionPreparationService(new EncryptRequestFactory(profile, new RunningOperation(new ScriptedUserInterface())), profile, transient, core, new RunningOperation(new ScriptedUserInterface())), new FlowContext(), core, new FakeCrashLogService(), userInterface);
+        string path = "";
+        await incoming.ReceiveAsync(new TestIncomingFileSource(async () =>
+        {
+            ITransientFile file = transient.CreateIncomingFile("input.txt");
+            path = file.FilePath;
+            await File.WriteAllBytesAsync(path, [0x00]);
+            return new IncomingFileInfo(file, "input.txt", "text/plain");
+        }));
+        await WhenSweptAsync(transient);
+
+        Assert.That(userInterface.Destinations, Is.EqualTo([AppDestination.EncryptResult]));
+        Assert.That(File.Exists(path), Is.False);
+        Assert.That(Directory.GetFiles(_directory, "*", SearchOption.AllDirectories), Has.Length.EqualTo(1));
+    }
+
+    [Test]
+    public async Task FileWaitingForSignInIsWipedWhenReplacedByAMessage()
+    {
+        TransientFileService transient = CreateTransientService();
+        TestUserInterfaceService userInterface = new() { CanReceiveIncomingFiles = true };
+        IncomingFileService incoming = new(new TestProfileService(),null!, null!, null!, null!, new FakeCrashLogService(), userInterface);
+        string path = "";
+        await incoming.ReceiveAsync(new TestIncomingFileSource(async () =>
+        {
+            ITransientFile file = transient.CreateIncomingFile("input.txt");
+            path = file.FilePath;
+            await File.WriteAllTextAsync(path, "input");
+            return new IncomingFileInfo(file, "input.txt", "text/plain");
+        }));
+
+        await incoming.ReceiveMessageAsync(MobileTexts.DialogTextIncomingFileAccessDenied);
+        await WhenSweptAsync(transient);
+
+        Assert.That(File.Exists(path), Is.False);
+    }
+
+    [Test]
+    public async Task EncryptedInputIsWipedOncePrepared()
+    {
+        TransientFileService transient = CreateTransientService();
+        ITransientFile encryptedFile = transient.CreateEncryptedInputFile("input.axx");
+        await File.WriteAllTextAsync(encryptedFile.FilePath, "input");
+        TestProfileService profile = new() { IsAuthenticated = true };
+        PreviewService preview = new(new TestCoreServices(), profile, transient, new PreviewState(), new DecryptionPasswordRequestState(), new RunningOperation(new ScriptedUserInterface()), new FakeCrashLogService());
+
+        Assert.That(await preview.PrepareImportedAsync(encryptedFile), Is.EqualTo(PreviewPreparationStatus.Prepared));
+        await WhenSweptAsync(transient);
+
+        Assert.That(File.Exists(encryptedFile.FilePath), Is.False);
+    }
+
+    [Test]
+    public async Task EncryptedInputIsKeptWhileAPasswordIsAskedForAndWipedWhenCancelled()
+    {
+        TransientFileService transient = CreateTransientService();
+        ITransientFile encryptedFile = transient.CreateEncryptedInputFile("input.axx");
+        await File.WriteAllTextAsync(encryptedFile.FilePath, "input");
+        PreviewService preview = new(new TestCoreServices(), new TestProfileService(), transient, new PreviewState(), new DecryptionPasswordRequestState(), new RunningOperation(new ScriptedUserInterface()), new FakeCrashLogService());
+
+        Assert.That(await preview.PrepareImportedAsync(encryptedFile), Is.EqualTo(PreviewPreparationStatus.WrongPassword));
+        await WhenSweptAsync(transient);
+        Assert.That(File.Exists(encryptedFile.FilePath), Is.True);
+
+        preview.CancelPasswordRequest();
+        await WhenSweptAsync(transient);
+        Assert.That(File.Exists(encryptedFile.FilePath), Is.False);
+    }
+
+    [Test]
+    public async Task LeavingThePasswordPageCancelsTheRequestToShowAFile()
+    {
+        TransientFileService transient = CreateTransientService();
+        ITransientFile encryptedFile = transient.CreateEncryptedInputFile("input.axx");
+        await File.WriteAllTextAsync(encryptedFile.FilePath, "input");
+        DecryptionPasswordRequestState request = new();
+        PreviewService preview = new(new TestCoreServices(), new TestProfileService(), transient, new PreviewState(), request, new RunningOperation(new ScriptedUserInterface()), new FakeCrashLogService());
+        await preview.PrepareImportedAsync(encryptedFile);
+        EnterPasswordPageModel page = new(preview, new TestWorkFolderOperationService(), new TestProfileService(), null!, new TestUserInterfaceService());
+
+        page.CancelPreviewRequest();
+        await WhenSweptAsync(transient);
+
+        Assert.That(request.HasPendingRequest, Is.False);
+        Assert.That(File.Exists(encryptedFile.FilePath), Is.False);
     }
 
     [TestCase(false)]
@@ -208,13 +320,14 @@ public sealed class PendingFileTests
     public async Task MissingPasswordInputCancelsAndClosesPage(bool deleteDirectory)
     {
         TransientFileService transient = CreateTransientService();
-        string path = transient.CreateEncryptedInputPath("input.axx");
+        ITransientFile encryptedFile = transient.CreateEncryptedInputFile("input.axx");
+        string path = encryptedFile.FilePath;
         await File.WriteAllTextAsync(path, "input");
         DecryptionPasswordRequestState request = new();
-        request.Set(path);
+        request.Set(encryptedFile);
         if (deleteDirectory)
         {
-            await transient.MaybeWipeTrackedFilesAsync();
+            await transient.SweepAllAsync();
         }
         else
         {
@@ -245,13 +358,13 @@ public sealed class PendingFileTests
     public async Task WrongPasswordKeepsRequestAndCorrectPasswordCompletesIt()
     {
         TransientFileService transient = CreateTransientService();
-        string path = transient.CreateEncryptedInputPath("input.axx");
-        await File.WriteAllTextAsync(path, "input");
+        ITransientFile encryptedFile = transient.CreateEncryptedInputFile("input.axx");
+        await File.WriteAllTextAsync(encryptedFile.FilePath, "input");
         DecryptionPasswordRequestState request = new();
         TestProfileService profile = new();
         PreviewState state = new();
         PreviewService preview = new(new TestCoreServices(), profile, transient, state, request, new RunningOperation(new ScriptedUserInterface()), new FakeCrashLogService());
-        Assert.That(await preview.PrepareImportedAsync(path), Is.EqualTo(PreviewPreparationStatus.WrongPassword));
+        Assert.That(await preview.PrepareImportedAsync(encryptedFile), Is.EqualTo(PreviewPreparationStatus.WrongPassword));
 
         TestUserInterfaceService userInterface = new();
         EnterPasswordPageModel page = new(preview, new TestWorkFolderOperationService(), profile, null!, userInterface)
@@ -279,11 +392,12 @@ public sealed class PendingFileTests
     public async Task MissingImportedInputDoesNotCreatePasswordRequest()
     {
         TestProfileService profile = new();
+        using FakeTransientFileService transient = new();
         DecryptionPasswordRequestState request = new();
-        request.Set("old");
+        request.Set(transient.CreateEncryptedInputFile("old.axx"));
         PreviewService preview = new(null!, profile, null!, new PreviewState(), request, new RunningOperation(new ScriptedUserInterface()), new FakeCrashLogService());
 
-        Assert.That(await preview.PrepareImportedAsync(Path.Combine(_directory, "missing.axx")),
+        Assert.That(await preview.PrepareImportedAsync(transient.CreateIncomingFile("missing.axx")),
             Is.EqualTo(PreviewPreparationStatus.Cancelled));
         Assert.That(request.HasPendingRequest, Is.False);
     }
@@ -293,8 +407,11 @@ public sealed class PendingFileTests
     {
         PreviewService preview = new(null!, new TestProfileService(), null!,
             new PreviewState(), new DecryptionPasswordRequestState(), new RunningOperation(new ScriptedUserInterface()), new FakeCrashLogService());
+        using FakeTransientFileService transient = new();
+        ITransientFile unreadable = transient.CreateIncomingFile("unreadable.axx");
+        Directory.CreateDirectory(unreadable.FilePath);
 
-        await Assert.ThatAsync(async () => await preview.PrepareImportedAsync(_directory),
+        await Assert.ThatAsync(async () => await preview.PrepareImportedAsync(unreadable),
             Throws.TypeOf<UnauthorizedAccessException>());
     }
 
@@ -302,10 +419,10 @@ public sealed class PendingFileTests
     public async Task MissingOutputDirectoryIsNotTreatedAsMissingInput()
     {
         TransientFileService transient = CreateTransientService();
-        string path = transient.CreateEncryptedInputPath("input.axx");
-        await File.WriteAllTextAsync(path, "input");
+        ITransientFile encryptedFile = transient.CreateEncryptedInputFile("input.axx");
+        await File.WriteAllTextAsync(encryptedFile.FilePath, "input");
         DecryptionPasswordRequestState request = new();
-        request.Set(path);
+        request.Set(encryptedFile);
         PreviewService preview = new(new TestCoreServices(new DirectoryNotFoundException("output failed")),
             new TestProfileService(), transient, new PreviewState(), request, new RunningOperation(new ScriptedUserInterface()), new FakeCrashLogService());
 
@@ -321,9 +438,10 @@ public sealed class PendingFileTests
         bool pendingWhenWiped = true;
         TransientFileService transient = new(new TestFileService(_directory),
             new TestFileWiper(() => pendingWhenWiped = request.HasPendingRequest), new FakeCrashLogService());
-        string path = transient.CreateEncryptedInputPath("input.axx");
+        ITransientFile encryptedFile = transient.CreateEncryptedInputFile("input.axx");
+        string path = encryptedFile.FilePath;
         await File.WriteAllTextAsync(path, "input");
-        request.Set(path);
+        request.Set(encryptedFile);
         TestProfileService profile = new() { IsAuthenticated = true };
         PreviewService preview = new(null!, profile, transient, new PreviewState(), request, new RunningOperation(new ScriptedUserInterface()), new FakeCrashLogService());
         TestUserInterfaceService userInterface = new();
@@ -335,6 +453,7 @@ public sealed class PendingFileTests
         SessionExitService exit = new(preview, request, transient, grantCleanup, profile, userInterface);
 
         await exit.ExitAsync();
+        await WhenSweptAsync(transient);
 
         Assert.That(request.HasPendingRequest, Is.False);
         Assert.That(pendingWhenWiped, Is.False);
@@ -344,7 +463,17 @@ public sealed class PendingFileTests
         Assert.That(await preview.PrepareWithPasswordAsync("password"), Is.EqualTo(PreviewPreparationStatus.Cancelled));
     }
 
-    private TransientFileService CreateTransientService() => new(new TestFileService(_directory), new TestFileWiper(), new FakeCrashLogService());
+    private TransientFileService CreateTransientService()
+    {
+        TransientFileService transient = new(new TestFileService(_directory), new TestFileWiper(), new FakeCrashLogService());
+        _transients.Add(transient);
+        return transient;
+    }
+
+    // Sweeps are done in the order asked for, so one asked for now is done once those asked for before it are. With
+    // the largest age, it wipes nothing itself.
+    private static Task WhenSweptAsync(TransientFileService transient) =>
+        transient.SweepAsync(TimeSpan.MaxValue).WaitAsync(TimeSpan.FromSeconds(5));
 
     private sealed class TestUserInterfaceService : IUserInterfaceService
     {
@@ -496,9 +625,9 @@ public sealed class PendingFileTests
         public string AppDataDirectory => throw new NotSupportedException();
         public string PlatformId => throw new NotSupportedException();
         public Task<bool> OpenInAsync(string filePath, string displayName) => throw new NotSupportedException();
-        public Task SendToAsync(string filePath, string displayName, string contentType) => throw new NotSupportedException();
+        public Task<bool> SendToAsync(string filePath, string displayName, string contentType) => throw new NotSupportedException();
         public Task<bool> CanViewFileAsync(DecryptedFileInfo file) => throw new NotSupportedException();
-        public Task ViewFileAsync(DecryptedFileInfo file) => throw new NotSupportedException();
+        public Task<bool> ViewFileAsync(DecryptedFileInfo file) => throw new NotSupportedException();
         public bool IsSelfHandoffReference(string reference) => throw new NotSupportedException();
     }
 }

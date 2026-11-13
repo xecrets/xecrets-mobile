@@ -56,7 +56,13 @@ internal abstract class FileServiceBase : IFileService
         return await Launcher.Default.OpenAsync(new OpenFileRequest(displayName, new ReadOnlyFile(filePath)));
     }
 
-    public virtual async Task SendToAsync(string filePath, string displayName, string contentType)
+    /// <inheritdoc/>
+    public abstract Task<bool> SendToAsync(string filePath, string displayName, string contentType);
+
+    /// <summary>
+    /// Lets the user send the file to another app with MAUI's Share.
+    /// </summary>
+    protected static async Task ShareAsync(string filePath, string displayName, string contentType)
     {
         EnsureReadableFile(filePath);
 
@@ -74,17 +80,21 @@ internal abstract class FileServiceBase : IFileService
 
     public virtual Task<bool> CanViewFileAsync(DecryptedFileInfo file) => Task.FromResult(false);
 
-    public virtual async Task ViewFileAsync(DecryptedFileInfo file) => await OpenInAsync(file.FilePath, file.OriginalFileName);
+    public virtual Task<bool> ViewFileAsync(DecryptedFileInfo file) => OpenInAsync(file.FilePath, file.OriginalFileName);
 
-    // Default for platforms where an incoming file reference is a plain filesystem path (Windows, iOS,
-    // MacCatalyst): Xecrets Ez hands off its own decrypted files under CacheDirectory/XecretsHandoff (see
-    // TransientFileService.CreateHandoffPath), so a path there is always a file we created ourselves. Android
-    // overrides this, since its incoming reference is a content Uri rather than a path.
+    /// <remarks>
+    /// Default for platforms where an incoming file reference is a plain filesystem path (Windows, iOS,
+    /// MacCatalyst): Xecrets Ez hands off its own decrypted files under CacheDirectory/XecretsHandoff (see
+    /// TransientFileService.CreateHandoffFile), so a path there is always a file we created ourselves. Android
+    /// overrides this, since its incoming reference is a content Uri rather than a path.
+    /// </remarks>
     public virtual bool IsSelfHandoffReference(string reference) =>
         reference.StartsWith(Path.Combine(CacheDirectory, "XecretsHandoff"), StringComparison.OrdinalIgnoreCase);
 
-    // Default for platforms that make no backups of the app's data (Windows), or where the exclusions are declared in
-    // the manifest (Android). Apple platforms override this.
+    /// <remarks>
+    /// Default for platforms that make no backups of the app's data (Windows), or where the exclusions are declared in
+    /// the manifest (Android). Apple platforms override this.
+    /// </remarks>
     public virtual void ExcludeFromBackup(string path)
     {
     }

@@ -39,7 +39,6 @@ namespace Xecrets.Mobile.Models.Services;
 
 internal sealed class IncomingFileService(
     IProfileService profileService,
-    ITransientFileService transientFileService,
     IPreviewService previewService,
     IEncryptionPreparationService encryptionPreparationService,
     IFlowContext flowContext,
@@ -48,10 +47,13 @@ internal sealed class IncomingFileService(
     IUserInterfaceService userInterfaceService)
     : IIncomingFileService
 {
+    // Received files are handled one at a time.
+    private readonly SemaphoreSlim _gate = new(1, 1);
+
     private IncomingFileRequest _pendingRequest = IncomingFileRequest.Empty;
 
     public Task ReceiveAsync(IIncomingFileSource source)
-        => transientFileService.RunExclusiveAsync(() => userInterfaceService.InvokeOnMainThreadAsync(async () =>
+        => RunExclusiveAsync(() => userInterfaceService.InvokeOnMainThreadAsync(async () =>
         {
             if (_pendingRequest != IncomingFileRequest.Empty || !userInterfaceService.CanReceiveIncomingFiles)
             {
@@ -66,13 +68,28 @@ internal sealed class IncomingFileService(
         }));
 
     public Task ReceiveMessageAsync(string message)
-        => transientFileService.RunExclusiveAsync(() => userInterfaceService.InvokeOnMainThreadAsync(async () =>
+        => RunExclusiveAsync(() => userInterfaceService.InvokeOnMainThreadAsync(async () =>
         {
+            // A file waiting for the user to sign in is replaced, so it is not needed any more.
+            _pendingRequest.File?.File.Dispose();
             _pendingRequest = new IncomingFileRequest(message);
             await ProcessPendingCoreAsync();
         }));
 
-    public Task ProcessPendingAsync() => transientFileService.RunExclusiveAsync(ProcessPendingCoreAsync);
+    public Task ProcessPendingAsync() => RunExclusiveAsync(ProcessPendingCoreAsync);
+
+    private async Task RunExclusiveAsync(Func<Task> operation)
+    {
+        await _gate.WaitAsync();
+        try
+        {
+            await operation();
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
 
     private async Task ProcessPendingCoreAsync()
     {
@@ -115,6 +132,7 @@ internal sealed class IncomingFileService(
             () => Task.FromResult<Stream>(File.OpenRead(file.FilePath)));
         if (!isEncrypted && file.DisplayName.IsNameEncrypted())
         {
+            file.File.Dispose();
             await userInterfaceService.DisplayMessageAsync(
                 string.Format(MobileTexts.DialogTextNotEncryptedFormat, file.DisplayName));
             return;
@@ -124,7 +142,7 @@ internal sealed class IncomingFileService(
 
         if (isEncrypted)
         {
-            PreviewPreparationStatus status = await previewService.PrepareImportedAsync(file.FilePath);
+            PreviewPreparationStatus status = await previewService.PrepareImportedAsync(file.File);
             if (status == PreviewPreparationStatus.Cancelled)
             {
                 return;
@@ -173,6 +191,11 @@ internal sealed class IncomingFileService(
         {
             crashLogService.WriteSwallowedException(ex);
             await userInterfaceService.DisplayMessageAsync(ex.FormatException());
+        }
+        finally
+        {
+            // Not needed once encrypted, since the encrypted copy is a file of its own.
+            file.File.Dispose();
         }
     }
 

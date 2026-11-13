@@ -42,6 +42,9 @@ internal sealed class PreviewState : IPreviewState
     // The text as it was decrypted, in any encoding, or as it was last saved, and otherwise empty.
     private byte[] _plaintext = [];
 
+    // The file shown, if any, which is disposed when it is replaced or the preview is cleared.
+    private ITransientFile? _decryptedFile;
+
     public string Text
     {
         get
@@ -61,6 +64,7 @@ internal sealed class PreviewState : IPreviewState
 
     public void SetText(DecryptedFileInfo file, byte[] plaintext, EncryptedWithParameters encryptedWith)
     {
+        ReleaseDecryptedFile();
         File = file;
         EncryptedWith = encryptedWith;
         _plaintext = plaintext;
@@ -69,29 +73,44 @@ internal sealed class PreviewState : IPreviewState
     /// <summary>
     /// A file that is not shown as text, so no text is kept.
     /// </summary>
-    public void SetFile(DecryptedFileInfo file, EncryptedWithParameters encryptedWith)
+    public void SetFile(DecryptedFileInfo file, EncryptedWithParameters encryptedWith, ITransientFile decryptedFile)
     {
         SetText(file, [], encryptedWith);
+        _decryptedFile = decryptedFile;
     }
 
     /// <summary>
     /// The file the text was written to, to hand it over to the platform or another app.
     /// </summary>
-    public void SetDecryptedPath(string decryptedPath)
+    public void SetDecryptedFile(ITransientFile decryptedFile)
     {
-        File = File with { FilePath = decryptedPath };
+        _decryptedFile = decryptedFile;
+        File = File with { FilePath = decryptedFile.FilePath };
     }
 
     public void UpdateText(byte[] plaintext)
     {
+        ReleaseDecryptedFile();
         _plaintext = plaintext;
         File = File with { FilePath = string.Empty, FileSize = _plaintext.Length };
     }
 
+    public void MarkHandedOff()
+    {
+        _decryptedFile?.MarkHandedOff();
+    }
+
     public void Clear()
     {
+        ReleaseDecryptedFile();
         _plaintext = [];
         File = DecryptedFileInfo.Empty;
         EncryptedWith = EncryptedWithParameters.Empty;
+    }
+
+    private void ReleaseDecryptedFile()
+    {
+        _decryptedFile?.Dispose();
+        _decryptedFile = null;
     }
 }

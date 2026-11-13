@@ -48,10 +48,18 @@ public interface IPreviewState
     bool IsReady { get; }
 
     /// <summary>
-    /// Makes the text saved, as it was written, the text shown. A file that the text was written to before is then no
-    /// longer its file.
+    /// Makes the saved text, as it was written, the text shown, and disposes the file the earlier text was written to,
+    /// if any.
     /// </summary>
     void UpdateText(byte[] plaintext);
 
+    /// <summary>
+    /// Marks the file shown, if any, as still in use by another app after the preview is cleared.
+    /// </summary>
+    void MarkHandedOff();
+
+    /// <summary>
+    /// Ends the preview, and disposes the file shown, if any.
+    /// </summary>
     void Clear();
 }

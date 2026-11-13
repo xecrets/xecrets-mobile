@@ -40,9 +40,16 @@ namespace Xecrets.Mobile.Models.PageModels;
 public partial class HomePageModel(
     IProfileService profileService,
     SessionExitService sessionExitService,
-    IUserInterfaceService userInterfaceService)
+    ITransientFileService transientFileService,
+    IPreviewService previewService,
+    IEncryptedState encryptedState,
+    IUserInterfaceService userInterfaceService,
+    IBuildInformation buildInformation)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel, IPageInformationPageModel
 {
+    // How long a handed-off file is kept after it is disposed, long enough for the other app to have read it.
+    private readonly TimeSpan _handedOffFileMaxAge = !buildInformation.IsDebug ? TimeSpan.FromHours(1) : TimeSpan.FromMinutes(1);
+
     public string Heading => MobileTexts.HomeContentTitle;
 
     public string Information => MobileTexts.HomeDescription;
@@ -85,6 +92,22 @@ public partial class HomePageModel(
 
     [RelayCommand(CanExecute = nameof(CanUseCommand))]
     private Task SignOut() => sessionExitService.ExitAsync();
+
+    /// <summary>
+    /// Ends the preview and the encrypted copy shown, if any, and starts a background sweep of the temporary files that
+    /// are not in use and were disposed at least the max age ago.
+    /// </summary>
+    /// <remarks>
+    /// Every flow that shows a file starts from the start page, so once the user is back here, it is over, however the
+    /// pages of the flow were left.
+    /// </remarks>
+    [RelayCommand]
+    private void SweepTemporaryFiles()
+    {
+        previewService.Current.Clear();
+        encryptedState.Clear();
+        _ = transientFileService.SweepAsync(_handedOffFileMaxAge);
+    }
 
     private bool CanUseCommand()
         => !IsBusy;

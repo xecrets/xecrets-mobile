@@ -40,44 +40,28 @@ internal sealed class FakeTransientFileService : ITransientFileService, IDisposa
 {
     private string RootDirectory { get; } = Path.Combine(Path.GetTempPath(), $"xecrets-mobile-test-{Guid.NewGuid():N}");
 
-    public string CreateHandoffPath(string originalFileName) => CreatePath("handoff", originalFileName);
+    public ITransientFile CreateHandoffFile(string originalFileName) => Create("handoff", originalFileName);
 
-    public string CreateIncomingPath(string originalFileName) => CreatePath("incoming", originalFileName);
+    public ITransientFile CreateIncomingFile(string originalFileName) => Create("incoming", originalFileName);
 
-    public string CreateEncryptedInputPath(string originalFileName) => CreatePath("decrypt", originalFileName);
+    public ITransientFile CreateEncryptedInputFile(string originalFileName) => Create("decrypt", originalFileName);
 
-    public string CreateEncryptedOutputPath(string originalFileName) => CreatePath("encrypt", originalFileName);
-
-    // The folders left empty are removed as well, up to the root, so that a test leaves nothing behind.
-    public Task WipeTransientFileAsync(string filePath)
-    {
-        File.Delete(filePath);
-        string directory = Path.GetDirectoryName(filePath)!;
-        if (Directory.Exists(directory))
-        {
-            Directory.Delete(directory, recursive: true);
-        }
-
-        for (string? parent = Path.GetDirectoryName(directory);
-            parent is not null && parent.StartsWith(RootDirectory, StringComparison.Ordinal) &&
-            Directory.Exists(parent) && !Directory.EnumerateFileSystemEntries(parent).Any();
-            parent = Path.GetDirectoryName(parent))
-        {
-            Directory.Delete(parent);
-        }
-
-        return Task.CompletedTask;
-    }
-
-    public Task RunExclusiveAsync(Func<Task> operation) => operation();
-
-    public Task MaybeWipeTrackedFilesAsync() => Task.CompletedTask;
+    public ITransientFile CreateEncryptedOutputFile(string originalFileName) => Create("encrypt", originalFileName);
 
     public bool IsWiped { get; private set; }
 
-    public Task WipeTrackedFilesAsync()
+    public Task SweepAllAsync()
     {
         IsWiped = true;
+        return Task.CompletedTask;
+    }
+
+    // The max ages of the sweeps asked for.
+    public List<TimeSpan> Sweeps { get; } = [];
+
+    public Task SweepAsync(TimeSpan maxAge)
+    {
+        Sweeps.Add(maxAge);
         return Task.CompletedTask;
     }
 
@@ -101,10 +85,52 @@ internal sealed class FakeTransientFileService : ITransientFileService, IDisposa
         }
     }
 
-    private string CreatePath(string scope, string originalFileName)
+    private ITransientFile Create(string scope, string originalFileName)
     {
         string directory = Path.Combine(RootDirectory, scope, Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(directory);
-        return Path.Combine(directory, originalFileName);
+        return new FakeTransientFile(this, Path.Combine(directory, originalFileName));
+    }
+
+    // The folders left empty are removed as well, up to the root, so that a test leaves nothing behind.
+    private void Delete(string filePath)
+    {
+        string directory = Path.GetDirectoryName(filePath)!;
+        if (Directory.Exists(directory))
+        {
+            // A decrypted file is made read-only, and Directory.Delete can't remove a read-only file on Windows.
+            foreach (string file in Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories))
+            {
+                File.SetAttributes(file, FileAttributes.Normal);
+            }
+
+            Directory.Delete(directory, recursive: true);
+        }
+
+        for (string? parent = Path.GetDirectoryName(directory);
+            parent is not null && parent.StartsWith(RootDirectory, StringComparison.Ordinal) &&
+            Directory.Exists(parent) && !Directory.EnumerateFileSystemEntries(parent).Any();
+            parent = Path.GetDirectoryName(parent))
+        {
+            Directory.Delete(parent);
+        }
+    }
+
+    // Deleted at once when released, unless handed off, which keeps it until the test is disposed.
+    private sealed class FakeTransientFile(FakeTransientFileService owner, string filePath) : ITransientFile
+    {
+        private bool _isHandedOff;
+
+        public string FilePath => filePath;
+
+        public void MarkHandedOff() => _isHandedOff = true;
+
+        public void Dispose()
+        {
+            if (!_isHandedOff)
+            {
+                owner.Delete(filePath);
+            }
+        }
     }
 }

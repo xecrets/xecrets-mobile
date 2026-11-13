@@ -45,7 +45,9 @@ public sealed class SessionExitService(
     {
         previewService.Current.Clear();
         passwordRequestState.Clear();
-        await transientFileService.MaybeWipeTrackedFilesAsync();
+
+        // Wiped in the background, since nothing waits for it, and what is not done is done when the app starts again.
+        _ = transientFileService.SweepAllAsync();
         await grantCleanupService.RunAsync();
         profileService.SignOut();
 

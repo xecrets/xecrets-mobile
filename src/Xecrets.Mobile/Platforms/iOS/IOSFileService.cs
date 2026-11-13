@@ -29,31 +29,13 @@
 #endregion Copyright and GPL License
 
 using System.Runtime.Versioning;
-using System.Threading.Tasks;
 
-using Foundation;
-
-using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Platforms.Apple;
-using Xecrets.Mobile.Services;
 
 namespace Xecrets.Mobile.Platforms.iOS;
 
 [SupportedOSPlatform("ios")]
-internal class IOSFileService : FileServiceBase
+internal sealed class IOSFileService : AppleFileService
 {
     public override string PlatformId => "ios";
-
-    public override Task<bool> CanViewFileAsync(DecryptedFileInfo file) =>
-        QuickLookFileViewer.CanViewAsync(file);
-
-    public override Task ViewFileAsync(DecryptedFileInfo file)
-    {
-        ThreadGuard.ThrowIfNotMainThread();
-
-        return QuickLookFileViewer.ViewAsync(file);
-    }
-
-    public override void ExcludeFromBackup(string path) =>
-        NSUrl.FromFilename(path).ExcludeFromBackup();
 }

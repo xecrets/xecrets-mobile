@@ -52,6 +52,6 @@ internal sealed class DecryptedFileViewer(IFileService fileService) : IDecrypted
             : FileViewMode.Unavailable;
     }
 
-    public Task ViewAsync(DecryptedFileInfo file)
+    public Task<bool> ViewAsync(DecryptedFileInfo file)
         => fileService.ViewFileAsync(file);
 }

@@ -137,7 +137,11 @@ public partial class PreviewPageModel(
             IsBusy = true;
             StatusText = "";
 
-            await decryptedFileViewer.ViewAsync(file);
+            if (await decryptedFileViewer.ViewAsync(file))
+            {
+                state.MarkHandedOff();
+            }
+
             await recentFilesService.AddFlowSourceAsync(RecentFileOperation.View);
         }
         catch (OperationCanceledException)
@@ -217,6 +221,7 @@ public partial class PreviewPageModel(
             DecryptedFileInfo file = await previewService.MaterializeAsync();
             if (await fileService.OpenInAsync(file.FilePath, file.OriginalFileName))
             {
+                previewService.Current.MarkHandedOff();
                 await recentFilesService.AddFlowSourceAsync(RecentFileOperation.DecryptCopyOpenIn);
             }
         }
@@ -284,10 +289,11 @@ public partial class PreviewPageModel(
             IsBusy = true;
             StatusText = "";
             DecryptedFileInfo file = await previewService.MaterializeAsync();
-            await fileService.SendToAsync(
-                file.FilePath,
-                file.OriginalFileName,
-                "");
+            if (await fileService.SendToAsync(file.FilePath, file.OriginalFileName, ""))
+            {
+                previewService.Current.MarkHandedOff();
+            }
+
             await recentFilesService.AddFlowSourceAsync(RecentFileOperation.DecryptCopySendTo);
         }
         catch (OperationCanceledException)
