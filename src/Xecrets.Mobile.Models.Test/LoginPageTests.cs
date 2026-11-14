@@ -227,6 +227,7 @@ public sealed class LoginPageTests
         userInterface = new ScriptedUserInterface();
         return new LoginPageModel(
             new FakeProfileService(),
+            new FakeProfileSettingsService(),
             new FakeIncomingFileService(),
             interruptedSaves ?? new FakeInterruptedSaveService(),
             userInterface);

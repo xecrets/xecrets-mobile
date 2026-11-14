@@ -39,7 +39,7 @@ namespace Xecrets.Mobile.Models.PageModels;
 /// <summary>
 /// The font of the text in the view and edit pages, which is the user's text editor preference.
 /// </summary>
-public partial class TextEditorFontModel(IProfileService profileService) : ObservableObject
+public partial class TextEditorFontModel(IProfileSettingsService profileSettingsService) : ObservableObject
 {
     private const double DefaultFontSize = 16;
 
@@ -58,7 +58,7 @@ public partial class TextEditorFontModel(IProfileService profileService) : Obser
 
     public async Task LoadAsync()
     {
-        TextEditor settings = await profileService.GetTextEditorSettingsAsync();
+        TextEditor settings = await profileSettingsService.GetTextEditorSettingsAsync();
         FontSize = Math.Clamp(settings.FontSize ?? DefaultFontSize, MinFontSize, MaxFontSize);
         IsProportionalFont = settings.ProportionalFont == true;
     }
@@ -77,12 +77,12 @@ public partial class TextEditorFontModel(IProfileService profileService) : Obser
     private async Task ToggleProportionalFont()
     {
         IsProportionalFont = !IsProportionalFont;
-        await profileService.SetTextEditorProportionalFontAsync(IsProportionalFont);
+        await profileSettingsService.SetTextEditorProportionalFontAsync(IsProportionalFont);
     }
 
     private async Task SetFontSizeAsync(double fontSize)
     {
         FontSize = fontSize;
-        await profileService.SetTextEditorFontSizeAsync(fontSize);
+        await profileSettingsService.SetTextEditorFontSizeAsync(fontSize);
     }
 }

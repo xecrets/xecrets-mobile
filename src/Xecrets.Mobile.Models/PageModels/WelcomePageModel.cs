@@ -38,7 +38,7 @@ using Xecrets.Mobile.Models.Utilities;
 namespace Xecrets.Mobile.Models.PageModels;
 
 public partial class WelcomePageModel(
-    IProfileService profileService,
+    IProfileSettingsService profileSettingsService,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService)
 {
@@ -80,7 +80,7 @@ public partial class WelcomePageModel(
 
         if (IsDontShowAgainAvailable && DontShowAgain)
         {
-            await profileService.SetDontShowAgainAsync(Models.DontShowAgain.WelcomeInformation);
+            await profileSettingsService.SetDontShowAgainAsync(Models.DontShowAgain.WelcomeInformation);
         }
 
         await UserInterfaceService.GoBackAsync(null);

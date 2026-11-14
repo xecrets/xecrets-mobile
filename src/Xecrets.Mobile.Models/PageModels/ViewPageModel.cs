@@ -40,7 +40,7 @@ namespace Xecrets.Mobile.Models.PageModels;
 public partial class ViewPageModel(
     IPreviewService previewService,
     IFlowContext flowContext,
-    IProfileService profileService,
+    IProfileSettingsService profileSettingsService,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel, IPageInformationPageModel
 {
@@ -48,7 +48,7 @@ public partial class ViewPageModel(
 
     public string Information => MobileTexts.ViewDescription;
 
-    public TextEditorFontModel Font { get; } = new(profileService);
+    public TextEditorFontModel Font { get; } = new(profileSettingsService);
 
     // Once only, since the page appears again when returned to.
     private bool _initialized;

@@ -208,6 +208,29 @@ public sealed class ProfileServiceTests
     }
 
     [Test]
+    public async Task TheProfileKeyPairIsNotCountedAsAnExtraPrivateKey()
+    {
+        PrivateKeyCounts counts = await _profileService.GetPrivateKeyCountsAsync();
+
+        Assert.That(counts, Is.EqualTo(new PrivateKeyCounts(Decryptable: 0, Total: 0)));
+    }
+
+    [Test]
+    public async Task AfterResetProfileTheOldKeyPairIsCountedAsDecryptableOnceTheOldPasswordIsAdded()
+    {
+        _profileService.SignOut();
+        await _profileService.ResetProfileAsync("new password");
+        await _profileService.LoginAsync("new password");
+        Assert.That(await _profileService.GetPrivateKeyCountsAsync(),
+            Is.EqualTo(new PrivateKeyCounts(Decryptable: 0, Total: 1)));
+
+        await _profileService.AddExtraPasswordAsync("old password");
+
+        Assert.That(await _profileService.GetPrivateKeyCountsAsync(),
+            Is.EqualTo(new PrivateKeyCounts(Decryptable: 1, Total: 1)));
+    }
+
+    [Test]
     public async Task ResetProfileSignsOutAndOnlyTheNewPasswordSignsIn()
     {
         _profileService.SignOut();

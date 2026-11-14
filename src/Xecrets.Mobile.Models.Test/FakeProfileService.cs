@@ -40,7 +40,7 @@ internal sealed class FakeProfileService : IProfileService
 {
     public string CurrentEmail => "me@example.com";
     public string CurrentPassword => throw new NotSupportedException();
-    public bool IsAuthenticated => true;
+    public bool IsAuthenticated { get; set; } = true;
     public Task<bool> HasProfileAsync() => throw new NotSupportedException();
     public Task<SignInKey?> LoadProfileAsync() =>
         Task.FromResult<SignInKey?>(new SignInKey("me@example.com", DateTimeOffset.UnixEpoch, []));
@@ -76,23 +76,10 @@ internal sealed class FakeProfileService : IProfileService
         ExtraPasswords.RemoveAll(extraPassword => extraPassword.Password == password);
         return Task.CompletedTask;
     }
+
+    public PrivateKeyCounts PrivateKeyCounts { get; set; } = new(Decryptable: 0, Total: 0);
+
+    public Task<PrivateKeyCounts> GetPrivateKeyCountsAsync() => Task.FromResult(PrivateKeyCounts);
+
     public PublicKey GetPublicKey() => new("me@example.com", "me");
-    public Task<bool> ShouldShowAsync(DontShowAgain notice) => Task.FromResult(false);
-    public Task SetDontShowAgainAsync(DontShowAgain notice) => throw new NotSupportedException();
-
-    public TextEditor TextEditor { get; } = new();
-
-    public Task<TextEditor> GetTextEditorSettingsAsync() => Task.FromResult(TextEditor);
-
-    public Task SetTextEditorFontSizeAsync(double fontSize)
-    {
-        TextEditor.FontSize = fontSize;
-        return Task.CompletedTask;
-    }
-
-    public Task SetTextEditorProportionalFontAsync(bool proportionalFont)
-    {
-        TextEditor.ProportionalFont = proportionalFont;
-        return Task.CompletedTask;
-    }
 }

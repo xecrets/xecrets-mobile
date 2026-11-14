@@ -43,7 +43,7 @@ public sealed class TextEditorFontModelTests
     [Test]
     public async Task MissingSettingsMeanMonospaceAtTheDefaultSize()
     {
-        TextEditorFontModel font = await LoadAsync(new FakeProfileService());
+        TextEditorFontModel font = await LoadAsync(new FakeProfileSettingsService());
 
         Assert.That(font.IsProportionalFont, Is.False);
         Assert.That(font.FontSize, Is.EqualTo(16));
@@ -52,11 +52,11 @@ public sealed class TextEditorFontModelTests
     [Test]
     public async Task SettingsAreLoaded()
     {
-        FakeProfileService profile = new();
-        profile.TextEditor.FontSize = 20;
-        profile.TextEditor.ProportionalFont = true;
+        FakeProfileSettingsService settings = new();
+        settings.TextEditor.FontSize = 20;
+        settings.TextEditor.ProportionalFont = true;
 
-        TextEditorFontModel font = await LoadAsync(profile);
+        TextEditorFontModel font = await LoadAsync(settings);
 
         Assert.That(font.IsProportionalFont, Is.True);
         Assert.That(font.FontSize, Is.EqualTo(20));
@@ -65,10 +65,10 @@ public sealed class TextEditorFontModelTests
     [Test]
     public async Task SizeOutsideTheRangeIsLimited()
     {
-        FakeProfileService profile = new();
-        profile.TextEditor.FontSize = 48;
+        FakeProfileSettingsService settings = new();
+        settings.TextEditor.FontSize = 48;
 
-        TextEditorFontModel font = await LoadAsync(profile);
+        TextEditorFontModel font = await LoadAsync(settings);
 
         Assert.That(font.FontSize, Is.EqualTo(32));
         Assert.That(font.IncreaseFontSizeCommand.CanExecute(null), Is.False);
@@ -77,24 +77,24 @@ public sealed class TextEditorFontModelTests
     [Test]
     public async Task IncreaseAndDecreaseAreSaved()
     {
-        FakeProfileService profile = new();
-        TextEditorFontModel font = await LoadAsync(profile);
+        FakeProfileSettingsService settings = new();
+        TextEditorFontModel font = await LoadAsync(settings);
 
         await font.IncreaseFontSizeCommand.ExecuteAsync(null);
-        Assert.That(profile.TextEditor.FontSize, Is.EqualTo(18));
+        Assert.That(settings.TextEditor.FontSize, Is.EqualTo(18));
 
         await font.DecreaseFontSizeCommand.ExecuteAsync(null);
         await font.DecreaseFontSizeCommand.ExecuteAsync(null);
         Assert.That(font.FontSize, Is.EqualTo(14));
-        Assert.That(profile.TextEditor.FontSize, Is.EqualTo(14));
+        Assert.That(settings.TextEditor.FontSize, Is.EqualTo(14));
     }
 
     [Test]
     public async Task SizeStopsAtTheLimits()
     {
-        FakeProfileService profile = new();
-        profile.TextEditor.FontSize = 12;
-        TextEditorFontModel font = await LoadAsync(profile);
+        FakeProfileSettingsService settings = new();
+        settings.TextEditor.FontSize = 12;
+        TextEditorFontModel font = await LoadAsync(settings);
 
         await font.DecreaseFontSizeCommand.ExecuteAsync(null);
 
@@ -106,16 +106,16 @@ public sealed class TextEditorFontModelTests
     [Test]
     public async Task ToggleIsSaved()
     {
-        FakeProfileService profile = new();
-        TextEditorFontModel font = await LoadAsync(profile);
+        FakeProfileSettingsService settings = new();
+        TextEditorFontModel font = await LoadAsync(settings);
 
         await font.ToggleProportionalFontCommand.ExecuteAsync(null);
         Assert.That(font.IsProportionalFont, Is.True);
-        Assert.That(profile.TextEditor.ProportionalFont, Is.True);
+        Assert.That(settings.TextEditor.ProportionalFont, Is.True);
 
         await font.ToggleProportionalFontCommand.ExecuteAsync(null);
         Assert.That(font.IsProportionalFont, Is.False);
-        Assert.That(profile.TextEditor.ProportionalFont, Is.False);
+        Assert.That(settings.TextEditor.ProportionalFont, Is.False);
     }
 
     [Test]
@@ -125,7 +125,7 @@ public sealed class TextEditorFontModelTests
         try
         {
             using TestApp app = new();
-            app.Profile.TextEditor.ProportionalFont = true;
+            app.ProfileSettings.TextEditor.ProportionalFont = true;
             app.Preview.Current.SetText(new DecryptedFileInfo(path, "a.txt", "text/plain", 4, PreviewKind.Text, FileTimes.UtcNow), "text"u8.ToArray(), EncryptedWithParameters.Empty);
             EditPageModel page = app.CreateEditPage();
 
@@ -139,9 +139,9 @@ public sealed class TextEditorFontModelTests
         }
     }
 
-    private static async Task<TextEditorFontModel> LoadAsync(FakeProfileService profile)
+    private static async Task<TextEditorFontModel> LoadAsync(FakeProfileSettingsService settings)
     {
-        TextEditorFontModel font = new(profile);
+        TextEditorFontModel font = new(settings);
         await font.LoadAsync();
         return font;
     }

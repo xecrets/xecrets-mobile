@@ -68,15 +68,7 @@ public interface IProfileService
 
     Task RemoveExtraPasswordAsync(string password);
 
+    Task<PrivateKeyCounts> GetPrivateKeyCountsAsync();
+
     PublicKey GetPublicKey();
-
-    Task<bool> ShouldShowAsync(DontShowAgain notice);
-
-    Task SetDontShowAgainAsync(DontShowAgain notice);
-
-    Task<TextEditor> GetTextEditorSettingsAsync();
-
-    Task SetTextEditorFontSizeAsync(double fontSize);
-
-    Task SetTextEditorProportionalFontAsync(bool proportionalFont);
 }

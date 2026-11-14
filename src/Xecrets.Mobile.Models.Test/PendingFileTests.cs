@@ -548,12 +548,8 @@ public sealed class PendingFileTests
         }
         public Task AddExtraPasswordAsync(string password) => throw new NotSupportedException();
         public Task RemoveExtraPasswordAsync(string password) => throw new NotSupportedException();
+        public Task<PrivateKeyCounts> GetPrivateKeyCountsAsync() => throw new NotSupportedException();
         public PublicKey GetPublicKey() => new("me@example.com", "me");
-        public Task<bool> ShouldShowAsync(DontShowAgain notice) => throw new NotSupportedException();
-        public Task SetDontShowAgainAsync(DontShowAgain notice) => throw new NotSupportedException();
-        public Task<TextEditor> GetTextEditorSettingsAsync() => throw new NotSupportedException();
-        public Task SetTextEditorFontSizeAsync(double fontSize) => throw new NotSupportedException();
-        public Task SetTextEditorProportionalFontAsync(bool proportionalFont) => throw new NotSupportedException();
     }
 
     private sealed class TestCoreServices(Exception? decryptionFailure = null) : ICoreServices

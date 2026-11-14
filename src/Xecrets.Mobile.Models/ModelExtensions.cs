@@ -68,6 +68,7 @@ public static partial class ModelExtensions
         services.AddSingleton<DecryptionPasswordRequestState>();
         services.AddSingleton<IFlowContext, FlowContext>();
         services.AddSingleton<IProfileService, ProfileService>();
+        services.AddSingleton<IProfileSettingsService, ProfileSettingsService>();
         services.AddSingleton<IDecryptedFileViewer, DecryptedFileViewer>();
         services.AddSingleton<EncryptRequestFactory>();
         services.AddSingleton<IEncryptionPreparationService, EncryptionPreparationService>();

@@ -381,8 +381,12 @@ public static class MobileTexts
 
     #region Translated texts
 
+    public static string AboutDecryptionPasswords(int count) => AppTexts.DecryptionPasswordsAbout(count);
+
     // "License"
     public static string AboutLabelLicense => AppTexts.ButtonLicense;
+
+    public static string AboutPrivateKeys(int decryptable, int total) => AppTexts.PrivateKeysAbout(decryptable, total);
 
     // "About"
     public static string BreadcrumbAbout => MenuAbout;

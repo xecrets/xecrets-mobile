@@ -28,6 +28,7 @@
 
 #endregion Copyright and GPL License
 
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 using Xecrets.Mobile.Models.Abstractions;
@@ -38,8 +39,15 @@ namespace Xecrets.Mobile.Models.PageModels;
 
 public partial class AboutPageModel(
     IUserInterfaceService userInterfaceService,
-    IBuildInformation buildInformation) : PageModelBase(userInterfaceService), IBreadcrumbPageModel
+    IBuildInformation buildInformation,
+    IProfileService profileService) : PageModelBase(userInterfaceService), IBreadcrumbPageModel
 {
+    [ObservableProperty]
+    public partial string ExtraPasswordsInfo { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string PrivateKeysInfo { get; set; } = string.Empty;
+
     public string Breadcrumb => BreadcrumbFormatter.Format(FlowOrigin.Home, MobileTexts.BreadcrumbAbout);
 
     public string ProductName => buildInformation.ProductName;
@@ -57,6 +65,27 @@ public partial class AboutPageModel(
     public string SourceCodeUrl => buildInformation.SourceCodeUrl;
 
     public string ThirdPartyNotice => MobileTexts.AboutPageThirdPartyNotice;
+
+    [RelayCommand]
+    private async Task InitializeAsync()
+    {
+        if (!profileService.IsAuthenticated)
+        {
+            return;
+        }
+
+        int passwordCount = profileService.GetExtraPasswords().Count;
+        if (passwordCount > 0)
+        {
+            ExtraPasswordsInfo = MobileTexts.AboutDecryptionPasswords(passwordCount);
+        }
+
+        PrivateKeyCounts keys = await profileService.GetPrivateKeyCountsAsync();
+        if (keys.Total > 0)
+        {
+            PrivateKeysInfo = MobileTexts.AboutPrivateKeys(keys.Decryptable, keys.Total);
+        }
+    }
 
     [RelayCommand]
     private Task OpenBrowser(string url) => UserInterfaceService.OpenBrowserAsync(url);

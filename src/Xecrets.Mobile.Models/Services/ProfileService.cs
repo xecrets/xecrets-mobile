@@ -303,6 +303,14 @@ internal sealed class ProfileService(
         log.Information($"Extra password removed, {credentials.Value.Passwords.Count} in list");
     }
 
+    public async Task<PrivateKeyCounts> GetPrivateKeyCountsAsync()
+    {
+        PrivateKeyData privateKeys = (await session.UserStore!.LoadPrivateKeysAsync()).Value;
+
+        // The profile key pair is always kept among the stored private keys once signed in, but is not an extra one.
+        return new PrivateKeyCounts(session.PrivateKeyPairs.Count, CountKeys(privateKeys) - 1);
+    }
+
     private static PasswordUsage? FindExtraPassword(ExtraCredentials credentials, string password) =>
         credentials.Passwords
             .FirstOrDefault(extraPassword => string.Equals(extraPassword.Password, password, StringComparison.Ordinal));
@@ -325,29 +333,4 @@ internal sealed class ProfileService(
         session.ProfileKeyPair is not null
             ? session.ProfileKeyPair.PublicKey
             : throw new InvalidOperationException("No authenticated profile is available.");
-
-    public async Task<bool> ShouldShowAsync(DontShowAgain notice) =>
-        (await session.UserStore!.LoadDeviceSettingsAsync()).Value.ShouldShow(notice);
-
-    public async Task SetDontShowAgainAsync(DontShowAgain notice)
-    {
-        await using IEditScope<ProfileDeviceSettings> settings =
-            (await session.UserStore!.LoadDeviceSettingsAsync()).BeginEdit();
-        settings.Value.SetDontShowAgain(notice);
-    }
-
-    public async Task<TextEditor> GetTextEditorSettingsAsync() =>
-        (await session.UserStore!.LoadSettingsAsync()).Value.TextEditor;
-
-    public async Task SetTextEditorFontSizeAsync(double fontSize)
-    {
-        await using IEditScope<UserSettings> settings = (await session.UserStore!.LoadSettingsAsync()).BeginEdit();
-        settings.Value.TextEditor.FontSize = fontSize;
-    }
-
-    public async Task SetTextEditorProportionalFontAsync(bool proportionalFont)
-    {
-        await using IEditScope<UserSettings> settings = (await session.UserStore!.LoadSettingsAsync()).BeginEdit();
-        settings.Value.TextEditor.ProportionalFont = proportionalFont;
-    }
 }

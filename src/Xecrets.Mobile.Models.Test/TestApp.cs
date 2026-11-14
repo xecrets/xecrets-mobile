@@ -108,6 +108,8 @@ internal sealed class TestApp : IDisposable
 
     public FakeProfileService Profile { get; } = new();
 
+    public FakeProfileSettingsService ProfileSettings { get; } = new();
+
     private WorkFolderStorage Storage { get; }
 
     public FakeFileAccess Access { get; }
@@ -166,7 +168,7 @@ internal sealed class TestApp : IDisposable
     public WorkFoldersPageModel CreateWorkFoldersPage() =>
         new(Storage, Access, FolderAccess, Operations, FolderFiles, Running, CrashLog, UserInterface);
 
-    public EditPageModel CreateEditPage() => new(Preview, EditSave, Flow, CrashLog, Profile, UserInterface);
+    public EditPageModel CreateEditPage() => new(Preview, EditSave, Flow, CrashLog, ProfileSettings, UserInterface);
 
     public EnterPasswordPageModel CreateEnterPasswordPage() =>
         new(Preview, OperationService, Profile, Flow, Running, UserInterface);

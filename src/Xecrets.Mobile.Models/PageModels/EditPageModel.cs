@@ -45,7 +45,7 @@ public partial class EditPageModel(
     IEditSaveService editSaveService,
     IFlowContext flowContext,
     ICrashLogService crashLogService,
-    IProfileService profileService,
+    IProfileSettingsService profileSettingsService,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel, IPageInformationPageModel
 {
@@ -53,7 +53,7 @@ public partial class EditPageModel(
 
     public string Information => MobileTexts.EditDescription;
 
-    public TextEditorFontModel Font { get; } = new(profileService);
+    public TextEditorFontModel Font { get; } = new(profileSettingsService);
 
     // A hash rather than a copy of the saved text, so that no more copies of the plaintext are kept than needed.
     private byte[] _savedTextHash = [];
