@@ -36,8 +36,8 @@ using Xecrets.Mobile.Models.Models;
 namespace Xecrets.Mobile.Models.Services;
 
 /// <summary>
-/// Deletes all local data, the profile, the application settings, the cache and the crash logs, and starts the app
-/// over. Nothing is written until a new profile is created, so the app's folders are left empty.
+/// Deletes all local data, the profile, the application settings, the cache, the crash logs and the log, and starts the
+/// app over. Nothing is written until a new profile is created, so the app's folders are left empty.
 /// </summary>
 public sealed class LocalProfileDeletionService(
     IPreviewService previewService,
@@ -48,6 +48,7 @@ public sealed class LocalProfileDeletionService(
     IDeviceSettings deviceSettings,
     IFileService fileService,
     ICrashLogService crashLogService,
+    IEzLogging log,
     IProfileService profileService,
     IUserInterfaceService userInterfaceService)
 {
@@ -71,6 +72,7 @@ public sealed class LocalProfileDeletionService(
 
         // Last, since the steps before may log.
         crashLogService.DeleteAll();
+        log.DeleteAll();
 
         // From the very beginning, as when first installed. Without a profile, the startup page goes on to the
         // introduction, and the default theme is applied, since the settings are gone.

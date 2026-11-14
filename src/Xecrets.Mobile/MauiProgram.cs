@@ -34,9 +34,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Controls.Hosting;
 using Microsoft.Maui.Hosting;
+using Microsoft.Maui.Storage;
 
 using System;
 using System.Globalization;
+using System.IO;
 using System.Text;
 
 using Xecrets.Core.Abstractions;
@@ -47,6 +49,7 @@ using Xecrets.Mobile.Abstractions;
 using Xecrets.Mobile.Models;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.PageModels;
+using Xecrets.Mobile.Models.Services;
 using Xecrets.Mobile.Pages;
 using Xecrets.Mobile.Services;
 using Xecrets.Mobile.Utilities;
@@ -57,9 +60,14 @@ namespace Xecrets.Mobile;
 
 internal static class MauiProgram
 {
-    public static ICrashLogService CrashLog { get; } = new CrashLogService();
+    public static IEzLogging Log { get; } = new EzLogging(LogDirectory);
+
+    public static ICrashLogService CrashLog { get; } = new CrashLogService(LogDirectory, Log);
 
     public static IServiceProvider? Services { get; private set; }
+
+    // The app's own log is kept with the crash logs, so that both are found together.
+    private static string LogDirectory => Path.Combine(FileSystem.Current.CacheDirectory, "XecretsLogs");
 
     public static MauiApp CreateMauiApp()
     {
@@ -71,6 +79,7 @@ internal static class MauiProgram
 
         string deviceFormattingCultureName = CultureInfo.CurrentCulture.Name;
         BuildInformation buildInformation = new();
+        Log.SetLevel(buildInformation.IsDebug || buildInformation.IsBeta ? EzLogLevel.Debug : EzLogLevel.Information);
         MauiAppBuilder builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>()
@@ -92,6 +101,7 @@ internal static class MauiProgram
         builder.Services.AddSingleton<IProtectedPayload, ProtectedPayload>();
         builder.Services.AddSingleton<ICrashTestService, CrashTestService>();
         builder.Services.AddSingleton(CrashLog);
+        builder.Services.AddSingleton(Log);
         builder.Services.AddSingleton<IBuildInformation>(buildInformation);
         builder.Services.AddSingleton<IPageHeaderService, PageHeaderService>();
         builder.Services.AddSingleton<IThirdPartyNoticesService, ThirdPartyNoticesService>();

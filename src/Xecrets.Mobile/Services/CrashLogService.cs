@@ -40,29 +40,25 @@ using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Devices;
 using Microsoft.Maui.Storage;
 
+using Xecrets.Mobile.Models;
 using Xecrets.Mobile.Models.Abstractions;
+using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Services;
 
-internal sealed class CrashLogService : ICrashLogService
+/// <summary>
+/// Keeps the crash logs and the logs of swallowed exceptions in the given folder, one report in each, rotated as new
+/// ones are written.
+/// </summary>
+internal sealed class CrashLogService(string directory, IEzLogging log) : ICrashLogService
 {
-    private const string _crashLogDirectoryName = "XecretsCrashLogs";
+    private readonly RotatingLogFile _crashLog = new(directory, "crashlog");
 
-    private const string _crashLogName = "crashlog";
-
-    private const string _swallowedLogName = "swallowed";
-
-    // As for crash logs, the current log and the 9 before it are kept, one exception in each.
-    private const int _keptLogCount = 10;
+    private readonly RotatingLogFile _swallowedLog = new(directory, "swallowed");
 
     private readonly Lock _swallowedLock = new();
 
-    public bool HasPendingCrashLog => File.Exists(CurrentPath);
-
-    private static string CurrentDirectory =>
-        Path.Combine(FileSystem.Current.CacheDirectory, _crashLogDirectoryName);
-
-    private static string CurrentPath => GetCurrentPath(_crashLogName);
+    public bool HasPendingCrashLog => File.Exists(_crashLog.FilePath);
 
     public void RegisterHandlers()
     {
@@ -75,38 +71,16 @@ internal sealed class CrashLogService : ICrashLogService
 
     public string ReadCurrent()
     {
-        string report = File.ReadAllText(CurrentPath);
-        Rotate(_crashLogName);
+        string report = File.ReadAllText(_crashLog.FilePath);
+        _crashLog.Rotate();
         return report;
-    }
-
-    private static string GetCurrentPath(string name) => Path.Combine(CurrentDirectory, $"{name}.txt");
-
-    // The current log, name.txt, becomes name.1.txt and so on, the oldest being removed.
-    private static void Rotate(string name)
-    {
-        string directory = CurrentDirectory;
-        File.Delete(Path.Combine(directory, $"{name}.{_keptLogCount - 1}.txt"));
-
-        for (int index = _keptLogCount - 2; index >= 1; index--)
-        {
-            string sourcePath = Path.Combine(directory, $"{name}.{index}.txt");
-            if (File.Exists(sourcePath))
-            {
-                File.Move(sourcePath, Path.Combine(directory, $"{name}.{index + 1}.txt"));
-            }
-        }
-
-        string currentPath = GetCurrentPath(name);
-        if (File.Exists(currentPath))
-        {
-            File.Move(currentPath, Path.Combine(directory, $"{name}.1.txt"));
-        }
     }
 
     public void WriteCrashLog(string source, object? crash)
     {
-        Directory.CreateDirectory(CurrentDirectory);
+        // An artificial native crash has no managed exception.
+        log.Error($"{source}: {crash?.GetType().Name ?? "no managed exception"}");
+        CreateDirectory();
 
         StringBuilder report = new();
         report.AppendLine(source);
@@ -119,21 +93,20 @@ internal sealed class CrashLogService : ICrashLogService
         report.AppendLine();
         report.AppendLine(crash?.ToString() ?? "No managed exception information was available.");
 
-        File.WriteAllText(CurrentPath, report.ToString());
+        File.WriteAllText(_crashLog.FilePath, report.ToString());
     }
 
     public void DeleteAll()
     {
         try
         {
-            if (Directory.Exists(CurrentDirectory))
-            {
-                Directory.Delete(CurrentDirectory, recursive: true);
-            }
+            DeleteLegacyDirectory();
+            _crashLog.DeleteAll();
+            _swallowedLog.DeleteAll();
         }
         catch (Exception)
         {
-            // Best effort, and a failure cannot be logged here, since it is the logs that are deleted.
+            // Best effort, and a failure cannot be logged as swallowed, since it is those logs that are deleted.
         }
     }
 
@@ -145,6 +118,7 @@ internal sealed class CrashLogService : ICrashLogService
     {
         // The path is that of the build machine, which may not use the separator of the device.
         string fileName = filePath[(filePath.LastIndexOfAny(['/', '\\']) + 1)..];
+        log.Warning($"Swallowed {exception.GetType().Name} in {fileName}:{lineNumber} ({memberName})");
 
         StringBuilder report = new();
         report.AppendLine($"Swallowed in {fileName}:{lineNumber} ({memberName})");
@@ -156,14 +130,31 @@ internal sealed class CrashLogService : ICrashLogService
         {
             try
             {
-                Directory.CreateDirectory(CurrentDirectory);
-                Rotate(_swallowedLogName);
-                File.WriteAllText(GetCurrentPath(_swallowedLogName), report.ToString());
+                CreateDirectory();
+                _swallowedLog.Rotate();
+                File.WriteAllText(_swallowedLog.FilePath, report.ToString());
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 // Best effort - logging never changes what is done about the exception.
             }
+        }
+    }
+
+    private void CreateDirectory()
+    {
+        DeleteLegacyDirectory();
+        Directory.CreateDirectory(directory);
+    }
+
+    // Earlier beta versions kept the crash logs in XecretsCrashLogs, which is no longer used. This can be deleted
+    // 2027-01-01.
+    private static void DeleteLegacyDirectory()
+    {
+        string legacyDirectory = Path.Combine(FileSystem.Current.CacheDirectory, "XecretsCrashLogs");
+        if (Directory.Exists(legacyDirectory))
+        {
+            Directory.Delete(legacyDirectory, recursive: true);
         }
     }
 }

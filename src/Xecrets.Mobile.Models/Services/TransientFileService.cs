@@ -32,6 +32,7 @@ using System.Collections.Concurrent;
 using System.Threading.Channels;
 
 using Xecrets.Mobile.Models.Abstractions;
+using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Services;
 
@@ -48,6 +49,8 @@ public sealed class TransientFileService : ITransientFileService
 
     private readonly ICrashLogService _crashLogService;
 
+    private readonly IEzLogging _log;
+
     // Created only when needed, so that nothing is left in the cache before there are files in it.
     private readonly string _handoffDirectory;
 
@@ -58,11 +61,21 @@ public sealed class TransientFileService : ITransientFileService
     private readonly Channel<SweepRequest> _requests =
         Channel.CreateUnbounded<SweepRequest>(new UnboundedChannelOptions { SingleReader = true });
 
-    public TransientFileService(IFileService fileService, IFileWiper fileWiper, ICrashLogService crashLogService)
+    // Counted for the sweep being done, of which there is only one at a time.
+    private int _wipedCount;
+
+    private int _deletedCount;
+
+    public TransientFileService(
+        IFileService fileService,
+        IFileWiper fileWiper,
+        ICrashLogService crashLogService,
+        IEzLogging log)
     {
         _fileService = fileService;
         _fileWiper = fileWiper;
         _crashLogService = crashLogService;
+        _log = log;
         _handoffDirectory = Path.Combine(fileService.CacheDirectory, "XecretsHandoff");
 
         // In the background, so that wiping large files does not hold up the user interface. The loop is async void, so
@@ -86,10 +99,10 @@ public sealed class TransientFileService : ITransientFileService
     public Task SweepAllAsync()
     {
         _foldersInUse.Clear();
-        return RequestSweep(_fileService.CacheDirectory, TimeSpan.Zero);
+        return RequestSweep(_fileService.CacheDirectory, TimeSpan.Zero, "all files");
     }
 
-    public Task SweepAsync(TimeSpan maxAge) => RequestSweep(_handoffDirectory, maxAge);
+    public Task SweepAsync(TimeSpan maxAge) => RequestSweep(_handoffDirectory, maxAge, "aged files");
 
     private ITransientFile Create(string kindDirectory, string originalFileName)
     {
@@ -106,7 +119,7 @@ public sealed class TransientFileService : ITransientFileService
         {
             if (_foldersInUse.TryRemove(directory, out _))
             {
-                _ = RequestSweep(directory, TimeSpan.Zero);
+                _ = RequestSweep(directory, TimeSpan.Zero, "released file");
             }
 
             return;
@@ -123,9 +136,10 @@ public sealed class TransientFileService : ITransientFileService
         _foldersInUse.TryRemove(directory, out _);
     }
 
-    private Task RequestSweep(string startDirectory, TimeSpan maxAge)
+    private Task RequestSweep(string startDirectory, TimeSpan maxAge, string cause)
     {
-        SweepRequest request = new(startDirectory, maxAge);
+        SweepRequest request = new(startDirectory, maxAge, cause);
+        _log.Debug(Describe(request, "queued"));
         _requests.Writer.TryWrite(request);
         return request.Completion.Task;
     }
@@ -134,6 +148,10 @@ public sealed class TransientFileService : ITransientFileService
     {
         await foreach (SweepRequest request in _requests.Reader.ReadAllAsync())
         {
+            _log.Debug(Describe(request, "started"));
+            _wipedCount = 0;
+            _deletedCount = 0;
+
             // The cache is only made when needed, and the OS, or the user, may clear it at any time.
             if (Directory.Exists(request.StartDirectory))
             {
@@ -142,9 +160,18 @@ public sealed class TransientFileService : ITransientFileService
                 await SweepDirectoryAsync(request.StartDirectory, request.MaxAge, removesFolders);
             }
 
+            _log.Debug($"Sweep of {ToLogPath(request.StartDirectory)} ended, {_wipedCount} wiped, {_deletedCount} deleted");
             request.Completion.SetResult();
         }
     }
+
+    private string Describe(SweepRequest request, string stage) =>
+        $"Sweep of {ToLogPath(request.StartDirectory)} {stage}, {request.Cause}, max age {request.MaxAge}";
+
+    // Relative to the cache, which itself is told by the placeholder "[cache…]". The names of the files are masked by
+    // the caller.
+    private string ToLogPath(string path) =>
+        path == _fileService.CacheDirectory ? "[cache…]" : Path.GetRelativePath(_fileService.CacheDirectory, path);
 
     private async Task SweepDirectoryAsync(string directory, TimeSpan maxAge, bool removesFolders)
     {
@@ -236,12 +263,37 @@ public sealed class TransientFileService : ITransientFileService
             File.SetAttributes(path, FileAttributes.Normal);
 
             // Should the wipe fail, the wiper still deletes the file if possible.
-            await _fileWiper.WipeAsync(new LocalWritableFile(path), isOnDevice: true);
+            FileWipeStatus status = await _fileWiper.WipeAsync(new LocalWritableFile(path), isOnDevice: true);
+            LogWiped(path, status);
         }
         catch (Exception ex)
         {
             // Best effort.
             _crashLogService.WriteSwallowedException(ex);
+        }
+    }
+
+    private void LogWiped(string path, FileWipeStatus status)
+    {
+        string logPath = ToLogPath(path).MaskPath();
+        switch (status)
+        {
+            case FileWipeStatus.Succeeded:
+                _wipedCount++;
+                _log.Information($"Wiped {logPath}");
+                break;
+
+            case FileWipeStatus.OnlyDelete:
+                _deletedCount++;
+                _log.Information($"Deleted {logPath}");
+                break;
+
+            case FileWipeStatus.InsufficientRights:
+                _log.Warning($"Not deleted, insufficient rights: {logPath}");
+                break;
+
+            default:
+                throw new ArgumentOutOfRangeException(nameof(status), status, null);
         }
     }
 
@@ -252,6 +304,7 @@ public sealed class TransientFileService : ITransientFileService
             if (Directory.Exists(directory) && !Directory.EnumerateFileSystemEntries(directory).Any())
             {
                 Directory.Delete(directory);
+                _log.Debug($"Removed folder {ToLogPath(directory)}");
             }
         }
         catch (Exception ex)
@@ -283,7 +336,7 @@ public sealed class TransientFileService : ITransientFileService
         return string.IsNullOrWhiteSpace(sanitized) ? "decrypted.bin" : sanitized;
     }
 
-    private sealed record SweepRequest(string StartDirectory, TimeSpan MaxAge)
+    private sealed record SweepRequest(string StartDirectory, TimeSpan MaxAge, string Cause)
     {
         public TaskCompletionSource Completion { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
     }

@@ -39,7 +39,12 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Data;
 
-public sealed class MobileDataStore(IFileService fileService, ICrashLogService crashLogService, TimeProvider timeProvider, IProtectedPayload protectedPayload)
+public sealed class MobileDataStore(
+    IFileService fileService,
+    ICrashLogService crashLogService,
+    IEzLogging log,
+    TimeProvider timeProvider,
+    IProtectedPayload protectedPayload)
     : IXecretsDataStore, IDeviceSettingsStore, ILocalProfileStore, ISaveInProgressStore
 {
     private const string _extraCredentialsPayloadName = "extraCredentials";
@@ -175,7 +180,7 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
             string[] paths = [fileService.DataFilePath, fileService.DeviceSettingsFilePath, fileService.SaveInProgressFilePath];
             foreach (string path in paths.Where(File.Exists))
             {
-                File.Delete(path);
+                Delete(path);
             }
         }
         finally
@@ -288,7 +293,7 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
         await _access.WaitAsync();
         try
         {
-            File.Delete(fileService.SaveInProgressFilePath);
+            Delete(fileService.SaveInProgressFilePath);
         }
         finally
         {
@@ -395,10 +400,10 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
         return document;
     }
 
-    private static Task SaveAsync<T>(string path, T document) => SaveTextAsync(path, JsonFile.Serialize(document));
+    private Task SaveAsync<T>(string path, T document) => SaveTextAsync(path, JsonFile.Serialize(document));
 
     // The file is replaced as a whole, so that it is never read written in part.
-    private static async Task SaveTextAsync(string path, string serialized)
+    private async Task SaveTextAsync(string path, string serialized)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         string temporaryPath = $"{path}.tmp";
@@ -412,9 +417,15 @@ public sealed class MobileDataStore(IFileService fileService, ICrashLogService c
         {
             if (File.Exists(temporaryPath))
             {
-                File.Delete(temporaryPath);
+                Delete(temporaryPath);
             }
         }
+    }
+
+    private void Delete(string path)
+    {
+        File.Delete(path);
+        log.Information($"Deleted {Path.GetRelativePath(fileService.AppDataDirectory, path)}");
     }
 
     private static LocalProfileData FindUser(ApplicationData document, UserId userId) =>

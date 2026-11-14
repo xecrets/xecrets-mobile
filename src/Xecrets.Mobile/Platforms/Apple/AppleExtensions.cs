@@ -48,6 +48,7 @@ using UniformTypeIdentifiers;
 
 using UIKit;
 
+using Xecrets.Mobile.Models;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Utilities;
 
@@ -296,6 +297,7 @@ internal static class AppleExtensions
         if (Directory.Exists(legacyGrantDirectory))
         {
             Directory.Delete(legacyGrantDirectory, true);
+            MauiProgram.Log.Information("Deleted folder WorkFolderGrants");
         }
 
         if (!Directory.Exists(GrantDirectory))
@@ -307,6 +309,7 @@ internal static class AppleExtensions
         foreach (string path in Directory.EnumerateFiles(GrantDirectory).Where(path => !kept.Contains(path)))
         {
             File.Delete(path);
+            MauiProgram.Log.Information($"Deleted {Path.GetRelativePath(FileSystem.AppDataDirectory, path)}");
         }
     }
 

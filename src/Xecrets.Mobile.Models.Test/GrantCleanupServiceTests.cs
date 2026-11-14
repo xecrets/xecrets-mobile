@@ -92,7 +92,7 @@ public sealed class GrantCleanupServiceTests
         await File.WriteAllTextAsync(fileService.DeviceSettingsFilePath, "{ malformed");
         TestCrashLogService crashLog = new();
         FakeFileAccess access = new(null!);
-        MobileDataStore store = new(fileService, crashLog, TimeProvider.System, new ProtectedPayload());
+        MobileDataStore store = new(fileService, crashLog, new FakeEzLogging(), TimeProvider.System, new ProtectedPayload());
 
         await new GrantCleanupService(store, access, new TestCrashLogService()).RunAsync();
 
@@ -102,7 +102,7 @@ public sealed class GrantCleanupServiceTests
     }
 
     private MobileDataStore CreateStore() =>
-        new(new TestFileService(_directory), new TestCrashLogService(), TimeProvider.System, new ProtectedPayload());
+        new(new TestFileService(_directory), new TestCrashLogService(), new FakeEzLogging(), TimeProvider.System, new ProtectedPayload());
 
     private static NewUserData NewUser(string email, byte marker) =>
         new(email, email, new SignInKey(email, DateTimeOffset.UtcNow, [marker]));

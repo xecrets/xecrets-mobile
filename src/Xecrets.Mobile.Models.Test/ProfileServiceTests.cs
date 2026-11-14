@@ -38,6 +38,7 @@ using Xecrets.Common.Models;
 using Xecrets.Core.Abstractions;
 using Xecrets.Core.Models;
 using Xecrets.Core.Public;
+using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Data;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
@@ -53,21 +54,25 @@ public sealed class ProfileServiceTests
     private MobileDataStore _store = null!;
     private ProfileSession _session = null!;
     private ProfileService _profileService = null!;
+    private FakeEzLogging _log = null!;
 
     [SetUp]
     public async Task SetUp()
     {
         _directory = Path.Combine(Path.GetTempPath(), $"xecrets-mobile-test-{Guid.NewGuid():N}");
+        _log = new FakeEzLogging();
         _store = new MobileDataStore(
             new MobileDataStoreTests.TestFileService(_directory),
             new MobileDataStoreTests.TestCrashLogService(),
+            new FakeEzLogging(),
             TimeProvider.System,
             new ProtectedPayload());
         _session = new ProfileSession();
-        _profileService = new ProfileService(CoreServices, _store, new ProfileStore(_store), _session);
+        _profileService = new ProfileService(CoreServices, _store, new ProfileStore(_store), _session, _log);
 
         await _profileService.CreateProfileAsync("old@example.com", "old password");
         await _profileService.LoginAsync("old password");
+        _log.Clear();
     }
 
     [TearDown]
@@ -293,6 +298,103 @@ public sealed class ProfileServiceTests
 
         Assert.That(_profileService.GetExtraPasswords(), Is.Empty);
         Assert.That(await IsDecryptableAsync(encrypted), Is.True);
+    }
+
+    [Test]
+    public async Task ResetProfileIsLoggedWithoutThePassword()
+    {
+        _profileService.SignOut();
+
+        await _profileService.ResetProfileAsync("new password");
+
+        Assert.That(_log.Entries, Is.EqualTo(new[]
+        {
+            (EzLogLevel.Information, "Password reset for old@example.com, new sign-in key, extra passwords cleared"),
+        }));
+    }
+
+    [Test]
+    public async Task ChangeProfileIsLoggedWithTheEmailsAndTheOldPasswordKeptWithoutThePasswords()
+    {
+        await _profileService.ChangeProfileAsync("new@example.com", "new password");
+
+        Assert.That(_log.Texts, Does.Contain("Profile changed from old@example.com to new@example.com, password changed"));
+        Assert.That(_log.Texts, Does.Contain("Extra password added from profile change, 1 in list"));
+        AssertNoPasswordLogged("old password", "new password");
+    }
+
+    [Test]
+    public async Task ChangeProfileWithTheSameEmailAndPasswordIsLogged()
+    {
+        await _profileService.ChangeProfileAsync("old@example.com", "old password");
+
+        Assert.That(_log.Texts, Does.Contain("Profile changed for old@example.com, password unchanged"));
+        Assert.That(_log.Texts, Has.None.StartsWith("Extra password"));
+    }
+
+    [Test]
+    public async Task ChangesToTheExtraPasswordsAreLoggedButNotTheirUse()
+    {
+        await _profileService.RecordExtraPasswordUseAsync("used password");
+        await _profileService.RecordExtraPasswordUseAsync("used password");
+        await _profileService.AddExtraPasswordAsync("added password");
+        await _profileService.RemoveExtraPasswordAsync("used password");
+
+        Assert.That(_log.Entries.Where(entry => entry.Text.StartsWith("Extra password", StringComparison.Ordinal)),
+            Is.EqualTo(new[]
+            {
+                (EzLogLevel.Information, "Extra password added on use, 1 in list"),
+                (EzLogLevel.Information, "Extra password added in advance, 2 in list"),
+                (EzLogLevel.Information, "Extra password removed, 1 in list"),
+            }));
+        AssertNoPasswordLogged("used password", "added password");
+    }
+
+    [Test]
+    public async Task DroppedExtraPasswordsAreLogged()
+    {
+        for (int i = 0; i < 25; ++i)
+        {
+            await _profileService.RecordExtraPasswordUseAsync($"password {i}");
+        }
+        _log.Clear();
+
+        await _profileService.AddExtraPasswordAsync("added password");
+
+        Assert.That(_log.Texts, Does.Contain("Least used extra passwords dropped: 1"));
+        Assert.That(_log.Texts, Does.Contain("Extra password added in advance, 25 in list"));
+    }
+
+    [Test]
+    public async Task UpdatedPrivateKeysAreLoggedWithTheKeyPairsLoaded()
+    {
+        _profileService.SignOut();
+        await _profileService.ResetProfileAsync("new password");
+        _log.Clear();
+
+        await _profileService.LoginAsync("new password");
+
+        Assert.That(_log.Entries, Is.EqualTo(new[]
+        {
+            (EzLogLevel.Information, "Stored private keys updated, 1 keys before, 2 after, none loaded"),
+        }));
+
+        // The old password decrypts the key pair kept from before the reset, which is then re-encrypted.
+        _log.Clear();
+        await _profileService.AddExtraPasswordAsync("old password");
+
+        Assert.That(_log.Entries, Has.Exactly(1).Matches<(EzLogLevel Level, string Text)>(entry =>
+            entry.Level == EzLogLevel.Information &&
+            entry.Text.StartsWith("Stored private keys updated, 2 keys before, 2 after, loaded old@example.com created ", StringComparison.Ordinal)));
+        AssertNoPasswordLogged("old password", "new password");
+    }
+
+    private void AssertNoPasswordLogged(params string[] passwords)
+    {
+        foreach (string password in passwords)
+        {
+            Assert.That(_log.Texts, Has.None.Contains(password));
+        }
     }
 
     // Every file is saved by writing a temporary file next to it first, which fails where a directory has its name.

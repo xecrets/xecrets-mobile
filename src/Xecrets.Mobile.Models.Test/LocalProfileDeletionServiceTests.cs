@@ -62,9 +62,10 @@ public sealed class LocalProfileDeletionServiceTests
     {
         IFileService fileService = new TestFileService(Path.Combine(_directory, "data"), Path.Combine(_directory, "cache", "XecretsEz"));
         FakeCrashLogService crashLog = new();
-        MobileDataStore store = new(fileService, crashLog, TimeProvider.System, new ProtectedPayload());
+        FakeEzLogging log = new();
+        MobileDataStore store = new(fileService, crashLog, log, TimeProvider.System, new ProtectedPayload());
         MobileDeviceSettings deviceSettings = new(store);
-        TransientFileService transient = new(fileService, new FileWiper(crashLog), crashLog);
+        TransientFileService transient = new(fileService, new FileWiper(crashLog), crashLog, log);
 
         IUserDataStore user = await store.CreateUserAsync(
             new NewUserData("me@example.com", "me@example.com", new SignInKey("me@example.com", DateTimeOffset.UtcNow, [1])));
@@ -94,6 +95,7 @@ public sealed class LocalProfileDeletionServiceTests
             deviceSettings,
             fileService,
             crashLog,
+            log,
             profile,
             userInterface);
 
@@ -106,6 +108,7 @@ public sealed class LocalProfileDeletionServiceTests
         Assert.That(access.Released.FileIds, Is.Empty);
         Assert.That(profile.IsSignedOut, Is.True);
         Assert.That(crashLog.IsDeleted, Is.True);
+        Assert.That(log.IsDeleted, Is.True);
         Assert.That(userInterface.Destinations, Is.EqualTo([AppDestination.Startup]));
 
         // As when the startup page is shown again, which reads the theme.

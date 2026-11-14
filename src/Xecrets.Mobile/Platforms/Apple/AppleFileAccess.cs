@@ -40,6 +40,7 @@ using Foundation;
 using UniformTypeIdentifiers;
 
 using Xecrets.Common.Models;
+using Xecrets.Mobile.Models;
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Services;
@@ -56,7 +57,8 @@ internal sealed class AppleFileAccess(
     WorkFolderStorage storage,
     AppleFileGrants grants,
     ITransientFileService transientFileService,
-    ICrashLogService crashLogService)
+    ICrashLogService crashLogService,
+    IEzLogging log)
     : IFileAccess
 {
     /// <summary>
@@ -416,6 +418,7 @@ internal sealed class AppleFileAccess(
         finally
         {
             Directory.Delete(directory, true);
+            log.Information($"Deleted {Path.Combine("[tmp…]", Path.GetFileName(directory), fileName).MaskPath()}");
         }
 
         if (fileUrl is null)

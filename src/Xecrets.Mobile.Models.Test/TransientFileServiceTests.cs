@@ -45,8 +45,14 @@ public sealed class TransientFileServiceTests
 
     private string _cacheDirectory = "";
 
+    private FakeEzLogging _log = new();
+
     [SetUp]
-    public void SetUp() => _cacheDirectory = Directory.CreateTempSubdirectory().FullName;
+    public void SetUp()
+    {
+        _cacheDirectory = Directory.CreateTempSubdirectory().FullName;
+        _log = new FakeEzLogging();
+    }
 
     // A wipe removes the cache directory itself once it is empty.
     [TearDown]
@@ -360,13 +366,66 @@ public sealed class TransientFileServiceTests
         Assert.That(Directory.Exists(Path.Combine(_cacheDirectory, "XecretsHandoff")), Is.False);
     }
 
+    [Test]
+    public async Task SweepIsLoggedWhenQueuedStartedAndEndedWithWhatItWiped()
+    {
+        TransientFileService transient = CreateService(_ => Task.CompletedTask);
+        ITransientFile file = transient.CreateHandoffFile("secret.txt");
+        await File.WriteAllTextAsync(file.FilePath, "decrypted");
+        file.MarkHandedOff();
+        file.Dispose();
+        string folder = Path.GetRelativePath(_cacheDirectory, Path.GetDirectoryName(file.FilePath)!);
+
+        await transient.SweepAsync(TimeSpan.Zero).WaitAsync(_timeout);
+
+        Assert.That(_log.Entries, Is.EqualTo(new[]
+        {
+            (EzLogLevel.Debug, "Sweep of XecretsHandoff queued, aged files, max age 00:00:00"),
+            (EzLogLevel.Debug, "Sweep of XecretsHandoff started, aged files, max age 00:00:00"),
+            (EzLogLevel.Information, $"Wiped {Path.Combine(folder, "se***.txt")}"),
+            (EzLogLevel.Debug, $"Removed folder {folder}"),
+            (EzLogLevel.Debug, "Sweep of XecretsHandoff ended, 1 wiped, 0 deleted"),
+        }));
+    }
+
+    [Test]
+    public async Task SweepOfAReleasedFileIsLoggedWithItsCause()
+    {
+        TransientFileService transient = CreateService(_ => Task.CompletedTask);
+        ITransientFile file = transient.CreateEncryptedOutputFile("secret.txt.axx");
+        await File.WriteAllTextAsync(file.FilePath, "encrypted");
+        string folder = Path.GetRelativePath(_cacheDirectory, Path.GetDirectoryName(file.FilePath)!);
+
+        file.Dispose();
+        await WhenSweptAsync(transient);
+
+        Assert.That(_log.Texts, Does.Contain($"Sweep of {folder} queued, released file, max age 00:00:00"));
+        Assert.That(_log.Texts, Does.Contain($"Wiped {Path.Combine(folder, "se***.axx")}"));
+    }
+
+    [Test]
+    public async Task SweepAllIsLoggedWithoutTheNamesOfTheFiles()
+    {
+        TransientFileService transient = CreateService(_ => Task.CompletedTask);
+        await File.WriteAllTextAsync(transient.CreateIncomingFile("secret.txt").FilePath, "received");
+        await File.WriteAllTextAsync(transient.CreateHandoffFile("private.txt").FilePath, "decrypted");
+
+        await transient.SweepAllAsync().WaitAsync(_timeout);
+
+        Assert.That(_log.Texts, Does.Contain("Sweep of [cache…] started, all files, max age 00:00:00"));
+        Assert.That(_log.Texts, Does.Contain("Sweep of [cache…] ended, 2 wiped, 0 deleted"));
+        Assert.That(_log.Texts, Does.Contain("Removed folder [cache…]"));
+        Assert.That(_log.Texts, Has.None.Contains("secret"));
+        Assert.That(_log.Texts, Has.None.Contains("private"));
+    }
+
     // Sweeps are done in the order asked for, so one asked for now is done once those asked for before it are. With
     // the largest age, it wipes nothing itself.
     private static Task WhenSweptAsync(TransientFileService transient) =>
         transient.SweepAsync(TimeSpan.MaxValue).WaitAsync(_timeout);
 
     private TransientFileService CreateService(Func<IWritableFile, Task> onOverwriteAsync)
-        => new(new TestFileService(_cacheDirectory), new TestFileWiper(onOverwriteAsync), new FakeCrashLogService());
+        => new(new TestFileService(_cacheDirectory), new TestFileWiper(onOverwriteAsync), new FakeCrashLogService(), _log);
 
     private static IncomingFileService CreateIncomingService()
         => new(null!, null!, null!, null!, null!, new FakeCrashLogService(), new TestUserInterfaceService { CanReceiveIncomingFiles = true });

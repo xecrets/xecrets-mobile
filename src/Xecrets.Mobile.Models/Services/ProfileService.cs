@@ -46,7 +46,8 @@ internal sealed class ProfileService(
     ICoreServices coreServices,
     IXecretsDataStore dataStore,
     IProfileStore profileStore,
-    ProfileSession session)
+    ProfileSession session,
+    IEzLogging log)
     : IProfileService
 {
     public string CurrentEmail => session.Email;
@@ -88,6 +89,7 @@ internal sealed class ProfileService(
             return new ProfileActionResult(ProfileActionStatus.InvalidEmail);
         }
 
+        string oldEmail = session.Email;
         string oldPassword = session.Password;
         IUserDataStore userStore = session.UserStore!;
 
@@ -101,11 +103,22 @@ internal sealed class ProfileService(
 
         // With the old password too, the private keys encrypted with it are re-encrypted with the new one.
         ProfileActionResult result = await SignInAsync(password, [oldPassword]);
-        if (result.Succeeded && !string.Equals(oldPassword, password, StringComparison.Ordinal))
+        if (!result.Succeeded)
+        {
+            return result;
+        }
+
+        bool isPasswordChanged = !string.Equals(oldPassword, password, StringComparison.Ordinal);
+        string emails = string.Equals(oldEmail, keyPair.Email, StringComparison.Ordinal)
+            ? $"for {keyPair.Email}"
+            : $"from {oldEmail} to {keyPair.Email}";
+        log.Information($"Profile changed {emails}, password {(isPasswordChanged ? "changed" : "unchanged")}");
+
+        if (isPasswordChanged)
         {
             // Always a change, adding the password or counting its use, so the extra credentials are saved and thus
             // protected with the new password. The private keys are already updated with it when signing in.
-            await CountExtraPasswordUseAsync(oldPassword);
+            await CountExtraPasswordUseAsync(oldPassword, "from profile change");
         }
 
         return result;
@@ -163,6 +176,7 @@ internal sealed class ProfileService(
             (await LoadExtraCredentialsAsync(userStore, password, keyPair)).BeginEdit();
         credentials.Value.Passwords = [];
         await credentials.SaveAsync(force: true);
+        log.Information($"Password reset for {keyPair.Email}, new sign-in key, extra passwords cleared");
     }
 
     private Task<IPersistentData<ExtraCredentials>> LoadExtraCredentialsAsync(
@@ -203,14 +217,26 @@ internal sealed class ProfileService(
         PrivateKeyImportResult result = await Task.Run(() => coreServices.ImportPrivateKeys(json, request));
         if (result.ReEncryptedAccountsJson != json)
         {
-            await using IEditScope<PrivateKeyData> editablePrivateKeys = privateKeys.BeginEdit();
-            editablePrivateKeys.Value.Accounts =
-                JsonFile.Deserialize<PrivateKeyData>(result.ReEncryptedAccountsJson, ExceptionDispatchInfo.Throw)
-                    .Accounts;
+            int keysBefore = CountKeys(privateKeys.Value);
+            int keysAfter;
+            await using (IEditScope<PrivateKeyData> editablePrivateKeys = privateKeys.BeginEdit())
+            {
+                editablePrivateKeys.Value.Accounts =
+                    JsonFile.Deserialize<PrivateKeyData>(result.ReEncryptedAccountsJson, ExceptionDispatchInfo.Throw)
+                        .Accounts;
+                keysAfter = CountKeys(editablePrivateKeys.Value);
+            }
+
+            string loaded = result.LoadedKeyPairs.Count == 0
+                ? "none loaded"
+                : $"loaded {string.Join(", ", result.LoadedKeyPairs.Select(keyPair => $"{keyPair.Email} created {keyPair.CreatedUtc:O}"))}";
+            log.Information($"Stored private keys updated, {keysBefore} keys before, {keysAfter} after, {loaded}");
         }
 
         return result.LoadedKeyPairs;
     }
+
+    private static int CountKeys(PrivateKeyData privateKeys) => privateKeys.Accounts.Sum(account => account.Keys.Count);
 
     public void SignOut()
         => session.SignOut();
@@ -224,21 +250,21 @@ internal sealed class ProfileService(
     // As when adding a password, a new one also decrypts any private keys encrypted with it.
     public async Task RecordExtraPasswordUseAsync(string password)
     {
-        if (await CountExtraPasswordUseAsync(password))
+        if (await CountExtraPasswordUseAsync(password, "on use"))
         {
             await UpdateSessionPrivateKeysAsync();
         }
     }
 
-    // Returns true if the password is new among the extra passwords.
-    private async Task<bool> CountExtraPasswordUseAsync(string password)
+    // Returns true if the password is new among the extra passwords. The cause is logged if it is added.
+    private async Task<bool> CountExtraPasswordUseAsync(string password, string cause)
     {
         await using IEditScope<ExtraCredentials> credentials = session.ExtraCredentials!.BeginEdit();
 
         PasswordUsage? entry = FindExtraPassword(credentials.Value, password);
         if (entry is null)
         {
-            AddNewExtraPassword(credentials.Value, password, usageCount: 1);
+            AddNewExtraPassword(credentials.Value, password, usageCount: 1, cause);
             return true;
         }
 
@@ -262,7 +288,7 @@ internal sealed class ProfileService(
                 return;
             }
 
-            AddNewExtraPassword(credentials.Value, password, usageCount: 0);
+            AddNewExtraPassword(credentials.Value, password, usageCount: 0, "in advance");
         }
 
         await UpdateSessionPrivateKeysAsync();
@@ -274,6 +300,7 @@ internal sealed class ProfileService(
 
         credentials.Value.Passwords.RemoveAll(
             extraPassword => string.Equals(extraPassword.Password, password, StringComparison.Ordinal));
+        log.Information($"Extra password removed, {credentials.Value.Passwords.Count} in list");
     }
 
     private static PasswordUsage? FindExtraPassword(ExtraCredentials credentials, string password) =>
@@ -281,14 +308,17 @@ internal sealed class ProfileService(
             .FirstOrDefault(extraPassword => string.Equals(extraPassword.Password, password, StringComparison.Ordinal));
 
     // At most 25 passwords are kept, dropping the least used to make room.
-    private static void AddNewExtraPassword(ExtraCredentials credentials, string password, int usageCount)
+    private void AddNewExtraPassword(ExtraCredentials credentials, string password, int usageCount, string cause)
     {
         if (credentials.Passwords.Count >= 25)
         {
-            credentials.Passwords.RemoveRange(24, credentials.Passwords.Count - 24);
+            int droppedCount = credentials.Passwords.Count - 24;
+            credentials.Passwords.RemoveRange(24, droppedCount);
+            log.Information($"Least used extra passwords dropped: {droppedCount}");
         }
 
         credentials.Passwords.Add(new PasswordUsage { Password = password, UsageCount = usageCount, });
+        log.Information($"Extra password added {cause}, {credentials.Passwords.Count} in list");
     }
 
     public PublicKey GetPublicKey() =>

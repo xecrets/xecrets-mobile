@@ -47,7 +47,7 @@ public sealed class MobileDeviceSettingsTests
     public void SetUp()
     {
         _directory = Path.Combine(Path.GetTempPath(), $"xecrets-mobile-test-{Guid.NewGuid():N}");
-        _store = new MobileDataStore(new TestFileService(_directory), new TestCrashLogService(), TimeProvider.System, new ProtectedPayload());
+        _store = new MobileDataStore(new TestFileService(_directory), new TestCrashLogService(), new FakeEzLogging(), TimeProvider.System, new ProtectedPayload());
     }
 
     [TearDown]

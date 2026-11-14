@@ -56,7 +56,7 @@ public sealed class InstallationServiceTests
         _directory = Path.Combine(Path.GetTempPath(), $"xecrets-mobile-test-{Guid.NewGuid():N}");
         _fileService = new TestFileService(_directory);
         _deviceIdentity = new TestDeviceIdentity { DeviceId = "device" };
-        _store = new MobileDataStore(_fileService, new TestCrashLogService(), TimeProvider.System, new ProtectedPayload());
+        _store = new MobileDataStore(_fileService, new TestCrashLogService(), new FakeEzLogging(), TimeProvider.System, new ProtectedPayload());
     }
 
     [TearDown]

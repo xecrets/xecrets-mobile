@@ -439,7 +439,8 @@ public sealed class PendingFileTests
         DecryptionPasswordRequestState request = new();
         bool pendingWhenWiped = true;
         TransientFileService transient = new(new TestFileService(_directory),
-            new TestFileWiper(() => pendingWhenWiped = request.HasPendingRequest), new FakeCrashLogService());
+            new TestFileWiper(() => pendingWhenWiped = request.HasPendingRequest), new FakeCrashLogService(),
+            new FakeEzLogging());
         ITransientFile encryptedFile = transient.CreateEncryptedInputFile("input.axx");
         string path = encryptedFile.FilePath;
         await File.WriteAllTextAsync(path, "input");
@@ -448,8 +449,8 @@ public sealed class PendingFileTests
         PreviewService preview = new(null!, profile, transient, new PreviewState(), request, new RunningOperation(new ScriptedUserInterface()), new FakeCrashLogService());
         TestUserInterfaceService userInterface = new();
         GrantCleanupService grantCleanup = new(
-            new MobileDataStore(new TestFileService(_directory), new FakeCrashLogService(), TimeProvider.System,
-                new ProtectedPayload()),
+            new MobileDataStore(new TestFileService(_directory), new FakeCrashLogService(), new FakeEzLogging(),
+                TimeProvider.System, new ProtectedPayload()),
             new FakeFileAccess(null!),
             new FakeCrashLogService());
         SessionExitService exit = new(preview, request, transient, grantCleanup, profile, userInterface);
@@ -467,7 +468,8 @@ public sealed class PendingFileTests
 
     private TransientFileService CreateTransientService()
     {
-        TransientFileService transient = new(new TestFileService(_directory), new TestFileWiper(), new FakeCrashLogService());
+        TransientFileService transient = new(new TestFileService(_directory), new TestFileWiper(), new FakeCrashLogService(),
+            new FakeEzLogging());
         _transients.Add(transient);
         return transient;
     }

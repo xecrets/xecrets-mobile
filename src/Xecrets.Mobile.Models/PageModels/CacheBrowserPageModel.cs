@@ -44,17 +44,20 @@ public partial class CacheBrowserPageModel : PageModelBase
 {
     private readonly IFileService _fileService;
     private readonly ICrashLogService _crashLogService;
+    private readonly IEzLogging _log;
     private readonly string _cacheDirectory;
     private string _currentDirectory;
 
     public CacheBrowserPageModel(
         IFileService fileService,
         ICrashLogService crashLogService,
+        IEzLogging log,
         IUserInterfaceService userInterfaceService)
         : base(userInterfaceService)
     {
         _fileService = fileService;
         _crashLogService = crashLogService;
+        _log = log;
         // The whole cache of the app, of which the cache directory of the files is a part, so that also the crash logs
         // are shown.
         _cacheDirectory = Path.GetDirectoryName(fileService.CacheDirectory)!;
@@ -131,11 +134,13 @@ public partial class CacheBrowserPageModel : PageModelBase
                     }
 
                     Directory.Delete(entry.FilePath, recursive: true);
+                    _log.Information($"Deleted folder {ToLogPath(entry.FilePath)}");
                 }
                 else
                 {
                     File.SetAttributes(entry.FilePath, FileAttributes.Normal);
                     File.Delete(entry.FilePath);
+                    _log.Information($"Deleted {ToLogPath(entry.FilePath).MaskPath()}");
                 }
             }
 
@@ -143,6 +148,7 @@ public partial class CacheBrowserPageModel : PageModelBase
             {
                 string parentDirectory = Directory.GetParent(_currentDirectory)!.FullName;
                 Directory.Delete(_currentDirectory);
+                _log.Information($"Deleted folder {ToLogPath(_currentDirectory)}");
                 _currentDirectory = parentDirectory;
             }
         }
@@ -188,6 +194,8 @@ public partial class CacheBrowserPageModel : PageModelBase
             StatusText = ex.FormatException();
         }
     }
+
+    private string ToLogPath(string path) => Path.GetRelativePath(_cacheDirectory, path);
 
     private string GetCurrentPath()
     {

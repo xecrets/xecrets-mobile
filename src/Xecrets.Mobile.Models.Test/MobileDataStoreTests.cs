@@ -48,13 +48,15 @@ public sealed class MobileDataStoreTests
 {
     private string _directory = null!;
     private MobileDataStore _store = null!;
+    private FakeEzLogging _log = null!;
 
     [SetUp]
     public void SetUp()
     {
         _directory = Path.Combine(Path.GetTempPath(), $"xecrets-mobile-test-{Guid.NewGuid():N}");
         IProtectedPayload protectedPayload = new ProtectedPayload();
-        _store = new MobileDataStore(new TestFileService(_directory), new TestCrashLogService(), TimeProvider.System, protectedPayload);
+        _log = new FakeEzLogging();
+        _store = new MobileDataStore(new TestFileService(_directory), new TestCrashLogService(), _log, TimeProvider.System, protectedPayload);
     }
 
     [TearDown]
@@ -89,6 +91,33 @@ public sealed class MobileDataStoreTests
 
         Assert.That(File.Exists(DataPath), Is.False);
         Assert.That(await _store.GetUsersAsync(), Is.Empty);
+    }
+
+    [Test]
+    public async Task ResetStoreLogsTheDeletedFiles()
+    {
+        await _store.CreateUserAsync(NewUser("a@example.com", "A", 1));
+        await _store.UpdateDeviceValuesAsync(values => values["key"] = "device-value");
+
+        await _store.ResetStoreAsync();
+
+        Assert.That(_log.Entries, Is.EqualTo(new[]
+        {
+            (EzLogLevel.Information, "Deleted xecrets-data.json"),
+            (EzLogLevel.Information, $"Deleted {Path.Combine("Device", "xecrets-device.json")}"),
+        }));
+    }
+
+    [Test]
+    public async Task ClearedSaveInProgressIsLoggedAsDeleted()
+    {
+        await _store.WriteSaveInProgressAsync(new SaveInProgress { UserId = "user" });
+        await _store.ClearSaveInProgressAsync();
+
+        Assert.That(_log.Entries, Is.EqualTo(new[]
+        {
+            (EzLogLevel.Information, $"Deleted {Path.Combine("Device", "xecrets-save-in-progress.json")}"),
+        }));
     }
 
     [Test]
