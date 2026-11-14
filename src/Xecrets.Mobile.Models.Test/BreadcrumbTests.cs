@@ -66,7 +66,7 @@ public sealed class BreadcrumbTests
         Task run = app.Operations.PickAndRunAsync(WorkFolderIntent.Auto, docs);
 
         EnterPasswordPageModel page = app.CreateEnterPasswordPage();
-        page.Initialize((DecryptionPasswordsIntent)app.UserInterface.Payloads.Single());
+        page.Initialize((DecryptionPasswordsPayload)app.UserInterface.Payloads.Single());
         Assert.That(app.UserInterface.Destinations, Is.EqualTo([AppDestination.EnterPassword]));
         Assert.That(page.Breadcrumb, Is.EqualTo(string.Join(
             MobileTexts.BreadcrumbSeparator,
@@ -83,7 +83,7 @@ public sealed class BreadcrumbTests
         using TestApp app = new();
         EnterPasswordPageModel page = app.CreateEnterPasswordPage();
 
-        page.Initialize(DecryptionPasswordsIntent.Manage);
+        page.Initialize(new DecryptionPasswordsPayload(DecryptionPasswordsIntent.Manage, ""));
 
         Assert.That(page.Breadcrumb, Is.EqualTo(string.Join(
             MobileTexts.BreadcrumbSeparator,

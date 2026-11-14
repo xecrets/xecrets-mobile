@@ -48,7 +48,7 @@ public sealed class DecryptionPasswordsPageTests
         app.Profile.ExtraPasswords.Add(new PasswordUsage { Password = "second", });
         EnterPasswordPageModel page = app.CreateEnterPasswordPage();
 
-        page.Initialize(DecryptionPasswordsIntent.Manage);
+        page.Initialize(new DecryptionPasswordsPayload(DecryptionPasswordsIntent.Manage, ""));
         page.Load();
 
         Assert.That(page.Passwords, Is.EqualTo(["first", "second"]));
@@ -62,7 +62,7 @@ public sealed class DecryptionPasswordsPageTests
         using TestApp app = new();
         EnterPasswordPageModel page = app.CreateEnterPasswordPage();
 
-        page.Initialize(DecryptionPasswordsIntent.Manage);
+        page.Initialize(new DecryptionPasswordsPayload(DecryptionPasswordsIntent.Manage, ""));
         page.Load();
 
         Assert.That(page.Passwords, Is.Empty);
@@ -75,7 +75,7 @@ public sealed class DecryptionPasswordsPageTests
         using TestApp app = new();
         EnterPasswordPageModel page = app.CreateEnterPasswordPage();
 
-        page.Initialize(DecryptionPasswordsIntent.Add);
+        page.Initialize(new DecryptionPasswordsPayload(DecryptionPasswordsIntent.Add, "x.axx"));
 
         Assert.That(page.IsAdding, Is.True);
     }
@@ -85,7 +85,7 @@ public sealed class DecryptionPasswordsPageTests
     {
         using TestApp app = new();
         EnterPasswordPageModel page = app.CreateEnterPasswordPage();
-        page.Initialize(DecryptionPasswordsIntent.Manage);
+        page.Initialize(new DecryptionPasswordsPayload(DecryptionPasswordsIntent.Manage, ""));
         page.Load();
 
         page.AddCommand.Execute(null);
@@ -111,7 +111,7 @@ public sealed class DecryptionPasswordsPageTests
         app.Core.Password = "unknown";
         Task run = app.Operations.PickAndRunAsync(WorkFolderIntent.Auto, docs);
         EnterPasswordPageModel page = app.CreateEnterPasswordPage();
-        page.Initialize(DecryptionPasswordsIntent.Manage);
+        page.Initialize(new DecryptionPasswordsPayload(DecryptionPasswordsIntent.Manage, ""));
         page.Load();
         Assert.That(page.ErrorText, Is.Empty);
 
@@ -127,6 +127,52 @@ public sealed class DecryptionPasswordsPageTests
         await run;
     }
 
+    [Test]
+    public void FileThatNeedsAPasswordIsNamed()
+    {
+        using TestApp app = new();
+        EnterPasswordPageModel page = app.CreateEnterPasswordPage();
+
+        page.Initialize(new DecryptionPasswordsPayload(DecryptionPasswordsIntent.Add, "x.axx"));
+
+        Assert.That(page.FileNameText, Is.EqualTo("x.axx"));
+    }
+
+    [TestCase("docs")]
+    [TestCase(null)]
+    public async Task FilePickedToDecryptIsNamedWhenAPasswordIsAskedFor(string? folder)
+    {
+        using TestApp app = new();
+        WorkFolder? workFolder = folder is null ? null : app.AddFolder(folder);
+        app.AddFile("other/x.axx", "ENC:a.txt\ntext");
+        app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
+        app.Access.PickedFiles.Enqueue(folder is null ? "other/x.axx" : "docs/x.axx");
+        app.Core.Password = "unknown";
+
+        Task run = app.Operations.PickAndRunAsync(WorkFolderIntent.Auto, workFolder);
+
+        Assert.That(
+            app.UserInterface.Payloads,
+            Is.EqualTo([new DecryptionPasswordsPayload(DecryptionPasswordsIntent.Add, "x.axx")]));
+        app.OperationService.CancelPasswordRequest();
+        await run;
+    }
+
+    [Test]
+    public async Task FileToShowIsNamedWhenAPasswordIsAskedFor()
+    {
+        using TestApp app = new();
+        app.AddFolder("docs");
+        app.AddFile("docs/x.axx", "ENC:a.txt\ntext");
+        app.Preview.NeedsPassword = true;
+
+        await app.Operations.PreviewAsync(new FileReference("docs/x.axx", "x.axx"), FlowOrigin.RecentFiles);
+
+        Assert.That(
+            app.UserInterface.Payloads,
+            Is.EqualTo([new DecryptionPasswordsPayload(DecryptionPasswordsIntent.Add, "x.axx")]));
+    }
+
     [TestCase(true)]
     [TestCase(false)]
     public async Task PasswordIsDeletedOnlyWhenConfirmed(bool confirmed)
@@ -136,7 +182,7 @@ public sealed class DecryptionPasswordsPageTests
         app.Profile.ExtraPasswords.Add(new PasswordUsage { Password = "second", });
         app.UserInterface.Answers.Enqueue(confirmed);
         EnterPasswordPageModel page = app.CreateEnterPasswordPage();
-        page.Initialize(DecryptionPasswordsIntent.Manage);
+        page.Initialize(new DecryptionPasswordsPayload(DecryptionPasswordsIntent.Manage, ""));
         page.Load();
 
         await page.DeleteCommand.ExecuteAsync("first");

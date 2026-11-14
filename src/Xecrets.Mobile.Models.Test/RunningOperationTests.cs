@@ -173,7 +173,7 @@ public sealed class RunningOperationTests
         Task run = RunFolderFilesAsync(app, docs, FileOperation.Decrypt);
         answer.SetResult(false);
         EnterPasswordPageModel passwordPage = app.CreateEnterPasswordPage();
-        passwordPage.Initialize(DecryptionPasswordsIntent.Add);
+        passwordPage.Initialize(new DecryptionPasswordsPayload(DecryptionPasswordsIntent.Add, "x.axx"));
         passwordPage.Password = "other";
         await passwordPage.SubmitCommand.ExecuteAsync(null);
         passwordPage.CancelWorkFolderRequest();

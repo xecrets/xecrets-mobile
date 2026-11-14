@@ -195,6 +195,33 @@ public sealed class PendingFileTests
         Assert.That(userInterface.Messages, Is.Empty);
     }
 
+    /// <summary>
+    /// The name is the one shown to the user, not that of the copy, where characters not allowed in file names are
+    /// replaced.
+    /// </summary>
+    [Test]
+    public async Task ReceivedFileIsNamedWhenAPasswordIsAskedFor()
+    {
+        TransientFileService transient = CreateTransientService();
+        TestUserInterfaceService userInterface = new() { CanProcessIncomingFiles = true, CanReceiveIncomingFiles = true };
+        TestProfileService profile = new() { IsAuthenticated = true, KnowsPassword = false };
+        TestCoreServices core = new();
+        PreviewService preview = new(core, profile, transient, new PreviewState(), new DecryptionPasswordRequestState(), new RunningOperation(new ScriptedUserInterface()), new FakeCrashLogService());
+        IncomingFileService incoming = new(profile, preview, null!, new FlowContext(), core, new FakeCrashLogService(), userInterface);
+        await incoming.ReceiveAsync(new TestIncomingFileSource(async () =>
+        {
+            ITransientFile file = transient.CreateIncomingFile("Report: 2026.axx");
+            await File.WriteAllBytesAsync(file.FilePath, [0xe0]);
+            return new IncomingFileInfo(file, "Report: 2026.axx", "application/octet-stream");
+        }));
+
+        Assert.That(userInterface.Destinations, Is.EqualTo([AppDestination.EnterPassword]));
+        Assert.That(
+            userInterface.Payloads,
+            Is.EqualTo([new DecryptionPasswordsPayload(DecryptionPasswordsIntent.Add, "Report: 2026.axx")]));
+        preview.CancelPasswordRequest();
+    }
+
     [Test]
     public async Task IncomingFileNamedAsEncryptedButNotEncryptedIsOnlyReported()
     {
@@ -342,7 +369,7 @@ public sealed class PendingFileTests
         {
             Password = "password",
         };
-        page.Initialize(DecryptionPasswordsIntent.Add);
+        page.Initialize(new DecryptionPasswordsPayload(DecryptionPasswordsIntent.Add, "input.axx"));
         await page.SubmitCommand.ExecuteAsync(null);
 
         Assert.That(request.HasPendingRequest, Is.False);
@@ -373,7 +400,7 @@ public sealed class PendingFileTests
         {
             Password = "wrong",
         };
-        page.Initialize(DecryptionPasswordsIntent.Add);
+        page.Initialize(new DecryptionPasswordsPayload(DecryptionPasswordsIntent.Add, "input.axx"));
         await page.SubmitCommand.ExecuteAsync(null);
         Assert.That(request.HasPendingRequest, Is.True);
         Assert.That(page.ErrorText, Is.EqualTo(MobileTexts.DialogTextWrongPasswordOpen));
@@ -488,6 +515,7 @@ public sealed class PendingFileTests
         public bool IsNavigating => false;
         public IReadOnlyDictionary<string, string> IconMap => throw new NotSupportedException();
         public List<AppDestination> Destinations { get; } = [];
+        public List<object?> Payloads { get; } = [];
         public List<AppDestination> Replacements { get; } = [];
         public List<string> Messages { get; } = [];
         public int BackCount { get; private set; }
@@ -504,6 +532,7 @@ public sealed class PendingFileTests
         public Task NavigateToAsync(AppDestination destination, object? parameter)
         {
             Destinations.Add(destination);
+            Payloads.Add(parameter);
             return Task.CompletedTask;
         }
         public Task NavigateReplacingAsync(AppDestination destination, object? parameter)
@@ -531,6 +560,7 @@ public sealed class PendingFileTests
         public string CurrentEmail => "test@example.com";
         public string CurrentPassword => throw new NotSupportedException();
         public bool IsAuthenticated { get; set; }
+        public bool KnowsPassword { get; init; } = true;
         public List<string> RecordedPasswords { get; } = [];
         public Task<bool> HasProfileAsync() => Task.FromResult(true);
         public Task<SignInKey?> LoadProfileAsync() => throw new NotSupportedException();
@@ -539,7 +569,7 @@ public sealed class PendingFileTests
         public Task<ProfileActionResult> LoginAsync(string password) => throw new NotSupportedException();
         public Task ResetProfileAsync(string password) => throw new NotSupportedException();
         public void SignOut() => IsAuthenticated = false;
-        public Identity GetIdentity() => new(IsAuthenticated ? "password" : "profile", []);
+        public Identity GetIdentity() => new(IsAuthenticated && KnowsPassword ? "password" : "profile", []);
         public IReadOnlyList<PasswordUsage> GetExtraPasswords() => [];
         public Task RecordExtraPasswordUseAsync(string password)
         {

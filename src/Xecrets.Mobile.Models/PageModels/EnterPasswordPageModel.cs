@@ -81,6 +81,11 @@ public partial class EnterPasswordPageModel(
     /// </summary>
     [ObservableProperty] public partial string NoPasswordsText { get; set; } = string.Empty;
 
+    /// <summary>
+    /// The name of the file that a password is asked for, and empty when the passwords are managed.
+    /// </summary>
+    [ObservableProperty] public partial string FileNameText { get; set; } = string.Empty;
+
     [ObservableProperty] public partial bool IsAdding { get; set; }
 
     [ObservableProperty]
@@ -95,10 +100,11 @@ public partial class EnterPasswordPageModel(
     [NotifyCanExecuteChangedFor(nameof(DeleteCommand))]
     public partial bool IsBusy { get; set; }
 
-    public void Initialize(DecryptionPasswordsIntent intent)
+    public void Initialize(DecryptionPasswordsPayload payload)
     {
-        _intent = intent;
-        IsAdding = intent == DecryptionPasswordsIntent.Add;
+        _intent = payload.Intent;
+        FileNameText = payload.FileName;
+        IsAdding = payload.Intent == DecryptionPasswordsIntent.Add;
         OnPropertyChanged(nameof(Breadcrumb));
     }
 

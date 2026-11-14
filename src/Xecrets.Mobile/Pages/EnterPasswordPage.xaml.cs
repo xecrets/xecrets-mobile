@@ -58,10 +58,7 @@ internal partial class EnterPasswordPage : IQueryAttributable
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
-        Model.Initialize(
-            query.TryGetValue(nameof(NavigationParameter.Payload), out object? intent)
-                ? (DecryptionPasswordsIntent)intent
-                : DecryptionPasswordsIntent.Manage);
+        Model.Initialize((DecryptionPasswordsPayload)query[nameof(NavigationParameter.Payload)]);
     }
 
     // Pressing Go keeps the keyboard open, also when the add form it was typed into is closed, covering the list.

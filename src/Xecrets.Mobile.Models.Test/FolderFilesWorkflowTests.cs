@@ -320,7 +320,7 @@ public sealed class FolderFilesWorkflowTests
         app.UserInterface.Answers.Enqueue(true);
         Task run = PickAndRunAsync(app, docs, FileOperation.Decrypt, FolderScope.Folder);
         EnterPasswordPageModel passwordPage = app.CreateEnterPasswordPage();
-        passwordPage.Initialize(DecryptionPasswordsIntent.Add);
+        passwordPage.Initialize(new DecryptionPasswordsPayload(DecryptionPasswordsIntent.Add, "x.axx"));
         passwordPage.Password = "other";
 
         await passwordPage.SubmitCommand.ExecuteAsync(null);
@@ -595,7 +595,7 @@ public sealed class FolderFilesWorkflowTests
     {
         Assert.That(await shown.WaitAsync(TimeSpan.FromSeconds(5)), Is.True);
         EnterPasswordPageModel passwordPage = app.CreateEnterPasswordPage();
-        passwordPage.Initialize(DecryptionPasswordsIntent.Add);
+        passwordPage.Initialize(new DecryptionPasswordsPayload(DecryptionPasswordsIntent.Add, "x.axx"));
         passwordPage.Password = password;
         await passwordPage.SubmitCommand.ExecuteAsync(null);
         passwordPage.CancelWorkFolderRequest();

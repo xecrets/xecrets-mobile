@@ -154,7 +154,7 @@ internal sealed class IncomingFileService(
                 {
                     await userInterfaceService.NavigateToAsync(
                         AppDestination.EnterPassword,
-                        DecryptionPasswordsIntent.Add);
+                        new DecryptionPasswordsPayload(DecryptionPasswordsIntent.Add, file.DisplayName));
                 }
                 else
                 {

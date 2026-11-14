@@ -170,7 +170,9 @@ internal partial class AppShell
             return;
         }
 
-        await _userInterfaceService.NavigateToAsync(AppDestination.EnterPassword, DecryptionPasswordsIntent.Manage);
+        await _userInterfaceService.NavigateToAsync(
+            AppDestination.EnterPassword,
+            new DecryptionPasswordsPayload(DecryptionPasswordsIntent.Manage, ""));
     }
 
     [RelayCommand]

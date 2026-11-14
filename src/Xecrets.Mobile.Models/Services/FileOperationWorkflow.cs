@@ -341,7 +341,7 @@ public sealed class FileOperationWorkflow(
         }
 
         FileOperationOutcome outcome = await operationService.TransformAsync(file, operation, contents, reporter);
-        return outcome.Status == FileOperationStatus.PasswordNeeded ? await AskForPasswordAsync() : outcome;
+        return outcome.Status == FileOperationStatus.PasswordNeeded ? await AskForPasswordAsync(file) : outcome;
     }
 
     /// <summary>
@@ -349,11 +349,13 @@ public sealed class FileOperationWorkflow(
     /// request ends. The request is taken before the page for passwords is shown, since it ends when the page is left,
     /// which may be before the navigation to it is done.
     /// </summary>
-    private async Task<FileOperationOutcome> AskForPasswordAsync()
+    private async Task<FileOperationOutcome> AskForPasswordAsync(FileReference file)
     {
         Task<FileOperationOutcome> request = operationService.WaitForPasswordRequestAsync();
         await ThrowIfCanceledAsync(operationService.CancelPasswordRequest);
-        await userInterfaceService.NavigateToAsync(AppDestination.EnterPassword, DecryptionPasswordsIntent.Add);
+        await userInterfaceService.NavigateToAsync(
+            AppDestination.EnterPassword,
+            new DecryptionPasswordsPayload(DecryptionPasswordsIntent.Add, file.Name));
         return await request;
     }
 
@@ -383,7 +385,7 @@ public sealed class FileOperationWorkflow(
                 break;
 
             case FileOperationStatus.PasswordNeeded:
-                return await AskForPasswordAsync();
+                return await AskForPasswordAsync(file);
 
             case FileOperationStatus.NotDone:
                 break;
@@ -471,7 +473,9 @@ public sealed class FileOperationWorkflow(
         if (previewService.HasPendingPasswordRequest)
         {
             await ThrowIfCanceledAsync(previewService.CancelPasswordRequest);
-            await userInterfaceService.NavigateToAsync(AppDestination.EnterPassword, DecryptionPasswordsIntent.Add);
+            await userInterfaceService.NavigateToAsync(
+                AppDestination.EnterPassword,
+                new DecryptionPasswordsPayload(DecryptionPasswordsIntent.Add, file.Name));
             return true;
         }
 
