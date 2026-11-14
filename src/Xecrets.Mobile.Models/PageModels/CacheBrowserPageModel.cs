@@ -86,13 +86,13 @@ public partial class CacheBrowserPageModel : PageModelBase
             foreach (DirectoryInfo directory in new DirectoryInfo(_currentDirectory).EnumerateDirectories()
                          .OrderBy(directory => directory.Name, StringComparer.OrdinalIgnoreCase))
             {
-                Entries.Add(new CacheBrowserEntry(directory.FullName, directory.Name, true, 0, OpenCommand));
+                Entries.Add(new CacheBrowserEntry(directory.FullName, directory.Name, true, 0, directory.LastWriteTimeUtc, OpenCommand));
             }
 
             foreach (FileInfo file in new DirectoryInfo(_currentDirectory).EnumerateFiles()
                          .OrderBy(file => file.Name, StringComparer.OrdinalIgnoreCase))
             {
-                Entries.Add(new CacheBrowserEntry(file.FullName, file.Name, false, file.Length, OpenCommand));
+                Entries.Add(new CacheBrowserEntry(file.FullName, file.Name, false, file.Length, file.LastWriteTimeUtc, OpenCommand));
             }
 
             CurrentPath = GetCurrentPath();

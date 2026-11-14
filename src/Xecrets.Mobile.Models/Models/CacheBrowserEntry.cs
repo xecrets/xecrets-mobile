@@ -28,6 +28,8 @@
 
 #endregion Copyright and GPL License
 
+using System.Globalization;
+
 using CommunityToolkit.Mvvm.Input;
 
 namespace Xecrets.Mobile.Models.Models;
@@ -37,7 +39,10 @@ public sealed record CacheBrowserEntry(
     string DisplayName,
     bool IsDirectory,
     long Size,
+    DateTime LastWriteTimeUtc,
     IAsyncRelayCommand<CacheBrowserEntry> OpenCommand)
 {
-    public string Details => IsDirectory ? "Folder" : $"{Size:N0} bytes";
+    public string Details =>
+        $"{LastWriteTimeUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)} · " +
+        (IsDirectory ? "Folder" : $"{Size:N0} bytes");
 }
