@@ -59,17 +59,17 @@ internal partial class AppShell
     private readonly RunningOperation _runningOperation;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="AppShell"/> class, with the debug menu item only in a Debug or beta
-    /// build.
+    /// Initializes a new instance of the <see cref="AppShell"/> class, with the debug menu item only while the debug
+    /// menu is enabled.
     /// </summary>
     public AppShell(
         IUserInterfaceService userInterfaceService,
         SessionExitService sessionExitService,
-        IBuildInformation buildInformation,
         IXecretsDataStore dataStore,
         StartupPageModel startupPageModel,
         ProfileSession profileSession,
-        RunningOperation runningOperation)
+        RunningOperation runningOperation,
+        DebugMenu debugMenu)
     {
         _userInterfaceService = userInterfaceService;
         _sessionExitService = sessionExitService;
@@ -79,7 +79,8 @@ internal partial class AppShell
         _runningOperation = runningOperation;
         InitializeComponent();
         runningOperation.IsRunningChanged += OnIsRunningChanged;
-        SetFlyoutItemIsVisible(DebugMenuItem, buildInformation.IsDebug || buildInformation.IsBeta);
+        debugMenu.IsEnabledChanged += (_, _) => SetFlyoutItemIsVisible(DebugMenuItem, debugMenu.IsEnabled);
+        SetFlyoutItemIsVisible(DebugMenuItem, debugMenu.IsEnabled);
         UpdateThemeButtons(ThemePreference.System);
     }
 

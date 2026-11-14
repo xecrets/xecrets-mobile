@@ -33,6 +33,7 @@ using CommunityToolkit.Mvvm.Input;
 
 using Xecrets.Mobile.Models.Abstractions;
 using Xecrets.Mobile.Models.Models;
+using Xecrets.Mobile.Models.Services;
 using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models.PageModels;
@@ -43,8 +44,13 @@ namespace Xecrets.Mobile.Models.PageModels;
 public partial class AboutPageModel(
     IUserInterfaceService userInterfaceService,
     IBuildInformation buildInformation,
-    IProfileService profileService) : PageModelBase(userInterfaceService), IBreadcrumbPageModel
+    IProfileService profileService,
+    DebugMenu debugMenu) : PageModelBase(userInterfaceService), IBreadcrumbPageModel
 {
+    private const int VersionTapsToEnableDebugMenu = 7;
+
+    private int _versionTapCount;
+
     /// <summary>
     /// How many extra passwords the profile signed in has, or "" if it has none or is not signed in.
     /// </summary>
@@ -90,6 +96,7 @@ public partial class AboutPageModel(
     [RelayCommand]
     private async Task InitializeAsync()
     {
+        _versionTapCount = 0;
         if (!profileService.IsAuthenticated)
         {
             return;
@@ -105,6 +112,23 @@ public partial class AboutPageModel(
         if (keys.Total > 0)
         {
             PrivateKeysInfo = MobileTexts.AboutPrivateKeys(keys.Decryptable, keys.Total);
+        }
+    }
+
+    // Enough taps on the version, since the page appeared, ask to enable the debug menu in a release build. The texts
+    // are literals, like the texts of the debug page.
+    [RelayCommand]
+    private async Task VersionTappedAsync()
+    {
+        if (debugMenu.IsEnabled || ++_versionTapCount < VersionTapsToEnableDebugMenu)
+        {
+            return;
+        }
+
+        _versionTapCount = 0;
+        if (await UserInterfaceService.DisplayConfirmationAsync("Enable debug menu?", "Yes", "No"))
+        {
+            debugMenu.IsEnabled = true;
         }
     }
 

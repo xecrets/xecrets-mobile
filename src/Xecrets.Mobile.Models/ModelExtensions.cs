@@ -84,6 +84,7 @@ public static partial class ModelExtensions
         services.AddSingleton<FileOperationWorkflow>();
         services.AddSingleton<FolderFilesWorkflow>();
         services.AddSingleton<RunningOperation>();
+        services.AddSingleton<DebugMenu>();
         services.AddSingleton<IInterruptedSaveService, InterruptedSaveService>();
         services.AddSingleton<GrantCleanupService>();
         services.AddSingleton<InstallationService>();

@@ -142,6 +142,9 @@ public partial class CacheBrowserPageModel : PageModelBase
     private async Task ClearAsync()
     {
         string status = string.Empty;
+
+        // Logged only after all is deleted, since writing the log recreates it, which is in the cache too.
+        List<string> deleted = [];
         try
         {
             foreach (CacheBrowserEntry entry in Entries)
@@ -154,13 +157,13 @@ public partial class CacheBrowserPageModel : PageModelBase
                     }
 
                     Directory.Delete(entry.FilePath, recursive: true);
-                    _log.Information($"Deleted folder {ToLogPath(entry.FilePath)}");
+                    deleted.Add($"Deleted folder {ToLogPath(entry.FilePath)}");
                 }
                 else
                 {
                     File.SetAttributes(entry.FilePath, FileAttributes.Normal);
                     File.Delete(entry.FilePath);
-                    _log.Information($"Deleted {ToLogPath(entry.FilePath).MaskPath()}");
+                    deleted.Add($"Deleted {ToLogPath(entry.FilePath).MaskPath()}");
                 }
             }
 
@@ -168,7 +171,7 @@ public partial class CacheBrowserPageModel : PageModelBase
             {
                 string parentDirectory = Directory.GetParent(_currentDirectory)!.FullName;
                 Directory.Delete(_currentDirectory);
-                _log.Information($"Deleted folder {ToLogPath(_currentDirectory)}");
+                deleted.Add($"Deleted folder {ToLogPath(_currentDirectory)}");
                 _currentDirectory = parentDirectory;
             }
         }
@@ -178,6 +181,11 @@ public partial class CacheBrowserPageModel : PageModelBase
         }
         finally
         {
+            foreach (string message in deleted)
+            {
+                _log.Information(message);
+            }
+
             await LoadAsync();
         }
 

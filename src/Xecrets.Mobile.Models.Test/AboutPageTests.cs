@@ -33,6 +33,7 @@ using NUnit.Framework;
 using Xecrets.Common.Models;
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.PageModels;
+using Xecrets.Mobile.Models.Services;
 using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models.Test;
@@ -103,9 +104,95 @@ public sealed class AboutPageTests
         Assert.That(page.PrivateKeysInfo, Is.EqualTo(MobileTexts.AboutPrivateKeys(1, 2)));
     }
 
+    [Test]
+    public async Task SevenTapsOnTheVersionAskAndYesEnablesTheDebugMenu()
+    {
+        AboutPageModel page = CreateAboutPage(new FakeBuildInformation(), out ScriptedUserInterface ui, out DebugMenu debugMenu);
+        ui.Answers.Enqueue(true);
+        int changedCount = 0;
+        debugMenu.IsEnabledChanged += (_, _) => ++changedCount;
+        await page.InitializeCommand.ExecuteAsync(null);
+
+        await TapVersionAsync(page, 6);
+        Assert.That(ui.Confirmations, Is.Empty);
+
+        await TapVersionAsync(page, 1);
+        Assert.That(ui.Confirmations, Is.EqualTo(new[] { "Enable debug menu?" }));
+        Assert.That(ui.ConfirmationButtons, Is.EqualTo(new[] { ("Yes", "No") }));
+        Assert.That(debugMenu.IsEnabled, Is.True);
+        Assert.That(changedCount, Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task NoLeavesTheDebugMenuDisabledAndSevenMoreTapsAskAgain()
+    {
+        AboutPageModel page = CreateAboutPage(new FakeBuildInformation(), out ScriptedUserInterface ui, out DebugMenu debugMenu);
+        ui.Answers.Enqueue(false);
+        int changedCount = 0;
+        debugMenu.IsEnabledChanged += (_, _) => ++changedCount;
+        await page.InitializeCommand.ExecuteAsync(null);
+
+        await TapVersionAsync(page, 7);
+        Assert.That(debugMenu.IsEnabled, Is.False);
+        Assert.That(changedCount, Is.Zero);
+
+        await TapVersionAsync(page, 6);
+        Assert.That(ui.Confirmations, Has.Count.EqualTo(1));
+
+        await TapVersionAsync(page, 1);
+        Assert.That(ui.Confirmations, Has.Count.EqualTo(2));
+    }
+
+    [Test]
+    public async Task AppearingAgainResetsTheTaps()
+    {
+        AboutPageModel page = CreateAboutPage(new FakeBuildInformation(), out ScriptedUserInterface ui, out _);
+        await page.InitializeCommand.ExecuteAsync(null);
+        await TapVersionAsync(page, 6);
+
+        await page.InitializeCommand.ExecuteAsync(null);
+        await TapVersionAsync(page, 1);
+
+        Assert.That(ui.Confirmations, Is.Empty);
+    }
+
+    [Test]
+    public async Task TapsDoNotAskWhenTheDebugMenuIsAlreadyEnabled()
+    {
+        AboutPageModel page = CreateAboutPage(
+            new FakeBuildInformation { IsDebug = true, },
+            out ScriptedUserInterface ui,
+            out DebugMenu debugMenu);
+        await page.InitializeCommand.ExecuteAsync(null);
+
+        await TapVersionAsync(page, 14);
+
+        Assert.That(debugMenu.IsEnabled, Is.True);
+        Assert.That(ui.Confirmations, Is.Empty);
+    }
+
+    private static async Task TapVersionAsync(AboutPageModel page, int count)
+    {
+        for (int i = 0; i < count; ++i)
+        {
+            await page.VersionTappedCommand.ExecuteAsync(null);
+        }
+    }
+
     private static AboutPageModel CreateAboutPage(out FakeProfileService profile)
     {
         profile = new FakeProfileService();
-        return new AboutPageModel(new ScriptedUserInterface(), new FakeBuildInformation(), profile);
+        FakeBuildInformation buildInformation = new();
+        return new AboutPageModel(new ScriptedUserInterface(), buildInformation, profile, new DebugMenu(buildInformation));
+    }
+
+    private static AboutPageModel CreateAboutPage(
+        FakeBuildInformation buildInformation,
+        out ScriptedUserInterface ui,
+        out DebugMenu debugMenu)
+    {
+        ui = new ScriptedUserInterface();
+        debugMenu = new DebugMenu(buildInformation);
+        return new AboutPageModel(ui, buildInformation, new FakeProfileService(), debugMenu);
     }
 }

@@ -52,7 +52,6 @@ internal partial class App
     private readonly ITransientFileService _transientFileService;
     private readonly IUserInterfaceService _userInterfaceService;
     private readonly SessionExitService _sessionExitService;
-    private readonly IBuildInformation _buildInformation;
     private readonly IXecretsDataStore _dataStore;
     private readonly IServiceProvider _services;
     private readonly MobileCultureCoordinator _cultureCoordinator;
@@ -64,7 +63,6 @@ internal partial class App
         ITransientFileService transientFileService,
         IUserInterfaceService userInterfaceService,
         SessionExitService sessionExitService,
-        IBuildInformation buildInformation,
         IXecretsDataStore dataStore,
         IServiceProvider services,
         MobileCultureCoordinator cultureCoordinator,
@@ -75,7 +73,6 @@ internal partial class App
         _transientFileService = transientFileService;
         _userInterfaceService = userInterfaceService;
         _sessionExitService = sessionExitService;
-        _buildInformation = buildInformation;
         _dataStore = dataStore;
         _services = services;
         _cultureCoordinator = cultureCoordinator;
@@ -128,9 +125,9 @@ internal partial class App
     private AppShell CreateAppShell() => new(
         _userInterfaceService,
         _sessionExitService,
-        _buildInformation,
         _dataStore,
         _services.GetRequiredService<StartupPageModel>(),
         _services.GetRequiredService<ProfileSession>(),
-        _services.GetRequiredService<RunningOperation>());
+        _services.GetRequiredService<RunningOperation>(),
+        _services.GetRequiredService<DebugMenu>());
 }

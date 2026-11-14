@@ -68,7 +68,11 @@
                                    Style="{StaticResource Body2Strong}" />
                             <Label Grid.Column="1"
                                    Text="{Binding Version}"
-                                   Style="{StaticResource Body2}" />
+                                   Style="{StaticResource Body2}">
+                                <Label.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding VersionTappedCommand}" />
+                                </Label.GestureRecognizers>
+                            </Label>
 
                             <Label Grid.Row="1"
                                    Text="{x:Static modelUtilities:MobileTexts.AboutLabelPublisher}"
