@@ -30,8 +30,18 @@
 
 namespace Xecrets.Mobile.Models.Models;
 
+/// <summary>
+/// The kind of files a picker is for.
+/// </summary>
 public enum FilePickerKind
 {
+    /// <summary>
+    /// Any file.
+    /// </summary>
     Any,
+
+    /// <summary>
+    /// Encrypted files.
+    /// </summary>
     Encrypted,
 }

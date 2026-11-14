@@ -46,6 +46,9 @@ using Xecrets.Mobile.Models.Services;
 
 namespace Xecrets.Mobile;
 
+/// <summary>
+/// The shell of the app, with its routes, flyout menu and navigation.
+/// </summary>
 internal partial class AppShell
 {
     private readonly IUserInterfaceService _userInterfaceService;
@@ -55,6 +58,10 @@ internal partial class AppShell
     private readonly ProfileSession _profileSession;
     private readonly RunningOperation _runningOperation;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AppShell"/> class, with the debug menu item only in a Debug or beta
+    /// build.
+    /// </summary>
     public AppShell(
         IUserInterfaceService userInterfaceService,
         SessionExitService sessionExitService,

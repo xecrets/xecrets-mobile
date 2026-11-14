@@ -32,17 +32,24 @@ namespace Xecrets.Mobile.Models.Models;
 
 /// <summary>
 /// The file was not found, or cannot be reached now, such as when its storage is offline or removed. Storage does not
-/// always tell the two apart, so they are treated alike, and the user decides whether the file is gone.
+/// always tell the two apart, so the exception stands for both.
 /// </summary>
 public sealed class FileNotAccessibleException : IOException
 {
     private const string _message = "The file was not found or is not currently accessible.";
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="FileNotAccessibleException"/> class.
+    /// </summary>
     public FileNotAccessibleException()
         : base(_message)
     {
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="FileNotAccessibleException"/> class, caused by another exception.
+    /// </summary>
+    /// <param name="innerException">The exception that tells why the file is not accessible.</param>
     public FileNotAccessibleException(Exception innerException)
         : base(_message, innerException)
     {

@@ -38,9 +38,14 @@ namespace Xecrets.Mobile.Models.Services;
 public static class LocalFileSaver
 {
     /// <summary>
-    /// A file that could not be completely written is removed, so that what is left of it is not taken for the result.
-    /// A file that was replaced is then lost.
+    /// Saves a complete file at a path. A file that could not be completely written is removed, and a file it replaced
+    /// is then lost.
     /// </summary>
+    /// <param name="completedFilePath">The full path of the complete file.</param>
+    /// <param name="destinationPath">The full path to save the file at.</param>
+    /// <param name="overwrite">True to replace an existing file at the path, false to fail if there is one.</param>
+    /// <exception cref="IOException">The file could not be saved, or there is a file at the path and
+    /// <paramref name="overwrite"/> is false.</exception>
     public static void Save(string completedFilePath, string destinationPath, bool overwrite)
     {
         using FileStream input = File.OpenRead(completedFilePath);

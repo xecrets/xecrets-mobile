@@ -49,11 +49,13 @@ namespace Xecrets.Mobile.Platforms.Apple;
 [SupportedOSPlatform("maccatalyst")]
 internal class AppleWorkFolderFileLauncher(AppleFileGrants grants) : IWorkFolderFileLauncher
 {
-    /// <summary>
+    /// <inheritdoc/>
+    /// <remarks>
     /// As the Files app does, previews the file with QuickLook, whose share button offers the apps it can be opened
     /// in. The share sheet offers them directly for files QuickLook cannot preview. Whether the app chosen can save
-    /// its changes is decided by the platform.
-    /// </summary>
+    /// its changes is decided by the platform, so <paramref name="allowWrite"/> is not used, and true is always
+    /// returned.
+    /// </remarks>
     public async Task<bool> OpenAsync(FileReference file, bool allowWrite)
     {
         ThreadGuard.ThrowIfNotMainThread();
@@ -67,6 +69,7 @@ internal class AppleWorkFolderFileLauncher(AppleFileGrants grants) : IWorkFolder
         return true;
     }
 
+    /// <inheritdoc/>
     public async Task ShareAsync(FileReference file)
     {
         ThreadGuard.ThrowIfNotMainThread();

@@ -39,8 +39,16 @@ using Xecrets.Mobile.Services;
 
 namespace Xecrets.Mobile.Platforms.iOS;
 
+/// <summary>
+/// The configuration of the MAUI app for iOS.
+/// </summary>
 internal static class MauiAppBuilderExtensions
 {
+    /// <summary>
+    /// Registers the iOS implementations of the platform services, and the Apple handlers of the controls.
+    /// </summary>
+    /// <param name="builder">The builder of the app.</param>
+    /// <returns>The builder.</returns>
     public static MauiAppBuilder ConfigurePlatform(this MauiAppBuilder builder)
     {
         builder.Services.AddSingleton<IFileService, IOSFileService>();

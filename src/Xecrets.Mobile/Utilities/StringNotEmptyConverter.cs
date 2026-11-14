@@ -35,11 +35,19 @@ using Microsoft.Maui.Controls;
 
 namespace Xecrets.Mobile.Utilities;
 
+/// <summary>
+/// Converts a value to true if it is a string that is not empty, and to false otherwise, one way only.
+/// </summary>
 internal sealed class StringNotEmptyConverter : IValueConverter
 {
+    /// <inheritdoc/>
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         => value is string { Length: > 0 };
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Not supported.
+    /// </remarks>
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();
 }

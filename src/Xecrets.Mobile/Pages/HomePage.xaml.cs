@@ -35,6 +35,9 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
+/// <summary>
+/// The home page.
+/// </summary>
 internal partial class HomePage
 {
     private readonly IProfileService _profileService;
@@ -42,6 +45,9 @@ internal partial class HomePage
     private readonly ActionButtonColumns _actionButtonColumns;
     private string _headerEmail;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="HomePage"/> class with the standard header.
+    /// </summary>
     public HomePage(HomePageModel model, IProfileService profileService, IPageHeaderService pageHeaderService)
         : base(model)
     {

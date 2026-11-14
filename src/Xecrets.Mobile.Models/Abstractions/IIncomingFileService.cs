@@ -32,11 +32,28 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Abstractions;
 
+/// <summary>
+/// Receives files from other apps, one at a time. A received file waits until the user is signed in, and is then
+/// previewed if it is encrypted, and encrypted otherwise. The members may be called from any thread.
+/// </summary>
 public interface IIncomingFileService
 {
+    /// <summary>
+    /// Receives a file from another app and handles it, now or once it can be handled. The file is ignored if another
+    /// file is already waiting, or if files cannot be received now.
+    /// </summary>
+    /// <param name="source">The source of the received file.</param>
     Task ReceiveAsync(IIncomingFileSource source);
 
+    /// <summary>
+    /// Receives a message to show in place of a file, now or once it can be shown. It replaces any file that is
+    /// waiting.
+    /// </summary>
+    /// <param name="message">The message to show.</param>
     Task ReceiveMessageAsync(string message);
 
+    /// <summary>
+    /// Handles the file or message that is waiting, if any, as far as it can be handled now.
+    /// </summary>
     Task ProcessPendingAsync();
 }

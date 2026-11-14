@@ -47,9 +47,11 @@ using Xecrets.Mobile.Models.Utilities;
 namespace Xecrets.Mobile.Services;
 
 /// <summary>
-/// Keeps the crash logs and the logs of swallowed exceptions in the given folder, one report in each, rotated as new
-/// ones are written.
+/// Keeps the crash logs and the logs of swallowed exceptions in a folder, one report in each file, rotated as new ones
+/// are written.
 /// </summary>
+/// <param name="directory">The folder of the log files.</param>
+/// <param name="log">The log that each crash and swallowed exception is also written to.</param>
 internal sealed class CrashLogService(string directory, IEzLogging log) : ICrashLogService
 {
     private readonly RotatingLogFile _crashLog = new(directory, "crashlog");
@@ -58,8 +60,10 @@ internal sealed class CrashLogService(string directory, IEzLogging log) : ICrash
 
     private readonly Lock _swallowedLock = new();
 
+    /// <inheritdoc/>
     public bool HasPendingCrashLog => File.Exists(_crashLog.FilePath);
 
+    /// <inheritdoc/>
     public void RegisterHandlers()
     {
         AppDomain.CurrentDomain.UnhandledException += (_, args) =>
@@ -69,6 +73,7 @@ internal sealed class CrashLogService(string directory, IEzLogging log) : ICrash
             WriteCrashLog("Unobserved task exception", args.Exception);
     }
 
+    /// <inheritdoc/>
     public string ReadCurrent()
     {
         string report = File.ReadAllText(_crashLog.FilePath);
@@ -76,6 +81,7 @@ internal sealed class CrashLogService(string directory, IEzLogging log) : ICrash
         return report;
     }
 
+    /// <inheritdoc/>
     public void WriteCrashLog(string source, object? crash)
     {
         // An artificial native crash has no managed exception.
@@ -96,6 +102,7 @@ internal sealed class CrashLogService(string directory, IEzLogging log) : ICrash
         File.WriteAllText(_crashLog.FilePath, report.ToString());
     }
 
+    /// <inheritdoc/>
     public void DeleteAll()
     {
         try
@@ -110,6 +117,7 @@ internal sealed class CrashLogService(string directory, IEzLogging log) : ICrash
         }
     }
 
+    /// <inheritdoc/>
     public void WriteSwallowedException(
         Exception exception,
         [CallerFilePath] string filePath = "",

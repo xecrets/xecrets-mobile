@@ -39,6 +39,10 @@ using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
+/// <summary>
+/// The page model of the page that signs in to the local profile, or that verifies its password before the profile is
+/// changed or deleted. It signs in unless initialized otherwise.
+/// </summary>
 public partial class LoginPageModel(
     IProfileService profileService,
     IProfileSettingsService profileSettingsService,
@@ -47,18 +51,30 @@ public partial class LoginPageModel(
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IPageInformationPageModel, IBreadcrumbPageModel
 {
+    /// <summary>
+    /// The email of the local profile.
+    /// </summary>
     [ObservableProperty] public partial string Email { get; private set; } = string.Empty;
 
+    /// <inheritdoc/>
     [ObservableProperty] public partial string Breadcrumb { get; private set; } = string.Empty;
 
+    /// <inheritdoc/>
     [ObservableProperty] public partial string Heading { get; private set; } = MobileTexts.SignInHeading;
 
+    /// <inheritdoc/>
     [ObservableProperty] public partial string Information { get; private set; } = MobileTexts.ToolTipSignIn;
 
+    /// <summary>
+    /// The password entered.
+    /// </summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(LoginCommand))]
     public partial string Password { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Why the last password was not accepted, or "" if there is nothing to tell.
+    /// </summary>
     [ObservableProperty] public partial string ErrorText { get; set; } = string.Empty;
 
     [ObservableProperty]
@@ -75,6 +91,11 @@ public partial class LoginPageModel(
 
     private int _wrongPasswordsBeforeReset = WrongPasswordsBeforeReset;
 
+    /// <summary>
+    /// Makes the page verify the password of the profile signed in before an action on the profile.
+    /// </summary>
+    /// <param name="action">The action, <see cref="ProfileAction.Change"/> or <see cref="ProfileAction.Delete"/>.</param>
+    /// <exception cref="ArgumentOutOfRangeException">The action is neither change nor delete.</exception>
     public void InitializeVerification(ProfileAction action)
     {
         _verifiedAction = action;

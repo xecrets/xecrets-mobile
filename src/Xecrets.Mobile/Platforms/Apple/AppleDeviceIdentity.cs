@@ -40,5 +40,6 @@ namespace Xecrets.Mobile.Platforms.Apple;
 /// </summary>
 internal sealed class AppleDeviceIdentity : IDeviceIdentity
 {
+    /// <inheritdoc/>
     public string DeviceId => UIDevice.CurrentDevice.IdentifierForVendor?.AsString() ?? string.Empty;
 }

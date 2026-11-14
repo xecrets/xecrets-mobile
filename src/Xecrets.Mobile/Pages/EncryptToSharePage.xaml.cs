@@ -39,8 +39,14 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
+/// <summary>
+/// The page that encrypts a copy of a file with a password for sharing it.
+/// </summary>
 internal partial class EncryptToSharePage : IQueryAttributable
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="EncryptToSharePage"/> class with the standard header.
+    /// </summary>
     public EncryptToSharePage(
         EncryptToSharePageModel model,
         IPlatformServices platformServices,
@@ -52,6 +58,10 @@ internal partial class EncryptToSharePage : IQueryAttributable
         pageHeaderService.ApplyStandardHeader(this);
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Requires a <see cref="FileReference"/> payload, which is the file to encrypt a copy of.
+    /// </remarks>
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
         Model.Initialize(

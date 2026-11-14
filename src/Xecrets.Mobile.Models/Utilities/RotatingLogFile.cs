@@ -34,12 +34,14 @@ namespace Xecrets.Mobile.Models.Utilities;
 /// A log file, name.txt in its folder, rotated to name.1.txt, name.2.txt and so on. The current file and the 9 before
 /// it are kept.
 /// </summary>
+/// <param name="directory">The folder of the log files.</param>
+/// <param name="name">The name of the log files, without the number and the extension.</param>
 public sealed class RotatingLogFile(string directory, string name)
 {
     private const int _keptLogCount = 10;
 
     /// <summary>
-    /// The path of the current log file.
+    /// The full path of the current log file, which need not exist.
     /// </summary>
     public string FilePath => Path.Combine(directory, $"{name}.txt");
 

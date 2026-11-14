@@ -42,6 +42,7 @@ namespace Xecrets.Mobile.Platforms.Android;
 /// </summary>
 internal sealed class AndroidDeviceIdentity : IDeviceIdentity
 {
+    /// <inheritdoc/>
     public string DeviceId =>
         AndroidSecureSettings.GetString(Platform.AppContext.ContentResolver, AndroidSecureSettings.AndroidId) ?? string.Empty;
 }

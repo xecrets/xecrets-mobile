@@ -35,7 +35,18 @@ namespace Xecrets.Mobile.Models.Models;
 /// </summary>
 public enum SaveChangesChoice
 {
+    /// <summary>
+    /// Save the changes and leave.
+    /// </summary>
     Save,
+
+    /// <summary>
+    /// Discard the changes and leave.
+    /// </summary>
     Discard,
+
+    /// <summary>
+    /// Keep the changes and stay.
+    /// </summary>
     Cancel,
 }

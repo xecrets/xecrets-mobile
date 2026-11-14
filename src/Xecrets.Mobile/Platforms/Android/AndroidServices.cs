@@ -53,15 +53,26 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Platforms.Android;
 
+/// <summary>
+/// The services of Android.
+/// </summary>
 [SupportedOSPlatform("android28.0")]
 internal class AndroidServices : PlatformServicesBase
 {
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Writes a crash log for an unhandled exception of the Android runtime.
+    /// </remarks>
     public override void RegisterCrashHandlers(ICrashLogService crashLogService)
     {
         AndroidEnvironment.UnhandledExceptionRaiser += (_, args) =>
             crashLogService.WriteCrashLog("Unhandled Android runtime exception", args.Exception);
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Sends SIGABRT to the process.
+    /// </remarks>
     public override void CrashNative()
     {
         global::Android.OS.Process.SendSignal(
@@ -69,6 +80,7 @@ internal class AndroidServices : PlatformServicesBase
             (global::Android.OS.Signal)6);
     }
 
+    /// <inheritdoc/>
     public override (double Left, double Right) GetWindowGaps(VisualElement view)
     {
         AndroidView platformView = (AndroidView)view.Handler!.PlatformView!;
@@ -79,7 +91,11 @@ internal class AndroidServices : PlatformServicesBase
         return (location[0] / density, (platformView.RootView!.Width - location[0] - platformView.Width) / density);
     }
 
-    // A secure window is left out of the recents snapshot, and also of screenshots, screen recording and casting.
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The window is made secure, which leaves it out of the recents snapshot, and also of screenshots, screen
+    /// recording and casting.
+    /// </remarks>
     public override void IsSensitiveContentVisible(bool isShown)
     {
         AndroidWindow window = Platform.CurrentActivity!.Window!;
@@ -93,9 +109,14 @@ internal class AndroidServices : PlatformServicesBase
         }
     }
 
-    // Registered as a DI singleton, so this runs exactly once per app lifetime. AppendToMapping
-    // guarantees each action runs after MAUI's own mapping for that key has applied, so there's no
-    // need to speculate about event-firing order; entries opt in via PasswordEntryProperties.
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AndroidServices"/> class, and adds the handler mappings of Android
+    /// for the font weight and the password entries. Requires a single instance for the app.
+    /// </summary>
+    /// <remarks>
+    /// AppendToMapping runs each action after the mapping of MAUI for the same key, so the order of events does not
+    /// matter. Entries opt in through <see cref="PasswordEntryProperties"/>.
+    /// </remarks>
     public AndroidServices()
     {
         LabelHandler.Mapper.AppendToMapping(nameof(ITextStyle.Font), (handler, view) =>

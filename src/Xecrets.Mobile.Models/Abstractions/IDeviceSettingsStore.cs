@@ -34,31 +34,37 @@ using Xecrets.Mobile.Models.Models;
 namespace Xecrets.Mobile.Models.Abstractions;
 
 /// <summary>
-/// Keeps the settings that only apply to the installation on this device, where they are never exported, nor backed
-/// up.
+/// Keeps the settings that only apply to the installation on this device. They are never exported, nor backed up.
 /// </summary>
 public interface IDeviceSettingsStore
 {
     /// <summary>
-    /// The device-specific settings, which are new ones if there are none.
+    /// Reads the device-specific settings.
     /// </summary>
+    /// <returns>The device-specific settings, or new settings if there are none.</returns>
     Task<DeviceSettings> ReadDeviceSettingsAsync();
 
     /// <summary>
     /// Replaces all the device-specific settings.
     /// </summary>
+    /// <param name="settings">The new device-specific settings.</param>
     Task ReplaceDeviceSettingsAsync(DeviceSettings settings);
 
     /// <summary>
-    /// The grants referenced by My folders and the recent files of all profiles on the device, since the grants are
-    /// held by the app rather than by a profile.
+    /// Gets the grants referenced by My folders and by the recent files of all profiles on the device.
     /// </summary>
+    /// <returns>The grants still referenced on the device.</returns>
     Task<GrantReferences> GetGrantReferencesAsync();
 
     /// <summary>
-    /// Reads the device values synchronously, where an asynchronous read is not possible.
+    /// Reads <see cref="DeviceSettings.Values"/> synchronously.
     /// </summary>
+    /// <returns>The values, or an empty dictionary if there are none.</returns>
     Dictionary<string, string> ReadDeviceValues();
 
+    /// <summary>
+    /// Updates <see cref="DeviceSettings.Values"/> and persists them.
+    /// </summary>
+    /// <param name="update">Changes the values given to it.</param>
     Task UpdateDeviceValuesAsync(Action<Dictionary<string, string>> update);
 }

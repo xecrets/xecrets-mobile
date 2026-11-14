@@ -37,33 +37,50 @@ using Xecrets.Words.Abstractions;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
+/// <summary>
+/// The page model of the page that suggests passwords.
+/// </summary>
 public partial class SuggestPasswordPageModel(
     IPasswordSuggestions passwordSuggestions,
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IPageInformationPageModel
 {
+    /// <inheritdoc/>
     public string Heading => MobileTexts.MenuSuggestPassword;
 
+    /// <inheritdoc/>
     public string Information => MobileTexts.SuggestPasswordDescription;
 
+    /// <summary>
+    /// The breadcrumb trail that leads to the page.
+    /// </summary>
     [ObservableProperty]
     public partial string Breadcrumb { get; set; } = MobileTexts.BreadcrumbSuggestPassword;
 
+    /// <inheritdoc/>
     [ObservableProperty]
     public partial string MessageText { get; set; } = string.Empty;
 
+    /// <inheritdoc/>
     [ObservableProperty]
     public partial string StatusText { get; set; } = string.Empty;
 
+    /// <summary>
+    /// The suggested strong password.
+    /// </summary>
     [ObservableProperty]
     public partial string StrongPassword { get; set; } = string.Empty;
 
+    /// <summary>
+    /// The suggested simple password.
+    /// </summary>
     [ObservableProperty]
     public partial string SimplePassword { get; set; } = string.Empty;
 
     /// <summary>
-    /// Continues the trail of the page that this page was opened on top of.
+    /// Continues the breadcrumb trail of the page that this page was opened on top of.
     /// </summary>
+    /// <param name="parentBreadcrumb">The breadcrumb trail of that page.</param>
     public void SetParentBreadcrumb(string parentBreadcrumb) =>
         Breadcrumb = string.Join(
             MobileTexts.BreadcrumbSeparator,

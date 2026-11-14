@@ -44,11 +44,18 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Platforms.Apple;
 
-// What iOS and Mac Catalyst share; each platform's own class adds only what differs.
+/// <summary>
+/// The services that iOS and Mac Catalyst share. The class of each platform adds only what differs.
+/// </summary>
 internal abstract class AppleServices : PlatformServicesBase
 {
+    /// <inheritdoc/>
     public override string CrashPageAdditionalInformation => MobileTexts.CrashPageAppleAdditionalInformation;
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Registers the handlers of <see cref="AppleCrashHandler"/>.
+    /// </remarks>
     public override void RegisterCrashHandlers(ICrashLogService crashLogService)
     {
         AppleCrashHandler.Register(crashLogService);
@@ -63,10 +70,21 @@ internal abstract class AppleServices : PlatformServicesBase
 
     private bool _isDecryptedContentShown;
 
+    /// <inheritdoc/>
     public override (double Left, double Right) GetWindowGaps(VisualElement view) => view.GetWindowGaps();
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The window is covered while the app is in the background and sensitive content is shown, since the snapshot is
+    /// taken then.
+    /// </remarks>
     public override void IsSensitiveContentVisible(bool isShown) => _isDecryptedContentShown = isShown;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AppleServices"/> class, observes the scene entering and leaving the
+    /// background, and adds the handler mappings of the Apple platforms for the font weight, the editors and the
+    /// password entries. Requires a single instance for the app.
+    /// </summary>
     protected AppleServices()
     {
         _ = UIScene.Notifications.ObserveDidEnterBackground((_, args) =>

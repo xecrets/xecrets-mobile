@@ -30,9 +30,22 @@
 
 namespace Xecrets.Mobile.Models.Abstractions;
 
+/// <summary>
+/// Causes artificial crashes, to test crash handling.
+/// </summary>
 public interface ICrashTestService
 {
+    /// <summary>
+    /// Arms a crash for the next time an operation is performed, replacing any crash armed earlier.
+    /// </summary>
+    /// <param name="operation">The operation to crash during.</param>
+    /// <param name="native">True for a native crash, false for an unhandled managed exception.</param>
     void Arm(CrashTestOperation operation, bool native);
 
+    /// <summary>
+    /// Crashes if a crash is armed for an operation, and disarms it. Does nothing otherwise.
+    /// </summary>
+    /// <param name="operation">The operation that is performed.</param>
+    /// <exception cref="InvalidOperationException">A managed crash is armed for the operation.</exception>
     void CrashIfArmed(CrashTestOperation operation);
 }

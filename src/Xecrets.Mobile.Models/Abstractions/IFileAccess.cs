@@ -47,145 +47,196 @@ namespace Xecrets.Mobile.Models.Abstractions;
 public interface IFileAccess
 {
     /// <summary>
-    /// Lets the user pick a file, starting in the initial folder if the platform allows it. The file can be read while
-    /// the app runs, and later as well once <see cref="KeepFileGrantAsync"/> is called. Returns null when the user cancels.
+    /// Lets the user pick a file. The file can be read while the app runs, and also later once
+    /// <see cref="KeepFileGrantAsync"/> is called for it.
     /// </summary>
+    /// <param name="initialFolder">The folder to start in, if the platform allows it.</param>
+    /// <param name="kind">The kind of files to pick from.</param>
+    /// <returns>The picked file, or null if the user cancels.</returns>
     Task<FileReference?> PickFileAsync(string initialFolder, FilePickerKind kind);
 
     /// <summary>
-    /// Lets the user pick a folder to give the app lasting access to, starting in the initial folder if the platform
-    /// allows it. The files of the kind are those to be changed in the folder, which the platform may show. Where the
-    /// folder picker of the platform shows no files, the user instead picks one of the files, and its folder is picked.
-    /// The folder is checked to be writable and its grant is kept, but it is not added to My folders.
+    /// Lets the user pick a folder to give the app lasting access to. Where the folder picker of the platform shows no
+    /// files, the user instead picks one of the files in the folder. A picked folder is checked to be writable and its
+    /// grant is kept, but it is not added to My folders.
     /// </summary>
+    /// <param name="initialFolder">The folder to start in, if the platform allows it.</param>
+    /// <param name="kind">The kind of files in the folder that the picker shows, if it shows files.</param>
+    /// <returns>The result of picking the folder.</returns>
     Task<WorkFolderResult> PickFolderAsync(string initialFolder, FilePickerKind kind);
 
     /// <summary>
-    /// Finds the innermost of My folders that has a grant and contains the file, directly or in a folder below it.
-    /// Returns null when there is none.
+    /// Finds the innermost of My folders that has a grant and contains a file, directly or in a folder below it.
     /// </summary>
+    /// <param name="fileId">The id of the file.</param>
+    /// <returns>The folder, or null if there is none.</returns>
     Task<WorkFolder?> FindFolderAsync(string fileId);
 
     /// <summary>
-    /// Finds the innermost of My folders that has a grant and is the folder, or contains it, directly or in a folder
-    /// below it. Returns null when there is none.
+    /// Finds the innermost of My folders that has a grant and is a folder, or contains it, directly or in a folder
+    /// below it.
     /// </summary>
+    /// <param name="folderId">The id of the folder.</param>
+    /// <returns>The folder of My folders, or null if there is none.</returns>
     Task<WorkFolder?> FindFolderOfFolderAsync(string folderId);
 
     /// <summary>
-    /// The file as reached through the grant of a folder known to contain it, which is the reference used to change
-    /// it.
+    /// Gets a file as reached through the grant of a folder that contains it.
     /// </summary>
+    /// <param name="folder">One of My folders that contains the file.</param>
+    /// <param name="file">The file.</param>
+    /// <returns>The file reached through the folder, which can be changed.</returns>
     Task<FileReference> GetFileInFolderAsync(WorkFolder folder, FileReference file);
 
     /// <summary>
-    /// Lists a folder reached through one of My folders, whether one of them or as given by
-    /// <see cref="GetFolderOfFileAsync"/>, and each of the folders below it when the scope includes them, one listing
-    /// per folder. A folder that cannot be listed fails the listing, since its files would otherwise be left out
-    /// without the user knowing.
+    /// Lists a folder, and each of the folders below it when the scope includes them. A folder that cannot be listed
+    /// fails the listing.
     /// </summary>
+    /// <param name="folderId">One of My folders, or a folder given by <see cref="GetFolderOfFileAsync"/>.</param>
+    /// <param name="scope">Which folders to list.</param>
+    /// <returns>One listing for each folder, the listing of the folder itself first.</returns>
     Task<IReadOnlyList<FolderListing>> ListFolderAsync(string folderId, FolderScope scope);
 
     /// <summary>
-    /// The folder of the file, as a hint where to start a picker, or empty when it cannot be told.
+    /// Gets the folder that a file is in, as far as the platform tells it.
     /// </summary>
+    /// <param name="fileId">The id of the file.</param>
+    /// <returns>The id of the folder, which can be the initial folder of a picker, or "" if it cannot be told.</returns>
     Task<string> GetParentFolderAsync(string fileId);
 
     /// <summary>
-    /// The path of the file or folder as segments to show, the last being its name. Only what can be told from the id
-    /// is used, so that it works without access to the file. The remembered name, unless empty, is the last segment
-    /// when the id does not tell it.
+    /// Gets the path of a file or folder as segments to show, the last being its name. Only what can be told from the
+    /// id is used, so the file need not be accessible.
     /// </summary>
+    /// <param name="id">The id of the file or folder.</param>
+    /// <param name="rememberedName">The name of the file or folder, used as the last segment when the id does not tell
+    /// it, or "" if not known.</param>
+    /// <returns>The segments of the path, outermost first.</returns>
     IReadOnlyList<string> GetPathSegments(string id, string rememberedName);
 
     /// <summary>
-    /// Tells if two ids refer to the same file, such as one picked by itself and the same file reached through one of
-    /// My folders. The access the app has to the files may be used to tell.
+    /// Tells if two ids refer to the same file, such as a file picked by itself and the same file reached through one
+    /// of My folders.
     /// </summary>
+    /// <param name="fileId">The id of one file.</param>
+    /// <param name="otherFileId">The id of the other file.</param>
+    /// <returns>True if the ids refer to the same file, false otherwise.</returns>
     Task<bool> IsSameFileAsync(string fileId, string otherFileId);
 
     /// <summary>
-    /// Keeps the access to a picked file for reading it again later. Returns false when it cannot be kept.
+    /// Keeps the access to a picked file, so that it can be read again later, also after the app is restarted.
     /// </summary>
+    /// <param name="fileId">The id of the picked file.</param>
+    /// <returns>True if the access is kept, false if it cannot be kept.</returns>
     Task<bool> KeepFileGrantAsync(string fileId);
 
     /// <summary>
-    /// Tells again where the file is stored, after it has been used. Some storage only tells it once the file is on the
-    /// device, which it may not be when it is picked. Returns the file as it is when it cannot be told better.
+    /// Tells again where a file is stored, after it has been read. Some storage only tells it once the file is on the
+    /// device, which it may not be when it is picked.
     /// </summary>
+    /// <param name="file">The file.</param>
+    /// <returns>The file with where it is stored, or the file as it is if that cannot be told better.</returns>
     Task<FileReference> LocateAgainAsync(FileReference file);
 
     /// <summary>
-    /// Tells if there is access to the file by itself, such as kept by <see cref="KeepFileGrantAsync"/>.
+    /// Tells if there is lasting access to a file by itself, such as kept by <see cref="KeepFileGrantAsync"/>.
     /// </summary>
+    /// <param name="fileId">The id of the file.</param>
+    /// <returns>True if there is lasting access to the file, false otherwise.</returns>
     bool HasFileGrant(string fileId);
 
     /// <summary>
     /// Releases all folder and file grants held that are not referenced.
     /// </summary>
+    /// <param name="references">The grants that are referenced, which are kept.</param>
     Task ReleaseUnusedGrantsAsync(GrantReferences references);
 
     /// <summary>
-    /// Opens the file for reading. Throws <see cref="FileNotAccessibleException"/> when it is not found, or cannot be
-    /// reached now.
+    /// Opens a file for reading.
     /// </summary>
+    /// <param name="fileId">The id of the file.</param>
+    /// <returns>A stream that reads the file, which the caller owns.</returns>
+    /// <exception cref="FileNotAccessibleException">The file is not found, or cannot be reached now.</exception>
     Task<Stream> OpenReadAsync(string fileId);
 
     /// <summary>
-    /// Reads at most the count of bytes from the start of the file, without opening it to be read further. Throws as
-    /// <see cref="OpenReadAsync"/>.
+    /// Reads the start of a file.
     /// </summary>
+    /// <param name="fileId">The id of the file.</param>
+    /// <param name="count">The largest number of bytes to read.</param>
+    /// <returns>The first bytes of the file, fewer than the count if the file is shorter.</returns>
+    /// <exception cref="FileNotAccessibleException">The file is not found, or cannot be reached now.</exception>
     Task<byte[]> ReadStartAsync(string fileId, int count);
 
     /// <summary>
-    /// The times of the file, to keep when it is encrypted. A time the platform does not tell is the current time.
+    /// Gets the times of a file.
     /// </summary>
+    /// <param name="fileId">The id of the file.</param>
+    /// <returns>The times of the file, where a time that the platform does not tell is the current time.</returns>
     Task<FileTimes> GetTimesAsync(string fileId);
 
     /// <summary>
-    /// Sets the times of the file, such as those of its original for a decrypted file, as far as the platform and the
-    /// storage allow. A time that the platform or the storage does not allow to be set is left as it is, without failing.
+    /// Sets the times of a file, as far as the platform and the storage allow. A time that cannot be set is left as it
+    /// is, without failing.
     /// </summary>
+    /// <param name="fileId">The id of the file.</param>
+    /// <param name="times">The times to set.</param>
     Task SetSupportedTimesAsync(string fileId, FileTimes times);
 
     /// <summary>
-    /// Checks that the file can be read now, without reading it. Storage that does not keep the file on the device may
-    /// still have to get it. Throws as <see cref="OpenReadAsync"/>.
+    /// Checks that a file can be read now, without reading it. Storage that does not keep the file on the device may
+    /// still have to get it.
     /// </summary>
+    /// <param name="fileId">The id of the file.</param>
+    /// <exception cref="FileNotAccessibleException">The file is not found, or cannot be reached now.</exception>
     Task CheckReachableAsync(string fileId);
 
     /// <summary>
-    /// The file for overwriting and deleting it, reached through one of My folders, or by the access a picker
-    /// gave to the file itself while the app runs.
+    /// Gets a file for overwriting and deleting it.
     /// </summary>
+    /// <param name="fileId">The id of a file reached through one of My folders, or of a file picked while the app
+    /// runs.</param>
+    /// <returns>The writable file.</returns>
     Task<IWritableFile> OpenWriteAsync(string fileId);
 
     /// <summary>
-    /// The folder of a file reached through one of My folders, as reached through the same folder. Finding it may take
-    /// a while, so it is found once for an operation, and used throughout it. Throws
-    /// <see cref="FileNotAccessibleException"/> only when the file was not found, and another exception when the
-    /// folder could not be searched.
+    /// Gets the folder that a file reached through one of My folders is in, as reached through the same folder. This
+    /// may take a while.
     /// </summary>
+    /// <param name="fileId">The id of a file reached through one of My folders.</param>
+    /// <returns>The id of the folder of the file.</returns>
+    /// <exception cref="FileNotAccessibleException">The file is not found. Any other exception means that the folders
+    /// cannot be searched.</exception>
     Task<string> GetFolderOfFileAsync(string fileId);
 
     /// <summary>
-    /// Saves the complete file under the name in the folder, as given by <see cref="GetFolderOfFileAsync"/>, and returns
-    /// the id of the saved file. The existing file with the name, as listed in the folder, is replaced when given, and
-    /// otherwise saving fails if there already is one. A partly saved file is removed, so that it is not taken for the
-    /// result. A file that was replaced is then lost. The complete file is left to the caller.
+    /// Saves a complete file under a name in a folder. A partly saved file is removed, and a file it replaced is then
+    /// lost. The complete file is left as it is.
     /// </summary>
+    /// <param name="folderId">A folder given by <see cref="GetFolderOfFileAsync"/>.</param>
+    /// <param name="name">The name to save the file under.</param>
+    /// <param name="completedFilePath">The full path of the complete file to save.</param>
+    /// <param name="existingId">The id of the file with the name in the folder, as listed, which is replaced, or null if
+    /// there is none, in which case saving fails if there already is a file with the name.</param>
+    /// <returns>The id of the saved file.</returns>
     Task<string> SaveInFolderAsync(string folderId, string name, string completedFilePath, string? existingId);
 
     /// <summary>
-    /// Renames a file reached through one of My folders, and returns its id under the new name. Fails if there already
-    /// is a file with the new name, or the storage gives the file another name than the one asked for.
+    /// Renames a file reached through one of My folders. Fails if there already is a file with the new name, or if the
+    /// storage gives the file another name than the one asked for.
     /// </summary>
+    /// <param name="fileId">The id of the file.</param>
+    /// <param name="newName">The new name of the file.</param>
+    /// <returns>The id of the file under the new name.</returns>
     Task<string> RenameAsync(string fileId, string newName);
 
     /// <summary>
-    /// Lets the user save a copy of the complete file anywhere, suggesting the file name, and starting in the initial
-    /// folder if the platform allows it. Returns null when the user cancels. The user or the storage may change the
-    /// name. No lasting access to the saved file is kept. The complete file is left to the caller.
+    /// Lets the user save a copy of a complete file anywhere. The user or the storage may change the name. No lasting
+    /// access to the saved file is kept, and the complete file is left as it is.
     /// </summary>
+    /// <param name="initialFolder">The folder to start in, if the platform allows it.</param>
+    /// <param name="fileName">The suggested file name.</param>
+    /// <param name="completedFilePath">The full path of the complete file to save.</param>
+    /// <returns>The saved file, or null if the user cancels.</returns>
     Task<FileReference?> SaveAsAsync(string initialFolder, string fileName, string completedFilePath);
 }

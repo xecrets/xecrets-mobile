@@ -41,9 +41,9 @@ using Xecrets.Mobile.Models.Utilities;
 namespace Xecrets.Mobile.Models.PageModels;
 
 /// <summary>
-/// The decryption passwords, tried in turn when the password of the profile does not decrypt a file. Opened from the
-/// menu they can be added and deleted. Opened when no known password decrypts a file, the password entered is tried on
-/// that file, and kept when it decrypts it.
+/// The page model of the page of the decryption passwords, which are tried in turn when the password of the profile does
+/// not decrypt a file. Opened to manage them, they can be added and deleted. Opened when no known password decrypts a
+/// file, the password entered is tried on that file, and kept when it decrypts it.
 /// </summary>
 public partial class EnterPasswordPageModel(
     IPreviewService previewService,
@@ -54,12 +54,15 @@ public partial class EnterPasswordPageModel(
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IBreadcrumbPageModel, IPageInformationPageModel
 {
+    /// <inheritdoc/>
     public string Heading => MobileTexts.DecryptionPasswordsContentTitle;
 
+    /// <inheritdoc/>
     public string Information => Description;
 
     private DecryptionPasswordsIntent _intent = DecryptionPasswordsIntent.Manage;
 
+    /// <inheritdoc/>
     public string Breadcrumb => _intent switch
     {
         DecryptionPasswordsIntent.Manage => string.Join(
@@ -72,34 +75,56 @@ public partial class EnterPasswordPageModel(
         _ => throw new ArgumentOutOfRangeException(nameof(_intent), _intent, @"Unknown decryption passwords intent."),
     };
 
+    /// <summary>
+    /// The description of the decryption passwords.
+    /// </summary>
     public string Description => MobileTexts.DecryptionPasswordsDescription;
 
+    /// <summary>
+    /// The decryption passwords, as shown.
+    /// </summary>
     public ObservableCollection<string> Passwords { get; } = [];
 
     /// <summary>
-    /// The description, shown on the page itself while there are no passwords, to make it easier to find.
+    /// The description while there are no passwords, or "" while there are.
     /// </summary>
     [ObservableProperty] public partial string NoPasswordsText { get; set; } = string.Empty;
 
     /// <summary>
-    /// The name of the file that a password is asked for, and empty when the passwords are managed.
+    /// The name of the file that a password is asked for, or "" when the passwords are managed.
     /// </summary>
     [ObservableProperty] public partial string FileNameText { get; set; } = string.Empty;
 
+    /// <summary>
+    /// True if a password is asked for a file, false if the passwords are managed.
+    /// </summary>
     [ObservableProperty] public partial bool IsAdding { get; set; }
 
+    /// <summary>
+    /// The password entered.
+    /// </summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SubmitCommand))]
     public partial string Password { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Why the last password did not decrypt the file, or "" if there is nothing to tell.
+    /// </summary>
     [ObservableProperty] public partial string ErrorText { get; set; } = string.Empty;
 
+    /// <summary>
+    /// True while an operation of the page runs, false otherwise.
+    /// </summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SubmitCommand))]
     [NotifyCanExecuteChangedFor(nameof(AddCommand))]
     [NotifyCanExecuteChangedFor(nameof(DeleteCommand))]
     public partial bool IsBusy { get; set; }
 
+    /// <summary>
+    /// Sets why the page is opened.
+    /// </summary>
+    /// <param name="payload">Why the page is opened, and the file a password is asked for, if any.</param>
     public void Initialize(DecryptionPasswordsPayload payload)
     {
         _intent = payload.Intent;
@@ -108,6 +133,9 @@ public partial class EnterPasswordPageModel(
         OnPropertyChanged(nameof(Breadcrumb));
     }
 
+    /// <summary>
+    /// Shows the passwords, and that the known passwords do not decrypt the file waiting for one, if any.
+    /// </summary>
     [RelayCommand]
     internal void Load()
     {

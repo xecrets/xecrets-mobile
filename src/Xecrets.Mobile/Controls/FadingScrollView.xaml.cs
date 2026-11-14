@@ -40,14 +40,24 @@ namespace Xecrets.Mobile.Controls;
 [ContentProperty(nameof(ScrollContent))]
 internal sealed partial class FadingScrollView
 {
+    /// <summary>
+    /// Identifies the <see cref="ScrollContent"/> bindable property.
+    /// </summary>
     public static readonly BindableProperty ScrollContentProperty = BindableProperty.Create(
         nameof(ScrollContent), typeof(View), typeof(FadingScrollView),
         propertyChanged: (bindable, _, newValue) => ((FadingScrollView)bindable).Scroll.Content = (View?)newValue);
 
+    /// <summary>
+    /// Identifies the <see cref="FadeColor"/> bindable property.
+    /// </summary>
     public static readonly BindableProperty FadeColorProperty = BindableProperty.Create(
         nameof(FadeColor), typeof(Color), typeof(FadingScrollView), Colors.White,
         propertyChanged: (bindable, _, newValue) => ((FadingScrollView)bindable).UpdateFadeColor((Color)newValue));
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="FadingScrollView"/> class, with the fades following the scroll
+    /// position, the size and the content size.
+    /// </summary>
     public FadingScrollView()
     {
         InitializeComponent();
@@ -63,12 +73,18 @@ internal sealed partial class FadingScrollView
         };
     }
 
+    /// <summary>
+    /// The content that is scrolled.
+    /// </summary>
     public View? ScrollContent
     {
         get => (View?)GetValue(ScrollContentProperty);
         set => SetValue(ScrollContentProperty, value);
     }
 
+    /// <summary>
+    /// The background color the scroll view is on, which the edges fade to. White unless set.
+    /// </summary>
     public Color FadeColor
     {
         get => (Color)GetValue(FadeColorProperty);

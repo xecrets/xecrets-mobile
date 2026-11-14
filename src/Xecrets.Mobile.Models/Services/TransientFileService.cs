@@ -66,6 +66,14 @@ public sealed class TransientFileService : ITransientFileService
 
     private int _deletedCount;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TransientFileService"/> class, and starts the background loop that
+    /// does the sweeps.
+    /// </summary>
+    /// <param name="fileService">Tells where the cache is.</param>
+    /// <param name="fileWiper">Wipes the files.</param>
+    /// <param name="crashLogService">Logs the exceptions that are handled.</param>
+    /// <param name="log">Logs the sweeps.</param>
     public TransientFileService(
         IFileService fileService,
         IFileWiper fileWiper,
@@ -84,24 +92,33 @@ public sealed class TransientFileService : ITransientFileService
         _ = Task.Run(SweepRequested);
     }
 
+    /// <inheritdoc/>
     public ITransientFile CreateHandoffFile(string originalFileName)
         => Create(_handoffDirectory, originalFileName);
 
+    /// <inheritdoc/>
     public ITransientFile CreateIncomingFile(string originalFileName)
         => Create(Path.Combine(_handoffDirectory, "incoming"), originalFileName);
 
+    /// <inheritdoc/>
     public ITransientFile CreateEncryptedInputFile(string originalFileName)
         => Create(Path.Combine(_handoffDirectory, "decrypt"), originalFileName);
 
+    /// <inheritdoc/>
     public ITransientFile CreateEncryptedOutputFile(string originalFileName)
         => Create(Path.Combine(_handoffDirectory, "encrypt"), originalFileName);
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The cache folder itself is removed too.
+    /// </remarks>
     public Task SweepAllAsync()
     {
         _foldersInUse.Clear();
         return RequestSweep(_fileService.CacheDirectory, TimeSpan.Zero, "all files");
     }
 
+    /// <inheritdoc/>
     public Task SweepAsync(TimeSpan maxAge) => RequestSweep(_handoffDirectory, maxAge, "aged files");
 
     private ITransientFile Create(string kindDirectory, string originalFileName)

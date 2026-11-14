@@ -30,15 +30,34 @@
 
 namespace Xecrets.Mobile.Abstractions;
 
+/// <summary>
+/// What an entry for a password is for.
+/// </summary>
 internal enum PasswordEntryPurpose
 {
+    /// <summary>
+    /// The existing password of the profile, which password managers may fill in.
+    /// </summary>
     ExistingPassword,
+
+    /// <summary>
+    /// A new password of the profile, which password managers may suggest and save.
+    /// </summary>
     NewPassword,
+
+    /// <summary>
+    /// A password to encrypt a copy for sharing, which is never suggested nor saved.
+    /// </summary>
     SharePassword,
 
-    // Must be typed and never suggested: the current password, to confirm that it's the user, or a decryption password.
+    /// <summary>
+    /// A password that must be typed and is never suggested nor saved: the current password, to confirm that it is the
+    /// user, or a decryption password.
+    /// </summary>
     VerifyPassword,
 
-    // The user name (email) next to a password, so password managers save the password under the right one.
+    /// <summary>
+    /// The user name, the email, next to a password, so that password managers save the password under the right one.
+    /// </summary>
     UserName,
 }

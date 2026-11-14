@@ -40,9 +40,9 @@ using Xecrets.Mobile.Models.Utilities;
 namespace Xecrets.Mobile.Models.PageModels;
 
 /// <summary>
-/// My folders, the folders the user has given the app access to. Files are changed where they are by picking them in
-/// one of these, for the operation the page was opened for, or by default to encrypt or decrypt them as they are.
-/// Opened to make a copy, the folders are only where to start looking for the file, which is not changed.
+/// The page model of My folders, the folders the user has given the app access to. Files are changed where they are by
+/// picking them in one of these, for the <see cref="Intent"/>. For a copy, the folders are only where to start looking
+/// for the file, which is not changed.
 /// </summary>
 public partial class WorkFoldersPageModel(
     WorkFolderStorage storage,
@@ -55,16 +55,24 @@ public partial class WorkFoldersPageModel(
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel, IPageInformationPageModel
 {
+    /// <inheritdoc/>
     public string Heading => MobileTexts.WorkFoldersContentTitle;
 
+    /// <inheritdoc/>
     public string Information => Description;
 
     // The hint for the operation the page was opened for, shown once when the page has been shown.
     private string _pendingIntentHint = string.Empty;
 
+    /// <summary>
+    /// My folders, as listed.
+    /// </summary>
     public ObservableCollection<WorkFolderEntry> Folders { get; } = [];
 
-    // Opened for an operation, the page is named for it, since that is what the user is doing here.
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The page is named for the <see cref="Intent"/>, since that is what the user is doing here.
+    /// </remarks>
     public string Breadcrumb => string.Join(
         MobileTexts.BreadcrumbSeparator,
         MobileTexts.BreadcrumbHome,
@@ -77,14 +85,19 @@ public partial class WorkFoldersPageModel(
             _ => throw new ArgumentOutOfRangeException(nameof(Intent), Intent, @"Unknown work folder intent."),
         });
 
+    /// <inheritdoc/>
     [ObservableProperty] public partial string MessageText { get; set; } = string.Empty;
 
+    /// <inheritdoc/>
     [ObservableProperty] public partial string StatusText { get; set; } = string.Empty;
 
+    /// <summary>
+    /// The description of My folders.
+    /// </summary>
     public string Description => MobileTexts.WorkFolderDescription;
 
     /// <summary>
-    /// The description, shown on the page itself while there are no folders, to make it easier to find.
+    /// The description while there are no folders, or "" while there are.
     /// </summary>
     [ObservableProperty] public partial string NoFoldersText { get; set; } = string.Empty;
 
@@ -93,6 +106,9 @@ public partial class WorkFoldersPageModel(
     /// </summary>
     public WorkFolderIntent Intent { get; private set; } = WorkFolderIntent.Auto;
 
+    /// <summary>
+    /// True while an operation of the page runs, false otherwise.
+    /// </summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(AddCommand))]
     [NotifyCanExecuteChangedFor(nameof(OpenCommand))]
@@ -102,6 +118,10 @@ public partial class WorkFoldersPageModel(
     [NotifyCanExecuteChangedFor(nameof(RunFolderFilesCommand))]
     public partial bool IsBusy { get; set; }
 
+    /// <summary>
+    /// Sets what is done with a file picked in a folder, and the hint for it shown once the page is shown.
+    /// </summary>
+    /// <param name="intent">What is done with a file picked in a folder.</param>
     public void Initialize(WorkFolderIntent intent)
     {
         Intent = intent;

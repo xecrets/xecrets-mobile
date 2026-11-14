@@ -39,6 +39,10 @@ using Xecrets.Words.Abstractions;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
+/// <summary>
+/// The page model of the page that creates the local profile, changes it, or deletes it. It creates the profile
+/// unless initialized otherwise.
+/// </summary>
 public partial class CreateProfilePageModel(
     IProfileService profileService,
     IStrengthMeter strengthMeter,
@@ -48,27 +52,46 @@ public partial class CreateProfilePageModel(
     IUserInterfaceService userInterfaceService)
     : NewPasswordPageModelBase(strengthMeter, userInterfaceService), IPageInformationPageModel, IBreadcrumbPageModel
 {
+    /// <inheritdoc/>
     [ObservableProperty]
     public partial string Breadcrumb { get; private set; } = string.Empty;
 
+    /// <inheritdoc/>
     [ObservableProperty]
     public partial string Heading { get; private set; } = MobileTexts.HeadingCreateUserFirstTimeSetup;
 
+    /// <inheritdoc/>
     [ObservableProperty]
     public partial string Information { get; private set; } = MobileTexts.ToolTipEmail;
 
+    /// <summary>
+    /// The email entered.
+    /// </summary>
     [ObservableProperty]
     public partial string Email { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Why the last action failed, or "" if it did not.
+    /// </summary>
     [ObservableProperty]
     public partial string ErrorText { get; set; } = string.Empty;
 
+    /// <summary>
+    /// True if the page deletes the profile, false otherwise.
+    /// </summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsEditable))]
     public partial bool IsDelete { get; private set; }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The password is new, unless the profile is deleted.
+    /// </remarks>
     public override bool IsEditable => !IsDelete;
 
+    /// <summary>
+    /// True if the heading is shown also when the height is compact, false otherwise.
+    /// </summary>
     [ObservableProperty]
     public partial bool IsHeadingAlwaysVisible { get; private set; } = true;
 
@@ -81,6 +104,9 @@ public partial class CreateProfilePageModel(
     // Pushed with a payload, the page changes the current profile instead of creating one.
     private bool _isChange;
 
+    /// <summary>
+    /// Makes the page change the profile signed in, starting from its email and password.
+    /// </summary>
     public void InitializeChange()
     {
         _isChange = true;
@@ -93,7 +119,9 @@ public partial class CreateProfilePageModel(
         ConfirmPassword = profileService.CurrentPassword;
     }
 
-    // As when changing, the current email and password are shown, but cannot be edited.
+    /// <summary>
+    /// Makes the page delete the profile signed in, showing its email and password, which cannot be edited.
+    /// </summary>
     public void InitializeDelete()
     {
         IsDelete = true;
@@ -187,5 +215,6 @@ public partial class CreateProfilePageModel(
     private bool CanCreate()
         => !IsBusy && HasPasswords;
 
+    /// <inheritdoc/>
     protected override void OnPasswordsChanged() => CreateCommand.NotifyCanExecuteChanged();
 }

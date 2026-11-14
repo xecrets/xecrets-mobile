@@ -41,14 +41,24 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Services;
 
+/// <summary>
+/// The parts of <see cref="IFileService"/> that are shared by the platforms, using MAUI where it can.
+/// </summary>
 internal abstract class FileServiceBase : IFileService
 {
+    /// <inheritdoc/>
     public abstract string PlatformId { get; }
 
+    /// <inheritdoc/>
     public string AppDataDirectory => FileSystem.AppDataDirectory;
 
+    /// <inheritdoc/>
     public string CacheDirectory => Path.Combine(FileSystem.CacheDirectory, "XecretsEz");
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Opens the file with the MAUI <see cref="Launcher"/>.
+    /// </remarks>
     public virtual async Task<bool> OpenInAsync(string filePath, string displayName)
     {
         EnsureReadableFile(filePath);
@@ -60,8 +70,12 @@ internal abstract class FileServiceBase : IFileService
     public abstract Task<bool> SendToAsync(string filePath, string displayName, string contentType);
 
     /// <summary>
-    /// Lets the user send the file to another app with MAUI's Share.
+    /// Lets the user send a file to another app with the MAUI <see cref="Share"/>.
     /// </summary>
+    /// <param name="filePath">The full path of the file.</param>
+    /// <param name="displayName">The title of the share.</param>
+    /// <param name="contentType">The MIME type of the file, or "" to tell it from the name.</param>
+    /// <exception cref="FileNotFoundException">The file does not exist.</exception>
     protected static async Task ShareAsync(string filePath, string displayName, string contentType)
     {
         EnsureReadableFile(filePath);
@@ -78,27 +92,40 @@ internal abstract class FileServiceBase : IFileService
             });
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// There is no viewer, unless a platform overrides this.
+    /// </remarks>
     public virtual Task<bool> CanViewFileAsync(DecryptedFileInfo file) => Task.FromResult(false);
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The file is opened as by <see cref="OpenInAsync"/>, unless a platform overrides this.
+    /// </remarks>
     public virtual Task<bool> ViewFileAsync(DecryptedFileInfo file) => OpenInAsync(file.FilePath, file.OriginalFileName);
 
+    /// <inheritdoc/>
     /// <remarks>
-    /// Default for platforms where an incoming file reference is a plain filesystem path (Windows, iOS,
-    /// MacCatalyst): Xecrets Ez hands off its own decrypted files under CacheDirectory/XecretsHandoff (see
-    /// TransientFileService.CreateHandoffFile), so a path there is always a file we created ourselves. Android
-    /// overrides this, since its incoming reference is a content Uri rather than a path.
+    /// For platforms where the reference is a path. The app hands off its own files in the XecretsHandoff folder of
+    /// <see cref="CacheDirectory"/>, so a path there is always a file the app handed off.
     /// </remarks>
     public virtual bool IsSelfHandoffReference(string reference) =>
         reference.StartsWith(Path.Combine(CacheDirectory, "XecretsHandoff"), StringComparison.OrdinalIgnoreCase);
 
+    /// <inheritdoc/>
     /// <remarks>
-    /// Default for platforms that make no backups of the app's data (Windows), or where the exclusions are declared in
-    /// the manifest (Android). Apple platforms override this.
+    /// Does nothing, for platforms that make no backups of the app data, such as Windows, or where the exclusions are
+    /// declared in the manifest, such as Android.
     /// </remarks>
     public virtual void ExcludeFromBackup(string path)
     {
     }
 
+    /// <summary>
+    /// Checks that a file exists.
+    /// </summary>
+    /// <param name="filePath">The full path of the file.</param>
+    /// <exception cref="FileNotFoundException">The file does not exist.</exception>
     protected static void EnsureReadableFile(string filePath)
     {
         if (!File.Exists(filePath))

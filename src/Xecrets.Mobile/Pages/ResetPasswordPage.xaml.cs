@@ -37,14 +37,23 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
+/// <summary>
+/// The page that resets a forgotten password.
+/// </summary>
 internal partial class ResetPasswordPage
 {
     private readonly IUserInterfaceService _userInterfaceService;
     private bool _isCompact;
     private bool _isAppeared;
 
+    /// <summary>
+    /// The entry of the new password.
+    /// </summary>
     public Entry PasswordTextEntry => NewPasswordControl.PasswordTextEntry;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ResetPasswordPage"/> class with the standard header.
+    /// </summary>
     public ResetPasswordPage(
         ResetPasswordPageModel model,
         IPlatformServices platformServices,

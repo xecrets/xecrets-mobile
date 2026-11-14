@@ -49,18 +49,32 @@ internal sealed class AppleFileGrants(WorkFolderStorage storage)
     // The urls the pickers gave while the app runs, by file id, which carry the access to the file picked.
     private readonly Dictionary<string, NSUrl> _picked = [];
 
+    /// <summary>
+    /// Keeps the url a picker gave for a file, which gives access to it while the app runs.
+    /// </summary>
+    /// <param name="fileUrl">The url the picker gave.</param>
+    /// <returns>The url.</returns>
     public NSUrl Add(NSUrl fileUrl)
     {
         _picked[fileUrl.AbsoluteString!] = fileUrl;
         return fileUrl;
     }
 
+    /// <summary>
+    /// Tells if a picker gave the url of a file while the app runs.
+    /// </summary>
+    /// <param name="fileId">The id of the file.</param>
+    /// <returns>True if the file was picked while the app runs, false otherwise.</returns>
     public bool IsPicked(string fileId) => _picked.ContainsKey(fileId);
 
     /// <summary>
-    /// Finds the innermost of My folders that contains the file or folder, or is the folder itself when that is
+    /// Finds the innermost of My folders that contains a file or folder, or is the folder itself when that is
     /// allowed. The paths are normalized with the access of each folder, which also gives access to what is in it.
     /// </summary>
+    /// <param name="id">The id of the file or folder.</param>
+    /// <param name="isFolderItself">True if one of My folders that is the folder itself is found too, false
+    /// otherwise.</param>
+    /// <returns>The folder, or null if there is none.</returns>
     public async Task<WorkFolder?> FindFolderAsync(string id, bool isFolderItself)
     {
         string idPath = NSUrl.FromString(id)!.Path!;
@@ -89,9 +103,10 @@ internal sealed class AppleFileGrants(WorkFolderStorage storage)
 
     /// <summary>
     /// Finds what gives access to the file: the url a picker gave, the grant of a folder containing it, or its own
-    /// bookmark. A bookmark follows a file that is renamed, but such a file is not where it was. Returns the url to
-    /// access through and the url of the file, or null when there is no access.
+    /// bookmark. A bookmark follows a file that is renamed, but such a file is not where it was, so it gives no access.
     /// </summary>
+    /// <param name="fileId">The id of the file.</param>
+    /// <returns>The url to access through and the url of the file, or null if there is no access.</returns>
     public async Task<ResolvedUrl?> ResolveAccessAsync(string fileId)
     {
         if (_picked.TryGetValue(fileId, out NSUrl? picked))
@@ -111,16 +126,26 @@ internal sealed class AppleFileGrants(WorkFolderStorage storage)
             : null;
     }
 
-    // The access belongs to the url resolved from the grant, not to a url created from the same string, so it is
-    // resolved again for each use.
+    /// <summary>
+    /// Resolves the grant of the innermost of My folders that contains a file or folder, as found by
+    /// <see cref="FindFolderAsync"/>. The access belongs to the url resolved from the grant, not to a url created from
+    /// the same string, so it is resolved again for each use.
+    /// </summary>
+    /// <param name="id">The id of the file or folder.</param>
+    /// <param name="isFolderItself">True if one of My folders that is the folder itself is found too, false
+    /// otherwise.</param>
+    /// <returns>The url of the grant, whose security scope gives the access.</returns>
+    /// <exception cref="IOException">The file or folder is in none of My folders.</exception>
     public async Task<NSUrl> GetFolderGrantAsync(string id, bool isFolderItself) =>
         await FindFolderAsync(id, isFolderItself) is { } folder
             ? folder.GrantId.ResolveGrant()
             : throw new IOException("The file is not in one of My folders.");
 
     /// <summary>
-    /// The path of the file, normalized with the access it is reached through, or null when there is no access to it.
+    /// Gets the path of a file, normalized as by <see cref="NormalizePath"/> with the access it is reached through.
     /// </summary>
+    /// <param name="fileId">The id of the file.</param>
+    /// <returns>The normalized path, or null if there is no access to the file.</returns>
     public async Task<string?> GetNormalizedPathAsync(string fileId) =>
         await ResolveAccessAsync(fileId) is { } access
             ? NormalizePath(access.AccessUrl, NSUrl.FromString(fileId)!.Path!)
@@ -132,6 +157,9 @@ internal sealed class AppleFileGrants(WorkFolderStorage storage)
     /// "ä" as one character or as an "a" followed by a combining mark. A link is only resolved where the path can be
     /// seen to exist, so this is done while accessing what gives access to the path.
     /// </summary>
+    /// <param name="access">The url whose security scope gives access to the path.</param>
+    /// <param name="path">The path.</param>
+    /// <returns>The normalized path, without a trailing slash.</returns>
     public static string NormalizePath(NSUrl access, string path)
     {
         using IDisposable scope = new AppleSecurityScope(access);

@@ -53,11 +53,11 @@ namespace Xecrets.Mobile.Platforms.Android;
 [SupportedOSPlatform("android26.0")]
 internal class AndroidWorkFolderFileLauncher : IWorkFolderFileLauncher
 {
-    /// <summary>
-    /// As a file manager does, views content the system Quick Viewer handles in it, and opens anything else in the
-    /// app of the user's choice. That app is also allowed to write when the file is reached through one of My folders,
-    /// so that an edited file is saved in place.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <remarks>
+    /// As a file manager does, views content the system Quick Viewer handles in it, and opens anything else in the app
+    /// of the user's choice, which is granted writing when <paramref name="allowWrite"/> is true.
+    /// </remarks>
     public async Task<bool> OpenAsync(FileReference file, bool allowWrite)
     {
         ThreadGuard.ThrowIfNotMainThread();
@@ -85,6 +85,7 @@ internal class AndroidWorkFolderFileLauncher : IWorkFolderFileLauncher
         return viewIntent.TryStartPreferredOrChooser(file.Name);
     }
 
+    /// <inheritdoc/>
     public Task ShareAsync(FileReference file)
     {
         ThreadGuard.ThrowIfNotMainThread();

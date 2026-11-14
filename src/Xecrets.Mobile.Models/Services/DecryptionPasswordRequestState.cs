@@ -39,15 +39,29 @@ public sealed class DecryptionPasswordRequestState
 {
     private ITransientFile? _encryptedFile;
 
+    /// <summary>
+    /// The full path of the encrypted file, or "" if there is none.
+    /// </summary>
     public string EncryptedPath => _encryptedFile?.FilePath ?? "";
 
+    /// <summary>
+    /// True if there is an encrypted file waiting for its password, false otherwise.
+    /// </summary>
     public bool HasPendingRequest => _encryptedFile is not null;
 
+    /// <summary>
+    /// Makes a temporary encrypted file the one waiting for its password.
+    /// </summary>
+    /// <param name="encryptedFile">The temporary encrypted file, which the state takes over.</param>
+    /// <remarks>Requires that no file is waiting, since that file would not be disposed.</remarks>
     public void Set(ITransientFile encryptedFile)
     {
         _encryptedFile = encryptedFile;
     }
 
+    /// <summary>
+    /// Ends the wait for a password, and disposes the encrypted file, if any.
+    /// </summary>
     public void Clear()
     {
         ITransientFile? encryptedFile = _encryptedFile;

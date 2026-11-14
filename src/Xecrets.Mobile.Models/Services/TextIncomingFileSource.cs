@@ -33,11 +33,21 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Services;
 
+/// <summary>
+/// Text received from another app, which is received as a text file.
+/// </summary>
+/// <param name="text">The received text.</param>
+/// <param name="displayName">The name of the text file.</param>
+/// <param name="transientFileService">Creates the temporary copy.</param>
 public sealed class TextIncomingFileSource(
     string text,
     string displayName,
     ITransientFileService transientFileService) : IIncomingFileSource
 {
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The text is written as UTF-8, and the MIME type is text/plain.
+    /// </remarks>
     public async Task<IncomingFileInfo> ImportAsync()
     {
         ITransientFile incomingFile = transientFileService.CreateIncomingFile(displayName);

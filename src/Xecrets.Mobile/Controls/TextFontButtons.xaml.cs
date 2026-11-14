@@ -35,6 +35,10 @@ namespace Xecrets.Mobile.Controls;
 /// </summary>
 internal sealed partial class TextFontButtons
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TextFontButtons"/> class, bound to the
+    /// <see cref="Models.PageModels.TextEditorFontModel"/> that is its binding context.
+    /// </summary>
     public TextFontButtons()
     {
         InitializeComponent();

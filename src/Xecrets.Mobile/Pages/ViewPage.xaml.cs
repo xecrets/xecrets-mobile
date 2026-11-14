@@ -33,10 +33,16 @@ using Xecrets.Mobile.Models.PageModels;
 
 namespace Xecrets.Mobile.Pages;
 
+/// <summary>
+/// The page that shows a decrypted file in the app, which is sensitive content while the page is shown.
+/// </summary>
 internal partial class ViewPage
 {
     private readonly IPlatformServices _platformServices;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ViewPage"/> class with the standard header.
+    /// </summary>
     public ViewPage(ViewPageModel model, IPageHeaderService pageHeaderService, IPlatformServices platformServices)
         : base(model)
     {

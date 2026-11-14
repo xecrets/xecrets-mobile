@@ -30,10 +30,18 @@
 
 namespace Xecrets.Mobile.Models.Abstractions;
 
-// A page model with a heading and information about the page, shown from the information button in the header.
+/// <summary>
+/// A page model with a heading and information about the page.
+/// </summary>
 public interface IPageInformationPageModel
 {
+    /// <summary>
+    /// The heading of the page.
+    /// </summary>
     string Heading { get; }
 
+    /// <summary>
+    /// The information about the page.
+    /// </summary>
     string Information { get; }
 }

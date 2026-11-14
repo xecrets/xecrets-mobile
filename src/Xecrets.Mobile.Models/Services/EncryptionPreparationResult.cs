@@ -32,9 +32,15 @@ using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Models.Services;
 
-/// <param name="File">The encrypted file, which whoever handles the result must dispose.</param>
-/// <param name="EncryptCopyForSharing">The file is encrypted with a password chosen for sharing it, rather than for the
-/// current profile.</param>
+/// <summary>
+/// An encrypted copy of a file.
+/// </summary>
+/// <param name="File">The temporary encrypted file, which the holder of the result owns and must dispose.</param>
+/// <param name="DisplayName">The name of the encrypted file.</param>
+/// <param name="ContentType">The MIME type of the encrypted file.</param>
+/// <param name="FileSize">The size of the encrypted file in bytes.</param>
+/// <param name="EncryptCopyForSharing">True if the file is encrypted with a password chosen for sharing it, false if
+/// it is encrypted with the password of the current profile.</param>
 public sealed record EncryptionPreparationResult(
     ITransientFile File,
     string DisplayName,
@@ -42,6 +48,9 @@ public sealed record EncryptionPreparationResult(
     long FileSize,
     bool EncryptCopyForSharing)
 {
+    /// <summary>
+    /// No encrypted copy. Its file has the path "", and disposing it does nothing.
+    /// </summary>
     public static EncryptionPreparationResult Empty { get; } = new(
         new NoFile(),
         string.Empty,
@@ -49,6 +58,9 @@ public sealed record EncryptionPreparationResult(
         0,
         false);
 
+    /// <summary>
+    /// The full path of <see cref="File"/>.
+    /// </summary>
     public string FilePath => File.FilePath;
 
     private sealed class NoFile : ITransientFile

@@ -51,6 +51,10 @@ using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Platforms.Android;
 
+/// <summary>
+/// The activity of the app, which receives the files and text that other apps send or view with it, and starts the
+/// document pickers.
+/// </summary>
 [Activity(Theme = "@style/Maui.SplashTheme", MainLauncher = true, Exported = true, LaunchMode = LaunchMode.SingleTask,
     ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation | ConfigChanges.UiMode |
                            ConfigChanges.ScreenLayout | ConfigChanges.SmallestScreenSize | ConfigChanges.Density)]
@@ -71,6 +75,11 @@ public class MainActivity : MauiAppCompatActivity, IActivityResultCallback
     private ActivityResultLauncher? _documentPickerLauncher;
     private TaskCompletionSource<Intent?>? _documentPickerCompletion;
 
+    /// <summary>
+    /// Starts a document picker. A picker started earlier that has not returned is taken to be canceled.
+    /// </summary>
+    /// <param name="intent">The intent of the picker.</param>
+    /// <returns>The result of the picker, or null if the user cancels.</returns>
     public Task<Intent?> StartDocumentPickerAsync(Intent intent)
     {
         _documentPickerCompletion?.TrySetResult(null);
@@ -97,6 +106,10 @@ public class MainActivity : MauiAppCompatActivity, IActivityResultCallback
         await HandleIncomingIntentAsync(intent!);
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Completes the document picker started last, if any.
+    /// </remarks>
     public void OnActivityResult(Java.Lang.Object? result)
     {
         // The activity can be recreated while the picker is up, and then there is nothing left to complete.

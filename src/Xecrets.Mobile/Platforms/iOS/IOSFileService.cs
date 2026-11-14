@@ -34,8 +34,12 @@ using Xecrets.Mobile.Platforms.Apple;
 
 namespace Xecrets.Mobile.Platforms.iOS;
 
+/// <summary>
+/// The file service of iOS.
+/// </summary>
 [SupportedOSPlatform("ios")]
 internal sealed class IOSFileService : AppleFileService
 {
+    /// <inheritdoc/>
     public override string PlatformId => "ios";
 }

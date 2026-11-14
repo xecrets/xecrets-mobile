@@ -30,29 +30,123 @@
 
 namespace Xecrets.Mobile.Models.Models;
 
+/// <summary>
+/// A page of the app to navigate to.
+/// </summary>
 public enum AppDestination
 {
+    /// <summary>
+    /// The page that shows the crash log of the last crash.
+    /// </summary>
     Crash,
+
+    /// <summary>
+    /// The page to sign in to the local profile.
+    /// </summary>
     Login,
+
+    /// <summary>
+    /// The page shown when there is no local profile.
+    /// </summary>
     Introduction,
+
+    /// <summary>
+    /// The page to create the local profile.
+    /// </summary>
     CreateProfile,
+
+    /// <summary>
+    /// The home page.
+    /// </summary>
     Home,
+
+    /// <summary>
+    /// The page that previews a decrypted file.
+    /// </summary>
     Preview,
+
+    /// <summary>
+    /// The page that shows a decrypted file in the app.
+    /// </summary>
     View,
+
+    /// <summary>
+    /// The page to edit decrypted text.
+    /// </summary>
     Edit,
+
+    /// <summary>
+    /// The page that shows an encrypted copy.
+    /// </summary>
     EncryptResult,
+
+    /// <summary>
+    /// The page to encrypt a copy with a password for sharing.
+    /// </summary>
     EncryptToShare,
+
+    /// <summary>
+    /// My folders.
+    /// </summary>
     WorkFolders,
+
+    /// <summary>
+    /// The page to enter decryption passwords.
+    /// </summary>
     EnterPassword,
+
+    /// <summary>
+    /// The page about the app.
+    /// </summary>
     About,
+
+    /// <summary>
+    /// The page of the third-party licenses.
+    /// </summary>
     ThirdPartyLicenses,
+
+    /// <summary>
+    /// The debug page.
+    /// </summary>
     Debug,
+
+    /// <summary>
+    /// The debug page that browses the cache.
+    /// </summary>
     CacheBrowser,
+
+    /// <summary>
+    /// The page that suggests a password.
+    /// </summary>
     SuggestPassword,
+
+    /// <summary>
+    /// The recent files.
+    /// </summary>
     RecentFiles,
+
+    /// <summary>
+    /// The welcome page.
+    /// </summary>
     Welcome,
+
+    /// <summary>
+    /// The page to verify the password of the profile.
+    /// </summary>
     VerifyPassword,
+
+    /// <summary>
+    /// The page to change the local profile.
+    /// </summary>
     ChangeProfile,
+
+    /// <summary>
+    /// The page to reset a forgotten password.
+    /// </summary>
     ResetPassword,
+
+    /// <summary>
+    /// The page shown while the app starts.
+    /// </summary>
     Startup,
 }

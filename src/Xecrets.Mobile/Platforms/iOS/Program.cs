@@ -34,6 +34,9 @@ using UIKit;
 
 namespace Xecrets.Mobile.Platforms.iOS;
 
+/// <summary>
+/// The entry point of the app on iOS, which registers the crash handlers before anything else runs.
+/// </summary>
 public class Program
 {
     private static void Main(string[] args)

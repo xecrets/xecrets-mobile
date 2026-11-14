@@ -40,8 +40,14 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
+/// <summary>
+/// The welcome page.
+/// </summary>
 internal partial class WelcomePage : IQueryAttributable
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WelcomePage"/> class with the standard title, but without the menu.
+    /// </summary>
     public WelcomePage(WelcomePageModel model, IProfileService profileService, IPageHeaderService pageHeaderService)
         : base(model)
     {
@@ -49,6 +55,11 @@ internal partial class WelcomePage : IQueryAttributable
         pageHeaderService.ApplyStandardHeaderTitle(this, profileService.IsAuthenticated ? profileService.CurrentEmail : string.Empty);
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// A bool payload makes the page one opened on top of another page, and tells whether the user can choose not to
+    /// see it again. Without one, the page is the introduction.
+    /// </remarks>
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
         if (query.TryGetValue(nameof(NavigationParameter.Payload), out object? payload))

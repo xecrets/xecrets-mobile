@@ -38,6 +38,10 @@ using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Models.Services;
 
+/// <summary>
+/// Encrypts and decrypts files where they are, as part of the <see cref="RunningOperation"/>. Results are made in
+/// temporary files, which are wiped once saved, or not.
+/// </summary>
 internal sealed class WorkFolderOperationService(
     ICoreServices coreServices,
     IProfileService profileService,
@@ -56,8 +60,10 @@ internal sealed class WorkFolderOperationService(
 
     private PasswordRequest? _passwordRequest;
 
+    /// <inheritdoc/>
     public bool HasPendingPasswordRequest => _passwordRequest is { Outcome: null };
 
+    /// <inheritdoc/>
     public async Task<FileOperationOutcome> TransformAsync(
         FileReference file,
         WorkFolderOperation operation,
@@ -106,10 +112,11 @@ internal sealed class WorkFolderOperationService(
         return FileOperationOutcome.Completed(result);
     }
 
-    /// <summary>
-    /// Once the operation has started, any failure is reported as denied access, which is what it typically is for a
-    /// file reached by itself.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Once the operation has started, any failure but canceling is reported as denied access, which is what it
+    /// typically is for a file reached by itself.
+    /// </remarks>
     public async Task<FileOperationOutcome> EncryptElsewhereAsync(FileReference file)
     {
         try
@@ -137,7 +144,10 @@ internal sealed class WorkFolderOperationService(
         }
     }
 
-    // A file elsewhere is in none of My folders, so its folder is never listed.
+    /// <inheritdoc/>
+    /// <remarks>
+    /// A file elsewhere is in none of My folders, so its folder is never listed.
+    /// </remarks>
     public Task<FileOperationOutcome> DecryptElsewhereWithKnownPasswordsAsync(FileReference file) =>
         DecryptWithKnownPasswordsAsync(
             file,
@@ -145,10 +155,11 @@ internal sealed class WorkFolderOperationService(
             new FolderContents(fileAccess, []),
             _singleFileReporter);
 
-    /// <summary>
-    /// The file is decrypted the same way as it was started, and the one waiting for it is told what became of it once
-    /// the request ends.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The outcome is kept in the request, and given to <see cref="WaitForPasswordRequestAsync"/> once the request
+    /// ends.
+    /// </remarks>
     public async Task<FileOperationOutcome> DecryptPendingWithPasswordAsync(string password)
     {
         if (_passwordRequest is not { Outcome: null } request)
@@ -170,17 +181,17 @@ internal sealed class WorkFolderOperationService(
         return outcome;
     }
 
-    /// <summary>
-    /// Ends the request, also when a password has decrypted the file, telling the one waiting for it what became of the
-    /// file, or that a password is still needed when none decrypted it. There is no request when the page for passwords
-    /// is left after it was opened for something else.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <remarks>
+    /// There is no request when the page for passwords is left after it was opened for something else.
+    /// </remarks>
     public void CancelPasswordRequest()
     {
         _passwordRequest?.Completion.SetResult(_passwordRequest.Outcome ?? FileOperationOutcome.PasswordNeeded);
         _passwordRequest = null;
     }
 
+    /// <inheritdoc/>
     public Task<FileOperationOutcome> WaitForPasswordRequestAsync() => _passwordRequest!.Completion.Task;
 
     private async Task<FileOperationOutcome> DecryptWithKnownPasswordsAsync(

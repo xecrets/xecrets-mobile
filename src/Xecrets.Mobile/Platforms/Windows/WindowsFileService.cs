@@ -41,11 +41,19 @@ using Xecrets.Mobile.Services;
 
 namespace Xecrets.Mobile.Platforms.Windows;
 
+/// <summary>
+/// The file service of Windows.
+/// </summary>
 [SupportedOSPlatform("windows10.0.19041")]
 internal class WindowsFileService : FileServiceBase
 {
+    /// <inheritdoc/>
     public override string PlatformId => "windows";
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Only PDF files are viewed, by the app the system launches for them.
+    /// </remarks>
     public override async Task<bool> CanViewFileAsync(DecryptedFileInfo file)
     {
         if (!file.ContentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase))

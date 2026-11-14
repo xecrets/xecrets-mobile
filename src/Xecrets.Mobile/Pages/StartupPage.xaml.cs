@@ -32,8 +32,14 @@ using Xecrets.Mobile.Models.PageModels;
 
 namespace Xecrets.Mobile.Pages;
 
+/// <summary>
+/// The page shown while the app starts.
+/// </summary>
 internal partial class StartupPage
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="StartupPage"/> class, without the standard header.
+    /// </summary>
     public StartupPage(StartupPageModel model)
         : base(model)
     {

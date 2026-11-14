@@ -37,7 +37,8 @@ using Xecrets.Mobile.Models.Abstractions;
 namespace Xecrets.Mobile.Models.PageModels;
 
 /// <summary>
-/// The font of the text in the view and edit pages, which is the user's text editor preference.
+/// The font of the text of the text editor, as set in the settings of the profile signed in. Changes to it are
+/// persisted there.
 /// </summary>
 public partial class TextEditorFontModel(IProfileSettingsService profileSettingsService) : ObservableObject
 {
@@ -49,13 +50,22 @@ public partial class TextEditorFontModel(IProfileSettingsService profileSettings
 
     private const double MaxFontSize = 32;
 
+    /// <summary>
+    /// The font size, from 10 to 32.
+    /// </summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(DecreaseFontSizeCommand), nameof(IncreaseFontSizeCommand))]
     public partial double FontSize { get; set; } = DefaultFontSize;
 
+    /// <summary>
+    /// True for a proportional font, false for a monospaced font.
+    /// </summary>
     [ObservableProperty]
     public partial bool IsProportionalFont { get; set; }
 
+    /// <summary>
+    /// Loads the font from the settings, with the font size kept within its range.
+    /// </summary>
     public async Task LoadAsync()
     {
         TextEditor settings = await profileSettingsService.GetTextEditorSettingsAsync();

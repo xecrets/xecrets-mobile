@@ -40,6 +40,9 @@ using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
+/// <summary>
+/// The page model of the page that edits the decrypted text being previewed.
+/// </summary>
 public partial class EditPageModel(
     IPreviewService previewService,
     IEditSaveService editSaveService,
@@ -49,10 +52,15 @@ public partial class EditPageModel(
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel, IPageInformationPageModel
 {
+    /// <inheritdoc/>
     public string Heading => MobileTexts.EditContentTitle;
 
+    /// <inheritdoc/>
     public string Information => MobileTexts.EditDescription;
 
+    /// <summary>
+    /// The font of the text editor.
+    /// </summary>
     public TextEditorFontModel Font { get; } = new(profileSettingsService);
 
     // A hash rather than a copy of the saved text, so that no more copies of the plaintext are kept than needed.
@@ -61,30 +69,48 @@ public partial class EditPageModel(
     // Once only, since the page appears again when returned to, and the text may have been edited by then.
     private bool _initialized;
 
+    /// <inheritdoc/>
     public string Breadcrumb => BreadcrumbFormatter.Format(
         flowContext.Origin,
         MobileTexts.BreadcrumbPreview,
         MobileTexts.BreadcrumbEdit);
 
+    /// <summary>
+    /// The name of the file, before it was encrypted.
+    /// </summary>
     [ObservableProperty]
     public partial string FileNameText { get; set; } = string.Empty;
 
+    /// <summary>
+    /// The type and size of the file.
+    /// </summary>
     [ObservableProperty]
     public partial string MetadataText { get; set; } = string.Empty;
 
+    /// <summary>
+    /// The text being edited.
+    /// </summary>
     [ObservableProperty]
     public partial string Text { get; set; } = string.Empty;
 
+    /// <inheritdoc/>
     [ObservableProperty]
     public partial string MessageText { get; set; } = string.Empty;
 
+    /// <inheritdoc/>
     [ObservableProperty]
     public partial string StatusText { get; set; } = string.Empty;
 
+    /// <summary>
+    /// True while an operation of the page runs, false otherwise.
+    /// </summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
     public partial bool IsBusy { get; set; }
 
+    /// <summary>
+    /// True if the text differs from the text last saved, or decrypted, false otherwise.
+    /// </summary>
     public bool HasUnsavedChanges => !HashText(Text).SequenceEqual(_savedTextHash);
 
     [RelayCommand]

@@ -31,9 +31,23 @@
 
 namespace Xecrets.Mobile.Models.Abstractions;
 
+/// <summary>
+/// An operation during which an artificial crash can be caused, to test crash handling.
+/// </summary>
 public enum CrashTestOperation
 {
+    /// <summary>
+    /// Encrypting a file.
+    /// </summary>
     Encrypt,
+
+    /// <summary>
+    /// Decrypting a file.
+    /// </summary>
     Decrypt,
+
+    /// <summary>
+    /// Viewing a decrypted file.
+    /// </summary>
     View,
 }

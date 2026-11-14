@@ -39,6 +39,9 @@ using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Models.Services;
 
+/// <summary>
+/// Saves edited text of the file being previewed, encrypted to a temporary file first.
+/// </summary>
 internal sealed class EditSaveService(
     IPreviewService previewService,
     EncryptRequestFactory encryptRequestFactory,
@@ -53,12 +56,12 @@ internal sealed class EditSaveService(
     ICrashLogService crashLogService)
     : IEditSaveService
 {
-    /// <summary>
-    /// The edits are encrypted to a temporary file first, which is wiped once saved, or not. The source is then kept
-    /// under its backup name while the edits are saved under its own name, and is deleted once they are. Should saving
-    /// fail, the source gets its own name back, so that only the edits are lost, which is also done when the user next
-    /// signs in, should the app be ended while saving.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The temporary encrypted file is wiped whether saved or not. The source file under its backup name is deleted
+    /// once the text is saved. The save is recorded with <see cref="IInterruptedSaveService"/>, so that the source file
+    /// also gets its own name back if the app ends while saving.
+    /// </remarks>
     public async Task<bool> SaveAsync(string text)
     {
         // The source is reached through one of My folders, as it was when editing started.
@@ -141,6 +144,7 @@ internal sealed class EditSaveService(
         }
     }
 
+    /// <inheritdoc/>
     public async Task<bool> SaveCopyAsync(string text)
     {
         byte[] plaintext = new UTF8Encoding(false).GetBytes(text);
@@ -176,10 +180,8 @@ internal sealed class EditSaveService(
         return true;
     }
 
-    /// <summary>
-    /// Encrypts the text from memory to a temporary file. The text is encrypted for all the file being previewed was
-    /// encrypted for, and keeps the creation time of the original.
-    /// </summary>
+    // Encrypts the text from memory to a temporary file. The text is encrypted for all the file being previewed was
+    // encrypted for, and keeps the creation time of the original.
     private async Task<ITransientFile> EncryptToTransientAsync(IPreviewState state, byte[] plaintext)
     {
         EncryptRequest request = encryptRequestFactory.Create(state.File.OriginalFileName, state.EncryptedWith) with

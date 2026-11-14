@@ -61,12 +61,12 @@ internal sealed class AppleFileAccess(
     IEzLogging log)
     : IFileAccess
 {
-    /// <summary>
-    /// Any file can be picked, also when an encrypted one is wanted, which is checked once it is read. A file provider
-    /// such as Google Drive types its files by the MIME type it stored for them, rather than by their extension, so an
-    /// encrypted file it got from elsewhere is just data to it, and would be disabled if only the encrypted file type
-    /// was allowed.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Any file can be picked, whatever the kind. A file provider such as Google Drive types its files by the MIME type
+    /// it stored for them, rather than by their extension, so an encrypted file it got from elsewhere is just data to
+    /// it, and would be disabled if only the encrypted file type was allowed.
+    /// </remarks>
     public async Task<FileReference?> PickFileAsync(string initialFolder, FilePickerKind kind)
     {
         ThreadGuard.ThrowIfNotMainThread();
@@ -82,7 +82,10 @@ internal sealed class AppleFileAccess(
         return fileUrl is null ? null : AppleFileLocation.Locate(grants.Add(fileUrl));
     }
 
-    // The folder picker does not tell the files apart by kind.
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The folder picker shows files of any kind. The top of a storage is named after where it is stored.
+    /// </remarks>
     public async Task<WorkFolderResult> PickFolderAsync(string initialFolder, FilePickerKind kind)
     {
         ThreadGuard.ThrowIfNotMainThread();
@@ -131,22 +134,31 @@ internal sealed class AppleFileAccess(
         }
     }
 
-    /// <summary>
+    /// <inheritdoc/>
+    /// <remarks>
     /// The paths are compared with their symbolic links resolved, since the same location may be reached by different
     /// paths, such as through /var and /private/var.
-    /// </summary>
+    /// </remarks>
     public Task<WorkFolder?> FindFolderAsync(string fileId) => grants.FindFolderAsync(fileId, isFolderItself: false);
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The paths are compared as for <see cref="FindFolderAsync"/>.
+    /// </remarks>
     public Task<WorkFolder?> FindFolderOfFolderAsync(string folderId) =>
         grants.FindFolderAsync(folderId, isFolderItself: true);
 
-    // A file url does not tell what folder it is reached through, so it is the same in a folder.
+    /// <inheritdoc/>
+    /// <remarks>
+    /// A file url does not tell what folder it is reached through, so the file is returned as it is.
+    /// </remarks>
     public Task<FileReference> GetFileInFolderAsync(WorkFolder folder, FileReference file) => Task.FromResult(file);
 
-    /// <summary>
-    /// Listing the folders reads the storage, which is not done on the main thread. Names are compared as the volume
-    /// of the folder compares them, which may or may not be by case, and as APFS does, whatever the Unicode form.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The folders are read off the main thread. Names are compared as the volume of the folder compares them, which
+    /// may or may not be by case, and as APFS does, whatever the Unicode form.
+    /// </remarks>
     public async Task<IReadOnlyList<FolderListing>> ListFolderAsync(string folderId, FolderScope scope)
     {
         using IDisposable access = new AppleSecurityScope(
@@ -168,9 +180,17 @@ internal sealed class AppleFileAccess(
         folderUrl.TryGetResource(NSUrl.VolumeSupportsCaseSensitiveNamesKey, out NSObject? value) &&
         ((NSNumber)value!).BoolValue;
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The folder is told by the url of the file.
+    /// </remarks>
     public Task<string> GetParentFolderAsync(string fileId) =>
         Task.FromResult(NSUrl.FromString(fileId)?.RemoveLastPathComponent().AbsoluteString ?? "");
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The segments are those of the path of the url.
+    /// </remarks>
     public IReadOnlyList<string> GetPathSegments(string id, string rememberedName)
     {
         string[] segments = (NSUrl.FromString(id)?.Path ?? id).Split('/', StringSplitOptions.RemoveEmptyEntries);
@@ -180,17 +200,22 @@ internal sealed class AppleFileAccess(
             : [.. segments, rememberedName];
     }
 
-    // The same location may be reached by different paths, such as through /var and /private/var.
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The paths are compared with their symbolic links resolved, since the same location may be reached by different
+    /// paths, such as through /var and /private/var.
+    /// </remarks>
     public async Task<bool> IsSameFileAsync(string fileId, string otherFileId) =>
         fileId == otherFileId ||
         (await grants.GetNormalizedPathAsync(fileId) is { } path &&
             await grants.GetNormalizedPathAsync(otherFileId) is { } otherPath &&
             path == otherPath);
 
-    /// <summary>
+    /// <inheritdoc/>
+    /// <remarks>
     /// Keeps a bookmark of the file, made while there is access to it. A file that already has one keeps it, since a
     /// bookmark follows the file.
-    /// </summary>
+    /// </remarks>
     public async Task<bool> KeepFileGrantAsync(string fileId)
     {
         if (File.Exists(fileId.GetGrantPath()))
@@ -213,10 +238,11 @@ internal sealed class AppleFileAccess(
         }
     }
 
-    /// <summary>
-    /// A file that could only be told to be in cloud storage may tell its provider once it is on the device, which it
-    /// is after it has been used.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Only a file that could only be told to be in cloud storage is located again, since it may tell its provider once
+    /// it is on the device.
+    /// </remarks>
     public async Task<FileReference> LocateAgainAsync(FileReference file)
     {
         if (file.Root != RootProvider.CloudStorage || await grants.ResolveAccessAsync(file.Id) is not { } access)
@@ -230,20 +256,30 @@ internal sealed class AppleFileAccess(
         return file with { Root = located.Root, FolderPath = located.FolderPath };
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// A file picked while the app runs has access through the url the picker gave, and other files through a bookmark
+    /// of their own.
+    /// </remarks>
     public bool HasFileGrant(string fileId) =>
         grants.IsPicked(fileId) || fileId.TryResolveGrant() is not null;
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The grants are the saved bookmarks, of folders and of files alike.
+    /// </remarks>
     public Task ReleaseUnusedGrantsAsync(GrantReferences references)
     {
         references.FolderGrantIds.Concat(references.FileIds).ReleaseGrantsExcept();
         return Task.CompletedTask;
     }
 
-    /// <summary>
+    /// <inheritdoc/>
+    /// <remarks>
     /// The access lasts only while the coordinator reads the file, so the file is copied to a temporary file then,
     /// which on APFS is a clone that copies no data, and the copy is read. The copy is wiped once the stream is
     /// disposed.
-    /// </summary>
+    /// </remarks>
     public async Task<Stream> OpenReadAsync(string fileId)
     {
         ITransientFile copy = transientFileService.CreateHandoffFile(NSUrl.FromString(fileId)!.LastPathComponent!);
@@ -262,10 +298,11 @@ internal sealed class AppleFileAccess(
         }
     }
 
-    /// <summary>
+    /// <inheritdoc/>
+    /// <remarks>
     /// Read through the same grant and coordination as the file itself, so a file provider reports the times of the
-    /// file as it was read.
-    /// </summary>
+    /// file as it is read.
+    /// </remarks>
     public Task<FileTimes> GetTimesAsync(string fileId) =>
         ReadResolvedAsync(fileId, coordinatedUrl =>
         {
@@ -282,10 +319,11 @@ internal sealed class AppleFileAccess(
 
     private static DateTime? ToUtc(NSObject? value) => value is NSDate date ? (DateTime)date : null;
 
-    /// <summary>
+    /// <inheritdoc/>
+    /// <remarks>
     /// Set through the same grant as for overwriting the file, and coordinated as a write, so a file provider learns of
     /// the change.
-    /// </summary>
+    /// </remarks>
     public async Task SetSupportedTimesAsync(string fileId, FileTimes times)
     {
         (NSUrl url, NSUrl grant) = await ResolveWriteAccessAsync(fileId);
@@ -306,6 +344,7 @@ internal sealed class AppleFileAccess(
         }
     }
 
+    /// <inheritdoc/>
     public Task<byte[]> ReadStartAsync(string fileId, int count) =>
         ReadResolvedAsync(fileId, coordinatedUrl =>
         {
@@ -314,6 +353,11 @@ internal sealed class AppleFileAccess(
             return buffer[..stream.ReadAtLeast(buffer, count, throwOnEndOfStream: false)];
         });
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The coordinator is asked to make the file available for reading, which gets it from storage that does not keep
+    /// it on the device.
+    /// </remarks>
     public Task CheckReachableAsync(string fileId) => ReadResolvedAsync(fileId, _ => true);
 
     /// <summary>
@@ -337,7 +381,10 @@ internal sealed class AppleFileAccess(
         }
     }
 
-    // A file in none of My folders is reached by the access the picker gave to it.
+    /// <inheritdoc/>
+    /// <remarks>
+    /// A file in none of My folders is reached by the access the picker gave to it.
+    /// </remarks>
     public async Task<IWritableFile> OpenWriteAsync(string fileId)
     {
         (NSUrl url, NSUrl grant) = await ResolveWriteAccessAsync(fileId);
@@ -355,14 +402,18 @@ internal sealed class AppleFileAccess(
         return (resolved.FileUrl, resolved.AccessUrl);
     }
 
-    // The folder of a file is told by its url.
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The folder of a file is told by its url, without looking for the file.
+    /// </remarks>
     public Task<string> GetFolderOfFileAsync(string fileId) =>
         Task.FromResult(NSUrl.FromString(fileId)!.RemoveLastPathComponent().AbsoluteString!);
 
-    /// <summary>
+    /// <inheritdoc/>
+    /// <remarks>
     /// The complete file is saved within one coordinated write, so that the file provider, such as Dropbox, takes the
     /// file only once it is written, or removed.
-    /// </summary>
+    /// </remarks>
     public async Task<string> SaveInFolderAsync(
         string folderId,
         string name,
@@ -379,9 +430,10 @@ internal sealed class AppleFileAccess(
         return fileUrl.AbsoluteString!;
     }
 
-    /// <summary>
+    /// <inheritdoc/>
+    /// <remarks>
     /// The file is moved within its folder through a file coordinator, as for writing.
-    /// </summary>
+    /// </remarks>
     public async Task<string> RenameAsync(string fileId, string newName)
     {
         NSUrl fileUrl = NSUrl.FromString(fileId)!;
@@ -392,12 +444,13 @@ internal sealed class AppleFileAccess(
         return renamedUrl.AbsoluteString!;
     }
 
-    /// <summary>
+    /// <inheritdoc/>
+    /// <remarks>
     /// The picker moves a file to where the user chooses, so the complete file is first copied under the name, which on
     /// APFS is a clone that copies no data. Moving it, rather than exporting a copy, gives access to the saved file
     /// while the app runs. Where the saved file is, is only told by its path, since the provider may lose track of a
     /// file just saved when asked about it.
-    /// </summary>
+    /// </remarks>
     public async Task<FileReference?> SaveAsAsync(string initialFolder, string fileName, string completedFilePath)
     {
         ThreadGuard.ThrowIfNotMainThread();

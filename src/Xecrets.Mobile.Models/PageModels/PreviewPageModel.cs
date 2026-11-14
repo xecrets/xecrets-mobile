@@ -40,6 +40,9 @@ using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
+/// <summary>
+/// The page model of the page that previews a decrypted file, to view, edit, open, save or send it.
+/// </summary>
 public partial class PreviewPageModel(
     IPreviewService previewService,
     IDecryptedFileViewer decryptedFileViewer,
@@ -53,25 +56,39 @@ public partial class PreviewPageModel(
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel, IPageInformationPageModel
 {
+    /// <inheritdoc/>
     public string Heading => MobileTexts.PreviewContentTitle;
 
+    /// <inheritdoc/>
     public string Information => MobileTexts.DialogTextResult;
 
+    /// <inheritdoc/>
     public string Breadcrumb =>
         BreadcrumbFormatter.Format(flowContext.Origin, MobileTexts.BreadcrumbPreview);
 
+    /// <summary>
+    /// The name of the file, before it was encrypted.
+    /// </summary>
     [ObservableProperty]
     public partial string FileNameText { get; set; } = "";
 
+    /// <inheritdoc/>
     [ObservableProperty]
     public partial string MessageText { get; set; } = "";
 
+    /// <inheritdoc/>
     [ObservableProperty]
     public partial string StatusText { get; set; } = "";
 
+    /// <summary>
+    /// The type and size of the file.
+    /// </summary>
     [ObservableProperty]
     public partial string MetadataText { get; set; } = "";
 
+    /// <summary>
+    /// True if the file can be viewed now, false otherwise.
+    /// </summary>
     public bool CanView => !IsBusy && ViewMode != FileViewMode.Unavailable;
 
     [ObservableProperty]
@@ -83,6 +100,9 @@ public partial class PreviewPageModel(
     [NotifyCanExecuteChangedFor(nameof(EditCommand))]
     private partial bool IsSavable { get; set; }
 
+    /// <summary>
+    /// True while an operation of the page runs, false otherwise.
+    /// </summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ViewCommand))]
     [NotifyCanExecuteChangedFor(nameof(EditCommand))]

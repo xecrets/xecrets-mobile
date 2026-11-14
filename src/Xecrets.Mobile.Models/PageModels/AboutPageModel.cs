@@ -37,33 +37,54 @@ using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
+/// <summary>
+/// The page model of the page about the app.
+/// </summary>
 public partial class AboutPageModel(
     IUserInterfaceService userInterfaceService,
     IBuildInformation buildInformation,
     IProfileService profileService) : PageModelBase(userInterfaceService), IBreadcrumbPageModel
 {
+    /// <summary>
+    /// How many extra passwords the profile signed in has, or "" if it has none or is not signed in.
+    /// </summary>
     [ObservableProperty]
     public partial string ExtraPasswordsInfo { get; set; } = string.Empty;
 
+    /// <summary>
+    /// How many extra private keys the profile signed in has, and how many of them are decrypted, or "" if it has none
+    /// or is not signed in.
+    /// </summary>
     [ObservableProperty]
     public partial string PrivateKeysInfo { get; set; } = string.Empty;
 
+    /// <inheritdoc/>
     public string Breadcrumb => BreadcrumbFormatter.Format(FlowOrigin.Home, MobileTexts.BreadcrumbAbout);
 
+    /// <inheritdoc cref="IBuildInformation.ProductName"/>
     public string ProductName => buildInformation.ProductName;
 
+    /// <inheritdoc cref="IBuildInformation.Version"/>
     public string Version => buildInformation.Version;
 
+    /// <inheritdoc cref="IBuildInformation.Platform"/>
     public string Platform => buildInformation.Platform;
 
+    /// <inheritdoc cref="IBuildInformation.Publisher"/>
     public string Publisher => buildInformation.Publisher;
 
+    /// <inheritdoc cref="IBuildInformation.Copyright"/>
     public string Copyright => buildInformation.Copyright;
 
+    /// <inheritdoc cref="IBuildInformation.License"/>
     public string License => buildInformation.License;
 
+    /// <inheritdoc cref="IBuildInformation.SourceCodeUrl"/>
     public string SourceCodeUrl => buildInformation.SourceCodeUrl;
 
+    /// <summary>
+    /// The notice about the third-party material in the app.
+    /// </summary>
     public string ThirdPartyNotice => MobileTexts.AboutPageThirdPartyNotice;
 
     [RelayCommand]

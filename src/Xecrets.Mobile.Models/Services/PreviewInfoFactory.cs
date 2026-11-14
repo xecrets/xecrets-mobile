@@ -35,16 +35,27 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Services;
 
+/// <summary>
+/// Creates the descriptions of decrypted files.
+/// </summary>
 internal static class PreviewInfoFactory
 {
-    // The largest text file, in bytes, that the app's internal viewer/editor will handle. Larger text files are
-    // viewed externally, if possible.
+    /// <summary>
+    /// The size in bytes of the largest text that is held in memory, and shown and edited in the app.
+    /// </summary>
     public const long MaxInlineTextSizeBytes = 2 * 1024 * 1024;
 
     /// <summary>
-    /// Describes a decrypted file of the category its contents were classified as. Text is only shown and edited in
-    /// the app while it is kept in memory, which it is when there is no file path.
+    /// Describes a decrypted file of the category its contents were classified as. Text is
+    /// <see cref="PreviewKind.Text"/> only while it is held in memory, which it is when there is no file path.
     /// </summary>
+    /// <param name="filePath">The full path of the decrypted file, or "" if it is held in memory.</param>
+    /// <param name="originalFileName">The name of the file before it was encrypted.</param>
+    /// <param name="category">The category the contents were classified as.</param>
+    /// <param name="fileSize">The size of the decrypted file in bytes.</param>
+    /// <param name="originalTimes">The times of the file before it was encrypted.</param>
+    /// <returns>The description, with the MIME type told by the name, or text/plain for text of an unknown
+    /// type.</returns>
     public static DecryptedFileInfo CreateInfo(
         string filePath,
         string originalFileName,

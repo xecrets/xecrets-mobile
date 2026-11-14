@@ -34,7 +34,10 @@ using Xecrets.Mobile.Platforms.Apple;
 
 namespace Xecrets.Mobile.Platforms.MacCatalyst;
 
-// Everything is shared with iOS; the class remains so each platform has its own services type.
+/// <summary>
+/// The services of Mac Catalyst, which are all shared with iOS. The class remains so that each platform has its own
+/// services type.
+/// </summary>
 [SupportedOSPlatform("maccatalyst")]
 internal sealed class MacCatalystServices : AppleServices
 {

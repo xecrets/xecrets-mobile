@@ -36,6 +36,9 @@ using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
+/// <summary>
+/// The page model of the page that shows the crash log of the last crash, when the app starts after it.
+/// </summary>
 public partial class CrashPageModel(
     StartupPageModel startupPageModel,
     ICrashLogService crashLogService,
@@ -45,6 +48,9 @@ public partial class CrashPageModel(
     // Once only, since the page appears again when returned to, such as from the browser.
     private bool _initialized;
 
+    /// <summary>
+    /// The crash log, or "" until it is read.
+    /// </summary>
     [ObservableProperty]
     public partial string CrashReport { get; set; } = "";
 

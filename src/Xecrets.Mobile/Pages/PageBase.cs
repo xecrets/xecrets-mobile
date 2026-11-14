@@ -36,8 +36,13 @@ namespace Xecrets.Mobile.Pages;
 /// A page whose binding context is its page model, which is also available typed as <see cref="Model"/>, for the
 /// code-behind and for bindings that do not get the binding context, such as those of behaviors.
 /// </summary>
+/// <typeparam name="TModel">The type of the page model.</typeparam>
 internal abstract class PageBase<TModel> : ContentPage where TModel : class
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PageBase{TModel}"/> class with its page model.
+    /// </summary>
+    /// <param name="model">The page model, which becomes the binding context.</param>
     protected PageBase(TModel model)
     {
         BindingContext = model;

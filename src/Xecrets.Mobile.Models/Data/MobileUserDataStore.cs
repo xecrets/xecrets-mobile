@@ -35,12 +35,22 @@ using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Models.Data;
 
+/// <summary>
+/// The data store of a local profile, kept by an <see cref="ILocalProfileStore"/>. My folders and the recent files only
+/// apply to the profile on this device, and are kept with its device-specific settings.
+/// </summary>
+/// <param name="store">Keeps the data of the profile.</param>
+/// <param name="id">The id of the profile.</param>
+/// <param name="timeProvider">Tells when the extra credentials are written.</param>
+/// <param name="protectedPayload">Protects the extra credentials.</param>
 internal sealed class MobileUserDataStore(ILocalProfileStore store, UserId id, TimeProvider timeProvider, IProtectedPayload protectedPayload) : IUserDataStore
 {
     private const string _extraCredentialsPayloadName = "extraCredentials";
 
+    /// <inheritdoc/>
     public UserId Id { get; } = id;
 
+    /// <inheritdoc/>
     public async Task<IPersistentData<UserSettings>> LoadSettingsAsync()
     {
         UserSettings settings = (await store.ReadUserAsync(Id)).Settings;
@@ -51,6 +61,10 @@ internal sealed class MobileUserDataStore(ILocalProfileStore store, UserId id, T
         });
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// When saved, duplicate passwords are removed, and the time of writing is set.
+    /// </remarks>
     public async Task<IPersistentData<ExtraCredentials>> LoadExtraCredentialsAsync(IXecretsProtection protection)
     {
         byte[]? protectedBytes = (await store.ReadUserAsync(Id)).ProtectedPayloads.GetValueOrDefault(_extraCredentialsPayloadName);
@@ -67,6 +81,7 @@ internal sealed class MobileUserDataStore(ILocalProfileStore store, UserId id, T
         });
     }
 
+    /// <inheritdoc/>
     public async Task<IPersistentData<PrivateKeyData>> LoadPrivateKeysAsync()
     {
         PrivateKeyData privateKeys = (await store.ReadUserAsync(Id)).PrivateKeys;
@@ -77,12 +92,24 @@ internal sealed class MobileUserDataStore(ILocalProfileStore store, UserId id, T
             });
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The app keeps no open files.
+    /// </remarks>
     public Task<IPersistentData<OpenFiles>> LoadOpenFilesAsync()
         => throw new NotSupportedException();
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The app keeps its recent files as <see cref="RecentFileOperations"/>.
+    /// </remarks>
     public Task<IPersistentData<RecentFiles>> LoadRecentFilesAsync()
         => throw new NotSupportedException();
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The recent files are kept with the device-specific settings of the profile.
+    /// </remarks>
     public async Task<IPersistentData<RecentFileOperations>> LoadRecentFileOperationsAsync()
     {
         RecentFileOperations recentFiles = new() { Files = [.. (await store.ReadProfileDeviceSettingsAsync(Id)).RecentFiles] };
@@ -94,6 +121,7 @@ internal sealed class MobileUserDataStore(ILocalProfileStore store, UserId id, T
             });
     }
 
+    /// <inheritdoc/>
     public async Task<IPersistentData<LicenseData>> LoadLicenseAsync()
     {
         LicenseData license = (await store.ReadUserAsync(Id)).License;
@@ -105,6 +133,10 @@ internal sealed class MobileUserDataStore(ILocalProfileStore store, UserId id, T
             });
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// My folders are kept with the device-specific settings of the profile.
+    /// </remarks>
     public async Task<IPersistentData<WorkFolders>> LoadWorkFoldersAsync()
     {
         WorkFolders workFolders = (await store.ReadProfileDeviceSettingsAsync(Id)).WorkFolders;
@@ -116,6 +148,7 @@ internal sealed class MobileUserDataStore(ILocalProfileStore store, UserId id, T
             });
     }
 
+    /// <inheritdoc/>
     public async Task<IPersistentData<ProfileDeviceSettings>> LoadDeviceSettingsAsync()
     {
         ProfileDeviceSettings deviceSettings = await store.ReadProfileDeviceSettingsAsync(Id);
@@ -132,9 +165,14 @@ internal sealed class MobileUserDataStore(ILocalProfileStore store, UserId id, T
             });
     }
 
+    /// <inheritdoc/>
     public async Task<IReadOnlyList<SignInKey>> GetSignInKeysAsync() =>
         [.. (await store.ReadUserAsync(Id)).SignInKeys];
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The display name of the user settings is replaced too.
+    /// </remarks>
     public Task ReplaceSignInKeyAsync(
         SignInKey oldKey,
         SignInKey replacementKey,

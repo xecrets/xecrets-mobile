@@ -35,9 +35,16 @@ using Xecrets.Mobile.Platforms.Apple;
 
 namespace Xecrets.Mobile.Platforms.iOS;
 
+/// <summary>
+/// The services of iOS.
+/// </summary>
 [SupportedOSPlatform("ios")]
 internal partial class IOSServices : AppleServices
 {
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Raises SIGABRT.
+    /// </remarks>
     public override void CrashNative()
     {
         _ = RaiseSignal(6);

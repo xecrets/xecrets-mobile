@@ -32,25 +32,48 @@ using System.Runtime.CompilerServices;
 
 namespace Xecrets.Mobile.Models.Abstractions;
 
+/// <summary>
+/// Keeps crash logs, and logs of exceptions that are handled without being passed on.
+/// </summary>
 public interface ICrashLogService
 {
+    /// <summary>
+    /// True if there is a crash log that has not been read with <see cref="ReadCurrent"/>, false otherwise.
+    /// </summary>
     bool HasPendingCrashLog { get; }
 
+    /// <summary>
+    /// Registers handlers that write a crash log for unhandled exceptions and unobserved task exceptions.
+    /// </summary>
     void RegisterHandlers();
 
+    /// <summary>
+    /// Reads the pending crash log and keeps it as an earlier log, so that it is no longer pending.
+    /// </summary>
+    /// <returns>The pending crash log.</returns>
+    /// <remarks>Requires <see cref="HasPendingCrashLog"/> to be true.</remarks>
     string ReadCurrent();
 
+    /// <summary>
+    /// Writes a crash log that becomes the pending crash log, replacing any earlier pending crash log.
+    /// </summary>
+    /// <param name="source">What caused the crash.</param>
+    /// <param name="crash">The exception of the crash, or null if there is no managed exception.</param>
     void WriteCrashLog(string source, object? crash);
 
     /// <summary>
-    /// Deletes all crash logs and logs of swallowed exceptions.
+    /// Deletes all crash logs and logs of swallowed exceptions. A failure to delete is ignored.
     /// </summary>
     void DeleteAll();
 
     /// <summary>
-    /// Silently logs an exception that is handled without being passed on, such as when reported to the user only as a
-    /// status, for troubleshooting. Unlike a crash log, nothing is shown to the user, and a failure to log is ignored.
+    /// Logs an exception that is handled without being passed on. Nothing is shown to the user, and a failure to log
+    /// is ignored.
     /// </summary>
+    /// <param name="exception">The exception.</param>
+    /// <param name="filePath">The path of the source file where the exception is handled.</param>
+    /// <param name="memberName">The name of the member where the exception is handled.</param>
+    /// <param name="lineNumber">The line number in the source file where the exception is handled.</param>
     void WriteSwallowedException(
         Exception exception,
         [CallerFilePath] string filePath = "",

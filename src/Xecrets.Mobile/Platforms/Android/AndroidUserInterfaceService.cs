@@ -39,9 +39,16 @@ using Platform = Microsoft.Maui.ApplicationModel.Platform;
 
 namespace Xecrets.Mobile.Platforms.Android;
 
+/// <summary>
+/// The user interface of the app on Android.
+/// </summary>
 internal class AndroidUserInterfaceService(IBuildInformation buildInformation, EzAppShell ezAppShell)
     : DefaultUserInterfaceService(buildInformation, ezAppShell)
 {
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The text is marked as sensitive. Android 13 (API 33) and later tell the user themselves that it is copied.
+    /// </remarks>
     public override async Task SetSensitiveClipboardTextAsync(string text, bool confirm)
     {
         Platform.AppContext.CopySensitiveText(text);

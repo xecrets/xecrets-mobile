@@ -51,29 +51,48 @@ using Platform = Microsoft.Maui.ApplicationModel.Platform;
 namespace Xecrets.Mobile.Platforms.Android;
 
 /// <summary>
-/// The provider is called off the main thread, since the StrictMode policy of the calling thread goes with each call
-/// to it. A provider that reaches the network for a call, such as Dropbox when deleting, would otherwise fail with
-/// NetworkOnMainThreadException.
+/// A document of the Storage Access Framework. The provider is called off the main thread, since the StrictMode policy
+/// of the calling thread goes with each call to it. A provider that reaches the network for a call, such as Dropbox
+/// when deleting, would otherwise fail with NetworkOnMainThreadException.
 /// </summary>
+/// <param name="uri">The document uri of the file.</param>
+/// <param name="crashLogService">Logs the exceptions that are handled.</param>
 [SupportedOSPlatform("android26.0")]
 internal sealed class AndroidWritableFile(AndroidUri uri, ICrashLogService crashLogService) : IWritableFile
 {
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The access is that of the uri grant, so the scope does nothing.
+    /// </remarks>
     public IDisposable AcquireAccess() => new EmptyAccessScope();
 
-    // A virtual document, such as a Google Docs document, has no contents of its own that can be written.
+    /// <inheritdoc/>
+    /// <remarks>
+    /// A virtual document, such as a Google Docs document, has no contents of its own that can be written.
+    /// </remarks>
     public Task<bool> CanWriteAsync() => Task.Run(() =>
         IsGranted(uri) &&
         GetFlags(uri) is { } flags &&
         flags.HasFlag(DocumentContractFlags.SupportsWrite) &&
         !flags.HasFlag(DocumentContractFlags.VirtualDocument));
 
+    /// <inheritdoc/>
     public Task<bool> CanDeleteAsync() => Task.Run(() =>
         IsGranted(uri) &&
         GetFlags(uri) is { } flags &&
         flags.HasFlag(DocumentContractFlags.SupportsDelete));
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// A provider need not tell the size, such as for a virtual document.
+    /// </remarks>
     public Task<long?> GetLengthAsync() => Task.Run(() => GetLength(uri));
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// A document of a local provider is opened for reading and writing, which gives a stream that can seek. Other
+    /// documents, and a local one that cannot be opened so, are opened for writing only, truncated.
+    /// </remarks>
     public Task OverwriteAsync(Action<Stream> overwrite) =>
         Task.Run(() =>
         {
@@ -125,6 +144,7 @@ internal sealed class AndroidWritableFile(AndroidUri uri, ICrashLogService crash
         }
     }
 
+    /// <inheritdoc/>
     public async Task DeleteAsync()
     {
         if (!await uri.DeleteDocumentAsync())
@@ -133,7 +153,6 @@ internal sealed class AndroidWritableFile(AndroidUri uri, ICrashLogService crash
         }
     }
 
-    // A provider need not tell the size, such as for a virtual document.
     private static long? GetLength(AndroidUri uri)
     {
         ThreadGuard.ThrowIfMainThread();

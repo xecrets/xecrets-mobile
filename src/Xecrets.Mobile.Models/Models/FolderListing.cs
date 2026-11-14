@@ -31,15 +31,13 @@
 namespace Xecrets.Mobile.Models.Models;
 
 /// <summary>
-/// One folder as listed for an operation. The files are those that the pickers show, while the names are those of all
-/// that is in the folder, hidden or not, since a result saved under any of them replaces it.
+/// The listing of one folder.
 /// </summary>
 /// <param name="FolderId">The folder, as given by
 /// <see cref="Abstractions.IFileAccess.GetFolderOfFileAsync"/>.</param>
-/// <param name="Files">The files to operate on, reached through the folder, which is the reference used to change
-/// them.</param>
-/// <param name="IdsByName">The ids of all that is in the folder by name, compared as the storage compares
-/// names.</param>
+/// <param name="Files">The files in the folder that the pickers show, reached through the folder.</param>
+/// <param name="IdsByName">The ids of all that is in the folder, hidden or not, by name, compared as the storage
+/// compares names.</param>
 public sealed record FolderListing(
     string FolderId,
     IReadOnlyList<FolderFile> Files,

@@ -34,25 +34,48 @@ using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Abstractions;
 
+/// <summary>
+/// The services that differ between the platforms.
+/// </summary>
 internal interface IPlatformServices
 {
+    /// <summary>
+    /// Information about crashes on the platform to show on the crash page, or "" if there is none.
+    /// </summary>
     string CrashPageAdditionalInformation { get; }
 
+    /// <summary>
+    /// Configures an entry for a password, or for the user name next to one, so that the platform neither suggests nor
+    /// remembers what is typed, and password managers treat it as the purpose tells.
+    /// </summary>
+    /// <param name="entry">The entry.</param>
+    /// <param name="purpose">What the entry is for.</param>
     void ConfigurePasswordEntry(Entry entry, PasswordEntryPurpose purpose);
 
+    /// <summary>
+    /// Registers the handlers of the platform that write a crash log, in addition to those of
+    /// <see cref="ICrashLogService.RegisterHandlers"/>.
+    /// </summary>
+    /// <param name="crashLogService">Writes the crash logs.</param>
     void RegisterCrashHandlers(ICrashLogService crashLogService);
 
+    /// <summary>
+    /// Ends the app with a native crash, without running any managed handler.
+    /// </summary>
     void CrashNative();
 
     /// <summary>
-    /// The distances from the laid out <paramref name="view"/> to the left and right edges of its window, in
-    /// device-independent units, measured on the platform view.
+    /// Gets the distances from a laid out view to the left and right edges of its window, measured on the platform
+    /// view.
     /// </summary>
+    /// <param name="view">The laid out view.</param>
+    /// <returns>The distances in device-independent units.</returns>
     (double Left, double Right) GetWindowGaps(VisualElement view);
 
     /// <summary>
     /// Tells whether sensitive content is shown, which is then kept out of the snapshot of the app that the system
     /// saves for switching between apps.
     /// </summary>
+    /// <param name="isShown">True while sensitive content is shown, false otherwise.</param>
     void IsSensitiveContentVisible(bool isShown);
 }

@@ -34,4 +34,6 @@ namespace Xecrets.Mobile.Models.Models;
 /// The number of extra private keys of the profile, besides the profile key pair, and how many of them the current
 /// passwords decrypt.
 /// </summary>
+/// <param name="Decryptable">The number of extra private keys that the current passwords decrypt.</param>
+/// <param name="Total">The number of extra private keys.</param>
 public sealed record PrivateKeyCounts(int Decryptable, int Total);

@@ -38,7 +38,8 @@ using Xecrets.Texts;
 namespace Xecrets.Mobile.Models.Services;
 
 /// <summary>
-/// The operations on a file that the user starts from My folders, the recent files or the home page.
+/// The operations on files that the user starts: encrypting, decrypting and deleting them where they are, previewing
+/// them, and encrypting and saving copies of them.
 /// </summary>
 public sealed class FileOperationWorkflow(
     FolderAccessWorkflow folderAccess,
@@ -61,12 +62,13 @@ public sealed class FileOperationWorkflow(
     private readonly SingleFileCompletionReporter _singleFileReporter = new(recentFilesService, userInterfaceService);
 
     /// <summary>
-    /// Lets the user pick a file, starting in the folder, or where the platform decides without one, and does what is
-    /// intended with it. Unless it is deleted or shared, the name of the file decides whether it is encrypted or
-    /// decrypted. A file in one of My folders is changed where it is, through the folder. A file in none of them,
-    /// elsewhere, is changed by the access to the file itself, with the result saved where the user chooses. A copy is
-    /// made of the file as picked, wherever it is, and the file is not changed.
+    /// Lets the user pick a file, and does what is intended with it. Unless it is deleted or shared, the name of the
+    /// file decides whether it is encrypted or decrypted. A file in one of My folders is changed where it is, through
+    /// the folder. A file in none of them, elsewhere, is changed by the access to the file itself, with the result saved
+    /// where the user chooses. A copy is made of the file as picked, wherever it is, and the file is not changed.
     /// </summary>
+    /// <param name="intent">What is done with the file.</param>
+    /// <param name="folder">The folder to start picking in, or null to let the platform decide.</param>
     public async Task PickAndRunAsync(WorkFolderIntent intent, WorkFolder? folder)
     {
         // Before anything is caught, so that an armed crash is not swallowed.
@@ -110,25 +112,35 @@ public sealed class FileOperationWorkflow(
     }
 
     /// <summary>
-    /// Whether the contents of the file show that it is encrypted, whatever its name. Only the start of the file is
-    /// read, which is all that tells it.
+    /// Tells if the contents of a file show that it is encrypted, whatever its name. Only the start of the file is
+    /// read.
     /// </summary>
+    /// <param name="file">The file.</param>
+    /// <returns>True if the file is encrypted, false otherwise.</returns>
+    /// <exception cref="FileNotAccessibleException">The file is not found, or cannot be reached now.</exception>
     public Task<bool> IsFileEncryptedAsync(FileReference file) =>
         coreServices.IsEncryptedAsync(async () =>
             new MemoryStream(await fileAccess.ReadStartAsync(file.Id, _encryptedStartLength)));
 
     /// <summary>
-    /// Whether the file is not to be encrypted, since its contents or its name show that it is encrypted already.
+    /// Tells if the name or the contents of a file show that it is encrypted.
     /// </summary>
+    /// <param name="file">The file.</param>
+    /// <returns>True if the name or the contents show that the file is encrypted, false otherwise.</returns>
+    /// <exception cref="FileNotAccessibleException">The contents are read, and the file is not found, or cannot be
+    /// reached now.</exception>
     public async Task<bool> IsFileOrNameEncryptedAsync(FileReference file) =>
         file.Name.IsNameEncrypted() || await IsFileEncryptedAsync(file);
 
     /// <summary>
-    /// Encrypts or decrypts a file in one of My folders, returning the file it is replaced by, that nothing was done, or
-    /// that it needed a password the user did not enter. The file is replaced by the result, so nothing is done unless
-    /// the file can be wiped afterward. A file named or found to be encrypted is not encrypted, and a file not found to
-    /// be encrypted is not decrypted, but the user is told so.
+    /// Encrypts or decrypts a file in one of My folders, replacing it with the result, and tells the user of the
+    /// outcome. Nothing is done unless the file can be wiped afterward. A file named or found to be encrypted
+    /// is not encrypted, and a file not found to be encrypted is not decrypted, and the user is told so.
     /// </summary>
+    /// <param name="file">The file, reached through one of My folders.</param>
+    /// <param name="operation">The operation.</param>
+    /// <param name="origin">Where the user started the flow.</param>
+    /// <returns>The outcome for the file.</returns>
     public Task<FileOperationOutcome> TransformAsync(
         FileReference file,
         WorkFolderOperation operation,
@@ -136,19 +148,28 @@ public sealed class FileOperationWorkflow(
         RunAsync([file], ToFileOperation(operation), origin, isElsewhere: false);
 
     /// <summary>
-    /// Securely deletes a file in one of My folders, once the user confirms it, and removes it from the recent files.
+    /// Wipes a file in one of My folders, once the user confirms it, and removes it from the recent files.
     /// </summary>
+    /// <param name="file">The file, reached through one of My folders.</param>
     public Task WipeAsync(FileReference file) => WipeAsync(file, isElsewhere: false);
 
     /// <summary>
-    /// Does the operation on the files in turn, each as for a file by itself, with what is in their folders from the
-    /// folder contents. Deleting the files is to be confirmed by the user before. The first file not done ends the
-    /// operation, as does a file after which the reporter does not go on. For a file that needs a password the app does
-    /// not know, the user is sent on to enter one, and the operation waits until the user is done, going on once a
-    /// password has decrypted the file, and ending when the user leaves without one. A canceled operation ends before
-    /// the next file, or while a file is encrypted or decrypted, which the reporter tells. Returns what became of the
-    /// last file done, or of the file that ended the operation.
+    /// Does an operation on files in turn, each as for a file by itself. The first file not done ends the operation,
+    /// as does a file after which the reporter does not go on. For a file that needs a password that is not known, the
+    /// user is sent on to enter one, and the operation waits until the user is done, going on once a password has
+    /// decrypted the file, and ending when the user leaves without one. A canceled operation ends before the next file,
+    /// or while a file is encrypted or decrypted.
     /// </summary>
+    /// <param name="files">The files.</param>
+    /// <param name="operation">The operation on each file. The user must already have confirmed deleting
+    /// files.</param>
+    /// <param name="origin">Where the user started the flow.</param>
+    /// <param name="isElsewhere">True if the files are in none of My folders, false if they are reached through
+    /// them.</param>
+    /// <param name="contents">The contents of the folders of the files.</param>
+    /// <param name="reporter">Is told the outcome of each file, and of the operation as a whole.</param>
+    /// <returns>The outcome of the last file done, or of the file that ended the operation, or
+    /// <see cref="FileOperationOutcome.Canceled"/>.</returns>
     public async Task<FileOperationOutcome> RunAsync(
         IReadOnlyList<FileReference> files,
         FileOperation operation,
@@ -457,9 +478,13 @@ public sealed class FileOperationWorkflow(
     }
 
     /// <summary>
-    /// Decrypts a file temporarily to show it, or sends the user on to enter a password for it. Returns false when the
-    /// file could not be decrypted.
+    /// Begins a flow with a file, and decrypts the file temporarily to preview it, or sends the user on to enter a
+    /// password for it.
     /// </summary>
+    /// <param name="file">The encrypted file.</param>
+    /// <param name="origin">Where the user started the flow.</param>
+    /// <returns>True if the file is previewed, or the user is sent on to enter a password, false if the file could not
+    /// be decrypted.</returns>
     public async Task<bool> PreviewAsync(FileReference file, FlowOrigin origin)
     {
         flowContext.Begin(origin, file);
@@ -483,9 +508,13 @@ public sealed class FileOperationWorkflow(
     }
 
     /// <summary>
-    /// Lets the user save a copy of the complete file anywhere, with the times given, as far as they can be set.
-    /// Returns null when the user cancels, and otherwise the saved file.
+    /// Lets the user save a copy of a complete file anywhere, with the times given, as far as they can be set, and tells
+    /// the user when it is saved.
     /// </summary>
+    /// <param name="fileName">The suggested file name.</param>
+    /// <param name="completedFilePath">The full path of the complete file.</param>
+    /// <param name="times">The times of the saved file.</param>
+    /// <returns>The saved file, or null if the user cancels.</returns>
     public async Task<FileReference?> SaveAsAsync(string fileName, string completedFilePath, FileTimes times)
     {
         FileReference? file = await fileAccess.SaveAsAsync("", fileName, completedFilePath);

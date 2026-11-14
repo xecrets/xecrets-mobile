@@ -34,23 +34,54 @@ using Xecrets.Common.Models;
 
 namespace Xecrets.Mobile.Models.Services;
 
+/// <summary>
+/// The local profile signed in, held in memory while signed in.
+/// </summary>
 public sealed class ProfileSession
 {
+    /// <summary>
+    /// True if signed in, false otherwise.
+    /// </summary>
     public bool IsAuthenticated => ProfileKeyPair is not null;
 
+    /// <summary>
+    /// The key pair of the profile, or null if not signed in.
+    /// </summary>
     internal KeyPair? ProfileKeyPair { get; private set; }
 
+    /// <summary>
+    /// The password of the profile, or "" if not signed in.
+    /// </summary>
     internal string Password { get; private set; } = string.Empty;
 
+    /// <summary>
+    /// The extra credentials of the profile, or null if not signed in.
+    /// </summary>
     internal IPersistentData<ExtraCredentials>? ExtraCredentials { get; private set; }
 
-    // The other key pairs among the private keys that could be decrypted, such as one kept from before a password reset.
+    /// <summary>
+    /// The other key pairs among the private keys that are decrypted, such as one kept from before a password reset.
+    /// </summary>
     internal IReadOnlyList<KeyPair> PrivateKeyPairs { get; set; } = [];
 
+    /// <summary>
+    /// The data store of the profile, or null if not signed in.
+    /// </summary>
     public IUserDataStore? UserStore { get; private set; }
 
+    /// <summary>
+    /// The email of the profile, or "" if not signed in.
+    /// </summary>
     public string Email => ProfileKeyPair?.Email ?? string.Empty;
 
+    /// <summary>
+    /// Signs in, replacing what is held.
+    /// </summary>
+    /// <param name="keyPair">The key pair of the profile.</param>
+    /// <param name="password">The password of the profile.</param>
+    /// <param name="extraCredentials">The extra credentials of the profile.</param>
+    /// <param name="userStore">The data store of the profile.</param>
+    /// <param name="privateKeyPairs">The other key pairs among the private keys that are decrypted.</param>
     internal void SignIn(
         KeyPair keyPair,
         string password,
@@ -65,6 +96,9 @@ public sealed class ProfileSession
         PrivateKeyPairs = privateKeyPairs;
     }
 
+    /// <summary>
+    /// Signs out, clearing all that is held.
+    /// </summary>
     public void SignOut()
     {
         ProfileKeyPair = null;
@@ -74,6 +108,11 @@ public sealed class ProfileSession
         UserStore = null;
     }
 
+    /// <summary>
+    /// Creates the identity of the profile signed in.
+    /// </summary>
+    /// <returns>The password, with the key pair of the profile and the other key pairs that are decrypted.</returns>
+    /// <exception cref="InvalidOperationException">Not signed in.</exception>
     internal Identity CreateIdentity()
     {
         if (ProfileKeyPair is null || Password.Length == 0)

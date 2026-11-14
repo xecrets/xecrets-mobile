@@ -37,6 +37,9 @@ using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Models.Services;
 
+/// <summary>
+/// Receives files from other apps, and marshals each call to the main thread, where everything else runs.
+/// </summary>
 internal sealed class IncomingFileService(
     IProfileService profileService,
     IPreviewService previewService,
@@ -52,6 +55,7 @@ internal sealed class IncomingFileService(
 
     private IncomingFileRequest _pendingRequest = IncomingFileRequest.Empty;
 
+    /// <inheritdoc/>
     public Task ReceiveAsync(IIncomingFileSource source)
         => RunExclusiveAsync(() => userInterfaceService.InvokeOnMainThreadAsync(async () =>
         {
@@ -67,6 +71,7 @@ internal sealed class IncomingFileService(
             }
         }));
 
+    /// <inheritdoc/>
     public Task ReceiveMessageAsync(string message)
         => RunExclusiveAsync(() => userInterfaceService.InvokeOnMainThreadAsync(async () =>
         {
@@ -76,6 +81,7 @@ internal sealed class IncomingFileService(
             await ProcessPendingCoreAsync();
         }));
 
+    /// <inheritdoc/>
     public Task ProcessPendingAsync() => RunExclusiveAsync(ProcessPendingCoreAsync);
 
     private async Task RunExclusiveAsync(Func<Task> operation)

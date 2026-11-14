@@ -32,8 +32,14 @@ using Microsoft.Maui.Controls;
 
 namespace Xecrets.Mobile.Platforms.MacCatalyst;
 
+/// <summary>
+/// The configuration of the window on Mac Catalyst, which is left as the system sizes it.
+/// </summary>
 internal static class PlatformWindow
 {
+    /// <summary>
+    /// Does nothing, since the window is left as the system sizes it.
+    /// </summary>
     public static void Configure(Window _)
     {
     }

@@ -63,11 +63,12 @@ internal static class AndroidExtensions
     private static ContentResolver ContentResolver => Platform.CurrentActivity!.ContentResolver!;
 
     /// <summary>
-    /// Tells if the exception is how a document provider reports that it does not support an operation, cannot find
-    /// the document, or does not give access to it.
-    /// Finding the path of a document that is not under a tree grant, such
-    /// as a file picked by itself, requires MANAGE_DOCUMENTS, which only the system has.
+    /// Tells if an exception is how a document provider reports that it does not support an operation, cannot find
+    /// the document, or does not give access to it, such as for finding the path of a document that is not under a
+    /// tree grant, which requires MANAGE_DOCUMENTS, which only the system has.
     /// </summary>
+    /// <param name="exception">The exception.</param>
+    /// <returns>True if the exception is a failure of the provider, false otherwise.</returns>
     public static bool IsDocumentProviderFailure(this Exception exception) =>
         exception is Java.IO.FileNotFoundException or
         Java.Lang.IllegalArgumentException or
@@ -79,6 +80,10 @@ internal static class AndroidExtensions
     /// renaming a document it has only just created. The call itself cannot be canceled, so should it fail after that,
     /// it is logged, rather than left unobserved.
     /// </summary>
+    /// <typeparam name="T">The type of the result of the call.</typeparam>
+    /// <param name="call">The call.</param>
+    /// <param name="crashLogService">Logs a failure of the call after the timeout.</param>
+    /// <returns>The result of the call.</returns>
     /// <exception cref="TimeoutException">The call did not finish in time.</exception>
     public static async Task<T> WaitForProviderAsync<T>(this Task<T> call, ICrashLogService crashLogService)
     {
@@ -99,10 +104,16 @@ internal static class AndroidExtensions
 
     extension(string contentType)
     {
-        // The system Quick Viewer (e.g. com.android.documentsui) commonly registers ACTION_QUICK_VIEW with
-        // mimeType="*/*", so HasExternalHandler(quickViewIntent) matches every content type even though the
-        // viewer only actually renders this narrower set - anything outside it launches fine but shows its
-        // own "Unable to preview file" screen.
+        /// <summary>
+        /// Tells if the content type is one that the system Quick Viewer shows: PDF, plain text, images, video and
+        /// audio.
+        /// </summary>
+        /// <returns>True if the Quick Viewer shows the content type, false otherwise.</returns>
+        /// <remarks>
+        /// The system Quick Viewer, such as com.android.documentsui, commonly registers ACTION_QUICK_VIEW for any
+        /// type, so having a handler for the intent tells nothing. Anything outside these types launches, but shows
+        /// "Unable to preview file".
+        /// </remarks>
         public bool IsQuickViewContentType() =>
         contentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase) ||
         contentType.Equals("text/plain", StringComparison.OrdinalIgnoreCase) ||
@@ -110,7 +121,12 @@ internal static class AndroidExtensions
         contentType.StartsWith("video/", StringComparison.OrdinalIgnoreCase) ||
         contentType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase);
 
-        // Android's own table knows extensions that FileTypeClassifier does not, as file managers do.
+        /// <summary>
+        /// The content type, or, if it is unknown, the one that the Android table of extensions tells for a file name,
+        /// as file managers use, which knows extensions that FileTypeClassifier does not.
+        /// </summary>
+        /// <param name="fileName">The file name.</param>
+        /// <returns>The content type.</returns>
         public string OrAndroidContentType(string fileName) =>
             contentType == FileTypeClassifier.UnknownContentType
                 ? MimeTypeMap.Singleton!.GetMimeTypeFromExtension(Path.GetExtension(fileName.WithoutCopyNumber()).TrimStart('.').ToLowerInvariant()) ?? contentType
@@ -119,6 +135,11 @@ internal static class AndroidExtensions
 
     extension(AndroidUri uri)
     {
+        /// <summary>
+        /// Creates an intent that views the document of the uri in the system Quick Viewer, granted reading it.
+        /// </summary>
+        /// <param name="contentType">The content type of the document.</param>
+        /// <returns>The intent, which the caller owns.</returns>
         public Intent CreateQuickViewIntent(string contentType)
         {
             Intent intent = new(Intent.ActionQuickView);
@@ -131,26 +152,42 @@ internal static class AndroidExtensions
             return intent;
         }
 
+        /// <summary>
+        /// Tells if the uri is of the provider of the local storage, whose document ids are paths.
+        /// </summary>
+        /// <returns>True if the uri is of local storage, false otherwise.</returns>
         public bool IsExternalStorage() => uri.Authority == "com.android.externalstorage.documents";
 
+        /// <summary>
+        /// Opens the document of the uri for reading.
+        /// </summary>
+        /// <returns>A stream that reads the document, which the caller owns.</returns>
         public Stream OpenInputStream() => ContentResolver.OpenInputStream(uri)!;
 
+        /// <summary>
+        /// Renames the document of the uri.
+        /// </summary>
+        /// <param name="name">The new name, which the provider may change.</param>
+        /// <returns>The uri of the renamed document.</returns>
+        /// <exception cref="IOException">The provider did not rename the document.</exception>
         public AndroidUri RenameDocument(string name) =>
             DocumentsContract.RenameDocument(ContentResolver, uri, name) ??
             throw new IOException("The document could not be renamed.");
 
         /// <summary>
         /// Deletes the document, off the main thread. Storage such as Dropbox may not yet delete a document it has only
-        /// just created, so the deletion is retried for up to a second. Returns whether it was deleted.
+        /// just created, so the deletion is retried for up to a second.
         /// </summary>
+        /// <returns>True if the document was deleted, false otherwise.</returns>
         public Task<bool> DeleteDocumentAsync() =>
             RetryAsync(() => DocumentsContract.DeleteDocument(ContentResolver, uri), TimeSpan.FromSeconds(1));
 
         /// <summary>
         /// Waits, off the main thread, until the document can be opened for reading, for up to three seconds. Storage
         /// such as Dropbox does not yet know a document it has only just created, and then does not open it, may not
-        /// delete it, and may never finish renaming it. Returns whether it could be opened.
+        /// delete it, and may never finish renaming it.
         /// </summary>
+        /// <returns>True if the document could be opened, false otherwise.</returns>
         public Task<bool> WaitUntilReadableAsync() =>
             RetryAsync(() =>
                 {
@@ -165,6 +202,8 @@ internal static class AndroidExtensions
         /// it tells why, which is thrown, since the folder is then not known to be listed completely. There is no
         /// timeout, as reaching the storage is up to the provider.
         /// </summary>
+        /// <param name="folderDocumentId">The document id of the folder.</param>
+        /// <returns>The documents in the folder.</returns>
         public Task<IReadOnlyList<DocumentChild>> ListChildrenAsync(string folderDocumentId) =>
             Task.Run(async () =>
             {
@@ -178,6 +217,11 @@ internal static class AndroidExtensions
                 }
             });
 
+        /// <summary>
+        /// Gets the display name of the document of the uri from its provider. Requires to be called off the main
+        /// thread.
+        /// </summary>
+        /// <returns>The display name, or null if the provider does not tell.</returns>
         public string? GetDisplayName()
         {
             ThreadGuard.ThrowIfMainThread();
@@ -206,6 +250,7 @@ internal static class AndroidExtensions
         /// Copies text to the clipboard marked as sensitive, so the system's own confirmation of the copy, on Android
         /// 13 and later, does not show it.
         /// </summary>
+        /// <param name="text">The text.</param>
         public void CopySensitiveText(string text)
         {
             ClipData clip = ClipData.NewPlainText(null, text)!;
@@ -226,8 +271,7 @@ internal static class AndroidExtensions
         /// selection toolbar, keyboard shortcuts, the keyboard app and accessibility services.
         /// </summary>
         /// <param name="id">The id of the context menu item.</param>
-        /// <returns><see langword="true"/> if the item was a copy or cut, which is then done; otherwise
-        /// <see langword="false"/>.</returns>
+        /// <returns>True if the item was a copy or cut, which is then done, false otherwise.</returns>
         public bool TryCopyOrCutAsSensitive(int id)
         {
             if (id != global::Android.Resource.Id.Copy && id != global::Android.Resource.Id.Cut)
@@ -255,6 +299,10 @@ internal static class AndroidExtensions
 
     extension(Intent quickViewIntent)
     {
+        /// <summary>
+        /// Starts the Quick Viewer of the intent, without the extra actions a viewer may offer, such as handing the
+        /// file back to this app.
+        /// </summary>
         public void StartQuickView()
         {
             ComponentName? resolved = quickViewIntent.ResolveActivity(Platform.AppContext.PackageManager!);
@@ -270,8 +318,17 @@ internal static class AndroidExtensions
             Platform.CurrentActivity!.StartActivity(quickViewIntent);
         }
 
+        /// <summary>
+        /// Tells if an app other than this one handles the intent.
+        /// </summary>
+        /// <returns>True if another app handles the intent, false otherwise.</returns>
         public bool HasExternalHandler() => quickViewIntent.GetExternalHandlers().Count > 0;
 
+        /// <summary>
+        /// Lets the user choose an app other than this one to start the intent with.
+        /// </summary>
+        /// <param name="title">The title of the chooser.</param>
+        /// <returns>True if the chooser is started, false if no other app handles the intent.</returns>
         public bool TryStartExternalChooser(string title)
         {
             if (!quickViewIntent.HasExternalHandler())
@@ -288,6 +345,8 @@ internal static class AndroidExtensions
         /// system does when a file is tapped in a file manager. Otherwise, lets the user choose. The system's own
         /// chooser with "Always" cannot be used, since it would also offer Xecrets Ez.
         /// </summary>
+        /// <param name="title">The title of the chooser.</param>
+        /// <returns>True if an app or the chooser is started, false if no other app handles the intent.</returns>
         public bool TryStartPreferredOrChooser(string title)
         {
             List<ActivityInfo> handlers = quickViewIntent.GetExternalHandlers();

@@ -44,32 +44,37 @@ public abstract partial class NewPasswordPageModelBase(
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), INewPasswordPageModel
 {
+    /// <inheritdoc/>
     [ObservableProperty]
     public partial string Password { get; set; } = string.Empty;
 
+    /// <inheritdoc/>
     [ObservableProperty]
     public partial string ConfirmPassword { get; set; } = string.Empty;
 
+    /// <inheritdoc/>
     [ObservableProperty]
     public partial double PasswordStrength { get; private set; }
 
+    /// <inheritdoc/>
     [ObservableProperty]
     public partial StrengthColor PasswordStrengthColor { get; private set; }
 
+    /// <inheritdoc/>
     public abstract bool IsEditable { get; }
 
     /// <summary>
-    /// Whether both the password and its confirmation are entered.
+    /// True if both the password and its confirmation are entered, false otherwise.
     /// </summary>
     protected bool HasPasswords => Password.Length > 0 && ConfirmPassword.Length > 0;
 
     /// <summary>
-    /// Whether the confirmation is the same as the password.
+    /// True if the confirmation is the same as the password, false otherwise.
     /// </summary>
     protected bool IsConfirmed => Password == ConfirmPassword;
 
     /// <summary>
-    /// Called when the password or its confirmation changes.
+    /// Called when the password or its confirmation changes, after the strength is updated.
     /// </summary>
     protected abstract void OnPasswordsChanged();
 

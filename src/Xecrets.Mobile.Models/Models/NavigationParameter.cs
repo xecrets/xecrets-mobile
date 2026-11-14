@@ -30,8 +30,18 @@
 
 namespace Xecrets.Mobile.Models.Models;
 
+/// <summary>
+/// The names of the query parameters of a navigation, by their <see langword="nameof"/>.
+/// </summary>
 public enum NavigationParameter
 {
+    /// <summary>
+    /// No parameter.
+    /// </summary>
     Undefined,
+
+    /// <summary>
+    /// The object passed to the page navigated to.
+    /// </summary>
     Payload,
 }

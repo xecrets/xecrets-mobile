@@ -35,10 +35,12 @@ using Xecrets.Mobile.Models.Utilities;
 namespace Xecrets.Mobile.Models.Services;
 
 /// <summary>
-/// The files of a folder are done one by one without telling the user of each, and are not listed in the recent files,
-/// which a whole folder would crowd out. The files done are counted for a summary at the end, which tells whether all
-/// are done or the operation is canceled, followed by the count in the format given.
+/// Reports the outcome of an operation on the files of a folder. The user is not told of each file, and the files are
+/// not added to the recent files, which a whole folder would crowd out. The files done are counted for a summary at the
+/// end, which tells whether all are done or the operation is canceled, followed by the count.
 /// </summary>
+/// <param name="userInterfaceService">Tells the user.</param>
+/// <param name="countFormat">The format of the count in the summary, with the count text as {0}.</param>
 internal sealed class FolderRunCompletionReporter(IUserInterfaceService userInterfaceService, string countFormat)
     : IFileCompletionReporter
 {
@@ -47,6 +49,10 @@ internal sealed class FolderRunCompletionReporter(IUserInterfaceService userInte
     // Whether the original of the last file could not be removed, which stops the others.
     private bool _isOriginalLeft;
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The operation stops when the original of the last file is left.
+    /// </remarks>
     public async Task<bool> ContinuesAfterFileAsync()
     {
         if (_isOriginalLeft)
@@ -57,16 +63,28 @@ internal sealed class FolderRunCompletionReporter(IUserInterfaceService userInte
         return !_isOriginalLeft;
     }
 
-    // Files of a folder that are not what the operation is for are passed over, and not counted.
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Files of a folder that are not what the operation is for are passed over silently, and not counted.
+    /// </remarks>
     public Task ReportSkippedAsync(string message) => Task.CompletedTask;
 
-    // The user has just answered for the file, which is passed over and not counted.
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The user has just answered for the file, which is passed over silently and not counted.
+    /// </remarks>
     public Task ReportReplaceDeclinedAsync() => Task.CompletedTask;
 
+    /// <inheritdoc/>
     public Task ReportRunCompletedAsync() => ReportSummaryAsync(MobileTexts.DialogTextDone);
 
+    /// <inheritdoc/>
     public Task ReportRunCanceledAsync() => ReportSummaryAsync(MobileTexts.DialogTextCanceled);
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The file is counted.
+    /// </remarks>
     public Task ReportReplacedAsync(FileReference result, string completedText, bool isOriginalRemoved)
     {
         _completedCount++;
@@ -74,6 +92,10 @@ internal sealed class FolderRunCompletionReporter(IUserInterfaceService userInte
         return Task.CompletedTask;
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The file is counted.
+    /// </remarks>
     public Task ReportDeletedAsync(string completedText)
     {
         _completedCount++;

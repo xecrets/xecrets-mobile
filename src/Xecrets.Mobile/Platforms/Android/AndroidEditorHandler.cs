@@ -44,6 +44,10 @@ namespace Xecrets.Mobile.Platforms.Android;
 /// </summary>
 internal class AndroidEditorHandler : EditorHandler
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AndroidEditorHandler"/> class with the property mapper of
+    /// <see cref="EditorHandler"/>.
+    /// </summary>
     public AndroidEditorHandler()
     {
     }

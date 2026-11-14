@@ -37,6 +37,9 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
+/// <summary>
+/// The page model of the debug page.
+/// </summary>
 public partial class DebugPageModel(
     ICrashTestService crashTestService,
     IFileService fileService,

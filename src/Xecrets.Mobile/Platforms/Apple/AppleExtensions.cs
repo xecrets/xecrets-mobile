@@ -54,6 +54,10 @@ using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Platforms.Apple;
 
+/// <summary>
+/// Extensions for the Apple platforms: pickers, file coordination, and the security-scoped bookmarks that keep access
+/// to files and folders, kept in the device-specific data.
+/// </summary>
 internal static class AppleExtensions
 {
     // NSFeatureUnsupportedError.
@@ -68,6 +72,8 @@ internal static class AppleExtensions
     /// Keeps the file or directory out of iCloud, Finder and Time Machine backups. The exclusion belongs to the item
     /// itself, so it must be set again whenever it is replaced.
     /// </summary>
+    /// <param name="fileUrl">The file url of the file or directory.</param>
+    /// <exception cref="NSErrorException">The exclusion could not be set.</exception>
     public static void ExcludeFromBackup(this NSUrl fileUrl)
     {
         if (!fileUrl.SetResource(NSUrl.IsExcludedFromBackupKey, NSNumber.FromBoolean(true), out NSError error))
@@ -76,6 +82,13 @@ internal static class AppleExtensions
         }
     }
 
+    /// <summary>
+    /// Lets the user pick a file or folder of a content type with the document picker, opened for access rather than
+    /// copied.
+    /// </summary>
+    /// <param name="contentType">The content type to pick.</param>
+    /// <param name="initialUrl">The folder to start in, or null to let the system decide.</param>
+    /// <returns>The url of what was picked, which gives access to it, or null if the user cancels.</returns>
     public static async Task<NSUrl?> PickUrlAsync(this UTType contentType, NSUrl? initialUrl)
     {
         UIDocumentPickerViewController picker = new([contentType], false)
@@ -88,6 +101,7 @@ internal static class AppleExtensions
         return await pickerDelegate.Completion.Task;
     }
 
+    /// <inheritdoc cref="Abstractions.IPlatformServices.GetWindowGaps"/>
     public static (double Left, double Right) GetWindowGaps(this VisualElement view)
     {
         UIView platformView = (UIView)view.Handler!.PlatformView!;
@@ -98,9 +112,10 @@ internal static class AppleExtensions
     extension(NSUrl url)
     {
         /// <summary>
-        /// Moves the file to where the user chooses, and returns the url it was moved to, which gives access to it, or
-        /// null if the user cancels.
+        /// Moves the file to where the user chooses.
         /// </summary>
+        /// <param name="initialUrl">The folder to start in, or null to let the system decide.</param>
+        /// <returns>The url the file was moved to, which gives access to it, or null if the user cancels.</returns>
         public async Task<NSUrl?> SaveUrlAsync(NSUrl? initialUrl)
         {
             UIDocumentPickerViewController picker = new([url], false)
@@ -121,6 +136,11 @@ internal static class AppleExtensions
         /// OneDrive with a file it has not finished syncing, tells that the feature is not supported. An error may not
         /// pass through the native coordinator, so it is set as the result instead.
         /// </summary>
+        /// <typeparam name="T">The type of the result of the reading.</typeparam>
+        /// <param name="read">Does all the reading, given the url to read as told by the coordinator.</param>
+        /// <returns>The result of the reading.</returns>
+        /// <exception cref="IOException">The provider cannot provide the file yet.</exception>
+        /// <exception cref="NSErrorException">The coordinator failed.</exception>
         public Task<T> ReadCoordinatedAsync<T>(Func<NSUrl, T> read)
         {
             TaskCompletionSource<T> done = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -151,6 +171,8 @@ internal static class AppleExtensions
         /// Moves the file through a file coordinator, as for writing, which fails if there already is a file where it
         /// is moved to. An error may not pass through the native coordinator, so it is set as the result instead.
         /// </summary>
+        /// <param name="destinationUrl">The url to move the file to.</param>
+        /// <exception cref="NSErrorException">The file could not be moved.</exception>
         public Task MoveCoordinatedAsync(NSUrl destinationUrl)
         {
             TaskCompletionSource moved = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -183,6 +205,9 @@ internal static class AppleExtensions
         /// at as told by the coordinator, since the access lasts only while the accessor runs. An error may not pass
         /// through the native coordinator, so it is set as the result instead.
         /// </summary>
+        /// <param name="options">How the file is written.</param>
+        /// <param name="write">Does all the writing, given the url to write at.</param>
+        /// <exception cref="NSErrorException">The coordinator failed.</exception>
         public Task WriteCoordinatedAsync(NSFileCoordinatorWritingOptions options, Action<NSUrl> write)
         {
             TaskCompletionSource written = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -208,8 +233,17 @@ internal static class AppleExtensions
             return written.Task;
         }
 
+        /// <summary>
+        /// Saves a bookmark of the url under its absolute string as the id, as saving under an id does.
+        /// </summary>
         public void SaveGrant() => url.SaveGrant(url.AbsoluteString!);
 
+        /// <summary>
+        /// Saves a bookmark of the url, made while there is access to it, under an id, replacing any saved before. On
+        /// Mac Catalyst the bookmark is security-scoped.
+        /// </summary>
+        /// <param name="id">The id to save the bookmark under.</param>
+        /// <exception cref="NSErrorException">The bookmark could not be made.</exception>
         public void SaveGrant(string id)
         {
             Directory.CreateDirectory(GrantDirectory);
@@ -237,6 +271,11 @@ internal static class AppleExtensions
 
     extension(string id)
     {
+        /// <summary>
+        /// Resolves the bookmark saved under the id. A stale bookmark is saved again.
+        /// </summary>
+        /// <returns>The url of the bookmark, whose security scope gives the access.</returns>
+        /// <exception cref="NSErrorException">The bookmark could not be resolved.</exception>
         public NSUrl ResolveGrant()
         {
             NSData bookmark = NSData.FromArray(File.ReadAllBytes(id.GetGrantPath()));
@@ -266,6 +305,10 @@ internal static class AppleExtensions
             return url;
         }
 
+        /// <summary>
+        /// Resolves the bookmark saved under the id, if any, as ResolveGrant does.
+        /// </summary>
+        /// <returns>The url of the bookmark, or null if there is none, or it could not be resolved.</returns>
         public NSUrl? TryResolveGrant()
         {
             try
@@ -279,6 +322,10 @@ internal static class AppleExtensions
             }
         }
 
+        /// <summary>
+        /// Gets the path of the file of the bookmark saved under the id, named by a hash of the id.
+        /// </summary>
+        /// <returns>The full path of the file, which need not exist.</returns>
         public string GetGrantPath()
         {
             string key = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(id)));
@@ -289,6 +336,7 @@ internal static class AppleExtensions
     /// <summary>
     /// Deletes the bookmarks kept for any ids other than those given.
     /// </summary>
+    /// <param name="ids">The ids of the bookmarks to keep.</param>
     public static void ReleaseGrantsExcept(this IEnumerable<string> ids)
     {
         // Earlier beta versions kept the bookmarks directly in AppData, which is backed up. They are no longer referenced.

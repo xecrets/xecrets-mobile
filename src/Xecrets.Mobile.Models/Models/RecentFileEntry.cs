@@ -33,17 +33,30 @@ using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models.Models;
 
+/// <summary>
+/// A file on the list of recent files.
+/// </summary>
 /// <param name="File">The file, as listed.</param>
+/// <param name="IsNameEncrypted">True if the name of the file is that of an encrypted file, false otherwise.</param>
 /// <param name="Operation">The operation that put the file on the list.</param>
 public sealed record RecentFileEntry(
     FileReference File,
     bool IsNameEncrypted,
     RecentFileOperation Operation)
 {
+    /// <summary>
+    /// The id of the file.
+    /// </summary>
     public string Id => File.Id;
 
+    /// <summary>
+    /// Where the file is stored, as far as it is known.
+    /// </summary>
     public RootProvider Root => File.Root;
 
+    /// <summary>
+    /// The names of the folders leading to the file below <see cref="Root"/>, as far as they are known.
+    /// </summary>
     public IReadOnlyList<string> FolderPath => File.FolderPath;
 
     /// <summary>
@@ -57,6 +70,9 @@ public sealed record RecentFileEntry(
     /// </summary>
     public string DisplayLocation => string.Join(MobileTexts.BreadcrumbSeparator, [.. Root.ToPathSegments(), .. FolderPath]);
 
+    /// <summary>
+    /// True if anything is known of where the file is stored, false otherwise.
+    /// </summary>
     public bool HasLocation => DisplayLocation.Length > 0;
 
     /// <summary>
@@ -66,9 +82,18 @@ public sealed record RecentFileEntry(
         ? DisplayLocation + MobileTexts.BreadcrumbSeparator + DisplayName
         : DisplayName;
 
+    /// <summary>
+    /// True if the file was encrypted or decrypted in place, false otherwise.
+    /// </summary>
     public bool IsInPlace => Operation == RecentFileOperation.InPlace;
 
+    /// <summary>
+    /// True if the file was viewed or edited, false otherwise.
+    /// </summary>
     public bool IsViewed => Operation is RecentFileOperation.View or RecentFileOperation.Edit;
 
+    /// <summary>
+    /// True if the file was neither encrypted or decrypted in place, nor viewed or edited, false otherwise.
+    /// </summary>
     public bool IsOther => !IsInPlace && !IsViewed;
 }

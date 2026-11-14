@@ -56,6 +56,10 @@ namespace Xecrets.Mobile.Platforms.Android;
 internal sealed class AndroidOverflowMenuButtonHandler()
     : ViewHandler<OverflowMenuButton, AppCompatImageButton>(Mapper)
 {
+    /// <summary>
+    /// Maps <see cref="OverflowMenuButton.IconColor"/> to the tint of the overflow icon, in addition to the properties
+    /// of any view.
+    /// </summary>
     public static readonly IPropertyMapper<OverflowMenuButton, AndroidOverflowMenuButtonHandler> Mapper =
         new PropertyMapper<OverflowMenuButton, AndroidOverflowMenuButtonHandler>(ViewMapper)
         {

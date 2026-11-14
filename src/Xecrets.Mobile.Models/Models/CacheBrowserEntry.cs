@@ -34,6 +34,15 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace Xecrets.Mobile.Models.Models;
 
+/// <summary>
+/// A file or folder in the cache, as listed on the debug page that browses it.
+/// </summary>
+/// <param name="FilePath">The full path of the file or folder.</param>
+/// <param name="DisplayName">The name to show.</param>
+/// <param name="IsDirectory">True for a folder, false for a file.</param>
+/// <param name="Size">The size of a file in bytes, not used for a folder.</param>
+/// <param name="LastWriteTimeUtc">When the file or folder was last written.</param>
+/// <param name="OpenCommand">Opens the entry.</param>
 public sealed record CacheBrowserEntry(
     string FilePath,
     string DisplayName,
@@ -42,6 +51,9 @@ public sealed record CacheBrowserEntry(
     DateTime LastWriteTimeUtc,
     IAsyncRelayCommand<CacheBrowserEntry> OpenCommand)
 {
+    /// <summary>
+    /// The local time of the last write, and the size of a file or that it is a folder.
+    /// </summary>
     public string Details =>
         $"{LastWriteTimeUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)} · " +
         (IsDirectory ? "Folder" : $"{Size:N0} bytes");

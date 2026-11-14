@@ -37,6 +37,9 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Services;
 
+/// <summary>
+/// The preview of a decrypted file, held in memory.
+/// </summary>
 internal sealed class PreviewState : IPreviewState
 {
     // The text as it was decrypted, in any encoding, or as it was last saved, and otherwise empty.
@@ -45,6 +48,7 @@ internal sealed class PreviewState : IPreviewState
     // The file shown, if any, which is disposed when it is replaced or the preview is cleared.
     private ITransientFile? _decryptedFile;
 
+    /// <inheritdoc/>
     public string Text
     {
         get
@@ -54,14 +58,26 @@ internal sealed class PreviewState : IPreviewState
         }
     }
 
+    /// <summary>
+    /// The text of the preview as it was decrypted or last saved, or empty if the preview holds no text.
+    /// </summary>
     public ReadOnlyMemory<byte> Plaintext => _plaintext;
 
+    /// <inheritdoc/>
     public DecryptedFileInfo File { get; private set; } = DecryptedFileInfo.Empty;
 
+    /// <inheritdoc/>
     public EncryptedWithParameters EncryptedWith { get; private set; } = EncryptedWithParameters.Empty;
 
+    /// <inheritdoc/>
     public bool IsReady => File.Kind != PreviewKind.Unknown;
 
+    /// <summary>
+    /// Makes text held in memory the preview, and disposes the temporary file of the earlier preview, if any.
+    /// </summary>
+    /// <param name="file">The decrypted file of the preview.</param>
+    /// <param name="plaintext">The decrypted text.</param>
+    /// <param name="encryptedWith">What the file is encrypted with.</param>
     public void SetText(DecryptedFileInfo file, byte[] plaintext, EncryptedWithParameters encryptedWith)
     {
         ReleaseDecryptedFile();
@@ -71,8 +87,12 @@ internal sealed class PreviewState : IPreviewState
     }
 
     /// <summary>
-    /// A file that is not shown as text, so no text is kept.
+    /// Makes a decrypted temporary file the preview, without text, and disposes the temporary file of the earlier
+    /// preview, if any.
     /// </summary>
+    /// <param name="file">The decrypted file of the preview.</param>
+    /// <param name="encryptedWith">What the file is encrypted with.</param>
+    /// <param name="decryptedFile">The temporary file, which the preview takes over.</param>
     public void SetFile(DecryptedFileInfo file, EncryptedWithParameters encryptedWith, ITransientFile decryptedFile)
     {
         SetText(file, [], encryptedWith);
@@ -80,14 +100,16 @@ internal sealed class PreviewState : IPreviewState
     }
 
     /// <summary>
-    /// The file the text was written to, to hand it over to the platform or another app.
+    /// Sets the temporary file that the text of the preview is written to.
     /// </summary>
+    /// <param name="decryptedFile">The temporary file, which the preview takes over.</param>
     public void SetDecryptedFile(ITransientFile decryptedFile)
     {
         _decryptedFile = decryptedFile;
         File = File with { FilePath = decryptedFile.FilePath };
     }
 
+    /// <inheritdoc/>
     public void UpdateText(byte[] plaintext)
     {
         ReleaseDecryptedFile();
@@ -95,11 +117,13 @@ internal sealed class PreviewState : IPreviewState
         File = File with { FilePath = string.Empty, FileSize = _plaintext.Length };
     }
 
+    /// <inheritdoc/>
     public void MarkHandedOff()
     {
         _decryptedFile?.MarkHandedOff();
     }
 
+    /// <inheritdoc/>
     public void Clear()
     {
         ReleaseDecryptedFile();

@@ -37,6 +37,9 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Services;
 
+/// <summary>
+/// Decrypts encrypted files for previewing them, as part of the <see cref="RunningOperation"/>.
+/// </summary>
 internal sealed class PreviewService(
     ICoreServices coreServices,
     IProfileService profileService,
@@ -47,18 +50,23 @@ internal sealed class PreviewService(
     ICrashLogService crashLogService)
     : IPreviewService
 {
+    /// <inheritdoc/>
     public IPreviewState Current => previewState;
 
+    /// <inheritdoc/>
     public bool HasPendingPasswordRequest => passwordRequestState.HasPendingRequest;
 
+    /// <inheritdoc/>
     public void CancelPasswordRequest() => passwordRequestState.Clear();
 
+    /// <inheritdoc/>
     public async Task PrepareTextAsync(DecryptedFileInfo file, EncryptedWithParameters encryptedWith)
     {
         byte[] plaintext = await File.ReadAllBytesAsync(file.FilePath);
         previewState.SetText(file with { FilePath = "" }, plaintext, encryptedWith);
     }
 
+    /// <inheritdoc/>
     public async Task<DecryptedFileInfo> MaterializeAsync()
     {
         DecryptedFileInfo file = previewState.File;
@@ -84,6 +92,7 @@ internal sealed class PreviewService(
         return previewState.File;
     }
 
+    /// <inheritdoc/>
     public async Task<bool> PrepareAsync(IReadableFile encryptedFile)
     {
         ITransientFile encryptedCopy = transientFileService.CreateEncryptedInputFile(encryptedFile.FileName);
@@ -105,11 +114,13 @@ internal sealed class PreviewService(
             == PreviewPreparationStatus.Prepared;
     }
 
+    /// <inheritdoc/>
     public async Task<PreviewPreparationStatus> PrepareImportedAsync(ITransientFile encryptedFile)
     {
         return await PrepareWithKnownPasswordsAsync(encryptedFile);
     }
 
+    /// <inheritdoc/>
     public async Task<PreviewPreparationStatus> PrepareWithPasswordAsync(string password)
     {
         if (!passwordRequestState.HasPendingRequest)

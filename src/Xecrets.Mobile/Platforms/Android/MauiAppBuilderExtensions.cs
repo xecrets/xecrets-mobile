@@ -38,8 +38,16 @@ using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Platforms.Android;
 
+/// <summary>
+/// The configuration of the MAUI app for Android.
+/// </summary>
 internal static class MauiAppBuilderExtensions
 {
+    /// <summary>
+    /// Registers the Android implementations of the platform services, and the Android handlers of the controls.
+    /// </summary>
+    /// <param name="builder">The builder of the app.</param>
+    /// <returns>The builder.</returns>
     public static MauiAppBuilder ConfigurePlatform(this MauiAppBuilder builder)
     {
         builder.Services.AddSingleton<IFileService, AndroidFileService>();

@@ -44,9 +44,18 @@ using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Platforms.Windows;
 
+/// <summary>
+/// The configuration of the MAUI app for Windows.
+/// </summary>
 [SupportedOSPlatform("windows10.0.19041")]
 internal static class MauiAppBuilderExtensions
 {
+    /// <summary>
+    /// Registers the Windows implementations of the platform services, the Windows handlers of the controls, and the
+    /// mapping that gives the items of the overflow menu their icons.
+    /// </summary>
+    /// <param name="builder">The builder of the app.</param>
+    /// <returns>The builder.</returns>
     public static MauiAppBuilder ConfigurePlatform(this MauiAppBuilder builder)
     {
         builder.Services.AddSingleton<IFileService, WindowsFileService>();

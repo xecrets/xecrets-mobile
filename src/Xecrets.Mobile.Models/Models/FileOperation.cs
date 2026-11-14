@@ -35,7 +35,18 @@ namespace Xecrets.Mobile.Models.Models;
 /// </summary>
 public enum FileOperation
 {
+    /// <summary>
+    /// Encrypt the file.
+    /// </summary>
     Encrypt,
+
+    /// <summary>
+    /// Decrypt the file.
+    /// </summary>
     Decrypt,
+
+    /// <summary>
+    /// Delete the file.
+    /// </summary>
     Delete,
 }

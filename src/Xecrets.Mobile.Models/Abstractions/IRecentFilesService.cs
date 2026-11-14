@@ -34,34 +34,51 @@ using Xecrets.Mobile.Models.Models;
 namespace Xecrets.Mobile.Models.Abstractions;
 
 /// <summary>
-/// The list of recently used files, each with the operation that put it there. Files that are changed are listed as
-/// reached through one of My folders, while files that are only read are listed with a grant to the file itself. The
-/// list is not checked against the files, which is only done when a file on it is used.
+/// The list of recently used files of the profile signed in, each with the operation that put it there, the most
+/// recent first. Files that are changed are listed as reached through one of My folders, while files that are only
+/// read are listed with a lasting grant to the file itself. The list is not checked against the files.
 /// </summary>
 public interface IRecentFilesService
 {
+    /// <summary>
+    /// Gets the listed files.
+    /// </summary>
+    /// <returns>The listed files, the most recent first.</returns>
     Task<IReadOnlyList<RecentFile>> GetFilesAsync();
 
     /// <summary>
-    /// Lists the file first, in place of any entry for the same id. Returns false, and lists nothing, when the access
-    /// to a file that is only read cannot be kept.
+    /// Lists a file first, in place of any entry for the same file under any id, keeping at most 50 files. A file that
+    /// is listed as changed stays listed as changed when it is then only read, and is moved first.
     /// </summary>
+    /// <param name="file">The file.</param>
+    /// <param name="operation">The operation done on the file.</param>
+    /// <returns>True if the file is listed, false if nothing is listed, since the access to a file that is only read
+    /// cannot be kept.</returns>
     Task<bool> AddAsync(FileReference file, RecentFileOperation operation);
 
     /// <summary>
-    /// Lists the file the current flow works on, if any.
+    /// Lists the source file of the current flow, if any, as <see cref="AddAsync"/> does.
     /// </summary>
+    /// <param name="operation">The operation done on the file.</param>
     Task AddFlowSourceAsync(RecentFileOperation operation);
 
+    /// <summary>
+    /// Removes the entries with an id, if any.
+    /// </summary>
+    /// <param name="fileId">The id of the entries.</param>
     Task RemoveAsync(string fileId);
 
     /// <summary>
-    /// Removes every entry for the file, under any id, such as when the file is replaced or deleted.
+    /// Removes every entry for a file, under any id.
     /// </summary>
+    /// <param name="fileId">An id of the file.</param>
     Task RemoveFileAsync(string fileId);
 
     /// <summary>
-    /// Refers to a listed file by a new id, such as when it is now reached through another of My folders.
+    /// Refers to a listed file by a new id. If the file is also listed by the new id, only the entry listed first is
+    /// kept.
     /// </summary>
+    /// <param name="fileId">The listed id of the file.</param>
+    /// <param name="newFileId">The new id of the file.</param>
     Task ReplaceIdAsync(string fileId, string newFileId);
 }

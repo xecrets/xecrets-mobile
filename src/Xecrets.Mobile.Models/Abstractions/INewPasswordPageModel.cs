@@ -32,18 +32,34 @@ using Xecrets.Words.Model;
 
 namespace Xecrets.Mobile.Models.Abstractions;
 
-// A page model with fields for a new password, its strength and its confirmation, shown by the same view on the pages
-// that set the password of the profile.
+/// <summary>
+/// A page model with a new password, its strength and its confirmation.
+/// </summary>
 public interface INewPasswordPageModel
 {
+    /// <summary>
+    /// The password entered.
+    /// </summary>
     string Password { get; set; }
 
+    /// <summary>
+    /// The confirmation of the password entered.
+    /// </summary>
     string ConfirmPassword { get; set; }
 
+    /// <summary>
+    /// The strength of <see cref="Password"/>, from 0 to 1.
+    /// </summary>
     double PasswordStrength { get; }
 
+    /// <summary>
+    /// The color that shows the strength of <see cref="Password"/>.
+    /// </summary>
     StrengthColor PasswordStrengthColor { get; }
 
-    // When not, only the password is shown, as when verifying the current one, without its strength or confirmation.
+    /// <summary>
+    /// True if a new password is entered, with its strength and confirmation, false if only an existing password is
+    /// entered.
+    /// </summary>
     bool IsEditable { get; }
 }

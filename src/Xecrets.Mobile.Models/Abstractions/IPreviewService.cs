@@ -34,36 +34,66 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Abstractions;
 
+/// <summary>
+/// Decrypts encrypted files for previewing them. Decrypted text up to a size is held in memory, and any other decrypted
+/// file is written to a read-only temporary file. The known passwords are the password of the current profile and its
+/// extra passwords. A file that none of them decrypts waits for a password to be given.
+/// </summary>
 public interface IPreviewService
 {
+    /// <summary>
+    /// The current preview.
+    /// </summary>
     IPreviewState Current { get; }
 
+    /// <summary>
+    /// True if a file waits for a password, false otherwise.
+    /// </summary>
     bool HasPendingPasswordRequest { get; }
 
     /// <summary>
-    /// Ends the request for a password for the file to show, when the user is not to be asked for one after all.
+    /// Ends the wait for a password for the file waiting, if any, which is then no longer kept.
     /// </summary>
     void CancelPasswordRequest();
 
     /// <summary>
-    /// Reads the entire file into memory for previewing.
+    /// Makes a decrypted text file the preview, reading the whole file into memory.
     /// </summary>
-    /// <param name="file"></param>
-    /// <param name="encryptedWith"></param>
-    /// <returns></returns>
+    /// <param name="file">The decrypted text file.</param>
+    /// <param name="encryptedWith">What the file is encrypted with.</param>
     Task PrepareTextAsync(DecryptedFileInfo file, EncryptedWithParameters encryptedWith);
 
     /// <summary>
-    /// Writes the in-memory text to a temporary file and returns it.
+    /// Writes the text of the preview to a read-only temporary file, unless the preview already has a file.
     /// </summary>
+    /// <returns>The decrypted file of the preview, with the path of its file.</returns>
     Task<DecryptedFileInfo> MaterializeAsync();
 
+    /// <summary>
+    /// Decrypts a copy of an encrypted file with the known passwords, and makes it the preview. Any file waiting for a
+    /// password is replaced.
+    /// </summary>
+    /// <param name="encryptedFile">The encrypted file.</param>
+    /// <returns>True if the preview is prepared, false if the file waits for a password or the operation is
+    /// canceled.</returns>
     Task<bool> PrepareAsync(IReadableFile encryptedFile);
 
     /// <summary>
-    /// Prepares the preview of a received encrypted file, and takes over the file, which the caller must not dispose.
+    /// Decrypts a temporary encrypted file with the known passwords, and makes it the preview. Any file waiting for a
+    /// password is replaced.
     /// </summary>
+    /// <param name="encryptedFile">The temporary encrypted file, which the service takes over, so that the caller must
+    /// not dispose it.</param>
+    /// <returns>The outcome, which is <see cref="PreviewPreparationStatus.WrongPassword"/> when the file waits for a
+    /// password.</returns>
     Task<PreviewPreparationStatus> PrepareImportedAsync(ITransientFile encryptedFile);
 
+    /// <summary>
+    /// Decrypts the file waiting for a password with a password, and makes it the preview. The file no longer waits
+    /// unless the password is wrong. An extra password that decrypts it is recorded as used.
+    /// </summary>
+    /// <param name="password">The password to try.</param>
+    /// <returns>The outcome, which is <see cref="PreviewPreparationStatus.Cancelled"/> if no file waits for a password,
+    /// or the file is gone.</returns>
     Task<PreviewPreparationStatus> PrepareWithPasswordAsync(string password);
 }

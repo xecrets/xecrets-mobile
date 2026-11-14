@@ -37,10 +37,18 @@ using Windows.Graphics;
 
 namespace Xecrets.Mobile.Platforms.Windows;
 
+/// <summary>
+/// The configuration of the window on Windows, where it is shaped as a phone screen for testing.
+/// </summary>
 internal static class PlatformWindow
 {
     private const double _pixel7aScreenWidthToHeightRatio = 1080d / 2400d;
 
+    /// <summary>
+    /// Makes a window the full height of the work area of its display, centered, with the client area shaped as the
+    /// screen of a Pixel 7a.
+    /// </summary>
+    /// <param name="window">The window, with its handler.</param>
     public static void Configure(Window window)
     {
         Microsoft.UI.Xaml.Window platformWindow = (Microsoft.UI.Xaml.Window)window.Handler!.PlatformView!;

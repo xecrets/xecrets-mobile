@@ -39,14 +39,20 @@ using Xecrets.Mobile.Services;
 
 namespace Xecrets.Mobile.Platforms.Windows;
 
+/// <summary>
+/// The user interface of the app on Windows.
+/// </summary>
 internal class WindowsUserInterfaceService(IBuildInformation buildInformation, EzAppShell ezAppShell)
     : DefaultUserInterfaceService(buildInformation, ezAppShell)
 {
-    // A Toast on Windows is an operating system notification rather than something shown in the app,
-    // and it needs the app to be registered with the notification system, which an unpackaged app
-    // isn't. Put the message on the page's message line instead.
     private IDispatcherTimer? _timer;
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// A toast on Windows is a notification of the operating system, which needs the app to be registered with the
+    /// notification system, which an unpackaged app is not. The message is instead shown for three seconds as the
+    /// <see cref="IStatusTextPageModel.MessageText"/> of the page, and not at all on a page without one.
+    /// </remarks>
     public override Task DisplayTransientMessageAsync(string message)
     {
         Page currentPage = AppShell.CurrentPage;

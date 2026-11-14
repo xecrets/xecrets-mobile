@@ -38,6 +38,9 @@ using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Models.Services;
 
+/// <summary>
+/// Encrypts copies of files to temporary files, as part of the <see cref="RunningOperation"/>.
+/// </summary>
 internal sealed class EncryptionPreparationService(
     EncryptRequestFactory encryptRequestFactory,
     IProfileService profileService,
@@ -46,6 +49,7 @@ internal sealed class EncryptionPreparationService(
     RunningOperation runningOperation)
     : IEncryptionPreparationService
 {
+    /// <inheritdoc/>
     public async Task<EncryptionPreparationResult> EncryptWithCurrentProfileAsync(IReadableFile source)
     {
         await using Stream cleartext = await source.OpenReadAsync();
@@ -53,6 +57,7 @@ internal sealed class EncryptionPreparationService(
         return await EncryptAsync(cleartext, source.FileName, request, false);
     }
 
+    /// <inheritdoc/>
     public async Task<EncryptionPreparationResult> EncryptWithPasswordAsync(IReadableFile source, string password)
     {
         await using Stream cleartext = await source.OpenReadAsync();
@@ -60,9 +65,7 @@ internal sealed class EncryptionPreparationService(
         return await EncryptAsync(cleartext, source.FileName, request, true);
     }
 
-    /// <summary>
-    /// Keeps the times of the file in the encrypted result.
-    /// </summary>
+    // Keeps the times of the file in the encrypted result.
     private static EncryptRequest WithTimes(EncryptRequest request, FileTimes times) => request with
     {
         CreationTimeUtc = times.CreationTimeUtc,
@@ -70,10 +73,10 @@ internal sealed class EncryptionPreparationService(
         LastWriteTimeUtc = times.LastWriteTimeUtc,
     };
 
-    /// <summary>
-    /// The file is decrypted with any of the known passwords to a temporary file, as for a decrypted copy,
-    /// which is wiped once the copy is encrypted, keeping the original name and times of the file.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The file is decrypted to a temporary file, as for a decrypted copy, which is wiped once the copy is encrypted.
+    /// </remarks>
     public async Task<EncryptionPreparationResult?> ReEncryptWithPasswordAsync(IReadableFile encryptedSource, string password)
     {
         await using Stream encrypted = await encryptedSource.OpenReadAsync();

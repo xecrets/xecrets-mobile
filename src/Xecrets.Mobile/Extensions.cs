@@ -36,8 +36,17 @@ using Xecrets.Words.Model;
 
 namespace Xecrets.Mobile;
 
+/// <summary>
+/// Miscellaneous extensions of the app.
+/// </summary>
 internal static class Extensions
 {
+    /// <summary>
+    /// Gets the color that shows a password strength.
+    /// </summary>
+    /// <param name="color">The strength color.</param>
+    /// <returns>The color.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The strength color is not a defined value.</exception>
     public static Color ToColor(this StrengthColor color) => color switch
     {
         StrengthColor.Red => Colors.Red,

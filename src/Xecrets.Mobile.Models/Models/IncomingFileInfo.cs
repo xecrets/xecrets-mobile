@@ -32,11 +32,19 @@ using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Models.Models;
 
-/// <param name="File">The copy of the received file, which whoever handles the file must dispose.</param>
+/// <summary>
+/// A file received from another app.
+/// </summary>
+/// <param name="File">The temporary copy of the received file, which the holder owns and must dispose.</param>
+/// <param name="DisplayName">The name of the received file.</param>
+/// <param name="ContentType">The MIME type of the received file.</param>
 public sealed record IncomingFileInfo(
     ITransientFile File,
     string DisplayName,
     string ContentType)
 {
+    /// <summary>
+    /// The full path of <see cref="File"/>.
+    /// </summary>
     public string FilePath => File.FilePath;
 }

@@ -44,8 +44,17 @@ using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Platforms.Apple;
 
+/// <summary>
+/// Receives the files that other apps open in this app on the Apple platforms.
+/// </summary>
 internal static class AppleIncomingFileHandler
 {
+    /// <summary>
+    /// Receives the file of a url opened in the app with <see cref="Models.Abstractions.IIncomingFileService"/>. A url
+    /// that is not of a file, or of a file that does not exist, is ignored, and a file the app handed off itself is
+    /// rejected. A failure is written to the crash log.
+    /// </summary>
+    /// <param name="url">The url opened in the app.</param>
     public static async void HandleIncomingUrl(NSUrl url)
     {
         try

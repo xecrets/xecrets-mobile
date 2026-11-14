@@ -32,10 +32,23 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Abstractions;
 
+/// <summary>
+/// Shows decrypted files.
+/// </summary>
 public interface IDecryptedFileViewer
 {
+    /// <summary>
+    /// Gets how a decrypted file can be viewed.
+    /// </summary>
+    /// <param name="file">The decrypted file.</param>
+    /// <returns>How the file can be viewed.</returns>
     Task<FileViewMode> GetViewModeAsync(DecryptedFileInfo file);
 
+    /// <summary>
+    /// Shows a decrypted file in a viewer of the platform.
+    /// </summary>
+    /// <param name="file">The decrypted file, for which <see cref="GetViewModeAsync"/> returns
+    /// <see cref="FileViewMode.Platform"/>.</param>
     /// <returns>True if the file is still in use, false if it is no longer used.</returns>
     Task<bool> ViewAsync(DecryptedFileInfo file);
 }

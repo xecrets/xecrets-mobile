@@ -44,9 +44,14 @@ namespace Xecrets.Mobile.Platforms.Windows;
 [SupportedOSPlatform("windows10.0.19041")]
 internal class WindowsWorkFolderFileLauncher : IWorkFolderFileLauncher
 {
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The app that opens the file has the access of the user, so <paramref name="allowWrite"/> is not used.
+    /// </remarks>
     public Task<bool> OpenAsync(FileReference file, bool allowWrite) =>
         Launcher.Default.OpenAsync(new OpenFileRequest(file.Name, new ReadOnlyFile(file.Id)));
 
+    /// <inheritdoc/>
     public Task ShareAsync(FileReference file) =>
         Share.Default.RequestAsync(new ShareFileRequest { Title = file.Name, File = new ShareFile(file.Id) });
 }

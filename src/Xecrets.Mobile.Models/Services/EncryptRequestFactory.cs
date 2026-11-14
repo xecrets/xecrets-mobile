@@ -35,23 +35,24 @@ using Xecrets.Mobile.Models.Abstractions;
 namespace Xecrets.Mobile.Models.Services;
 
 /// <summary>
-/// Builds requests to encrypt a file, as part of the operation that runs, which cancels it when it is canceled.
+/// Creates requests to encrypt a file, with progress reported to the <see cref="RunningOperation"/>, which also
+/// cancels the encryption. All times of the requests are the current time.
 /// </summary>
 internal sealed class EncryptRequestFactory(IProfileService profileService, RunningOperation runningOperation)
 {
     /// <summary>
-    /// Encrypts with the current profile password and public key,
+    /// Creates a request to encrypt with the password and the public key of the current profile.
     /// </summary>
-    /// <param name="originalFileName"></param>
-    /// <returns></returns>
+    /// <param name="originalFileName">The original name of the file to encrypt.</param>
+    /// <returns>The request.</returns>
     public EncryptRequest Create(string originalFileName) => Create(originalFileName, profileService.GetIdentity().Passphrase);
 
     /// <summary>
-    /// Encrypts with the password given and the profile public key.
+    /// Creates a request to encrypt with a password and the public key of the current profile.
     /// </summary>
-    /// <param name="originalFileName"></param>
-    /// <param name="password"></param>
-    /// <returns></returns>
+    /// <param name="originalFileName">The original name of the file to encrypt.</param>
+    /// <param name="password">The password to encrypt with.</param>
+    /// <returns>The request.</returns>
     public EncryptRequest Create(string originalFileName, string password)
     {
         EncryptedWithParameters encryptedWith = new(password, [profileService.GetPublicKey()], []);
@@ -59,16 +60,23 @@ internal sealed class EncryptRequestFactory(IProfileService profileService, Runn
     }
 
     /// <summary>
-    /// Encrypts with the current profile password, for all recipients and master keys a file was encrypted for, and
-    /// for the current profile, unless it was already among them.
+    /// Creates a request to encrypt with the password of the current profile, for the recipients and master keys a
+    /// file is encrypted for, and for the public key of the current profile.
     /// </summary>
+    /// <param name="originalFileName">The original name of the file to encrypt.</param>
+    /// <param name="encryptedWith">What the file is encrypted with. Its password is not used.</param>
+    /// <returns>The request.</returns>
     public EncryptRequest Create(string originalFileName, EncryptedWithParameters encryptedWith) =>
         Create(originalFileName, profileService.GetIdentity().Passphrase, encryptedWith);
 
     /// <summary>
-    /// Encrypts with the password given, for all recipients and master keys a file was encrypted for, and for the
-    /// current profile, unless it was already among them. Whatever password the file was encrypted with is not kept.
+    /// Creates a request to encrypt with a password, for the recipients and master keys a file is encrypted for, and
+    /// for the public key of the current profile.
     /// </summary>
+    /// <param name="originalFileName">The original name of the file to encrypt.</param>
+    /// <param name="password">The password to encrypt with.</param>
+    /// <param name="encryptedWith">What the file is encrypted with. Its password is not used.</param>
+    /// <returns>The request.</returns>
     public EncryptRequest Create(string originalFileName, string password, EncryptedWithParameters encryptedWith)
     {
         DateTime utcNow = DateTime.UtcNow;

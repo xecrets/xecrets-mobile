@@ -37,32 +37,43 @@ namespace Xecrets.Mobile.Platforms.Apple;
 /// <summary>
 /// A stream that reads a temporary file, and disposes the file when the stream is disposed.
 /// </summary>
+/// <param name="file">The temporary file, which is opened for reading, and which the stream takes over.</param>
 internal sealed class OwningStream(ITransientFile file) : Stream
 {
     private readonly FileStream _stream = File.OpenRead(file.FilePath);
 
+    /// <inheritdoc/>
     public override bool CanRead => _stream.CanRead;
 
+    /// <inheritdoc/>
     public override bool CanSeek => _stream.CanSeek;
 
+    /// <inheritdoc/>
     public override bool CanWrite => _stream.CanWrite;
 
+    /// <inheritdoc/>
     public override long Length => _stream.Length;
 
+    /// <inheritdoc/>
     public override long Position
     {
         get => _stream.Position;
         set => _stream.Position = value;
     }
 
+    /// <inheritdoc/>
     public override void Flush() => _stream.Flush();
 
+    /// <inheritdoc/>
     public override int Read(byte[] buffer, int offset, int count) => _stream.Read(buffer, offset, count);
 
+    /// <inheritdoc/>
     public override long Seek(long offset, SeekOrigin origin) => _stream.Seek(offset, origin);
 
+    /// <inheritdoc/>
     public override void SetLength(long value) => _stream.SetLength(value);
 
+    /// <inheritdoc/>
     public override void Write(byte[] buffer, int offset, int count) => _stream.Write(buffer, offset, count);
 
     protected override void Dispose(bool disposing)

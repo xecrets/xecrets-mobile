@@ -47,6 +47,7 @@ internal sealed class InterruptedSaveService(
     ICrashLogService crashLogService,
     IUserInterfaceService userInterfaceService) : IInterruptedSaveService
 {
+    /// <inheritdoc/>
     public async Task<string> SaveAsync(SaveInProgress save, string completedFilePath, string? existingId)
     {
         await store.WriteSaveInProgressAsync(save with { UserId = CurrentUserId });
@@ -61,11 +62,10 @@ internal sealed class InterruptedSaveService(
         }
     }
 
-    /// <summary>
-    /// A save of another profile is left for when it signs in, since it is through its My folders that the files are
-    /// reached. A save that cannot be undone, such as when its folder or the source cannot be reached, is only told
-    /// about, and not tried again.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <remarks>
+    /// A save of another profile is left for when it signs in, since its files are reached through its My folders.
+    /// </remarks>
     public async Task RecoverAsync()
     {
         if (await store.ReadSaveInProgressAsync() is not { } save || save.UserId != CurrentUserId)

@@ -34,24 +34,33 @@ namespace Xecrets.Mobile.Models.Models;
 /// A folder as listed once for an operation, and kept up to date with what the operation saves in it and removes from
 /// it, so that it tells what is there without being listed again.
 /// </summary>
+/// <param name="listing">The listing of the folder.</param>
 public sealed class ListedFolder(FolderListing listing)
 {
     private readonly Dictionary<string, string> _idsByName = new(listing.IdsByName, listing.IdsByName.Comparer);
 
+    /// <summary>
+    /// The id of the folder.
+    /// </summary>
     public string Id => listing.FolderId;
 
     /// <summary>
-    /// The id of what has the name in the folder, or null when nothing has.
+    /// Finds what has a name in the folder, compared as the storage compares names.
     /// </summary>
+    /// <param name="name">The name.</param>
+    /// <returns>The id of what has the name, or null if nothing has.</returns>
     public string? FindId(string name) => _idsByName.GetValueOrDefault(name);
 
     /// <summary>
-    /// A file the operation has saved in the folder.
+    /// Records a file that the operation has saved in the folder, replacing what had the name.
     /// </summary>
+    /// <param name="name">The name of the file.</param>
+    /// <param name="id">The id of the file.</param>
     public void Add(string name, string id) => _idsByName[name] = id;
 
     /// <summary>
-    /// A file the operation has removed from the folder.
+    /// Records that the operation has removed a file from the folder.
     /// </summary>
+    /// <param name="name">The name of the file.</param>
     public void Remove(string name) => _idsByName.Remove(name);
 }

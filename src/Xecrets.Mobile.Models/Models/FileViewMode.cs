@@ -30,9 +30,23 @@
 
 namespace Xecrets.Mobile.Models.Models;
 
+/// <summary>
+/// How a decrypted file can be viewed.
+/// </summary>
 public enum FileViewMode
 {
+    /// <summary>
+    /// The file cannot be viewed.
+    /// </summary>
     Unavailable,
+
+    /// <summary>
+    /// The file can be viewed in the app.
+    /// </summary>
     Internal,
+
+    /// <summary>
+    /// The file can be viewed in a viewer of the platform.
+    /// </summary>
     Platform,
 }

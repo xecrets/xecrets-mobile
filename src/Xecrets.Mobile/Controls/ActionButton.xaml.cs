@@ -38,50 +38,84 @@ namespace Xecrets.Mobile.Controls;
 /// </summary>
 internal sealed partial class ActionButton
 {
+    /// <summary>
+    /// Identifies the <see cref="Title"/> bindable property.
+    /// </summary>
     public static readonly BindableProperty TitleProperty = BindableProperty.Create(
         nameof(Title), typeof(string), typeof(ActionButton), string.Empty);
 
+    /// <summary>
+    /// Identifies the <see cref="Description"/> bindable property.
+    /// </summary>
     public static readonly BindableProperty DescriptionProperty = BindableProperty.Create(
         nameof(Description), typeof(string), typeof(ActionButton), string.Empty);
 
+    /// <summary>
+    /// Identifies the <see cref="Icon"/> bindable property.
+    /// </summary>
     public static readonly BindableProperty IconProperty = BindableProperty.Create(
         nameof(Icon), typeof(ImageSource), typeof(ActionButton));
 
+    /// <summary>
+    /// Identifies the <see cref="Command"/> bindable property.
+    /// </summary>
     public static readonly BindableProperty CommandProperty = BindableProperty.Create(
         nameof(Command), typeof(ICommand), typeof(ActionButton));
 
+    /// <summary>
+    /// Identifies the <see cref="CommandParameter"/> bindable property.
+    /// </summary>
     public static readonly BindableProperty CommandParameterProperty = BindableProperty.Create(
         nameof(CommandParameter), typeof(object), typeof(ActionButton));
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ActionButton"/> class, without an icon, a description or a
+    /// command.
+    /// </summary>
     public ActionButton()
     {
         InitializeComponent();
     }
 
+    /// <summary>
+    /// The title of the button.
+    /// </summary>
     public string Title
     {
         get => (string)GetValue(TitleProperty);
         set => SetValue(TitleProperty, value);
     }
 
+    /// <summary>
+    /// The description below the title, or "" for none.
+    /// </summary>
     public string Description
     {
         get => (string)GetValue(DescriptionProperty);
         set => SetValue(DescriptionProperty, value);
     }
 
+    /// <summary>
+    /// The leading icon, or null for none.
+    /// </summary>
     public ImageSource? Icon
     {
         get => (ImageSource?)GetValue(IconProperty);
         set => SetValue(IconProperty, value);
     }
 
+    /// <summary>
+    /// The command run when the button is pressed, or null for none.
+    /// </summary>
     public ICommand? Command
     {
         get => (ICommand?)GetValue(CommandProperty);
         set => SetValue(CommandProperty, value);
     }
 
+    /// <summary>
+    /// The parameter of <see cref="Command"/>.
+    /// </summary>
     public object? CommandParameter
     {
         get => GetValue(CommandParameterProperty);

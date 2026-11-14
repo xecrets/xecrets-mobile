@@ -40,8 +40,14 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
+/// <summary>
+/// The page that shows an encrypted copy.
+/// </summary>
 internal partial class EncryptResultPage : IQueryAttributable
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="EncryptResultPage"/> class with the standard header.
+    /// </summary>
     public EncryptResultPage(EncryptResultPageModel model, IPageHeaderService pageHeaderService)
         : base(model)
     {
@@ -49,6 +55,10 @@ internal partial class EncryptResultPage : IQueryAttributable
         pageHeaderService.ApplyStandardHeader(this);
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Requires an <see cref="EncryptionPreparationResult"/> payload, which is the copy shown.
+    /// </remarks>
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
         Model.Initialize(

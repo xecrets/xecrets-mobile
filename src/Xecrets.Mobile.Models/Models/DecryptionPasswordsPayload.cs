@@ -34,6 +34,6 @@ namespace Xecrets.Mobile.Models.Models;
 /// What the decryption passwords page is opened with.
 /// </summary>
 /// <param name="Intent">Why the page is opened.</param>
-/// <param name="FileName">The name of the file that a password is asked for, as shown to the user, and empty when the
+/// <param name="FileName">The name of the file that a password is asked for, as shown to the user, or "" when the
 /// passwords are managed.</param>
 public sealed record DecryptionPasswordsPayload(DecryptionPasswordsIntent Intent, string FileName);

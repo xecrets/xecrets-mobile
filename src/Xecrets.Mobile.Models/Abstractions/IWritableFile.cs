@@ -30,29 +30,46 @@
 
 namespace Xecrets.Mobile.Models.Abstractions;
 
-// A file to overwrite and eventually remove, wrapping whatever platform-specific handle (content Uri, security-scoped
-// NSUrl, path) is needed for it. Each platform provides its own implementation through IFileAccess.
+/// <summary>
+/// A file to overwrite and delete. The other members are called while the access from <see cref="AcquireAccess"/> is
+/// held.
+/// </summary>
 public interface IWritableFile
 {
+    /// <summary>
+    /// Acquires the access to the file that the other members need.
+    /// </summary>
+    /// <returns>A scope that holds the access until it is disposed.</returns>
     IDisposable AcquireAccess();
 
+    /// <summary>
+    /// Tells if the contents of the file can be written.
+    /// </summary>
+    /// <returns>True if the contents can be written, false otherwise.</returns>
     Task<bool> CanWriteAsync();
 
+    /// <summary>
+    /// Tells if the file can be deleted.
+    /// </summary>
+    /// <returns>True if the file can be deleted, false otherwise.</returns>
     Task<bool> CanDeleteAsync();
 
     /// <summary>
-    /// The length of the file, or null when the storage does not tell it.
+    /// Gets the length of the file.
     /// </summary>
+    /// <returns>The length of the file in bytes, or null if the storage does not tell it.</returns>
     Task<long?> GetLengthAsync();
 
     /// <summary>
-    /// Overwrites the file in place, with all the writing done by the action, which is given the stream to write. The
-    /// file is written as one operation, coordinated with other processes where the platform does so.
+    /// Overwrites the file in place, as one operation, coordinated with other processes where the platform does so.
     /// </summary>
+    /// <param name="overwrite">Does all the writing to the stream of the file given to it, which is positioned at the
+    /// start of the file.</param>
     Task OverwriteAsync(Action<Stream> overwrite);
 
     /// <summary>
-    /// Deletes the file, together with any other versions of it that the platform keeps where it can remove them.
+    /// Deletes the file, together with the other versions of it that the platform keeps, where it can remove them.
+    /// Fails if the file is not deleted.
     /// </summary>
     Task DeleteAsync();
 }

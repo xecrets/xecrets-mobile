@@ -30,8 +30,13 @@
 
 namespace Xecrets.Mobile.Models.Abstractions;
 
-// A page model that shows a breadcrumb, so that a page opened on top of it from the menu can continue its trail.
+/// <summary>
+/// A page model with a breadcrumb.
+/// </summary>
 public interface IBreadcrumbPageModel
 {
+    /// <summary>
+    /// The breadcrumb trail that leads to the page, or "" if the page has none.
+    /// </summary>
     string Breadcrumb { get; }
 }

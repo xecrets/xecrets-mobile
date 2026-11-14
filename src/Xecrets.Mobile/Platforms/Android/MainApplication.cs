@@ -38,9 +38,18 @@ using Microsoft.Maui.Hosting;
 
 namespace Xecrets.Mobile.Platforms.Android;
 
+/// <summary>
+/// The Android application, which creates the MAUI app.
+/// </summary>
+/// <param name="handle">The handle of the Java object.</param>
+/// <param name="ownership">The ownership of the handle.</param>
 [Application]
 public class MainApplication(IntPtr handle, JniHandleOwnership ownership) : MauiApplication(handle, ownership)
 {
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Registers the crash handlers first, so that a crash while the app starts is logged.
+    /// </remarks>
     public override void OnCreate()
     {
         MauiProgram.CrashLog.RegisterHandlers();

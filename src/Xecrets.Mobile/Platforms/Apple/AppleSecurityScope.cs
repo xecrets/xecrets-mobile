@@ -34,10 +34,18 @@ using Foundation;
 
 namespace Xecrets.Mobile.Platforms.Apple;
 
+/// <summary>
+/// Accesses the security-scoped resource of a url while the scope is not disposed.
+/// </summary>
+/// <param name="url">The url whose resource to access, or null for no access.</param>
 internal sealed class AppleSecurityScope(NSUrl? url) : IDisposable
 {
     private bool _isAccessing = url?.StartAccessingSecurityScopedResource() ?? false;
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Stops accessing the resource, if it was accessed.
+    /// </remarks>
     public void Dispose()
     {
         if (_isAccessing)

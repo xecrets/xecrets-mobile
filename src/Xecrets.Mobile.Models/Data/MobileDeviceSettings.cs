@@ -42,6 +42,10 @@ internal sealed class MobileDeviceSettings(IDeviceSettingsStore dataStore) : IDe
     private readonly Lazy<Dictionary<string, string>> _settings =
         new(() => new Dictionary<string, string>(dataStore.ReadDeviceValues()));
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// A setting that is not set is "". Setting a value persists it before returning.
+    /// </remarks>
     public string this[string key]
     {
         get => _settings.Value.GetValueOrDefault(key, string.Empty);
@@ -57,8 +61,10 @@ internal sealed class MobileDeviceSettings(IDeviceSettingsStore dataStore) : IDe
         }
     }
 
+    /// <inheritdoc/>
     public void Clear() => Clear(persist: true);
 
+    /// <inheritdoc/>
     public void Clear(bool persist)
     {
         _settings.Value.Clear();

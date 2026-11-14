@@ -42,7 +42,7 @@ namespace Xecrets.Mobile.Services;
 internal sealed class MobileCultureCoordinator(IXecretsDataStore dataStore, Cultures cultures)
 {
     /// <summary>
-    /// Applies the persisted culture before application UI is constructed.
+    /// Applies the persisted culture, which requires to be done before the user interface of the app is created.
     /// </summary>
     /// <returns>The canonical culture name that was applied.</returns>
     public async Task<string> ApplySavedAsync()

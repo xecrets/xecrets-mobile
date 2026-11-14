@@ -63,6 +63,9 @@ namespace Xecrets.Mobile.Platforms.Android;
 [MetaData("android.support.FILE_PROVIDER_PATHS", Resource = "@xml/quick_view_file_paths")]
 public class QuickViewFileProvider : FileProvider
 {
+    /// <summary>
+    /// The authority of the uris of the provider, which is that of its manifest entry.
+    /// </summary>
     public static string Authority => $"{Platform.AppContext.PackageName}.viewProvider";
 
     private static readonly string[] _defaultColumns =
@@ -77,11 +80,12 @@ public class QuickViewFileProvider : FileProvider
     // Query and OpenAssetFile both need the UTF-8 size, and may be called on different binder threads.
     private readonly ConcurrentDictionary<string, (DateTime LastWriteTimeUtc, long Size)> _utf8Sizes = new();
 
-    /// <summary>
+    /// <inheritdoc/>
+    /// <remarks>
     /// Viewers ignore a charset parameter, so text in UTF-16 or UTF-32 is converted to UTF-8 as it is read, through a
     /// pipe rather than a converted copy. Other files are opened as is. A pipe has no size of its own, and viewers such
     /// as Google Drive's fail without one, so the size is declared.
-    /// </summary>
+    /// </remarks>
     public override AssetFileDescriptor? OpenAssetFile(AndroidUri uri, string mode)
     {
         if (mode != "r" || GetSourceEncoding(uri) is not Encoding encoding)
@@ -155,6 +159,11 @@ public class QuickViewFileProvider : FileProvider
         return size;
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Returns the document columns that viewers need, which the plain <see cref="FileProvider"/> does not, with the
+    /// size of text converted to UTF-8.
+    /// </remarks>
     public override ICursor Query(
         AndroidUri? uri,
         string[]? projection,

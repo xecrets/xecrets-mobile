@@ -44,6 +44,9 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile;
 
+/// <summary>
+/// The application, with a single window that shows the app shell once the app is initialized.
+/// </summary>
 internal partial class App
 {
     private readonly ITransientFileService _transientFileService;
@@ -54,6 +57,9 @@ internal partial class App
     private readonly IServiceProvider _services;
     private readonly MobileCultureCoordinator _cultureCoordinator;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="App"/> class, and registers the crash handlers of the platform.
+    /// </summary>
     public App(
         ITransientFileService transientFileService,
         IUserInterfaceService userInterfaceService,

@@ -33,14 +33,22 @@ using System;
 namespace Xecrets.Mobile;
 
 /// <summary>
-/// Guards code that calls into other processes, such as document providers, against running on the main thread.
+/// Guards code that calls into other processes, such as document providers, against running on the main thread, and
+/// code that shows platform UI against running off it.
 /// </summary>
 internal static class ThreadGuard
 {
     private static int? _mainThreadId;
 
+    /// <summary>
+    /// Sets the main thread.
+    /// </summary>
+    /// <param name="managedThreadId">The managed thread id of the main thread.</param>
     public static void SetMainThread(int managedThreadId) => _mainThreadId = managedThreadId;
 
+    /// <summary>
+    /// Throws if called on the main thread.
+    /// </summary>
     /// <exception cref="InvalidOperationException">On the main thread, or the main thread is not yet known.</exception>
     public static void ThrowIfMainThread()
     {
@@ -55,6 +63,10 @@ internal static class ThreadGuard
         }
     }
 
+    /// <summary>
+    /// Throws if called off the main thread.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Off the main thread, or the main thread is not yet known.</exception>
     public static void ThrowIfNotMainThread()
     {
         if (_mainThreadId is not { } mainThreadId)

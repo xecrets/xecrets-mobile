@@ -30,10 +30,28 @@
 
 namespace Xecrets.Mobile.Models.Models;
 
+/// <summary>
+/// The outcome of picking a folder.
+/// </summary>
 internal enum WorkFolderResultStatus
 {
+    /// <summary>
+    /// A folder was picked and can be used.
+    /// </summary>
     IsValid,
+
+    /// <summary>
+    /// A folder was picked, but cannot be written to.
+    /// </summary>
     NoAccess,
+
+    /// <summary>
+    /// What was picked is not a folder that can be used.
+    /// </summary>
     NotFolder,
+
+    /// <summary>
+    /// The user canceled.
+    /// </summary>
     Canceled,
 }

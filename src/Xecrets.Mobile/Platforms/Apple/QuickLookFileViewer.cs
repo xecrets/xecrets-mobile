@@ -44,20 +44,38 @@ using Platform = Microsoft.Maui.ApplicationModel.Platform;
 
 namespace Xecrets.Mobile.Platforms.Apple;
 
+/// <summary>
+/// Previews files with QuickLook.
+/// </summary>
 [SupportedOSPlatform("ios")]
 [SupportedOSPlatform("maccatalyst")]
 internal static class QuickLookFileViewer
 {
+    /// <summary>
+    /// Tells if QuickLook can preview a decrypted file.
+    /// </summary>
+    /// <param name="file">The decrypted file, written to its path.</param>
+    /// <returns>True if QuickLook can preview the file, false otherwise.</returns>
     public static Task<bool> CanViewAsync(DecryptedFileInfo file) =>
         Task.FromResult(CanView(NSUrl.FromFilename(file.FilePath)));
 
+    /// <summary>
+    /// Previews a decrypted file, completing when the preview is dismissed.
+    /// </summary>
+    /// <param name="file">The decrypted file, written to its path.</param>
     public static Task ViewAsync(DecryptedFileInfo file) => ViewAsync(NSUrl.FromFilename(file.FilePath));
 
+    /// <summary>
+    /// Tells if QuickLook can preview an item.
+    /// </summary>
+    /// <param name="item">The file url of the item.</param>
+    /// <returns>True if QuickLook can preview the item, false otherwise.</returns>
     public static bool CanView(NSUrl item) => QLPreviewController.CanPreviewItem(item);
 
     /// <summary>
-    /// Previews the item, completing when the preview is dismissed.
+    /// Previews an item, completing when the preview is dismissed. Requires to be called on the main thread.
     /// </summary>
+    /// <param name="item">The file url of the item, which is accessible.</param>
     public static async Task ViewAsync(NSUrl item)
     {
         ThreadGuard.ThrowIfNotMainThread();

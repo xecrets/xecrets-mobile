@@ -45,10 +45,25 @@ namespace Xecrets.Mobile.Platforms.Windows;
 [SupportedOSPlatform("windows10.0.19041")]
 internal static class WindowsFileLocation
 {
+    /// <summary>
+    /// Tells where a picked file is stored.
+    /// </summary>
+    /// <param name="file">The file.</param>
+    /// <returns>The file, with its path as the id and where it is stored.</returns>
     public static FileReference Locate(StorageFile file) => Locate(file.Path, file.Name);
 
+    /// <summary>
+    /// Tells where a picked folder is stored.
+    /// </summary>
+    /// <param name="folder">The folder.</param>
+    /// <returns>The folder, with its path as the id, its display name, and where it is stored.</returns>
     public static FileReference Locate(StorageFolder folder) => Locate(folder.Path, folder.DisplayName);
 
+    /// <summary>
+    /// Tells where a listed file is stored.
+    /// </summary>
+    /// <param name="file">The file.</param>
+    /// <returns>The file, with its full path as the id and where it is stored.</returns>
     public static FileReference Locate(FileInfo file) => Locate(file.FullName, file.Name);
 
     private static FileReference Locate(string path, string name)

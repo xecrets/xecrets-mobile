@@ -41,8 +41,15 @@ using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Platforms.Apple;
 
+/// <summary>
+/// Shows a <see cref="FileStateSelector"/> as a segmented control.
+/// </summary>
 internal sealed class AppleFileStateSelectorHandler() : ViewHandler<FileStateSelector, UISegmentedControl>(Mapper)
 {
+    /// <summary>
+    /// Maps <see cref="FileStateSelector.SelectedState"/> to the selected segment, in addition to the properties of any
+    /// view.
+    /// </summary>
     public static readonly IPropertyMapper<FileStateSelector, AppleFileStateSelectorHandler> Mapper =
         new PropertyMapper<FileStateSelector, AppleFileStateSelectorHandler>(ViewMapper)
         {

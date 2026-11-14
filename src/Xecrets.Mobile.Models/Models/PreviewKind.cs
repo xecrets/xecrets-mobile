@@ -30,10 +30,28 @@
 
 namespace Xecrets.Mobile.Models.Models;
 
+/// <summary>
+/// How a decrypted file is previewed.
+/// </summary>
 public enum PreviewKind
 {
+    /// <summary>
+    /// There is no file to preview.
+    /// </summary>
     Unknown,
+
+    /// <summary>
+    /// An image.
+    /// </summary>
     Image,
+
+    /// <summary>
+    /// Text held in memory, which the app shows and edits.
+    /// </summary>
     Text,
+
+    /// <summary>
+    /// A file that the app shows neither as an image nor as text.
+    /// </summary>
     External,
 }

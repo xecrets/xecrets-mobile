@@ -33,10 +33,15 @@ using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Models.Utilities;
 
+/// <summary>
+/// Describes the file being previewed.
+/// </summary>
 internal static class PreviewMetadataFormatter
 {
     /// <summary>
     /// Describes the type and size of the file being previewed.
     /// </summary>
+    /// <param name="state">The preview.</param>
+    /// <returns>The MIME type and the size text of the file.</returns>
     public static string Format(IPreviewState state) => $"{state.File.ContentType} {state.File.FileSize.ToSizeText()}";
 }

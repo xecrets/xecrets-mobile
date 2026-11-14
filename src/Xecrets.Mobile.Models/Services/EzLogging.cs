@@ -36,8 +36,9 @@ using Xecrets.Mobile.Models.Utilities;
 namespace Xecrets.Mobile.Models.Services;
 
 /// <summary>
-/// Logs to log.txt in the given folder, which is rotated before it grows past 1 MB.
+/// Logs to log.txt in a folder, which is rotated before it grows past 1 MB.
 /// </summary>
+/// <param name="directory">The folder of the log files, which is created when needed.</param>
 public sealed class EzLogging(string directory) : IEzLogging
 {
     private const long _maxLogLength = 1024 * 1024;

@@ -58,17 +58,33 @@ using Xecrets.Words;
 
 namespace Xecrets.Mobile;
 
+/// <summary>
+/// Creates the MAUI app, with its services.
+/// </summary>
 internal static class MauiProgram
 {
+    /// <summary>
+    /// The log of the app, which is there before the services are.
+    /// </summary>
     public static IEzLogging Log { get; } = new EzLogging(LogDirectory);
 
+    /// <summary>
+    /// The crash logs of the app, which are there before the services are.
+    /// </summary>
     public static ICrashLogService CrashLog { get; } = new CrashLogService(LogDirectory, Log);
 
+    /// <summary>
+    /// The services of the app, or null until <see cref="CreateMauiApp"/> has created them.
+    /// </summary>
     public static IServiceProvider? Services { get; private set; }
 
     // The app's own log is kept with the crash logs, so that both are found together.
     private static string LogDirectory => Path.Combine(FileSystem.Current.CacheDirectory, "XecretsLogs");
 
+    /// <summary>
+    /// Creates the MAUI app and its services. Requires to be called on the main thread, once.
+    /// </summary>
+    /// <returns>The app.</returns>
     public static MauiApp CreateMauiApp()
     {
         // Each platform creates the app on its main thread.

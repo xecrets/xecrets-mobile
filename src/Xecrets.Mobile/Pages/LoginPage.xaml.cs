@@ -40,14 +40,23 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
+/// <summary>
+/// The page that signs in to the local profile, or verifies its password.
+/// </summary>
 internal partial class LoginPage : IQueryAttributable
 {
     private readonly IPlatformServices _platformServices;
 
     private readonly IPageHeaderService _pageHeaderService;
 
+    /// <summary>
+    /// The entry of the password.
+    /// </summary>
     public Entry PasswordTextEntry => PasswordEntryControl.Entry;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LoginPage"/> class, which signs in, with the standard header.
+    /// </summary>
     public LoginPage(
         LoginPageModel model,
         IPlatformServices platformServices,
@@ -62,6 +71,11 @@ internal partial class LoginPage : IQueryAttributable
         pageHeaderService.ApplyStandardHeader(this);
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// A <see cref="ProfileAction.Change"/> or <see cref="ProfileAction.Delete"/> payload makes the page verify the
+    /// password before that action. Without one, the page signs in.
+    /// </remarks>
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
         if (!query.TryGetValue(nameof(NavigationParameter.Payload), out object? payload))

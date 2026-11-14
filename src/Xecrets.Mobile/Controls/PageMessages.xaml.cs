@@ -32,14 +32,27 @@ using Microsoft.Maui.Controls;
 
 namespace Xecrets.Mobile.Controls;
 
+/// <summary>
+/// The message and status texts of a page, as of an <see cref="Models.Abstractions.IStatusTextPageModel"/>. Hidden
+/// while both are empty, so that it takes no layout spacing in the parent.
+/// </summary>
 internal sealed partial class PageMessages
 {
+    /// <summary>
+    /// Identifies the <see cref="MessageText"/> bindable property.
+    /// </summary>
     public static readonly BindableProperty MessageTextProperty = BindableProperty.Create(
         nameof(MessageText), typeof(string), typeof(PageMessages), propertyChanged: OnTextChanged);
 
+    /// <summary>
+    /// Identifies the <see cref="StatusText"/> bindable property.
+    /// </summary>
     public static readonly BindableProperty StatusTextProperty = BindableProperty.Create(
         nameof(StatusText), typeof(string), typeof(PageMessages), propertyChanged: OnTextChanged);
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PageMessages"/> class, hidden until it has a text.
+    /// </summary>
     public PageMessages()
     {
         InitializeComponent();
@@ -53,12 +66,18 @@ internal sealed partial class PageMessages
     private void UpdateVisibility() =>
         IsVisible = !string.IsNullOrEmpty(MessageText) || !string.IsNullOrEmpty(StatusText);
 
+    /// <summary>
+    /// The message, or "" for none.
+    /// </summary>
     public string MessageText
     {
         get => (string)GetValue(MessageTextProperty);
         set => SetValue(MessageTextProperty, value);
     }
 
+    /// <summary>
+    /// The status, or "" for none.
+    /// </summary>
     public string StatusText
     {
         get => (string)GetValue(StatusTextProperty);

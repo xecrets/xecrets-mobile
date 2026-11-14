@@ -42,6 +42,9 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Services;
 
+/// <summary>
+/// The local profile of the app, with the profile signed in held by the <see cref="ProfileSession"/>.
+/// </summary>
 internal sealed class ProfileService(
     ICoreServices coreServices,
     IXecretsDataStore dataStore,
@@ -50,18 +53,24 @@ internal sealed class ProfileService(
     IEzLogging log)
     : IProfileService
 {
+    /// <inheritdoc/>
     public string CurrentEmail => session.Email;
 
+    /// <inheritdoc/>
     public string CurrentPassword => session.Password;
 
+    /// <inheritdoc/>
     public bool IsAuthenticated => session.IsAuthenticated;
 
+    /// <inheritdoc/>
     public Task<bool> HasProfileAsync()
         => profileStore.HasProfileAsync();
 
+    /// <inheritdoc/>
     public Task<SignInKey?> LoadProfileAsync()
         => profileStore.LoadAsync();
 
+    /// <inheritdoc/>
     public async Task<ProfileActionResult> CreateProfileAsync(string email, string password)
     {
         if (!coreServices.TryParseEmail(email, out string? parsedEmail) || string.IsNullOrWhiteSpace(parsedEmail))
@@ -80,8 +89,11 @@ internal sealed class ProfileService(
         return new ProfileActionResult(ProfileActionStatus.Success);
     }
 
-    // As when creating a profile, but the existing key pair is kept, so that everything encrypted with it can still be
-    // opened. The old password is kept among the extra passwords, for files encrypted with it.
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The key pair is kept so that everything encrypted with it can still be decrypted, and the old password is kept
+    /// among the extra passwords for the files encrypted with it.
+    /// </remarks>
     public async Task<ProfileActionResult> ChangeProfileAsync(string email, string password)
     {
         if (!coreServices.TryParseEmail(email, out string? parsedEmail) || string.IsNullOrWhiteSpace(parsedEmail))
@@ -124,6 +136,7 @@ internal sealed class ProfileService(
         return result;
     }
 
+    /// <inheritdoc/>
     public Task<ProfileActionResult> LoginAsync(string password)
         => SignInAsync(password, []);
 
@@ -155,9 +168,11 @@ internal sealed class ProfileService(
         return new ProfileActionResult(ProfileActionStatus.Success);
     }
 
-    // As on the desktop, the old key pair is kept, among the private keys since it was signed in with, but a new one is
-    // used from now on. The extra passwords are encrypted with the forgotten password, and are cleared. It's signed out,
-    // and the new password signs in.
+    /// <inheritdoc/>
+    /// <remarks>
+    /// As on the desktop. The old key pair is among the private keys, since it was signed in with. The extra passwords
+    /// are cleared, since they are protected with the forgotten password.
+    /// </remarks>
     public async Task ResetProfileAsync(string password)
     {
         UserSummary user = (await dataStore.GetUsersAsync())[0];
@@ -238,16 +253,19 @@ internal sealed class ProfileService(
 
     private static int CountKeys(PrivateKeyData privateKeys) => privateKeys.Accounts.Sum(account => account.Keys.Count);
 
+    /// <inheritdoc/>
     public void SignOut()
         => session.SignOut();
 
+    /// <inheritdoc/>
     public Identity GetIdentity()
         => session.CreateIdentity();
 
+    /// <inheritdoc/>
     public IReadOnlyList<PasswordUsage> GetExtraPasswords()
         => session.ExtraCredentials!.Value.Passwords;
 
-    // As when adding a password, a new one also decrypts any private keys encrypted with it.
+    /// <inheritdoc/>
     public async Task RecordExtraPasswordUseAsync(string password)
     {
         if (await CountExtraPasswordUseAsync(password, "on use"))
@@ -277,8 +295,7 @@ internal sealed class ProfileService(
         return false;
     }
 
-    // A password added in advance is not counted as used until it decrypts a file. Added, it also decrypts any private
-    // keys encrypted with it, such as one kept from before a password reset.
+    /// <inheritdoc/>
     public async Task AddExtraPasswordAsync(string password)
     {
         await using (IEditScope<ExtraCredentials> credentials = session.ExtraCredentials!.BeginEdit())
@@ -294,6 +311,7 @@ internal sealed class ProfileService(
         await UpdateSessionPrivateKeysAsync();
     }
 
+    /// <inheritdoc/>
     public async Task RemoveExtraPasswordAsync(string password)
     {
         await using IEditScope<ExtraCredentials> credentials = session.ExtraCredentials!.BeginEdit();
@@ -303,6 +321,7 @@ internal sealed class ProfileService(
         log.Information($"Extra password removed, {credentials.Value.Passwords.Count} in list");
     }
 
+    /// <inheritdoc/>
     public async Task<PrivateKeyCounts> GetPrivateKeyCountsAsync()
     {
         PrivateKeyData privateKeys = (await session.UserStore!.LoadPrivateKeysAsync()).Value;
@@ -329,6 +348,7 @@ internal sealed class ProfileService(
         log.Information($"Extra password added {cause}, {credentials.Passwords.Count} in list");
     }
 
+    /// <inheritdoc/>
     public PublicKey GetPublicKey() =>
         session.ProfileKeyPair is not null
             ? session.ProfileKeyPair.PublicKey

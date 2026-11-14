@@ -49,6 +49,10 @@ public sealed class InstallationService(IDeviceSettingsStore dataStore, IFileSer
     /// </summary>
     internal const int DeviceSettingsVersion = 1;
 
+    /// <summary>
+    /// Creates the folder of the device-specific settings, kept out of backups, and replaces the settings with new ones
+    /// if they are of another version or were written on another device.
+    /// </summary>
     public async Task EnsureAsync()
     {
         Directory.CreateDirectory(fileService.DeviceDirectory);

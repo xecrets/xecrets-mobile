@@ -39,8 +39,9 @@ using Xecrets.Words.Abstractions;
 namespace Xecrets.Mobile.Models.PageModels;
 
 /// <summary>
-/// Sets a new password, with a new key pair, for the profile when the password is forgotten. As on the desktop, the old
-/// password is still needed for files encrypted with it. It's done signed out, and then the new password signs in.
+/// The page model of the page that sets a new password, with a new key pair, for the profile when the password is
+/// forgotten. As on the desktop, the old password is still needed for files encrypted with it. It is done signed out,
+/// and then the new password signs in.
 /// </summary>
 public partial class ResetPasswordPageModel(
     IProfileService profileService,
@@ -48,15 +49,27 @@ public partial class ResetPasswordPageModel(
     IUserInterfaceService userInterfaceService)
     : NewPasswordPageModelBase(strengthMeter, userInterfaceService), IPageInformationPageModel
 {
+    /// <inheritdoc/>
     public string Heading => MobileTexts.HeadingEmergencyReset;
 
+    /// <inheritdoc/>
     public string Information => MobileTexts.ToolTipEmergencyReset;
 
+    /// <summary>
+    /// The email of the local profile.
+    /// </summary>
     [ObservableProperty]
     public partial string Email { get; private set; } = string.Empty;
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The password is always new.
+    /// </remarks>
     public override bool IsEditable => true;
 
+    /// <summary>
+    /// Why the last reset failed, or "" if it did not.
+    /// </summary>
     [ObservableProperty]
     public partial string ErrorText { get; private set; } = string.Empty;
 
@@ -96,5 +109,6 @@ public partial class ResetPasswordPageModel(
 
     private bool CanReset() => !IsBusy && HasPasswords;
 
+    /// <inheritdoc/>
     protected override void OnPasswordsChanged() => ResetCommand.NotifyCanExecuteChanged();
 }

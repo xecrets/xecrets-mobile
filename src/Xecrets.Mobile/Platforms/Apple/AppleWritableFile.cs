@@ -43,35 +43,43 @@ namespace Xecrets.Mobile.Platforms.Apple;
 /// A file accessed through a grant: that of one of My folders containing it, or, for a file in none of them, the url
 /// a picker gave for it.
 /// </summary>
+/// <param name="url">The file url of the file.</param>
+/// <param name="grant">The url whose security scope gives the access to the file.</param>
 internal sealed class AppleWritableFile(NSUrl url, NSUrl grant) : IWritableFile
 {
     private string Path => url.Path!;
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The scope accesses the security-scoped resource of the grant.
+    /// </remarks>
     public IDisposable AcquireAccess() => new AppleSecurityScope(grant);
 
-    // Called while accessing the grant, as by the wiper.
+    /// <inheritdoc/>
     public Task<bool> CanWriteAsync() => Task.FromResult(
         NSFileManager.DefaultManager.IsReadableFile(Path) &&
         NSFileManager.DefaultManager.IsWritableFile(Path));
 
-    /// <summary>
+    /// <inheritdoc/>
+    /// <remarks>
     /// Whether a file can be deleted is told by whether its folder can be written. For a file granted by itself, the
     /// folder is always reported as not writable, but the grant still allows deleting the file, as measured with all
-    /// providers. Then whether the file itself can be written is checked instead. A file that is moved to the trash
-    /// may not be on the device yet, as with OneDrive and Google Drive, and then tells nothing, so it is only seen
-    /// whether it can be when it is.
-    /// </summary>
+    /// providers, so whether the file itself can be written is checked instead. A file that is moved to the trash may
+    /// not be on the device yet, as with OneDrive and Google Drive, and then tells nothing, so true is returned for it.
+    /// </remarks>
     public Task<bool> CanDeleteAsync() => Task.FromResult(
         !IsDeletedByRemoving() ||
         (url.AbsoluteString == grant.AbsoluteString
             ? NSFileManager.DefaultManager.IsWritableFile(Path)
             : NSFileManager.DefaultManager.IsDeletableFile(Path)));
 
+    /// <inheritdoc/>
     public Task<long?> GetLengthAsync() => Task.FromResult<long?>(new FileInfo(Path).Length);
 
-    /// <summary>
+    /// <inheritdoc/>
+    /// <remarks>
     /// The whole file is written within one coordinated write.
-    /// </summary>
+    /// </remarks>
     public Task OverwriteAsync(Action<Stream> overwrite) =>
         url.WriteCoordinatedAsync(default, coordinatedUrl =>
         {
@@ -79,13 +87,14 @@ internal sealed class AppleWritableFile(NSUrl url, NSUrl grant) : IWritableFile
             overwrite(stream);
         });
 
-    /// <summary>
+    /// <inheritdoc/>
+    /// <remarks>
     /// Removes the other versions of the file that the storage keeps, such as iCloud does, and then the file itself,
     /// coordinated with any other process presenting it. An error may not pass through the native coordinator, so it is
     /// set as the result instead. Storage where removing the file was not verified to actually delete it is asked to
-    /// move it to its trash instead. OneDrive and Google Drive report a removed file as deleted, but keep it,
-    /// while they do delete a file moved to the trash.
-    /// </summary>
+    /// move it to its trash instead. OneDrive and Google Drive report a removed file as deleted, but keep it, while
+    /// they do delete a file moved to the trash.
+    /// </remarks>
     public async Task DeleteAsync()
     {
         if (!IsDeletedByRemoving())

@@ -33,18 +33,33 @@ using Xecrets.Mobile.Models.Abstractions;
 namespace Xecrets.Mobile.Models.Services;
 
 /// <summary>
-/// A file the app itself owns in its local storage, such as in the cache, accessed by its path.
+/// A file accessed by its path, which needs no grant.
 /// </summary>
+/// <param name="path">The full path of the file.</param>
 public sealed class LocalWritableFile(string path) : IWritableFile
 {
+    /// <inheritdoc/>
+    /// <remarks>
+    /// No access is needed, so the scope does nothing.
+    /// </remarks>
     public IDisposable AcquireAccess() => new EmptyAccessScope();
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// A file can be written unless it is read-only.
+    /// </remarks>
     public Task<bool> CanWriteAsync() => Task.FromResult(IsWritable());
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// A file can be deleted unless it is read-only.
+    /// </remarks>
     public Task<bool> CanDeleteAsync() => Task.FromResult(IsWritable());
 
+    /// <inheritdoc/>
     public Task<long?> GetLengthAsync() => Task.FromResult<long?>(new FileInfo(path).Length);
 
+    /// <inheritdoc/>
     public Task OverwriteAsync(Action<Stream> overwrite) =>
         Task.Run(() =>
         {
@@ -52,6 +67,7 @@ public sealed class LocalWritableFile(string path) : IWritableFile
             overwrite(stream);
         });
 
+    /// <inheritdoc/>
     public Task DeleteAsync()
     {
         File.Delete(path);

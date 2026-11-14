@@ -36,8 +36,23 @@ namespace Xecrets.Mobile.Models.Models;
 /// </summary>
 public enum FlowOrigin
 {
+    /// <summary>
+    /// The home page.
+    /// </summary>
     Home,
+
+    /// <summary>
+    /// My folders.
+    /// </summary>
     MyFolders,
+
+    /// <summary>
+    /// The recent files.
+    /// </summary>
     RecentFiles,
+
+    /// <summary>
+    /// A file received from another app.
+    /// </summary>
     ReceivedFile,
 }

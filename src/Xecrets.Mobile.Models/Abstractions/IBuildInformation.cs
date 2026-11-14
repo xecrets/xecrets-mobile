@@ -30,23 +30,53 @@
 
 namespace Xecrets.Mobile.Models.Abstractions;
 
+/// <summary>
+/// Information about the build of the app and the device it runs on.
+/// </summary>
 public interface IBuildInformation
 {
+    /// <summary>
+    /// True if the app is a Debug build, false otherwise.
+    /// </summary>
     bool IsDebug { get; }
 
+    /// <summary>
+    /// True if the app is a beta version, false otherwise.
+    /// </summary>
     bool IsBeta { get; }
 
+    /// <summary>
+    /// The product name of the app, including that it is a beta when <see cref="IsBeta"/> is true.
+    /// </summary>
     string ProductName { get; }
 
+    /// <summary>
+    /// The version of the app.
+    /// </summary>
     string Version { get; }
 
+    /// <summary>
+    /// The operating system, its version and the kind of device.
+    /// </summary>
     string Platform { get; }
 
+    /// <summary>
+    /// The publisher of the app.
+    /// </summary>
     string Publisher { get; }
 
+    /// <summary>
+    /// The copyright notice of the app.
+    /// </summary>
     string Copyright { get; }
 
+    /// <summary>
+    /// The license of the app.
+    /// </summary>
     string License { get; }
 
+    /// <summary>
+    /// The URL of the source code repository of the app.
+    /// </summary>
     string SourceCodeUrl { get; }
 }

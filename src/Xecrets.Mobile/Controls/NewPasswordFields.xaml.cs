@@ -36,24 +36,40 @@ namespace Xecrets.Mobile.Controls;
 
 /// <summary>
 /// The new password of the profile, its strength and its confirmation, bound to an
-/// <see cref="Models.Abstractions.INewPasswordPageModel"/>, on the pages that set the password.
+/// <see cref="Models.Abstractions.INewPasswordPageModel"/>.
 /// </summary>
 internal sealed partial class NewPasswordFields
 {
+    /// <summary>
+    /// Identifies the <see cref="ReturnCommand"/> bindable property.
+    /// </summary>
     public static readonly BindableProperty ReturnCommandProperty = BindableProperty.Create(
         nameof(ReturnCommand),
         typeof(ICommand),
         typeof(NewPasswordFields));
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="NewPasswordFields"/> class, bound to the
+    /// <see cref="Models.Abstractions.INewPasswordPageModel"/> that is its binding context.
+    /// </summary>
     public NewPasswordFields()
     {
         InitializeComponent();
     }
 
+    /// <summary>
+    /// The entry of the password.
+    /// </summary>
     public PasswordEntry PasswordEntry => PasswordEntryControl;
 
+    /// <summary>
+    /// The entry of the confirmation.
+    /// </summary>
     public PasswordEntry ConfirmPasswordEntry => ConfirmPasswordEntryControl;
 
+    /// <summary>
+    /// The text field of the entry of the password.
+    /// </summary>
     public Entry PasswordTextEntry => PasswordEntryControl.Entry;
 
     /// <summary>

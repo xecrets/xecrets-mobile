@@ -34,6 +34,9 @@ using System;
 
 namespace Xecrets.Mobile.Platforms.MacCatalyst;
 
+/// <summary>
+/// The entry point of the app on Mac Catalyst, which registers the crash handlers before anything else runs.
+/// </summary>
 public class Program
 {
     private static void Main(string[] args)

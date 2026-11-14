@@ -49,14 +49,21 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Platforms.Windows;
 
-// This app is built and shipped unpackaged on Windows (WindowsPackageType is None), so it has no package
-// identity. Windows.Storage.AccessCache.StorageApplicationPermissions (the "future access list" that the other
-// platform services persist their access grants through) requires that identity to resolve. An unpackaged Win32
-// process runs with the user's own token, though, so there is no grant to persist in the first place: a plain
-// path is all that is needed to regain access on a later run.
+/// <summary>
+/// Files and folders are paths, which are their ids. The app is unpackaged, so it runs with the user's own token, and
+/// a path is all that is needed to access a file again, without any grant.
+/// </summary>
+/// <remarks>
+/// An unpackaged app (WindowsPackageType is None) has no package identity, which
+/// <see cref="global::Windows.Storage.AccessCache.StorageApplicationPermissions"/> requires.
+/// </remarks>
 [SupportedOSPlatform("windows10.0.19041")]
 internal sealed class WindowsFileAccess(WorkFolderStorage storage, ICrashLogService crashLogService) : IFileAccess
 {
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The picker cannot be pointed at a folder, but remembers where it was last used for each initial folder.
+    /// </remarks>
     public async Task<FileReference?> PickFileAsync(string initialFolder, FilePickerKind kind)
     {
         ThreadGuard.ThrowIfNotMainThread();
@@ -71,7 +78,10 @@ internal sealed class WindowsFileAccess(WorkFolderStorage storage, ICrashLogServ
         return file is null ? null : WindowsFileLocation.Locate(file);
     }
 
-    // The folder picker shows only folders, so the user picks a file in the folder instead, seeing the files there.
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The folder picker shows no files, so the user picks a file in the folder instead.
+    /// </remarks>
     public async Task<WorkFolderResult> PickFolderAsync(string initialFolder, FilePickerKind kind)
     {
         FileReference? file = await PickFileAsync(initialFolder, kind);
@@ -99,6 +109,7 @@ internal sealed class WindowsFileAccess(WorkFolderStorage storage, ICrashLogServ
         });
     }
 
+    /// <inheritdoc/>
     public async Task<WorkFolder?> FindFolderAsync(string fileId) =>
         (await storage.LoadFoldersAsync())
             .Where(folder => fileId.StartsWith(
@@ -107,6 +118,7 @@ internal sealed class WindowsFileAccess(WorkFolderStorage storage, ICrashLogServ
             .OrderByDescending(folder => folder.Id.Length)
             .FirstOrDefault();
 
+    /// <inheritdoc/>
     public async Task<WorkFolder?> FindFolderOfFolderAsync(string folderId) =>
         (await storage.LoadFoldersAsync())
             .Where(folder =>
@@ -120,10 +132,16 @@ internal sealed class WindowsFileAccess(WorkFolderStorage storage, ICrashLogServ
             .OrderByDescending(folder => folder.Id.Length)
             .FirstOrDefault();
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// A path is the same in a folder, so the file is returned as it is.
+    /// </remarks>
     public Task<FileReference> GetFileInFolderAsync(WorkFolder folder, FileReference file) => Task.FromResult(file);
 
-    // Listing the folders reads the storage, which is not done on the main thread. Names are compared as NTFS does by
-    // default, ignoring case.
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The folders are read off the main thread. Names are compared as NTFS does by default, ignoring case.
+    /// </remarks>
     public Task<IReadOnlyList<FolderListing>> ListFolderAsync(string folderId, FolderScope scope) =>
         Task.Run(() => LocalFolderLister.List(
             new DirectoryInfo(folderId),
@@ -132,8 +150,10 @@ internal sealed class WindowsFileAccess(WorkFolderStorage storage, ICrashLogServ
             WindowsFileLocation.Locate,
             StringComparer.OrdinalIgnoreCase));
 
+    /// <inheritdoc/>
     public Task<string> GetParentFolderAsync(string fileId) => Task.FromResult(Path.GetDirectoryName(fileId) ?? string.Empty);
 
+    /// <inheritdoc/>
     public IReadOnlyList<string> GetPathSegments(string id, string rememberedName)
     {
         string[] segments = id.Split(
@@ -145,19 +165,38 @@ internal sealed class WindowsFileAccess(WorkFolderStorage storage, ICrashLogServ
             : [.. segments, rememberedName];
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The paths are compared ignoring case.
+    /// </remarks>
     public Task<bool> IsSameFileAsync(string fileId, string otherFileId) =>
         Task.FromResult(string.Equals(fileId, otherFileId, StringComparison.OrdinalIgnoreCase));
 
-    // The path is all that is needed to access the file again.
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The path is all that is needed to access the file again, so the access is always kept.
+    /// </remarks>
     public Task<bool> KeepFileGrantAsync(string fileId) => Task.FromResult(true);
 
-    // A path tells where the file is from the start.
+    /// <inheritdoc/>
+    /// <remarks>
+    /// A path tells where the file is from the start, so the file is returned as it is.
+    /// </remarks>
     public Task<FileReference> LocateAgainAsync(FileReference file) => Task.FromResult(file);
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The path is all that is needed to access a file, so there always is access.
+    /// </remarks>
     public bool HasFileGrant(string fileId) => true;
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// No grants are held, so there is nothing to release.
+    /// </remarks>
     public Task ReleaseUnusedGrantsAsync(GrantReferences references) => Task.CompletedTask;
 
+    /// <inheritdoc/>
     public Task<Stream> OpenReadAsync(string fileId)
     {
         try
@@ -170,12 +209,14 @@ internal sealed class WindowsFileAccess(WorkFolderStorage storage, ICrashLogServ
         }
     }
 
+    /// <inheritdoc/>
     public Task<FileTimes> GetTimesAsync(string fileId) =>
         Task.FromResult(new FileTimes(
             File.GetCreationTimeUtc(fileId),
             File.GetLastAccessTimeUtc(fileId),
             File.GetLastWriteTimeUtc(fileId)));
 
+    /// <inheritdoc/>
     public Task SetSupportedTimesAsync(string fileId, FileTimes times)
     {
         File.SetCreationTimeUtc(fileId, times.CreationTimeUtc);
@@ -184,6 +225,7 @@ internal sealed class WindowsFileAccess(WorkFolderStorage storage, ICrashLogServ
         return Task.CompletedTask;
     }
 
+    /// <inheritdoc/>
     public async Task<byte[]> ReadStartAsync(string fileId, int count)
     {
         await using Stream stream = await OpenReadAsync(fileId);
@@ -191,6 +233,10 @@ internal sealed class WindowsFileAccess(WorkFolderStorage storage, ICrashLogServ
         return buffer[..await stream.ReadAtLeastAsync(buffer, count, throwOnEndOfStream: false)];
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The file is opened for reading and closed again.
+    /// </remarks>
     public async Task CheckReachableAsync(string fileId)
     {
         await using (await OpenReadAsync(fileId))
@@ -198,11 +244,17 @@ internal sealed class WindowsFileAccess(WorkFolderStorage storage, ICrashLogServ
         }
     }
 
+    /// <inheritdoc/>
     public Task<IWritableFile> OpenWriteAsync(string fileId) =>
         Task.FromResult<IWritableFile>(new LocalWritableFile(fileId));
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The folder of a file is told by its path, without looking for the file.
+    /// </remarks>
     public Task<string> GetFolderOfFileAsync(string fileId) => GetParentFolderAsync(fileId);
 
+    /// <inheritdoc/>
     public Task<string> SaveInFolderAsync(
         string folderId,
         string name,
@@ -215,6 +267,7 @@ internal sealed class WindowsFileAccess(WorkFolderStorage storage, ICrashLogServ
             return destinationPath;
         });
 
+    /// <inheritdoc/>
     public Task<string> RenameAsync(string fileId, string newName)
     {
         string renamedPath = Path.Combine(Path.GetDirectoryName(fileId)!, newName);
@@ -222,7 +275,7 @@ internal sealed class WindowsFileAccess(WorkFolderStorage storage, ICrashLogServ
         return Task.FromResult(renamedPath);
     }
 
-    // A file that could not be completely written is removed, so that what is left of it is not taken for the result.
+    /// <inheritdoc/>
     public async Task<FileReference?> SaveAsAsync(string initialFolder, string fileName, string completedFilePath)
     {
         ThreadGuard.ThrowIfNotMainThread();

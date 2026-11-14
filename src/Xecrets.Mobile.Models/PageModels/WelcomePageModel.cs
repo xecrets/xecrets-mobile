@@ -37,6 +37,10 @@ using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
+/// <summary>
+/// The page model of the welcome page, which is the introduction before a profile exists, unless initialized
+/// otherwise.
+/// </summary>
 public partial class WelcomePageModel(
     IProfileSettingsService profileSettingsService,
     IUserInterfaceService userInterfaceService)
@@ -44,18 +48,32 @@ public partial class WelcomePageModel(
 {
     private readonly IReadOnlyList<WelcomeLine> _welcomeLines = MobileTexts.WelcomeLines(userInterfaceService.IconMap);
 
+    /// <summary>
+    /// The heading, which is the first line of the welcome text.
+    /// </summary>
     public string Heading => _welcomeLines[0].Text;
 
+    /// <summary>
+    /// The paragraphs after the heading, before the first bullet line.
+    /// </summary>
     public IReadOnlyList<WelcomeLine> Introduction =>
         [.. _welcomeLines.Skip(1).TakeWhile(line => line.Icon.Length == 0)];
 
-    // From the first bullet on, so that the bullet section can be set apart from the introduction.
+    /// <summary>
+    /// The lines from the first bullet line on.
+    /// </summary>
     public IReadOnlyList<WelcomeLine> Lines =>
         [.. _welcomeLines.Skip(1).SkipWhile(line => line.Icon.Length == 0)];
 
+    /// <summary>
+    /// True if the user can choose not to see the page again, false otherwise.
+    /// </summary>
     [ObservableProperty]
     public partial bool IsDontShowAgainAvailable { get; private set; }
 
+    /// <summary>
+    /// True if the user chooses not to see the page again, false otherwise.
+    /// </summary>
     [ObservableProperty]
     public partial bool DontShowAgain { get; set; }
 
@@ -63,6 +81,11 @@ public partial class WelcomePageModel(
     // returns here. Pushed on top of another page, it is initialized with a payload and returns there.
     private bool _isIntroduction = true;
 
+    /// <summary>
+    /// Makes the page one opened on top of another page, which it returns to.
+    /// </summary>
+    /// <param name="isDontShowAgainAvailable">True if the user can choose not to see the page again, false
+    /// otherwise.</param>
     public void Initialize(bool isDontShowAgainAvailable)
     {
         _isIntroduction = false;

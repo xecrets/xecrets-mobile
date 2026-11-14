@@ -34,8 +34,17 @@ using Xecrets.Core.Models;
 
 namespace Xecrets.Mobile.Models.Data;
 
+/// <summary>
+/// Protects data by encrypting it with Xecrets.Core, for an identity.
+/// </summary>
+/// <param name="coreServices">Encrypts and decrypts.</param>
+/// <param name="identity">The password and key pairs to encrypt for, and to decrypt with.</param>
 internal sealed class CoreXecretsProtection(ICoreServices coreServices, Identity identity) : IXecretsProtection
 {
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Encrypts with the password and the public keys of the identity.
+    /// </remarks>
     public async Task<byte[]> ProtectAsync(byte[] cleartext, string originalFilename)
     {
         DateTime utcNow = DateTime.UtcNow;
@@ -55,6 +64,10 @@ internal sealed class CoreXecretsProtection(ICoreServices coreServices, Identity
         return protectedStream.ToArray();
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Decrypts with the identity.
+    /// </remarks>
     public async Task<byte[]> UnprotectAsync(byte[] protectedBytes)
     {
         await using MemoryStream protectedStream = new(protectedBytes, writable: false);

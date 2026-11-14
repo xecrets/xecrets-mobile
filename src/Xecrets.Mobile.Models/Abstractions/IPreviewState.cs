@@ -34,32 +34,48 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Abstractions;
 
+/// <summary>
+/// The preview of a decrypted file, which owns the temporary file of the preview, if any.
+/// </summary>
 public interface IPreviewState
 {
+    /// <summary>
+    /// The text of the preview, decoded as UTF-8 unless a byte order mark tells another encoding, or "" if the preview
+    /// holds no text.
+    /// </summary>
     string Text { get; }
 
+    /// <summary>
+    /// The decrypted file of the preview, or <see cref="DecryptedFileInfo.Empty"/> if there is no preview. Its
+    /// <see cref="DecryptedFileInfo.FilePath"/> is "" while the text is only held in memory.
+    /// </summary>
     DecryptedFileInfo File { get; }
 
     /// <summary>
-    /// What the file was encrypted with, so that edits are encrypted for the same recipients and master keys.
+    /// What the decrypted file is encrypted with, or <see cref="EncryptedWithParameters.Empty"/> if there is no
+    /// preview.
     /// </summary>
     EncryptedWithParameters EncryptedWith { get; }
 
+    /// <summary>
+    /// True if there is a preview, false otherwise.
+    /// </summary>
     bool IsReady { get; }
 
     /// <summary>
-    /// Makes the saved text, as it was written, the text shown, and disposes the file the earlier text was written to,
-    /// if any.
+    /// Makes saved text the text of the preview, held in memory, and disposes the temporary file the earlier text was
+    /// written to, if any.
     /// </summary>
+    /// <param name="plaintext">The text, encoded as it is saved.</param>
     void UpdateText(byte[] plaintext);
 
     /// <summary>
-    /// Marks the file shown, if any, as still in use by another app after the preview is cleared.
+    /// Marks the temporary file of the preview, if any, as still in use by another app after the preview is cleared.
     /// </summary>
     void MarkHandedOff();
 
     /// <summary>
-    /// Ends the preview, and disposes the file shown, if any.
+    /// Ends the preview, and disposes the temporary file of the preview, if any.
     /// </summary>
     void Clear();
 }

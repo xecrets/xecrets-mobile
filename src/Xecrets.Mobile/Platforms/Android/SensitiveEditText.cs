@@ -45,6 +45,11 @@ namespace Xecrets.Mobile.Platforms.Android;
 /// </summary>
 internal sealed class SensitiveEditText : MauiAppCompatEditText
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SensitiveEditText"/> class, kept out of the services that the text
+    /// is not to be passed to.
+    /// </summary>
+    /// <param name="context">The context of the view.</param>
     public SensitiveEditText(Context context) : base(context)
     {
         ImportantForAutofill = ImportantForAutofill.NoExcludeDescendants;
@@ -63,10 +68,17 @@ internal sealed class SensitiveEditText : MauiAppCompatEditText
         }
     }
 
-    // Since Android 14, autofill also triggers on views that are not important for autofill, but never on views without
-    // an autofill type.
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Always none, since Android 14 and later autofill also views that are not important for autofill, but never
+    /// views without an autofill type.
+    /// </remarks>
     public override AutofillType AutofillType => AutofillType.None;
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Text that is copied or cut is marked as sensitive.
+    /// </remarks>
     public override bool OnTextContextMenuItem(int id) =>
         this.TryCopyOrCutAsSensitive(id) || base.OnTextContextMenuItem(id);
 }

@@ -44,10 +44,14 @@ using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Utilities;
 
+/// <summary>
+/// Gives pages the standard header of the app, with a title view centered in the window and the menu as toolbar items.
+/// </summary>
 internal sealed class PageHeaderService(
     IProfileService profileService,
     IPlatformServices platformServices) : IPageHeaderService
 {
+    /// <inheritdoc/>
     public void ApplyStandardHeader(ContentPage page)
     {
         if (page.BindingContext is IPageInformationPageModel)
@@ -66,6 +70,7 @@ internal sealed class PageHeaderService(
         ApplyStandardHeaderTitle(page, profileService.IsAuthenticated ? profileService.CurrentEmail : string.Empty);
     }
 
+    /// <inheritdoc/>
     public void ApplyStandardHeaderTitle(ContentPage page, string email)
     {
         Grid titleView = new()

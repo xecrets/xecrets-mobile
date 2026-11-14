@@ -33,10 +33,14 @@ using Microsoft.Maui.Controls;
 
 namespace Xecrets.Mobile.Services;
 
-// The shell of the most recently created window, set by App when it creates the shell. Navigation and dialogs use it
-// rather than Shell.Current, which is null once the window is gone, as when Back is pressed while the app is still
-// starting and that work then continues.
+/// <summary>
+/// Holds the shell of the most recently created window, which, unlike <see cref="Shell.Current"/>, is still there once
+/// the window is gone, as when Back is pressed while the app is still starting and that work then continues.
+/// </summary>
 internal sealed class EzAppShell
 {
+    /// <summary>
+    /// The shell, which requires to be set before it is used.
+    /// </summary>
     public Shell Shell { get; set; } = null!;
 }

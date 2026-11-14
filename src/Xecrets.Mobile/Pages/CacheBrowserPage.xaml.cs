@@ -33,8 +33,14 @@ using Xecrets.Mobile.Models.PageModels;
 
 namespace Xecrets.Mobile.Pages;
 
+/// <summary>
+/// The debug page that browses the cache of the app.
+/// </summary>
 internal partial class CacheBrowserPage
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CacheBrowserPage"/> class with the standard header.
+    /// </summary>
     public CacheBrowserPage(CacheBrowserPageModel model, IPageHeaderService pageHeaderService)
         : base(model)
     {

@@ -42,12 +42,21 @@ namespace Xecrets.Mobile.Controls;
 [ContentProperty(nameof(Body))]
 internal sealed partial class PageCard
 {
+    /// <summary>
+    /// Identifies the <see cref="Title"/> bindable property.
+    /// </summary>
     public static readonly BindableProperty TitleProperty = BindableProperty.Create(
         nameof(Title), typeof(string), typeof(PageCard), string.Empty);
 
+    /// <summary>
+    /// Identifies the <see cref="BodyPadding"/> bindable property.
+    /// </summary>
     public static readonly BindableProperty BodyPaddingProperty = BindableProperty.Create(
         nameof(BodyPadding), typeof(Thickness), typeof(PageCard));
 
+    /// <summary>
+    /// Identifies the <see cref="HeaderActions"/> bindable property.
+    /// </summary>
     public static readonly BindableProperty HeaderActionsProperty = BindableProperty.Create(
         nameof(HeaderActions), typeof(View), typeof(PageCard),
         propertyChanged: (bindable, _, newValue) =>
@@ -57,11 +66,16 @@ internal sealed partial class PageCard
             card.UpdateTitleRowVisibility();
         });
 
-    // For a card whose title is needed to tell what the page is for, even when the height is compact.
+    /// <summary>
+    /// Identifies the <see cref="IsTitleAlwaysVisible"/> bindable property.
+    /// </summary>
     public static readonly BindableProperty IsTitleAlwaysVisibleProperty = BindableProperty.Create(
         nameof(IsTitleAlwaysVisible), typeof(bool), typeof(PageCard),
         propertyChanged: (bindable, _, _) => ((PageCard)bindable).UpdateTitleRowVisibility());
 
+    /// <summary>
+    /// Identifies the <see cref="IsTitleHiddenWhenCompact"/> bindable property.
+    /// </summary>
     public static readonly BindableProperty IsTitleHiddenWhenCompactProperty = BindableProperty.Create(
         nameof(IsTitleHiddenWhenCompact), typeof(bool), typeof(PageCard),
         propertyChanged: (bindable, _, _) => ((PageCard)bindable).UpdateTitleRowVisibility());
@@ -71,16 +85,27 @@ internal sealed partial class PageCard
         "IsCompactHeight", typeof(bool), typeof(PageCard),
         propertyChanged: (bindable, _, _) => ((PageCard)bindable).UpdateTitleRowVisibility());
 
+    /// <summary>
+    /// Identifies the <see cref="Body"/> bindable property.
+    /// </summary>
     public static readonly BindableProperty BodyProperty = BindableProperty.Create(
         nameof(Body), typeof(View), typeof(PageCard),
         propertyChanged: (bindable, _, newValue) => ((PageCard)bindable).BodyHost.Content = (View?)newValue);
 
-    // The body header and the footer are set once from the page. Their rows are only added with them, so that a card
-    // without them has no extra spacing.
+    /// <summary>
+    /// Identifies the <see cref="BodyHeader"/> bindable property.
+    /// </summary>
+    /// <remarks>
+    /// The rows of the body header and the footer are only added with them, so that a card without them has no extra
+    /// spacing.
+    /// </remarks>
     public static readonly BindableProperty BodyHeaderProperty = BindableProperty.Create(
         nameof(BodyHeader), typeof(View), typeof(PageCard),
         propertyChanged: (bindable, _, _) => ((PageCard)bindable).UpdateBodyHeaderPlacement());
 
+    /// <summary>
+    /// Identifies the <see cref="Footer"/> bindable property.
+    /// </summary>
     public static readonly BindableProperty FooterProperty = BindableProperty.Create(
         nameof(Footer), typeof(View), typeof(PageCard),
         propertyChanged: (bindable, _, newValue) =>
@@ -90,54 +115,84 @@ internal sealed partial class PageCard
             cardGrid.Add((View)newValue, 0, cardGrid.RowDefinitions.Count - 1);
         });
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PageCard"/> class, which follows whether the height is compact.
+    /// </summary>
     public PageCard()
     {
         InitializeComponent();
         SetDynamicResource(IsCompactHeightProperty, "IsCompactHeight");
     }
 
+    /// <summary>
+    /// The title of the card.
+    /// </summary>
     public string Title
     {
         get => (string)GetValue(TitleProperty);
         set => SetValue(TitleProperty, value);
     }
 
+    /// <summary>
+    /// The padding around the body.
+    /// </summary>
     public Thickness BodyPadding
     {
         get => (Thickness)GetValue(BodyPaddingProperty);
         set => SetValue(BodyPaddingProperty, value);
     }
 
+    /// <summary>
+    /// True to show the title also when the height is compact, for a card whose title is needed to tell what the page
+    /// is for, false to leave it out then. Without header actions, the title is left out when the height is compact.
+    /// </summary>
     public bool IsTitleAlwaysVisible
     {
         get => (bool)GetValue(IsTitleAlwaysVisibleProperty);
         set => SetValue(IsTitleAlwaysVisibleProperty, value);
     }
 
+    /// <summary>
+    /// True to hide only the title when the height is compact, with the header actions over the top of the body, false
+    /// to keep the title with the header actions.
+    /// </summary>
     public bool IsTitleHiddenWhenCompact
     {
         get => (bool)GetValue(IsTitleHiddenWhenCompactProperty);
         set => SetValue(IsTitleHiddenWhenCompactProperty, value);
     }
 
+    /// <summary>
+    /// The actions in the top row, after the title, or null for none.
+    /// </summary>
     public View? HeaderActions
     {
         get => (View?)GetValue(HeaderActionsProperty);
         set => SetValue(HeaderActionsProperty, value);
     }
 
+    /// <summary>
+    /// The scrollable body.
+    /// </summary>
     public View? Body
     {
         get => (View?)GetValue(BodyProperty);
         set => SetValue(BodyProperty, value);
     }
 
+    /// <summary>
+    /// The view above the body that stays visible when the body scrolls, or null for none. It is in the title row when
+    /// the height is compact and the title is shown. Set once, if at all.
+    /// </summary>
     public View? BodyHeader
     {
         get => (View?)GetValue(BodyHeaderProperty);
         set => SetValue(BodyHeaderProperty, value);
     }
 
+    /// <summary>
+    /// The view below the body that stays visible when the body scrolls, or null for none. Set once, if at all.
+    /// </summary>
     public View? Footer
     {
         get => (View?)GetValue(FooterProperty);
@@ -145,8 +200,10 @@ internal sealed partial class PageCard
     }
 
     /// <summary>
-    /// The width inside the body padding and the card stroke, for a card of the given width.
+    /// Gets the width inside the body padding and the card stroke, for a card of a width.
     /// </summary>
+    /// <param name="cardWidth">The width of the card.</param>
+    /// <returns>The width of the body.</returns>
     public double BodyWidth(double cardWidth)
     {
         return cardWidth - BodyPadding.HorizontalThickness - (2 * CardBorder.StrokeThickness);

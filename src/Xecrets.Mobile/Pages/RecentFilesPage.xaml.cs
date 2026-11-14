@@ -34,8 +34,14 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
+/// <summary>
+/// The page of the recent files.
+/// </summary>
 internal partial class RecentFilesPage
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RecentFilesPage"/> class with the standard header.
+    /// </summary>
     public RecentFilesPage(RecentFilesPageModel model, IPageHeaderService pageHeaderService)
         : base(model)
     {

@@ -34,8 +34,14 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
+/// <summary>
+/// The page about the app.
+/// </summary>
 internal partial class AboutPage
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AboutPage"/> class with the standard header.
+    /// </summary>
     public AboutPage(AboutPageModel model, IPageHeaderService pageHeaderService)
         : base(model)
     {

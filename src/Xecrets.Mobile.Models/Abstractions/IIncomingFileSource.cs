@@ -32,7 +32,14 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Abstractions;
 
+/// <summary>
+/// The source of a file received from another app.
+/// </summary>
 public interface IIncomingFileSource
 {
+    /// <summary>
+    /// Copies the received file to a temporary file. Nothing of the copy is left if this fails.
+    /// </summary>
+    /// <returns>The copy of the received file.</returns>
     Task<IncomingFileInfo> ImportAsync();
 }

@@ -32,9 +32,23 @@ using Microsoft.Maui.Controls;
 
 namespace Xecrets.Mobile.Abstractions;
 
+/// <summary>
+/// Gives pages the standard header of the app: the title, and the toolbar with the menu.
+/// </summary>
 internal interface IPageHeaderService
 {
+    /// <summary>
+    /// Gives a page the standard header, with an information button if its page model is an
+    /// <see cref="Models.Abstractions.IPageInformationPageModel"/>, and the email of the profile signed in, if any, in
+    /// the title.
+    /// </summary>
+    /// <param name="page">The page, with its binding context and content set.</param>
     void ApplyStandardHeader(ContentPage page);
 
+    /// <summary>
+    /// Gives a page the standard title, of the app name and an email, replacing any title it has.
+    /// </summary>
+    /// <param name="page">The page, with its content set.</param>
+    /// <param name="email">The email to show below the app name, or "" for none.</param>
     void ApplyStandardHeaderTitle(ContentPage page, string email);
 }

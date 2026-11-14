@@ -39,8 +39,14 @@ using Microsoft.Maui.Graphics;
 
 namespace Xecrets.Mobile.Controls;
 
+/// <summary>
+/// An entry of a password, with a button that shows or hides the password.
+/// </summary>
 internal sealed partial class PasswordEntry
 {
+    /// <summary>
+    /// Identifies the <see cref="Text"/> bindable property.
+    /// </summary>
     public static readonly BindableProperty TextProperty = BindableProperty.Create(
         nameof(Text),
         typeof(string),
@@ -48,6 +54,9 @@ internal sealed partial class PasswordEntry
         string.Empty,
         BindingMode.TwoWay);
 
+    /// <summary>
+    /// Identifies the <see cref="ReturnCommand"/> bindable property.
+    /// </summary>
     public static readonly BindableProperty ReturnCommandProperty = BindableProperty.Create(
         nameof(ReturnCommand),
         typeof(ICommand),
@@ -55,6 +64,9 @@ internal sealed partial class PasswordEntry
 
     private bool _isPasswordVisible;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PasswordEntry"/> class, with the password hidden.
+    /// </summary>
     public PasswordEntry()
     {
         InitializeComponent();
@@ -69,8 +81,14 @@ internal sealed partial class PasswordEntry
             source: this);
     }
 
+    /// <summary>
+    /// The text field of the password.
+    /// </summary>
     public Entry Entry => PasswordTextEntry;
 
+    /// <summary>
+    /// The password, two-way bound by default.
+    /// </summary>
     public string Text
     {
         get => (string)GetValue(TextProperty);
@@ -86,18 +104,27 @@ internal sealed partial class PasswordEntry
         set => SetValue(ReturnCommandProperty, value);
     }
 
+    /// <summary>
+    /// The placeholder of the text field.
+    /// </summary>
     public string Placeholder
     {
         get => PasswordTextEntry.Placeholder;
         set => PasswordTextEntry.Placeholder = value;
     }
 
+    /// <summary>
+    /// The return key of the keyboard of the text field.
+    /// </summary>
     public ReturnType ReturnType
     {
         get => PasswordTextEntry.ReturnType;
         set => PasswordTextEntry.ReturnType = value;
     }
 
+    /// <summary>
+    /// True if the password cannot be edited, false otherwise.
+    /// </summary>
     public bool IsReadOnly
     {
         get => PasswordTextEntry.IsReadOnly;

@@ -33,8 +33,14 @@ using Xecrets.Mobile.Models.PageModels;
 
 namespace Xecrets.Mobile.Pages;
 
+/// <summary>
+/// The debug page.
+/// </summary>
 internal partial class DebugPage
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DebugPage"/> class with the standard header.
+    /// </summary>
     public DebugPage(DebugPageModel model, IPageHeaderService pageHeaderService)
         : base(model)
     {

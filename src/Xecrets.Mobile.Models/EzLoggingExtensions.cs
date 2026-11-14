@@ -40,23 +40,27 @@ public static class EzLoggingExtensions
     extension(IEzLogging log)
     {
         /// <summary>
-        /// Logs the text at the <see cref="EzLogLevel.Error"/> level.
+        /// Logs a text at the <see cref="EzLogLevel.Error"/> level, as <see cref="IEzLogging.Log"/> does.
         /// </summary>
+        /// <param name="text">The text.</param>
         public void Error(string text) => log.Log(EzLogLevel.Error, text);
 
         /// <summary>
-        /// Logs the text at the <see cref="EzLogLevel.Warning"/> level.
+        /// Logs a text at the <see cref="EzLogLevel.Warning"/> level, as <see cref="IEzLogging.Log"/> does.
         /// </summary>
+        /// <param name="text">The text.</param>
         public void Warning(string text) => log.Log(EzLogLevel.Warning, text);
 
         /// <summary>
-        /// Logs the text at the <see cref="EzLogLevel.Information"/> level.
+        /// Logs a text at the <see cref="EzLogLevel.Information"/> level, as <see cref="IEzLogging.Log"/> does.
         /// </summary>
+        /// <param name="text">The text.</param>
         public void Information(string text) => log.Log(EzLogLevel.Information, text);
 
         /// <summary>
-        /// Logs the text at the <see cref="EzLogLevel.Debug"/> level.
+        /// Logs a text at the <see cref="EzLogLevel.Debug"/> level, as <see cref="IEzLogging.Log"/> does.
         /// </summary>
+        /// <param name="text">The text.</param>
         public void Debug(string text) => log.Log(EzLogLevel.Debug, text);
     }
 
@@ -64,6 +68,8 @@ public static class EzLoggingExtensions
     /// The path with the file name, without its extension, replaced by its first two characters followed by "***", or
     /// by just "***" when it has no more than two characters. The folders and the extension are kept as they are.
     /// </summary>
+    /// <param name="path">The path.</param>
+    /// <returns>The masked path.</returns>
     public static string MaskPath(this string path)
     {
         string fileName = Path.GetFileName(path);

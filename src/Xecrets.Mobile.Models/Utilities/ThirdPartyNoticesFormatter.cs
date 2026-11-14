@@ -45,6 +45,11 @@ internal static class ThirdPartyNoticesFormatter
     /// </summary>
     private const int _maximumHeadingLength = 40;
 
+    /// <summary>
+    /// Reformats the notices for display.
+    /// </summary>
+    /// <param name="notices">The text of the notices file.</param>
+    /// <returns>The headings and paragraphs, separated by empty lines.</returns>
     public static string Format(string notices)
     {
         List<string> blocks = [];

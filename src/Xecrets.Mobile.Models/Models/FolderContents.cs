@@ -42,6 +42,11 @@ public sealed class FolderContents
 
     private readonly Dictionary<string, ListedFolder> _foldersByFileId = [];
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="FolderContents"/> class with the folders already listed.
+    /// </summary>
+    /// <param name="fileAccess">Lists the folders that are not already listed.</param>
+    /// <param name="listings">The folders already listed, which may be none.</param>
     public FolderContents(IFileAccess fileAccess, IEnumerable<FolderListing> listings)
     {
         _fileAccess = fileAccess;
@@ -56,8 +61,10 @@ public sealed class FolderContents
     }
 
     /// <summary>
-    /// The folder of a file of the operation, listed if it has not been.
+    /// Gets the folder of a file of the operation, which is listed if it has not been.
     /// </summary>
+    /// <param name="file">A file reached through one of My folders.</param>
+    /// <returns>The folder of the file, the same each time for the same file.</returns>
     public async Task<ListedFolder> GetFolderOfAsync(FileReference file)
     {
         if (_foldersByFileId.TryGetValue(file.Id, out ListedFolder? folder))

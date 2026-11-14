@@ -73,10 +73,14 @@ internal static partial class AppleFileLocation
     };
 
     /// <summary>
-    /// The file is accessed while being located, since the url a picker gave only gives access to the file while
-    /// accessing it. The provider is only asked when allowed, since asking it about a file just saved may make it lose
-    /// track of the file: OneDrive then shows a copy that stays waiting to be uploaded.
+    /// Tells where a file is stored. The file is accessed while it is located, since the url a picker gave only gives
+    /// access to the file while accessing it.
     /// </summary>
+    /// <param name="fileUrl">The url of the file.</param>
+    /// <param name="isProviderAsked">True to ask the provider where the file is stored, false to tell it only from the
+    /// path, as for a file just saved, which asking the provider about may make it lose track of: OneDrive then shows a
+    /// copy that stays waiting to be uploaded.</param>
+    /// <returns>The file, with its url as the id and where it is stored.</returns>
     public static FileReference Locate(NSUrl fileUrl, bool isProviderAsked = true) =>
         LocateItem(fileUrl, isProviderAsked).File;
 
@@ -84,6 +88,8 @@ internal static partial class AppleFileLocation
     /// Locates a folder, and tells if it is the top of where it is stored, such as iCloud Drive itself or a Dropbox
     /// account. Such a folder may have no name of its own to show: a Dropbox account is a folder named by an id.
     /// </summary>
+    /// <param name="folderUrl">The url of the folder.</param>
+    /// <returns>The folder, and true if it is the top of where it is stored, false otherwise.</returns>
     public static (FileReference Folder, bool IsTop) LocateFolder(NSUrl folderUrl) => LocateItem(folderUrl, true);
 
     private static (FileReference File, bool IsTop) LocateItem(NSUrl fileUrl, bool isProviderAsked)

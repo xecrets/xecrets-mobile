@@ -36,16 +36,29 @@ using UIKit;
 
 namespace Xecrets.Mobile.Platforms.Apple;
 
+/// <summary>
+/// The scene delegate of the app, which receives the files that other apps open in it, when the scene connects and
+/// while it is connected.
+/// </summary>
 [Register("AppSceneDelegate")]
 // ReSharper disable once UnusedType.Global
 public class AppSceneDelegate : MauiUISceneDelegate
 {
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The files opened in the app with the scene are received.
+    /// </remarks>
     public override void WillConnect(UIScene scene, UISceneSession session, UISceneConnectionOptions connectionOptions)
     {
         base.WillConnect(scene, session, connectionOptions);
         HandleUrlContexts(connectionOptions.UrlContexts);
     }
 
+    /// <summary>
+    /// Receives the files opened in the app while the scene is connected.
+    /// </summary>
+    /// <param name="_">The scene.</param>
+    /// <param name="urlContexts">The urls of the files.</param>
     [Export("scene:openURLContexts:")]
     public void OpenUrlContexts(UIScene _, NSSet<UIOpenUrlContext> urlContexts)
     {

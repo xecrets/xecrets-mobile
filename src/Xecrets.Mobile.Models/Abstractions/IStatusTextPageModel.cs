@@ -30,12 +30,18 @@
 
 namespace Xecrets.Mobile.Models.Abstractions;
 
-// A page model with the status text line that pages show messages and errors on. Implemented by
-// every page model that has one, so that a platform without transient messages of its own can put
-// them there instead.
+/// <summary>
+/// A page model with texts shown on the page below its contents: a message and a status.
+/// </summary>
 public interface IStatusTextPageModel
 {
+    /// <summary>
+    /// A message shown on the page, or "" for none.
+    /// </summary>
     string MessageText { get; set; }
 
+    /// <summary>
+    /// A status shown on the page, such as an unexpected error, or "" for none.
+    /// </summary>
     string StatusText { get; set; }
 }

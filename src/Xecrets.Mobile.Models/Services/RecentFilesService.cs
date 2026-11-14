@@ -35,6 +35,9 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Services;
 
+/// <summary>
+/// The recent files of the profile signed in, kept in its data store.
+/// </summary>
 internal sealed class RecentFilesService(
     ProfileSession profileSession,
     IFlowContext flowContext,
@@ -44,21 +47,16 @@ internal sealed class RecentFilesService(
 {
     private const int _maxRecentListLength = 50;
 
+    /// <inheritdoc/>
     public async Task<IReadOnlyList<RecentFile>> GetFilesAsync() =>
         [.. (await profileSession.UserStore!.LoadRecentFileOperationsAsync()).Value.Files];
 
-    /// <summary>
-    /// A file only read is listed with the access to it alone, which is kept for as long as it is listed. The grants
-    /// no longer listed are released when the app starts, or the user signs out.
-    /// <para>
-    /// A file listed as changed is reached through one of My folders, which may not give access to it alone, so it
-    /// stays listed as changed when it is then only read, and is just moved first.
-    /// </para>
-    /// <para>
-    /// The same file may be referred to by different ids, such as by itself or through one of My folders, and is only
-    /// listed once.
-    /// </para>
-    /// </summary>
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The grant to a file only read is kept with <see cref="IFileAccess.KeepFileGrantAsync"/>. A file listed as
+    /// changed is reached through one of My folders, which may not give access to the file alone, which is why it stays
+    /// listed as changed. Files are told to be the same by <see cref="IFileAccess.IsSameFileAsync"/>.
+    /// </remarks>
     public async Task<bool> AddAsync(FileReference file, RecentFileOperation operation)
     {
         if (!operation.IsWriteClass())
@@ -85,6 +83,7 @@ internal sealed class RecentFilesService(
         return true;
     }
 
+    /// <inheritdoc/>
     public async Task AddFlowSourceAsync(RecentFileOperation operation)
     {
         if (flowContext.Source is { } source)
@@ -93,9 +92,11 @@ internal sealed class RecentFilesService(
         }
     }
 
+    /// <inheritdoc/>
     public Task RemoveAsync(string fileId) =>
         EditFilesAsync(files => Task.FromResult<List<RecentFile>>([.. files.Where(file => file.Id != fileId)]));
 
+    /// <inheritdoc/>
     public Task RemoveFileAsync(string fileId) =>
         EditFilesAsync(files => RemoveFileAsync(files, fileId));
 
@@ -140,7 +141,7 @@ internal sealed class RecentFilesService(
         }
     }
 
-    // The file may already be listed by the new id, and is then only kept where it is listed first.
+    /// <inheritdoc/>
     public Task ReplaceIdAsync(string fileId, string newFileId) =>
         EditFilesAsync(files => Task.FromResult<List<RecentFile>>(
         [

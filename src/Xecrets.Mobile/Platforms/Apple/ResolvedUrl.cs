@@ -32,4 +32,9 @@ using Foundation;
 
 namespace Xecrets.Mobile.Platforms.Apple;
 
+/// <summary>
+/// What gives access to a file, and the file as reached through it.
+/// </summary>
+/// <param name="AccessUrl">The url whose security scope gives the access, which may be that of a folder.</param>
+/// <param name="FileUrl">The url of the file.</param>
 internal sealed record ResolvedUrl(NSUrl AccessUrl, NSUrl FileUrl);

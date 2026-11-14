@@ -33,12 +33,20 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Services;
 
+/// <summary>
+/// A file received from another app as a path.
+/// </summary>
+/// <param name="sourcePath">The full path of the received file.</param>
+/// <param name="displayName">The name of the received file.</param>
+/// <param name="contentType">The MIME type of the received file.</param>
+/// <param name="transientFileService">Creates the temporary copy.</param>
 public sealed class PathIncomingFileSource(
     string sourcePath,
     string displayName,
     string contentType,
     ITransientFileService transientFileService) : IIncomingFileSource
 {
+    /// <inheritdoc/>
     public async Task<IncomingFileInfo> ImportAsync()
     {
         ITransientFile incomingFile = transientFileService.CreateIncomingFile(displayName);

@@ -53,5 +53,6 @@ public partial class App : MauiWinUIApplication
         InitializeComponent();
     }
 
+    /// <inheritdoc/>
     protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
 }

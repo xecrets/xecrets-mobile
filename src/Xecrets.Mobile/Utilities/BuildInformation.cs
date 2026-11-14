@@ -38,29 +38,41 @@ using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Utilities;
 
+/// <summary>
+/// Information about the build from the attributes of the app assembly, and about the device from MAUI.
+/// </summary>
 internal sealed class BuildInformation : IBuildInformation
 {
     private static Assembly AppAssembly => typeof(BuildInformation).Assembly;
 
+    /// <inheritdoc/>
     public bool IsDebug =>
         AppAssembly.GetCustomAttribute<AssemblyConfigurationAttribute>()!.Configuration == "Debug";
 
+    /// <inheritdoc/>
     public bool IsBeta => bool.Parse(GetMetadata("IsBeta"));
 
+    /// <inheritdoc/>
     public string ProductName => IsBeta ? $"{AppInfo.Current.Name} Beta" : AppInfo.Current.Name;
 
+    /// <inheritdoc/>
     public string Version => AppInfo.Current.VersionString;
 
+    /// <inheritdoc/>
     public string Platform => $"{DeviceInfo.Current.Platform} {DeviceInfo.Current.VersionString} ({DeviceInfo.Current.Idiom})";
 
+    /// <inheritdoc/>
     public string Publisher =>
         AppAssembly.GetCustomAttribute<AssemblyCompanyAttribute>()!.Company;
 
+    /// <inheritdoc/>
     public string Copyright =>
         AppAssembly.GetCustomAttribute<AssemblyCopyrightAttribute>()!.Copyright;
 
+    /// <inheritdoc/>
     public string License => GetMetadata("License");
 
+    /// <inheritdoc/>
     public string SourceCodeUrl => GetMetadata("RepositoryUrl");
 
     private static string GetMetadata(string key) => AppAssembly

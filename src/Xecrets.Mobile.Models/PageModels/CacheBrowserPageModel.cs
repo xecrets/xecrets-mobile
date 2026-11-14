@@ -40,6 +40,9 @@ using Xecrets.Mobile.Models.Services;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
+/// <summary>
+/// The page model of the debug page that browses the cache of the app, including the crash logs and the log.
+/// </summary>
 public partial class CacheBrowserPageModel : PageModelBase
 {
     private readonly IFileService _fileService;
@@ -48,6 +51,14 @@ public partial class CacheBrowserPageModel : PageModelBase
     private readonly string _cacheDirectory;
     private string _currentDirectory;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CacheBrowserPageModel"/> class, browsing the whole cache of the
+    /// app.
+    /// </summary>
+    /// <param name="fileService">Tells where the cache is.</param>
+    /// <param name="crashLogService">Logs the exceptions that are handled.</param>
+    /// <param name="log">Logs what is deleted.</param>
+    /// <param name="userInterfaceService">The user interface.</param>
     public CacheBrowserPageModel(
         IFileService fileService,
         ICrashLogService crashLogService,
@@ -64,11 +75,20 @@ public partial class CacheBrowserPageModel : PageModelBase
         _currentDirectory = _cacheDirectory;
     }
 
+    /// <summary>
+    /// The files and folders of the folder shown.
+    /// </summary>
     public ObservableCollection<CacheBrowserEntry> Entries { get; } = [];
 
+    /// <summary>
+    /// The path of the folder shown, relative to the cache.
+    /// </summary>
     [ObservableProperty]
     public partial string CurrentPath { get; set; } = "Cache";
 
+    /// <summary>
+    /// An error to show, or "" for none.
+    /// </summary>
     [ObservableProperty]
     public partial string StatusText { get; set; } = string.Empty;
 

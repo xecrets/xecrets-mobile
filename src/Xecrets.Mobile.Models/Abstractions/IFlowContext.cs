@@ -34,11 +34,13 @@ using Xecrets.Mobile.Models.Models;
 namespace Xecrets.Mobile.Models.Abstractions;
 
 /// <summary>
-/// The origin of the encrypt or decrypt flow the user is currently in, so that pages shared by
-/// several flows can say which one they are serving.
+/// The encrypt or decrypt flow the user is currently in: where it started and the file it works on.
 /// </summary>
 public interface IFlowContext
 {
+    /// <summary>
+    /// Where the current flow started, which is <see cref="FlowOrigin.Home"/> until a flow begins.
+    /// </summary>
     FlowOrigin Origin { get; }
 
     /// <summary>
@@ -46,11 +48,17 @@ public interface IFlowContext
     /// </summary>
     FileReference? Source { get; }
 
+    /// <summary>
+    /// Begins a flow, replacing the current one.
+    /// </summary>
+    /// <param name="origin">Where the flow starts.</param>
+    /// <param name="source">The file the flow works on, or null for a file received from another app.</param>
     void Begin(FlowOrigin origin, FileReference? source = null);
 
     /// <summary>
     /// Makes another reference the one the flow works on from then on, such as the same file reached through one of
     /// My folders, or a file saved during the flow.
     /// </summary>
+    /// <param name="source">The file the flow works on from now on.</param>
     void UpdateSource(FileReference source);
 }

@@ -47,6 +47,11 @@ internal sealed class ActionButtonColumns
     private readonly Grid _grid;
     private readonly List<(View Button, int Index)> _buttons;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ActionButtonColumns"/> class, with the buttons in the stack.
+    /// </summary>
+    /// <param name="stack">The single column stack, with the buttons and the dividers between them.</param>
+    /// <param name="grid">The two column grid, which is hidden and empty.</param>
     public ActionButtonColumns(Layout stack, Grid grid)
     {
         _stack = stack;
@@ -61,8 +66,17 @@ internal sealed class ActionButtonColumns
         }
     }
 
+    /// <summary>
+    /// True if the buttons are in the two column grid, false if they are in the stack.
+    /// </summary>
     public bool IsTwoColumns { get; private set; }
 
+    /// <summary>
+    /// Moves the buttons to the two column grid when the height is compact, and back to the stack otherwise, showing
+    /// only the one they are in.
+    /// </summary>
+    /// <param name="pageWidth">The width of the page.</param>
+    /// <param name="pageHeight">The height of the page.</param>
     public void Update(double pageWidth, double pageHeight)
     {
         bool isTwoColumns = LayoutMetrics.IsCompactHeight(pageWidth, pageHeight);

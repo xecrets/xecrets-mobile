@@ -77,10 +77,11 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
 
     private static ContentResolver ContentResolver => Platform.AppContext.ContentResolver!;
 
-    /// <summary>
+    /// <inheritdoc/>
+    /// <remarks>
     /// ACTION_OPEN_DOCUMENT returns read, write and persistable grants without requesting flags. Only reading is
-    /// ever persisted, by <see cref="KeepFileGrantAsync"/> when the file is kept in the recent files.
-    /// </summary>
+    /// persisted, by <see cref="KeepFileGrantAsync"/>.
+    /// </remarks>
     public async Task<FileReference?> PickFileAsync(string initialFolder, FilePickerKind kind)
     {
         ThreadGuard.ThrowIfNotMainThread();
@@ -105,11 +106,12 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
         return fileUri is null ? null : await LocateOffMainThreadAsync(fileUri, "");
     }
 
-    /// <summary>
-    /// The folder picker shows the files in the folders, without letting them be picked, and does not tell them apart by
-    /// kind. The tree grant is persisted, and the folder is probed for being writable. A grant that ends up not being
-    /// used is released by the next cleanup.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The folder picker shows the files in the folders, without letting them be picked, and shows files of any kind.
+    /// The tree grant is persisted, and the folder is probed for being writable. A grant that is not used is released
+    /// by <see cref="ReleaseUnusedGrantsAsync"/>.
+    /// </remarks>
     public async Task<WorkFolderResult> PickFolderAsync(string initialFolder, FilePickerKind kind)
     {
         ThreadGuard.ThrowIfNotMainThread();
@@ -156,10 +158,11 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
         });
     }
 
-    /// <summary>
-    /// Get the folder of a file referred to through the grant of the folder it is in. If it's not in a folder with
-    /// a grant, we look in the work folders list.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <remarks>
+    /// A file referred to through the tree grant of one of My folders is in that folder. Otherwise, the innermost of My
+    /// folders whose tree contains the document is found.
+    /// </remarks>
     public Task<WorkFolder?> FindFolderAsync(string fileId) =>
         Task.Run(async () =>
         {
@@ -177,11 +180,17 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
                 .FirstOrDefault();
         });
 
-    // A picked folder is the top of its own tree grant, which is the grant of one of My folders when it is that folder,
-    // so it is found as a file in it is.
+    /// <inheritdoc/>
+    /// <remarks>
+    /// A picked folder is the top of its own tree grant, which is the grant of one of My folders when it is that
+    /// folder, so it is found as a file in it is.
+    /// </remarks>
     public Task<WorkFolder?> FindFolderOfFolderAsync(string folderId) => FindFolderAsync(folderId);
 
-    // Through the grant of the folder, the provider may tell more of where the file is stored.
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Through the grant of the folder, the provider may tell more of where the file is stored.
+    /// </remarks>
     public Task<FileReference> GetFileInFolderAsync(WorkFolder folder, FileReference file) =>
         Task.Run(() => Locate(
             DocumentsContract.BuildDocumentUriUsingTree(
@@ -189,14 +198,11 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
                 DocumentsContract.GetDocumentId(AndroidUri.Parse(file.Id)!)!)!,
             file.Name));
 
-    /// <summary>
-    /// The folder is the top of its tree grant, through which the files are listed and reached. Names that start with a
-    /// dot are hidden, as in the system file picker.
-    /// </summary>
-    /// <summary>
-    /// The folder is listed through the tree grant its uri is built on, off the main thread, as is each folder below it
-    /// when the scope includes them.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The folders are listed through the tree grant the uri of the folder is built on. Names that start with a dot are
+    /// hidden, as in the system file picker.
+    /// </remarks>
     public Task<IReadOnlyList<FolderListing>> ListFolderAsync(string folderId, FolderScope scope) =>
         Task.Run<IReadOnlyList<FolderListing>>(async () =>
         {
@@ -251,10 +257,11 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
         }
     }
 
-    /// <summary>
+    /// <inheritdoc/>
+    /// <remarks>
     /// The parent of a file in a folder is found through the grant of the folder, and that of a file on local storage
     /// from its path. Other providers do not tell the parent of a file reached by itself.
-    /// </summary>
+    /// </remarks>
     public Task<string> GetParentFolderAsync(string fileId) => Task.Run(() =>
     {
         try
@@ -278,10 +285,11 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
         }
     });
 
-    /// <summary>
-    /// Only the document ids of local storage are paths. Other providers have opaque document ids, so only the name
-    /// remembered is known without asking the provider.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Only the document ids of local storage are paths. Other providers have opaque document ids, so only the
+    /// remembered name is known without asking the provider.
+    /// </remarks>
     public IReadOnlyList<string> GetPathSegments(string id, string rememberedName)
     {
         AndroidUri uri = AndroidUri.Parse(id)!;
@@ -297,10 +305,11 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
             : [.. segments, rememberedName];
     }
 
-    /// <summary>
+    /// <inheritdoc/>
+    /// <remarks>
     /// A document is the same whether it is referred to by itself or through the grant of a folder, so the provider and
-    /// document id are compared.
-    /// </summary>
+    /// document id are compared. Ids that are not document uris are compared as they are.
+    /// </remarks>
     public Task<bool> IsSameFileAsync(string fileId, string otherFileId)
     {
         AndroidUri fileUri = AndroidUri.Parse(fileId)!;
@@ -318,11 +327,11 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
         }
     }
 
-    /// <summary>
-    /// The grant the picker gave is persisted, which also works for one persisted before. A file referred to through
-    /// the grant of a folder has no grant of its own that can be persisted, and is only reached through the grant of
-    /// the folder, which only My folders keep.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The read grant the picker gave is persisted, which also works for one persisted before. A file referred to
+    /// through the grant of a folder has no grant of its own that can be persisted, so false is returned for it.
+    /// </remarks>
     public Task<bool> KeepFileGrantAsync(string fileId)
     {
         AndroidUri fileUri = AndroidUri.Parse(fileId)!;
@@ -343,9 +352,16 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
         }
     }
 
-    // The provider and document id tell where the file is from the start.
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The provider and document id tell where the file is from the start, so the file is returned as it is.
+    /// </remarks>
     public Task<FileReference> LocateAgainAsync(FileReference file) => Task.FromResult(file);
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// A file referred to through a tree grant has access through a persisted read grant of the same tree.
+    /// </remarks>
     public bool HasFileGrant(string fileId)
     {
         AndroidUri fileUri = AndroidUri.Parse(fileId)!;
@@ -359,10 +375,11 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
                 permission.IsReadPermission && permission.Uri?.ToString() == fileId);
     }
 
-    /// <summary>
-    /// A persisted tree grant is held by My folders, and a persisted grant to a document by itself by the recent files.
-    /// Any other is released. A grant may already be gone, such as when the user revoked it outside the app.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Persisted tree grants are compared with the folder grants, and persisted grants to a document by itself with
+    /// the files. A grant may already be gone, such as when the user revoked it outside the app.
+    /// </remarks>
     public Task ReleaseUnusedGrantsAsync(GrantReferences references)
     {
         foreach (UriPermission permission in ContentResolver.PersistedUriPermissions)
@@ -398,11 +415,12 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
         return Task.CompletedTask;
     }
 
-    /// <summary>
+    /// <inheritdoc/>
+    /// <remarks>
     /// The providers report a file that is gone, or a volume that is not mounted, as not found, and a file renamed or
     /// moved by another app as no longer granted. Through a tree grant, a file that cannot be found gives an
     /// IllegalArgumentException instead. None of these tell whether the file is gone or cannot be reached now.
-    /// </summary>
+    /// </remarks>
     public Task<Stream> OpenReadAsync(string fileId) =>
         Task.Run(() =>
         {
@@ -419,9 +437,10 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
             }
         });
 
-    /// <summary>
+    /// <inheritdoc/>
+    /// <remarks>
     /// A document provider tells only when the file was last modified, so the other times are the current time.
-    /// </summary>
+    /// </remarks>
     public Task<FileTimes> GetTimesAsync(string fileId) =>
         Task.Run(() =>
         {
@@ -442,11 +461,13 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
             }
         });
 
-    /// <summary>
-    /// Android does not let an app set the times of a document.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Android does not let an app set the times of a document, so nothing is set.
+    /// </remarks>
     public Task SetSupportedTimesAsync(string fileId, FileTimes times) => Task.CompletedTask;
 
+    /// <inheritdoc/>
     public async Task<byte[]> ReadStartAsync(string fileId, int count)
     {
         await using Stream stream = await OpenReadAsync(fileId);
@@ -454,6 +475,10 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
         return buffer[..await stream.ReadAtLeastAsync(buffer, count, throwOnEndOfStream: false)];
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The file is opened for reading and closed again.
+    /// </remarks>
     public async Task CheckReachableAsync(string fileId)
     {
         await using (await OpenReadAsync(fileId))
@@ -461,14 +486,15 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
         }
     }
 
+    /// <inheritdoc/>
     public Task<IWritableFile> OpenWriteAsync(string fileId) =>
         Task.FromResult<IWritableFile>(new AndroidWritableFile(AndroidUri.Parse(fileId)!, crashLogService));
 
-    /// <summary>
-    /// The file is referred to through the grant of a folder, through which the provider is asked for the path of the
-    /// file. A provider that cannot tell the path, as some with opaque document ids, has the folders of the grant
-    /// searched for the document of the file instead.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The provider is asked for the path of the file through the grant of the folder. For a provider that cannot tell
+    /// the path, as some with opaque document ids, the folders of the grant are searched for the document instead.
+    /// </remarks>
     public Task<string> GetFolderOfFileAsync(string fileId) =>
         Task.Run(async () =>
         {
@@ -484,10 +510,10 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
             return DocumentsContract.BuildDocumentUriUsingTree(fileUri, parentDocumentId)!.ToString()!;
         });
 
-    /// <summary>
-    /// Replaces the existing document, when given, and otherwise creates one with the name. The provider is called off
-    /// the main thread, as for the writable file.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The provider is called off the main thread, as for the writable file.
+    /// </remarks>
     public Task<string> SaveInFolderAsync(
         string folderId,
         string name,
@@ -502,10 +528,11 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
             return fileUri.ToString()!;
         });
 
-    /// <summary>
-    /// Storage such as Dropbox may never finish renaming a document, so the renaming is only waited for a while. A
-    /// provider that gives the document another name than the one asked for has not done what was asked.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Storage such as Dropbox may never finish renaming a document, so the renaming is only waited for a while, after
+    /// which it fails.
+    /// </remarks>
     public Task<string> RenameAsync(string fileId, string newName) =>
         Task.Run(async () =>
         {
@@ -529,6 +556,7 @@ internal sealed class AndroidFileAccess(WorkFolderStorage storage, ICrashLogServ
             return renamedUri.ToString()!;
         });
 
+    /// <inheritdoc/>
     public async Task<FileReference?> SaveAsAsync(string initialFolder, string fileName, string completedFilePath)
     {
         ThreadGuard.ThrowIfNotMainThread();

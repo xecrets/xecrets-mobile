@@ -37,11 +37,22 @@ using Xecrets.Words.Model;
 
 namespace Xecrets.Mobile.Utilities;
 
+/// <summary>
+/// Converts a password strength color to the color that shows it, one way only.
+/// </summary>
 internal sealed class StrengthColorToColorConverter : IValueConverter
 {
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Requires a <see cref="StrengthColor"/> value.
+    /// </remarks>
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         => ((StrengthColor)value!).ToColor();
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Not supported.
+    /// </remarks>
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();
 }

@@ -33,17 +33,25 @@ using Xecrets.Mobile.Models.Models;
 namespace Xecrets.Mobile.Models.Abstractions;
 
 /// <summary>
-/// Keeps the save in progress on the device, where it is never exported, nor backed up. There is at most one, since
-/// one operation runs at a time.
+/// Keeps the save in progress on the device, where it is never exported, nor backed up. There is at most one save in
+/// progress.
 /// </summary>
 public interface ISaveInProgressStore
 {
     /// <summary>
-    /// The save that was begun and not done, or null when there is none.
+    /// Reads the save in progress.
     /// </summary>
+    /// <returns>The save that was begun and not done, or null if there is none.</returns>
     Task<SaveInProgress?> ReadSaveInProgressAsync();
 
+    /// <summary>
+    /// Persists a save in progress, replacing any earlier one.
+    /// </summary>
+    /// <param name="save">The save in progress.</param>
     Task WriteSaveInProgressAsync(SaveInProgress save);
 
+    /// <summary>
+    /// Removes the save in progress, if any.
+    /// </summary>
     Task ClearSaveInProgressAsync();
 }

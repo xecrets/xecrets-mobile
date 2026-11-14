@@ -42,11 +42,17 @@ using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Platforms.Windows;
 
-// WinUI has no built-in segmented control, and Windows is only a development target, so a row of toggle buttons
-// stands in for one.
+/// <summary>
+/// Shows a <see cref="FileStateSelector"/> as a row of toggle buttons, since WinUI has no segmented control, and
+/// Windows is only a development target.
+/// </summary>
 [SupportedOSPlatform("windows10.0.19041")]
 internal sealed class WindowsFileStateSelectorHandler() : ViewHandler<FileStateSelector, StackPanel>(Mapper)
 {
+    /// <summary>
+    /// Maps <see cref="FileStateSelector.SelectedState"/> to the checked toggle button, in addition to the properties
+    /// of any view.
+    /// </summary>
     public static readonly IPropertyMapper<FileStateSelector, WindowsFileStateSelectorHandler> Mapper =
         new PropertyMapper<FileStateSelector, WindowsFileStateSelectorHandler>(ViewMapper)
         {

@@ -47,10 +47,13 @@ public sealed class FolderAccessWorkflow(
     IUserInterfaceService userInterfaceService)
 {
     /// <summary>
-    /// Lets the user pick a file to change, starting in the folder. When the file is not in one of My folders, and the
-    /// user adds its folder, the user picks the file again, starting in the folder added. Returns the file as reached
-    /// through one of My folders, or null when the user cancels.
+    /// Lets the user pick a file to change. When the file is not in one of My folders, and the user adds its folder,
+    /// the user picks the file again, starting in the folder added.
     /// </summary>
+    /// <param name="folder">The folder to start in, or null to let the platform decide.</param>
+    /// <param name="pickerKind">The kind of files to pick from.</param>
+    /// <returns>The file as reached through one of My folders, as by <see cref="FindInFoldersAsync"/>, or null if the
+    /// user cancels.</returns>
     public async Task<FileReference?> PickWritableFileAsync(WorkFolder? folder, FilePickerKind pickerKind)
     {
         string initialFolder = folder?.Id ?? string.Empty;
@@ -78,9 +81,11 @@ public sealed class FolderAccessWorkflow(
     }
 
     /// <summary>
-    /// Gets access to the folder of a file already chosen, such as one on the recent files list, without picking it
-    /// again. Returns the file as reached through one of My folders, or null when the user cancels.
+    /// Gets access to the folder of a file already chosen, without picking it again.
     /// </summary>
+    /// <param name="file">The file.</param>
+    /// <returns>The file as reached through one of My folders, as by <see cref="FindInFoldersAsync"/>, or null if the
+    /// user cancels.</returns>
     public async Task<FileReference?> EnsureFolderAccessAsync(FileReference file)
     {
         while (true)
@@ -98,14 +103,20 @@ public sealed class FolderAccessWorkflow(
     }
 
     /// <summary>
-    /// Tells if the file is in one of My folders, without asking the user.
+    /// Tells if a file is in one of My folders, without asking the user.
     /// </summary>
+    /// <param name="file">The file.</param>
+    /// <returns>True if the file is in one of My folders, false otherwise.</returns>
     public async Task<bool> IsInFoldersAsync(FileReference file) =>
         await fileAccess.FindFolderAsync(file.Id) is not null;
 
     /// <summary>
-    /// The file as reached through one of My folders, without asking the user, or null when it is in none of them.
+    /// Gets a file as reached through one of My folders, without asking the user. The folder it is reached through is
+    /// moved first in My folders.
     /// </summary>
+    /// <param name="file">The file.</param>
+    /// <returns>The file as reached through the innermost of My folders that contains it, or null if it is in none of
+    /// them.</returns>
     public async Task<FileReference?> FindInFoldersAsync(FileReference file)
     {
         WorkFolder? folder = await fileAccess.FindFolderAsync(file.Id);
@@ -120,19 +131,23 @@ public sealed class FolderAccessWorkflow(
 
     /// <summary>
     /// Lets the user choose a folder and adds it first in My folders. A folder that cannot be used is reported, and the
-    /// user chooses again. Returns null when the user cancels.
+    /// user chooses again.
     /// </summary>
+    /// <param name="initialFolder">The folder to start in, or "" to let the platform decide.</param>
+    /// <returns>The added folder, or null if the user cancels.</returns>
     public async Task<WorkFolder?> AddFolderAsync(string initialFolder = "") =>
         await PickUsableFolderAsync(() => fileAccess.PickFolderAsync(initialFolder, FilePickerKind.Any)) is { } folder
             ? await storage.AddFolderAsync(folder)
             : null;
 
     /// <summary>
-    /// Lets the user pick a folder to change the files of the kind in, starting in the folder. A folder that is one of
-    /// My folders, or in one of them, is used as it is, and a folder in none of them is added first in My folders when
-    /// the user allows access to it, as for the folder of a file. Returns the folder, or null when the user cancels or
-    /// does not allow access.
+    /// Lets the user pick a folder to change files in. A folder that is one of My folders, or in one of them, is used
+    /// as it is, and the one of My folders that contains it is moved first. A folder in none of them is added first in
+    /// My folders when the user allows access to it.
     /// </summary>
+    /// <param name="initialFolder">The folder to start in, or "" to let the platform decide.</param>
+    /// <param name="kind">The kind of files to change, which the picker may show.</param>
+    /// <returns>The folder, or null if the user cancels or does not allow access.</returns>
     public async Task<WorkFolder?> PickWritableFolderAsync(string initialFolder, FilePickerKind kind)
     {
         WorkFolder? picked = await PickUsableFolderAsync(() => fileAccess.PickFolderAsync(initialFolder, kind));

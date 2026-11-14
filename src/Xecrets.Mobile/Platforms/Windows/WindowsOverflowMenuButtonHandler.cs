@@ -49,6 +49,10 @@ namespace Xecrets.Mobile.Platforms.Windows;
 [SupportedOSPlatform("windows10.0.19041")]
 internal sealed class WindowsOverflowMenuButtonHandler() : ViewHandler<OverflowMenuButton, Button>(Mapper)
 {
+    /// <summary>
+    /// Maps <see cref="OverflowMenuButton.IconColor"/> to the foreground of the button, in addition to the properties
+    /// of any view.
+    /// </summary>
     public static readonly IPropertyMapper<OverflowMenuButton, WindowsOverflowMenuButtonHandler> Mapper =
         new PropertyMapper<OverflowMenuButton, WindowsOverflowMenuButtonHandler>(ViewMapper)
         {

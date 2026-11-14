@@ -31,11 +31,33 @@
 
 namespace Xecrets.Mobile.Models.Services;
 
+/// <summary>
+/// The outcome of an action on the local profile.
+/// </summary>
 public enum ProfileActionStatus
 {
+    /// <summary>
+    /// The action is done.
+    /// </summary>
     Success,
+
+    /// <summary>
+    /// The email is not valid.
+    /// </summary>
     InvalidEmail,
+
+    /// <summary>
+    /// There already is a local profile.
+    /// </summary>
     AlreadyExists,
+
+    /// <summary>
+    /// There is no local profile.
+    /// </summary>
     NotFound,
+
+    /// <summary>
+    /// The password is wrong.
+    /// </summary>
     WrongPassword,
 }

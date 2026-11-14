@@ -44,6 +44,7 @@ internal sealed class ThirdPartyNoticesService : IThirdPartyNoticesService
 {
     private const string _thirdPartyNoticesAsset = "THIRD-PARTY-NOTICES.txt";
 
+    /// <inheritdoc/>
     public async Task<string> GetThirdPartyNoticesAsync()
     {
         await using Stream stream = await FileSystem.Current.OpenAppPackageFileAsync(_thirdPartyNoticesAsset);

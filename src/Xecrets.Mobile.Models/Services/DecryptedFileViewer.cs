@@ -33,8 +33,16 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Services;
 
+/// <summary>
+/// Shows decrypted files with the viewers of the platform, and decides which files are viewed in the app.
+/// </summary>
 internal sealed class DecryptedFileViewer(IFileService fileService) : IDecryptedFileViewer
 {
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Text is always viewed in the app. Other files are viewed by the platform when it has a viewer for them, and
+    /// otherwise only images are viewed in the app.
+    /// </remarks>
     public async Task<FileViewMode> GetViewModeAsync(DecryptedFileInfo file)
     {
         if (file.Kind == PreviewKind.Text)
@@ -52,6 +60,7 @@ internal sealed class DecryptedFileViewer(IFileService fileService) : IDecrypted
             : FileViewMode.Unavailable;
     }
 
+    /// <inheritdoc/>
     public Task<bool> ViewAsync(DecryptedFileInfo file)
         => fileService.ViewFileAsync(file);
 }

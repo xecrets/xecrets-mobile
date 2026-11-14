@@ -32,17 +32,25 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Abstractions;
 
+/// <summary>
+/// A file to read.
+/// </summary>
 public interface IReadableFile
 {
+    /// <summary>
+    /// The name of the file.
+    /// </summary>
     string FileName { get; }
 
     /// <summary>
-    /// Opens a new stream, which the caller disposes.
+    /// Opens the file for reading.
     /// </summary>
+    /// <returns>A new stream that reads the file, which the caller owns.</returns>
     Task<Stream> OpenReadAsync();
 
     /// <summary>
-    /// The times of the file, to keep when it is encrypted. A time that cannot be told is the current time.
+    /// Gets the times of the file.
     /// </summary>
+    /// <returns>The times of the file, where a time that cannot be told is the current time.</returns>
     Task<FileTimes> GetTimesAsync();
 }

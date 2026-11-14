@@ -48,9 +48,16 @@ using AndroidView = Android.Views.View;
 
 namespace Xecrets.Mobile.Platforms.Android;
 
+/// <summary>
+/// Shows a <see cref="FileStateSelector"/> as a Material toggle group of buttons.
+/// </summary>
 internal sealed class AndroidFileStateSelectorHandler()
     : ViewHandler<FileStateSelector, MaterialButtonToggleGroup>(Mapper)
 {
+    /// <summary>
+    /// Maps <see cref="FileStateSelector.SelectedState"/> to the checked button of the group, in addition to the
+    /// properties of any view.
+    /// </summary>
     public static readonly IPropertyMapper<FileStateSelector, AndroidFileStateSelectorHandler> Mapper =
         new PropertyMapper<FileStateSelector, AndroidFileStateSelectorHandler>(ViewMapper)
         {

@@ -33,46 +33,51 @@ using Xecrets.Mobile.Models.Models;
 namespace Xecrets.Mobile.Models.Abstractions;
 
 /// <summary>
-/// Is told when an operation on a file in one of My folders is done, to tell the user and to list the result in the
-/// recent files, or to keep account of the files done when the file is one of many. It also decides how the operation
-/// on the files goes on.
+/// Reports the outcome of each file of an operation on files in My folders, and of the operation as a whole, and
+/// decides whether the operation goes on after each file.
 /// </summary>
 public interface IFileCompletionReporter
 {
     /// <summary>
-    /// Whether the operation goes on with the next file, once a file is done. The user is told when it does not.
+    /// Decides whether the operation goes on with the next file, once a file is done.
     /// </summary>
+    /// <returns>True if the operation goes on, false if it stops, in which case the user has been told why.</returns>
     Task<bool> ContinuesAfterFileAsync();
 
     /// <summary>
-    /// The file is left, since its contents show that it is not what the operation is for, as the message tells. The
+    /// Reports that a file is left as it is, since its contents show that it is not what the operation is for. The
     /// operation goes on with the next file.
     /// </summary>
+    /// <param name="message">Tells why the file is left.</param>
     Task ReportSkippedAsync(string message);
 
     /// <summary>
-    /// The file is left, since the user chose not to replace the file of the name the result would have. The operation
-    /// goes on with the next file.
+    /// Reports that a file is left as it is, since the user declined to replace the existing file with the name of the
+    /// result. The operation goes on with the next file.
     /// </summary>
     Task ReportReplaceDeclinedAsync();
 
     /// <summary>
-    /// All the files of the operation are done.
+    /// Reports that all the files of the operation are done.
     /// </summary>
     Task ReportRunCompletedAsync();
 
     /// <summary>
-    /// The operation is canceled, by the user or as the user chose, and the files after the last one done are left.
+    /// Reports that the operation is canceled, and that the files after the last one done are left as they are.
     /// </summary>
     Task ReportRunCanceledAsync();
 
     /// <summary>
-    /// The file has been encrypted or decrypted, and replaced by the result, unless the original could not be removed.
+    /// Reports that a file is encrypted or decrypted, and replaced by the result.
     /// </summary>
+    /// <param name="result">The resulting file.</param>
+    /// <param name="completedText">Tells that the file is done.</param>
+    /// <param name="isOriginalRemoved">True if the original file is removed, false if it is left.</param>
     Task ReportReplacedAsync(FileReference result, string completedText, bool isOriginalRemoved);
 
     /// <summary>
-    /// The file has been deleted, and removed from the recent files.
+    /// Reports that a file is deleted, and removed from the recent files.
     /// </summary>
+    /// <param name="completedText">Tells that the file is deleted.</param>
     Task ReportDeletedAsync(string completedText);
 }

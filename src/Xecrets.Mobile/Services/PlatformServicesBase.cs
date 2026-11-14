@@ -37,25 +37,50 @@ using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Services;
 
+/// <summary>
+/// The parts of <see cref="IPlatformServices"/> that are shared by the platforms.
+/// </summary>
 internal abstract class PlatformServicesBase : IPlatformServices
 {
+    /// <inheritdoc/>
+    /// <remarks>
+    /// There is none, unless a platform overrides this.
+    /// </remarks>
     public virtual string CrashPageAdditionalInformation => string.Empty;
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// There are none, unless a platform overrides this.
+    /// </remarks>
     public virtual void RegisterCrashHandlers(ICrashLogService crashLogService)
     {
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Fails fast, unless a platform overrides this.
+    /// </remarks>
     public virtual void CrashNative()
     {
         Environment.FailFast("Artificial native crash.");
     }
 
+    /// <inheritdoc/>
     public abstract (double Left, double Right) GetWindowGaps(VisualElement view);
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Does nothing, unless a platform overrides this.
+    /// </remarks>
     public virtual void IsSensitiveContentVisible(bool isShown)
     {
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Turns off spell checking, which MAUI maps to no suggestions on every platform, and sets the purpose with
+    /// <see cref="PasswordEntryProperties.SetPurpose"/> for the handler mappings of each platform.
+    /// </remarks>
     public virtual void ConfigurePasswordEntry(Entry entry, PasswordEntryPurpose purpose)
     {
         // TextFlagNoSuggestions (Android) and its equivalents are already applied by MAUI's own

@@ -44,9 +44,13 @@ namespace Xecrets.Mobile.Platforms.Android;
 internal static class AndroidMenuExtensions
 {
     /// <summary>
-    /// Android shows no icons in an overflow or popup menu, and there is no public API to change that. MenuBuilder is
-    /// public, and is what both menus are, but Google considers it internal API.
+    /// Makes an overflow or popup menu show the icons of its items.
     /// </summary>
+    /// <param name="menu">The menu.</param>
+    /// <remarks>
+    /// Android shows no icons in these menus, and there is no public API to change that. MenuBuilder is public, and is
+    /// what both menus are, but Google considers it internal API.
+    /// </remarks>
     public static void ShowIcons(this IMenu menu)
     {
 #pragma warning disable XAOBS001 // MenuBuilder is internal API according to Google.
@@ -55,8 +59,12 @@ internal static class AndroidMenuExtensions
     }
 
     /// <summary>
-    /// The icon keeps its own color, rather than the tint of the toolbar, which is meant for the toolbar itself.
+    /// Sets the icon of a menu item, which keeps its own color, rather than the tint of the toolbar, which is meant for
+    /// the toolbar itself.
     /// </summary>
+    /// <param name="menuItem">The menu item.</param>
+    /// <param name="icon">The icon.</param>
+    /// <param name="mauiContext">The context to load the icon in.</param>
     public static void SetIcon(this IMenuItem menuItem, ImageSource icon, IMauiContext mauiContext) =>
         icon.LoadImage(mauiContext, result => menuItem.SetIcon(result?.Value));
 }

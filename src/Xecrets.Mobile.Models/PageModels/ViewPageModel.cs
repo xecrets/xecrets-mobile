@@ -37,6 +37,9 @@ using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
+/// <summary>
+/// The page model of the page that shows the decrypted file being previewed in the app, as text or as an image.
+/// </summary>
 public partial class ViewPageModel(
     IPreviewService previewService,
     IFlowContext flowContext,
@@ -44,41 +47,67 @@ public partial class ViewPageModel(
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel, IPageInformationPageModel
 {
+    /// <inheritdoc/>
     public string Heading => MobileTexts.ViewContentTitle;
 
+    /// <inheritdoc/>
     public string Information => MobileTexts.ViewDescription;
 
+    /// <summary>
+    /// The font of the text.
+    /// </summary>
     public TextEditorFontModel Font { get; } = new(profileSettingsService);
 
     // Once only, since the page appears again when returned to.
     private bool _initialized;
 
+    /// <inheritdoc/>
     public string Breadcrumb => BreadcrumbFormatter.Format(
         flowContext.Origin,
         MobileTexts.BreadcrumbPreview,
         MobileTexts.BreadcrumbView);
 
+    /// <summary>
+    /// The name of the file, before it was encrypted.
+    /// </summary>
     [ObservableProperty]
     public partial string FileNameText { get; set; } = string.Empty;
 
+    /// <summary>
+    /// The type and size of the file.
+    /// </summary>
     [ObservableProperty]
     public partial string MetadataText { get; set; } = string.Empty;
 
+    /// <inheritdoc/>
     [ObservableProperty]
     public partial string MessageText { get; set; } = string.Empty;
 
+    /// <inheritdoc/>
     [ObservableProperty]
     public partial string StatusText { get; set; } = string.Empty;
 
+    /// <summary>
+    /// The text shown, or "" when an image is shown.
+    /// </summary>
     [ObservableProperty]
     public partial string Text { get; set; } = string.Empty;
 
+    /// <summary>
+    /// The full path of the image shown, or "" when text is shown.
+    /// </summary>
     [ObservableProperty]
     public partial string ImageFilePath { get; set; } = string.Empty;
 
+    /// <summary>
+    /// True if an image is shown, false otherwise.
+    /// </summary>
     [ObservableProperty]
     public partial bool IsImageVisible { get; set; }
 
+    /// <summary>
+    /// True if text is shown, false otherwise.
+    /// </summary>
     [ObservableProperty]
     public partial bool IsTextVisible { get; set; }
 

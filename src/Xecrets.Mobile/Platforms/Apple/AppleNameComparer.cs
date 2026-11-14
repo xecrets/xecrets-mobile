@@ -38,13 +38,16 @@ namespace Xecrets.Mobile.Platforms.Apple;
 /// Compares names of files as APFS does, the same whatever their Unicode form, such as an "ä" as one character or as
 /// an "a" followed by a combining mark, and by case or not, as the volume does.
 /// </summary>
+/// <param name="isCaseSensitive">True if the volume compares names by case, false otherwise.</param>
 internal sealed class AppleNameComparer(bool isCaseSensitive) : IEqualityComparer<string>
 {
     private readonly StringComparer _comparer =
         isCaseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
 
+    /// <inheritdoc/>
     public bool Equals(string? x, string? y) =>
         _comparer.Equals(x?.Normalize(NormalizationForm.FormC), y?.Normalize(NormalizationForm.FormC));
 
+    /// <inheritdoc/>
     public int GetHashCode(string obj) => _comparer.GetHashCode(obj.Normalize(NormalizationForm.FormC));
 }

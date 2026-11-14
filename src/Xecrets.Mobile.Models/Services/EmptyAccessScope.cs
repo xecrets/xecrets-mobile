@@ -30,8 +30,15 @@
 
 namespace Xecrets.Mobile.Models.Services;
 
+/// <summary>
+/// A scope of access to a file that needs no access to be acquired.
+/// </summary>
 public sealed class EmptyAccessScope : IDisposable
 {
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Does nothing.
+    /// </remarks>
     public void Dispose()
     {
     }

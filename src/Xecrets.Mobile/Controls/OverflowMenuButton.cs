@@ -43,18 +43,27 @@ namespace Xecrets.Mobile.Controls;
 /// </summary>
 internal partial class OverflowMenuButton : View
 {
+    /// <summary>
+    /// Identifies the <see cref="Items"/> bindable property.
+    /// </summary>
     public static readonly BindableProperty ItemsProperty = BindableProperty.Create(
         nameof(Items),
         typeof(IReadOnlyList<OverflowMenuItem>),
         typeof(OverflowMenuButton),
         System.Array.Empty<OverflowMenuItem>());
 
+    /// <summary>
+    /// Identifies the <see cref="IconColor"/> bindable property.
+    /// </summary>
     public static readonly BindableProperty IconColorProperty = BindableProperty.Create(
         nameof(IconColor),
         typeof(Color),
         typeof(OverflowMenuButton),
         Colors.Black);
 
+    /// <summary>
+    /// The items of the menu, which are none unless set.
+    /// </summary>
     public IReadOnlyList<OverflowMenuItem> Items
     {
         get => (IReadOnlyList<OverflowMenuItem>)GetValue(ItemsProperty);
@@ -70,6 +79,11 @@ internal partial class OverflowMenuButton : View
         set => SetValue(IconColorProperty, value);
     }
 
+    /// <summary>
+    /// Gets the icon of an item from the app resources.
+    /// </summary>
+    /// <param name="item">The item.</param>
+    /// <returns>The icon of the item.</returns>
     public static ImageSource GetIcon(OverflowMenuItem item) =>
         (ImageSource)Application.Current!.Resources[item.IconKey];
 }

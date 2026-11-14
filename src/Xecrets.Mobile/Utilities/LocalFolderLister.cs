@@ -51,9 +51,10 @@ internal static class LocalFolderLister
     /// </summary>
     /// <param name="folder">The folder to list.</param>
     /// <param name="scope">Whether the folders below it are listed.</param>
-    /// <param name="getId">The id of a file or folder.</param>
-    /// <param name="locate">Where a file to operate on is stored.</param>
+    /// <param name="getId">Gets the id of a file or folder.</param>
+    /// <param name="locate">Tells where a listed file is stored.</param>
     /// <param name="nameComparer">How the storage compares names.</param>
+    /// <returns>One listing for each folder, the listing of the folder itself first.</returns>
     public static IReadOnlyList<FolderListing> List(
         DirectoryInfo folder,
         FolderScope scope,

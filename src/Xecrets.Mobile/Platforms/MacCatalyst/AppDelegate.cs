@@ -35,8 +35,12 @@ using Microsoft.Maui.Hosting;
 
 namespace Xecrets.Mobile.Platforms.MacCatalyst;
 
+/// <summary>
+/// The application delegate of Mac Catalyst, which creates the MAUI app.
+/// </summary>
 [Register("AppDelegate")]
 public class AppDelegate : MauiUIApplicationDelegate
 {
+    /// <inheritdoc/>
     protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
 }

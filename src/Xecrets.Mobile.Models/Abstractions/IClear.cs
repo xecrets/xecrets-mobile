@@ -31,13 +31,14 @@
 namespace Xecrets.Mobile.Models.Abstractions;
 
 /// <summary>
-/// Clears what is held, with a choice of whether to persist that, beyond what the interface of the holder offers.
+/// Something that holds persisted values that can be cleared with or without persisting the change.
 /// </summary>
 public interface IClear
 {
     /// <summary>
-    /// Clears what is held. Without persisting, when what is persisted has already been deleted, so that nothing is
-    /// written again.
+    /// Clears all values held.
     /// </summary>
+    /// <param name="persist">True to also clear the persisted values, false to only clear the values held in memory
+    /// and leave what is persisted unchanged.</param>
     void Clear(bool persist);
 }

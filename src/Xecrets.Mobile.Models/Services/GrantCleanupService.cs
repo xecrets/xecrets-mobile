@@ -43,6 +43,9 @@ public sealed class GrantCleanupService(
     IFileAccess fileAccess,
     ICrashLogService crashLogService)
 {
+    /// <summary>
+    /// Releases the grants that are no longer referenced. A failure is logged as a crash, and not passed on.
+    /// </summary>
     public async Task RunAsync()
     {
         GrantReferences references;

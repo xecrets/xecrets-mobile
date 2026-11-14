@@ -42,9 +42,16 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Platforms.Windows;
 
+/// <summary>
+/// The services of Windows.
+/// </summary>
 [SupportedOSPlatform("windows")]
 internal class WindowsServices : PlatformServicesBase
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WindowsServices"/> class, and adds the handler mappings of Windows
+    /// for the font weight. Requires a single instance for the app.
+    /// </summary>
     public WindowsServices()
     {
         LabelHandler.Mapper.AppendToMapping(nameof(ITextStyle.Font), (handler, view) =>
@@ -53,6 +60,7 @@ internal class WindowsServices : PlatformServicesBase
             ApplyFontWeight(view, handler.PlatformView, Control.FontWeightProperty));
     }
 
+    /// <inheritdoc/>
     public override (double Left, double Right) GetWindowGaps(VisualElement view)
     {
         FrameworkElement platformView = (FrameworkElement)view.Handler!.PlatformView!;

@@ -42,6 +42,10 @@ namespace Xecrets.Mobile.Platforms.Apple;
 /// </summary>
 internal abstract class AppleFileService : FileServiceBase
 {
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The viewer is QuickLook.
+    /// </remarks>
     public override Task<bool> CanViewFileAsync(DecryptedFileInfo file) =>
         QuickLookFileViewer.CanViewAsync(file);
 

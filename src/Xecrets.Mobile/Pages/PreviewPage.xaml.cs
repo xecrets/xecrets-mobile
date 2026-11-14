@@ -34,10 +34,16 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
+/// <summary>
+/// The page that previews a decrypted file.
+/// </summary>
 internal partial class PreviewPage
 {
     private readonly ActionButtonColumns _actionButtonColumns;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PreviewPage"/> class with the standard header.
+    /// </summary>
     public PreviewPage(PreviewPageModel model, IPageHeaderService pageHeaderService)
         : base(model)
     {

@@ -8,6 +8,7 @@
         <!-- Fail the build on any unsuppressed warning; suppress deliberate exceptions with NoWarn. -->
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
         <RunAnalyzersDuringLiveAnalysis>False</RunAnalyzersDuringLiveAnalysis>
+        <GenerateDocumentationFile>True</GenerateDocumentationFile>
     </PropertyGroup>
 
     <ItemGroup>

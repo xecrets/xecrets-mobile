@@ -33,8 +33,14 @@ using Xecrets.Mobile.Models.PageModels;
 
 namespace Xecrets.Mobile.Pages;
 
+/// <summary>
+/// The page that shows the crash log of the last crash.
+/// </summary>
 internal partial class CrashPage
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CrashPage"/> class, without the standard header.
+    /// </summary>
     public CrashPage(CrashPageModel model, IPlatformServices platformServices)
         : base(model)
     {
@@ -42,5 +48,6 @@ internal partial class CrashPage
         InitializeComponent();
     }
 
+    /// <inheritdoc cref="IPlatformServices.CrashPageAdditionalInformation"/>
     public string PlatformAdditionalInformation { get; }
 }

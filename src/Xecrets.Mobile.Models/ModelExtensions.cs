@@ -52,6 +52,8 @@ public static partial class ModelExtensions
     /// Registers the services and page models implemented here. The platform services they depend on are registered
     /// by the app.
     /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The service collection.</returns>
     public static IServiceCollection AddMobileModels(this IServiceCollection services)
     {
         services.AddSingleton<MobileDataStore>();
@@ -105,17 +107,20 @@ public static partial class ModelExtensions
         /// The name without a number a provider added after the extension, as "report-txt.axx" for
         /// "report-txt.axx (1)". A number before the extension, or in a name without one, is part of the name.
         /// </summary>
+        /// <returns>The name without the number.</returns>
         public string WithoutCopyNumber() =>
             CopyNumberAfterExtension().Match(name) is { Success: true } match ? match.Groups[1].Value : name;
 
         /// <summary>
         /// Tells if the name is that of an encrypted file, also with a number a provider added after the extension.
         /// </summary>
+        /// <returns>True if the name is that of an encrypted file, false otherwise.</returns>
         public bool IsNameEncrypted() => name.WithoutCopyNumber().IsEncrypted();
 
         /// <summary>
         /// The content type the name tells, also with a number a provider added after the extension.
         /// </summary>
+        /// <returns>The MIME type.</returns>
         public string DetectContentType() => FileTypeClassifier.DetectContentType(name.WithoutCopyNumber());
     }
 

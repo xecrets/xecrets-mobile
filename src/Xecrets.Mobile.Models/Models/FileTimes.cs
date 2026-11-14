@@ -33,6 +33,9 @@ namespace Xecrets.Mobile.Models.Models;
 /// <summary>
 /// The times of a file in UTC. A time that cannot be told is the current time.
 /// </summary>
+/// <param name="CreationTimeUtc">When the file was created.</param>
+/// <param name="LastAccessTimeUtc">When the file was last accessed.</param>
+/// <param name="LastWriteTimeUtc">When the file was last written.</param>
 public sealed record FileTimes(DateTime CreationTimeUtc, DateTime LastAccessTimeUtc, DateTime LastWriteTimeUtc)
 {
     /// <summary>

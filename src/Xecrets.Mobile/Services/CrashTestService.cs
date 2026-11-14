@@ -35,17 +35,25 @@ using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Services;
 
+/// <summary>
+/// Causes artificial crashes, to test crash handling.
+/// </summary>
 internal sealed class CrashTestService(IPlatformServices platformServices, ICrashLogService crashLogService) : ICrashTestService
 {
     private CrashTestOperation? _operation;
     private bool _native;
 
+    /// <inheritdoc/>
     public void Arm(CrashTestOperation operation, bool native)
     {
         _operation = operation;
         _native = native;
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// A native crash first writes a crash log, since the process ends without running any managed handler.
+    /// </remarks>
     public void CrashIfArmed(CrashTestOperation operation)
     {
         if (_operation != operation)

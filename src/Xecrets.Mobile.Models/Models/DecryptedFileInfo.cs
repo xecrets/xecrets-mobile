@@ -30,6 +30,15 @@
 
 namespace Xecrets.Mobile.Models.Models;
 
+/// <summary>
+/// A decrypted file.
+/// </summary>
+/// <param name="FilePath">The full path of the decrypted file, or "" if it is only held in memory.</param>
+/// <param name="OriginalFileName">The name of the file before it was encrypted.</param>
+/// <param name="ContentType">The MIME type of the file.</param>
+/// <param name="FileSize">The size of the decrypted file in bytes.</param>
+/// <param name="Kind">How the file is previewed.</param>
+/// <param name="OriginalTimes">The times of the file before it was encrypted.</param>
 public sealed record DecryptedFileInfo(
     string FilePath,
     string OriginalFileName,
@@ -38,6 +47,9 @@ public sealed record DecryptedFileInfo(
     PreviewKind Kind,
     FileTimes OriginalTimes)
 {
+    /// <summary>
+    /// No decrypted file, with the kind <see cref="PreviewKind.Unknown"/>.
+    /// </summary>
     public static DecryptedFileInfo Empty { get; } = new(
         string.Empty,
         string.Empty,

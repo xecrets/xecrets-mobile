@@ -52,6 +52,9 @@ public sealed class LocalProfileDeletionService(
     IProfileService profileService,
     IUserInterfaceService userInterfaceService)
 {
+    /// <summary>
+    /// Deletes all local data, releases all grants, and navigates to the startup page.
+    /// </summary>
     public async Task DeleteAsync()
     {
         previewService.Current.Clear();

@@ -49,13 +49,20 @@ using Platform = Microsoft.Maui.ApplicationModel.Platform;
 
 namespace Xecrets.Mobile.Platforms.Android;
 
+/// <summary>
+/// The file service of Android, which hands files to other apps through content uris of a file provider.
+/// </summary>
 [SupportedOSPlatform("android26.0")]
 internal class AndroidFileService : FileServiceBase
 {
+    /// <inheritdoc/>
     public override string PlatformId => "android";
 
-    // View is only ever the on-device Quick Viewer - handing a file to a real installed app is what
-    // OpenInAsync/the "Open In..." button already does, so View must not overlap with it.
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The viewer is only the Quick Viewer of the device, since handing a file to an installed app is what
+    /// <see cref="OpenInAsync"/> does.
+    /// </remarks>
     public override Task<bool> CanViewFileAsync(DecryptedFileInfo file)
     {
         if (TryGetQuickViewIntent(file, out Intent? quickViewIntent))
@@ -113,6 +120,10 @@ internal class AndroidFileService : FileServiceBase
         return false;
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The file is opened with a chooser of the apps that can view it.
+    /// </remarks>
     public override Task<bool> OpenInAsync(string filePath, string displayName)
     {
         ThreadGuard.ThrowIfNotMainThread();
@@ -163,6 +174,11 @@ internal class AndroidFileService : FileServiceBase
         return (uri, resolvedContentType);
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The reference is a content uri, which is one the app handed off when it is of one of the file providers of the
+    /// app.
+    /// </remarks>
     public override bool IsSelfHandoffReference(string reference) =>
         AndroidUri.Parse(reference)?.Authority is string authority &&
         (authority == $"{Platform.AppContext.PackageName}.fileProvider" || authority == QuickViewFileProvider.Authority);

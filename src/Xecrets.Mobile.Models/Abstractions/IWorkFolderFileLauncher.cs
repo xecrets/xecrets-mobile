@@ -38,14 +38,20 @@ namespace Xecrets.Mobile.Models.Abstractions;
 public interface IWorkFolderFileLauncher
 {
     /// <summary>
-    /// Opens the file for viewing or editing in the way customary on the platform, as tapping it in a file manager
-    /// would. The app is also allowed to save its changes when <paramref name="allowWrite"/> is true, which requires
-    /// the file to be reached through one of My folders. Returns false when no app can open the file.
+    /// Opens a file for viewing or editing in the way customary on the platform, as tapping it in a file manager
+    /// would.
     /// </summary>
+    /// <param name="file">The file.</param>
+    /// <param name="allowWrite">True to also allow the app that opens the file to save its changes, which requires the
+    /// file to be reached through one of My folders, false otherwise.</param>
+    /// <returns>True if the file is opened, false if no app can open it.</returns>
+    /// <exception cref="FileNotAccessibleException">The file cannot be reached.</exception>
     Task<bool> OpenAsync(FileReference file, bool allowWrite);
 
     /// <summary>
-    /// Lets the user choose an app to share the file with or send it to.
+    /// Lets the user choose an app to share a file with or send it to.
     /// </summary>
+    /// <param name="file">The file.</param>
+    /// <exception cref="FileNotAccessibleException">The file cannot be reached.</exception>
     Task ShareAsync(FileReference file);
 }

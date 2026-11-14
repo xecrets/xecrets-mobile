@@ -30,9 +30,23 @@
 
 namespace Xecrets.Mobile.Models.Models;
 
+/// <summary>
+/// The theme of the app.
+/// </summary>
 public enum ThemePreference
 {
+    /// <summary>
+    /// The theme of the system.
+    /// </summary>
     System,
+
+    /// <summary>
+    /// The light theme.
+    /// </summary>
     Light,
+
+    /// <summary>
+    /// The dark theme.
+    /// </summary>
     Dark,
 }

@@ -31,6 +31,8 @@
 namespace Xecrets.Mobile.Models.Models;
 
 /// <summary>
-/// A line of the welcome text. <see cref="Icon"/> is a glyph for a bullet line, or empty for a paragraph.
+/// A line of the welcome text.
 /// </summary>
+/// <param name="Icon">The glyph of a bullet line, or "" for a paragraph.</param>
+/// <param name="Text">The text of the line.</param>
 public sealed record WelcomeLine(string Icon, string Text);

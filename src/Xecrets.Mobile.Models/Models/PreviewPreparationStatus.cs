@@ -30,9 +30,23 @@
 
 namespace Xecrets.Mobile.Models.Models;
 
+/// <summary>
+/// The outcome of preparing a preview.
+/// </summary>
 public enum PreviewPreparationStatus
 {
+    /// <summary>
+    /// The file is decrypted, and is the preview.
+    /// </summary>
     Prepared,
+
+    /// <summary>
+    /// None of the passwords tried decrypts the file.
+    /// </summary>
     WrongPassword,
+
+    /// <summary>
+    /// The file was not decrypted, since the operation was canceled, or there was no file to decrypt.
+    /// </summary>
     Cancelled,
 }

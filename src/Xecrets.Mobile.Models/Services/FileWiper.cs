@@ -50,17 +50,21 @@ internal sealed class FileWiper(ICrashLogService crashLogService) : IFileWiper
     /// </summary>
     public static string DeletedNotice => $"Deleted by {MobileTexts.DisplayNameProgram}. Make sure to delete all versions of this file permanently.";
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The rights needed are those to delete the file.
+    /// </remarks>
     public async Task<bool> CanWipeAsync(IWritableFile file)
     {
         using IDisposable access = file.AcquireAccess();
         return await file.CanDeleteAsync();
     }
 
-    /// <summary>
-    /// There are too many caveats with wiping a file that is on a mobile phone, or in cloud storage. Versions are created and many operations are not
-    /// supported. So this is really the best effort, and we only do any attempt to overwrite if the file is on the device
-    /// and the stream supports seeking.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Wiping is best effort, since storage may keep versions and many operations are not supported. A file on the
+    /// device is overwritten with random data only when its stream can seek, and otherwise only given the notice.
+    /// </remarks>
     public async Task<FileWipeStatus> WipeAsync(IWritableFile file, bool isOnDevice)
     {
         using IDisposable access = file.AcquireAccess();

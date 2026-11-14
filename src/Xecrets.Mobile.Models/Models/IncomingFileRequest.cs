@@ -31,8 +31,14 @@
 namespace Xecrets.Mobile.Models.Models;
 
 
+/// <summary>
+/// What is received from another app and waits to be handled: a file, a message, or nothing.
+/// </summary>
 internal sealed record IncomingFileRequest
 {
+    /// <summary>
+    /// Nothing received.
+    /// </summary>
     public static readonly IncomingFileRequest Empty = new(null, null);
 
     private IncomingFileRequest(IncomingFileInfo? file, string? message)
@@ -41,17 +47,31 @@ internal sealed record IncomingFileRequest
         Message = message;
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="IncomingFileRequest"/> class for a received file.
+    /// </summary>
+    /// <param name="file">The received file.</param>
     public IncomingFileRequest(IncomingFileInfo file)
     {
         File = file;
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="IncomingFileRequest"/> class for a message to show.
+    /// </summary>
+    /// <param name="message">The message to show.</param>
     public IncomingFileRequest(string message)
     {
         Message = message;
     }
 
+    /// <summary>
+    /// The received file, or null if none.
+    /// </summary>
     public readonly IncomingFileInfo? File;
 
+    /// <summary>
+    /// The message to show, or null if none.
+    /// </summary>
     public readonly string? Message;
 }

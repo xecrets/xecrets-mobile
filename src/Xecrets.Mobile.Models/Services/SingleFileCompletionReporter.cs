@@ -36,27 +36,37 @@ using Xecrets.Mobile.Models.Utilities;
 namespace Xecrets.Mobile.Models.Services;
 
 /// <summary>
-/// A file the user chose by itself is listed in the recent files once replaced, and the user is told that it is done,
-/// or that the original is left.
+/// Reports the outcome of an operation on a single file. The user is told of the outcome of the file, and a replaced
+/// file is added to the recent files.
 /// </summary>
 internal sealed class SingleFileCompletionReporter(
     IRecentFilesService recentFilesService,
     IUserInterfaceService userInterfaceService) : IFileCompletionReporter
 {
-    // The file is the only one.
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The file is the only one, so there is no next file to stop before.
+    /// </remarks>
     public Task<bool> ContinuesAfterFileAsync() => Task.FromResult(true);
 
+    /// <inheritdoc/>
     public Task ReportSkippedAsync(string message) => userInterfaceService.DisplayMessageAsync(message);
 
+    /// <inheritdoc/>
     public Task ReportReplaceDeclinedAsync() =>
         userInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextOperationNotCompleted);
 
-    // The user has been told when the file was done.
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Nothing is reported, since the user is told when the file is done.
+    /// </remarks>
     public Task ReportRunCompletedAsync() => Task.CompletedTask;
 
+    /// <inheritdoc/>
     public Task ReportRunCanceledAsync() =>
         userInterfaceService.DisplayTransientMessageAsync(MobileTexts.DialogTextOperationNotCompleted);
 
+    /// <inheritdoc/>
     public async Task ReportReplacedAsync(FileReference result, string completedText, bool isOriginalRemoved)
     {
         await recentFilesService.AddAsync(result, RecentFileOperation.InPlace);
@@ -64,6 +74,7 @@ internal sealed class SingleFileCompletionReporter(
             isOriginalRemoved ? completedText : MobileTexts.DialogTextOriginalNotRemoved);
     }
 
+    /// <inheritdoc/>
     public Task ReportDeletedAsync(string completedText) =>
         userInterfaceService.DisplayTransientMessageAsync(completedText);
 }

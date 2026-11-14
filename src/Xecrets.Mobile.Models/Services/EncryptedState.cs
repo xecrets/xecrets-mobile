@@ -32,6 +32,9 @@ using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Models.Services;
 
+/// <summary>
+/// The encrypted copy shown, held in memory.
+/// </summary>
 internal sealed class EncryptedState : IEncryptedState
 {
     /// <inheritdoc/>

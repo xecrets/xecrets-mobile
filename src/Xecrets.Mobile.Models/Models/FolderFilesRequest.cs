@@ -33,7 +33,9 @@ using Xecrets.Common.Models;
 namespace Xecrets.Mobile.Models.Models;
 
 /// <summary>
-/// An operation on the files of a folder, as chosen in the menu of one of My folders, where the user starts picking
-/// the folder.
+/// An operation on the files of a folder that the user picks.
 /// </summary>
+/// <param name="StartFolder">The one of My folders to start picking the folder in.</param>
+/// <param name="Operation">The operation on each file.</param>
+/// <param name="Scope">Which files of the folder the operation includes.</param>
 public sealed record FolderFilesRequest(WorkFolder StartFolder, FileOperation Operation, FolderScope Scope);

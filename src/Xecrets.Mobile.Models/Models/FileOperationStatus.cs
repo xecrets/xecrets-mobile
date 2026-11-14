@@ -38,9 +38,29 @@ namespace Xecrets.Mobile.Models.Models;
 /// </summary>
 public enum FileOperationStatus
 {
+    /// <summary>
+    /// The operation on the file is done.
+    /// </summary>
     Completed,
+
+    /// <summary>
+    /// Nothing is done, and the user has been told why.
+    /// </summary>
     NotDone,
+
+    /// <summary>
+    /// The file is left, since it is not what the operation is for, or the user declined to replace the existing file
+    /// with the name of the result.
+    /// </summary>
     Skipped,
+
+    /// <summary>
+    /// The file needs a password that is not known.
+    /// </summary>
     PasswordNeeded,
+
+    /// <summary>
+    /// The operation is canceled.
+    /// </summary>
     Canceled,
 }

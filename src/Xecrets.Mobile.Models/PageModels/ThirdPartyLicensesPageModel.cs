@@ -36,11 +36,17 @@ using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
+/// <summary>
+/// The page model of the page of the third-party licenses.
+/// </summary>
 public partial class ThirdPartyLicensesPageModel(
     IUserInterfaceService userInterfaceService,
     IThirdPartyNoticesService thirdPartyNoticesService)
     : PageModelBase(userInterfaceService)
 {
+    /// <summary>
+    /// The notices, formatted for display, or "" until they are read.
+    /// </summary>
     [ObservableProperty]
     public partial string ThirdPartyNotices { get; set; } = string.Empty;
 

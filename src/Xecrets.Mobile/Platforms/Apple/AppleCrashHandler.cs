@@ -34,8 +34,16 @@ using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Platforms.Apple;
 
+/// <summary>
+/// The crash handler of the Apple platforms, for managed exceptions that would pass into native code.
+/// </summary>
 internal static class AppleCrashHandler
 {
+    /// <summary>
+    /// Registers a handler that writes a crash log for a managed exception that would pass into native code, and then
+    /// aborts.
+    /// </summary>
+    /// <param name="crashLogService">Writes the crash log.</param>
     public static void Register(ICrashLogService crashLogService)
     {
         Runtime.MarshalManagedException += (_, args) =>

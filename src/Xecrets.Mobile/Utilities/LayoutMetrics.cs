@@ -38,6 +38,10 @@ using Xecrets.Mobile.Controls;
 
 namespace Xecrets.Mobile.Utilities;
 
+/// <summary>
+/// The layout of the pages that depends on the size of the page and the device: whether the height is compact, and the
+/// widths of the content column, the card and the action buttons, centered on the page.
+/// </summary>
 internal static class LayoutMetrics
 {
     private const double _actionButtonStackMaximumWidth = 420;
@@ -49,8 +53,11 @@ internal static class LayoutMetrics
     private const double _formContentColumnMaximumWidth = 600;
 
     /// <summary>
-    /// Whether there is little height for the content, as on a phone in landscape.
+    /// Tells if there is little height for the content, as on a phone in landscape.
     /// </summary>
+    /// <param name="width">The width of the page or window.</param>
+    /// <param name="height">The height of the page or window.</param>
+    /// <returns>True if the height is compact, false otherwise.</returns>
     public static bool IsCompactHeight(double width, double height)
     {
         return DeviceInfo.Current.Idiom == DeviceIdiom.Phone && width > height;
@@ -59,6 +66,8 @@ internal static class LayoutMetrics
     /// <summary>
     /// Sets the dynamic resources that styles and controls use to save height, from their regular or compact variants.
     /// </summary>
+    /// <param name="resources">The resources of the app.</param>
+    /// <param name="isCompactHeight">True if the height is compact, false otherwise.</param>
     public static void UpdateCompactHeightResources(ResourceDictionary resources, bool isCompactHeight)
     {
         resources["IsCompactHeight"] = isCompactHeight;
@@ -88,6 +97,8 @@ internal static class LayoutMetrics
     /// <summary>
     /// Sets the dynamic resources that depend on the display density, since the platform draws some parts in whole pixels.
     /// </summary>
+    /// <param name="resources">The resources of the app.</param>
+    /// <param name="density">The display density.</param>
     public static void UpdateDensityResources(ResourceDictionary resources, double density)
     {
         // The platform rounds the inset of the underline down to whole pixels, so the meter is inset as much for their
@@ -96,24 +107,55 @@ internal static class LayoutMetrics
         resources["PasswordStrengthInset"] = new Thickness(inset, 0);
     }
 
+    /// <summary>
+    /// Sizes the card and the action buttons of a page with a form, which is narrower than other content, since a
+    /// field much wider than what is typed into it only spreads out the form.
+    /// </summary>
+    /// <param name="pageWidth">The width of the page.</param>
+    /// <param name="contentRoot">The layout of the content, whose padding is kept.</param>
+    /// <param name="card">The card of the page.</param>
+    /// <param name="actionButtonStack">The action buttons, in the body of the card.</param>
     public static void UpdateCenteredFormLayout(double pageWidth, Layout contentRoot, PageCard card, View actionButtonStack)
     {
         UpdateCenteredLayout(pageWidth, contentRoot, card, actionButtonStack, _formContentColumnMaximumWidth, _actionButtonStackMaximumWidth);
     }
 
-    // For buttons in icon rows, with an icon button on each side, so that the buttons are as wide as other action
-    // buttons. The margin is that of a standalone button in the rows, which lines it up with the row buttons.
-    // Two columns of action buttons, each column at most as wide as a single column of buttons.
+    /// <summary>
+    /// Sizes the card and the two columns of action buttons of a page, each column at most as wide as a single column
+    /// of buttons.
+    /// </summary>
+    /// <param name="pageWidth">The width of the page.</param>
+    /// <param name="contentRoot">The layout of the content, whose padding is kept.</param>
+    /// <param name="card">The card of the page.</param>
+    /// <param name="actionButtonGrid">The two column grid of the action buttons, in the body of the card.</param>
     public static void UpdateCenteredTwoColumnLayout(double pageWidth, Layout contentRoot, PageCard card, Grid actionButtonGrid)
     {
         UpdateCenteredLayout(pageWidth, contentRoot, card, actionButtonGrid, _contentColumnMaximumWidth, (2 * _actionButtonStackMaximumWidth) + actionButtonGrid.ColumnSpacing);
     }
 
+    /// <summary>
+    /// Sizes the card and the buttons in icon rows, with an icon button on each side, so that the buttons are as wide
+    /// as other action buttons.
+    /// </summary>
+    /// <param name="pageWidth">The width of the page.</param>
+    /// <param name="contentRoot">The layout of the content, whose padding is kept.</param>
+    /// <param name="card">The card of the page.</param>
+    /// <param name="actionButtonStack">The icon rows, in the body of the card.</param>
+    /// <param name="iconRowMargin">The margin of a standalone button in the rows, which lines it up with the row
+    /// buttons.</param>
     public static void UpdateCenteredIconRowLayout(double pageWidth, Layout contentRoot, PageCard card, View actionButtonStack, Thickness iconRowMargin)
     {
         UpdateCenteredLayout(pageWidth, contentRoot, card, actionButtonStack, _contentColumnMaximumWidth, _actionButtonStackMaximumWidth + iconRowMargin.HorizontalThickness);
     }
 
+    /// <summary>
+    /// Sizes the card and the action buttons of a page.
+    /// </summary>
+    /// <param name="pageWidth">The width of the page.</param>
+    /// <param name="contentRoot">The layout of the content, whose padding is kept.</param>
+    /// <param name="card">The card of the page.</param>
+    /// <param name="actionButtonStack">The action buttons, in the body of the card.</param>
+    /// <param name="actionButtonStackMaximumWidth">The largest width of the action buttons.</param>
     public static void UpdateCenteredContentLayout(
         double pageWidth,
         Layout contentRoot,
@@ -148,6 +190,12 @@ internal static class LayoutMetrics
         UpdateActionButtonStackWidth(cardContentWidth, actionButtonStack, actionButtonStackMaximumWidth);
     }
 
+    /// <summary>
+    /// Sizes action buttons to the width available, up to a largest width. Nothing is done before there is a width.
+    /// </summary>
+    /// <param name="availableWidth">The width available.</param>
+    /// <param name="actionButtonStack">The action buttons.</param>
+    /// <param name="actionButtonStackMaximumWidth">The largest width of the action buttons.</param>
     public static void UpdateActionButtonStackWidth(
         double availableWidth,
         VisualElement actionButtonStack,
@@ -161,7 +209,11 @@ internal static class LayoutMetrics
         actionButtonStack.WidthRequest = Math.Min(availableWidth, actionButtonStackMaximumWidth);
     }
 
-    // Two action buttons side by side, each at most as wide as a single column of buttons.
+    /// <summary>
+    /// Sizes two action buttons side by side, each at most as wide as a single column of buttons.
+    /// </summary>
+    /// <param name="availableWidth">The width available.</param>
+    /// <param name="actionButtonGrid">The grid of the two buttons.</param>
     public static void UpdateTwoColumnActionButtonWidth(double availableWidth, Grid actionButtonGrid)
     {
         UpdateActionButtonStackWidth(availableWidth, actionButtonGrid, (2 * _actionButtonStackMaximumWidth) + actionButtonGrid.ColumnSpacing);

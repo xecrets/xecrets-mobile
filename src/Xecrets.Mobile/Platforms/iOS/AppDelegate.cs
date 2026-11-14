@@ -41,19 +41,32 @@ using Xecrets.Mobile.Platforms.Apple;
 
 namespace Xecrets.Mobile.Platforms.iOS;
 
+/// <summary>
+/// The application delegate of iOS, which creates the MAUI app.
+/// </summary>
 [Register("AppDelegate")]
 public class AppDelegate : MauiUIApplicationDelegate
 {
     private const string _performFetchSelectorName = "application:performFetchWithCompletionHandler:";
 
+    /// <inheritdoc/>
     protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The file of the url is received as by <see cref="AppleIncomingFileHandler.HandleIncomingUrl"/>, and the url is
+    /// always taken as handled.
+    /// </remarks>
     public override bool OpenUrl(UIApplication application, NSUrl url, NSDictionary options)
     {
         AppleIncomingFileHandler.HandleIncomingUrl(url);
         return true;
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The app does no background fetch, so it does not respond to the selector of background fetch.
+    /// </remarks>
     public override bool RespondsToSelector(Selector? selector)
     {
         if (selector?.Name == _performFetchSelectorName)

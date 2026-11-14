@@ -36,6 +36,13 @@ namespace Xecrets.Mobile.Models.Models;
 [Flags]
 public enum DontShowAgain
 {
+    /// <summary>
+    /// No notice.
+    /// </summary>
     None = 0,
+
+    /// <summary>
+    /// The information on the welcome page.
+    /// </summary>
     WelcomeInformation = 1,
 }

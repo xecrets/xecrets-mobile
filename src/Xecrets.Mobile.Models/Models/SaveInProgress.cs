@@ -31,14 +31,12 @@
 namespace Xecrets.Mobile.Models.Models;
 
 /// <summary>
-/// A complete result being saved in one of My folders, which is kept on the device while it is saved. The app may be
-/// ended before it is done, leaving the file saved in part, which is undone when the user next signs in. The source is
-/// what keeps what the user had, until the result is saved, so it is what the file saved in part may be removed for.
+/// A save of a complete result in one of My folders that has begun and is not done.
 /// </summary>
 public sealed record SaveInProgress
 {
     /// <summary>
-    /// The local profile signed in, since My folders and their grants are those of a profile.
+    /// The id of the local profile that saves the result.
     /// </summary>
     public string UserId { get; init; } = "";
 
@@ -53,13 +51,13 @@ public sealed record SaveInProgress
     public string Name { get; init; } = "";
 
     /// <summary>
-    /// The file the result is made from, which is not removed until the result is saved.
+    /// The id of the file the result is made from.
     /// </summary>
     public string SourceId { get; init; } = "";
 
     /// <summary>
-    /// Whether the source is given the name again once the file saved in part is removed, as the original of edits is,
-    /// which is kept under its backup name while they are saved.
+    /// True if the source file is kept under another name while the result is saved, and gets <see cref="Name"/> back
+    /// when the save is undone, false otherwise.
     /// </summary>
     public bool RestoresSource { get; init; }
 }

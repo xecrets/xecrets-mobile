@@ -32,18 +32,34 @@ using Microsoft.Maui.Controls;
 
 namespace Xecrets.Mobile.Abstractions;
 
+/// <summary>
+/// The attached purpose of an entry for a password, which opts the entry in to the password configuration of the
+/// handler mappings of each platform.
+/// </summary>
 internal static class PasswordEntryProperties
 {
-    // Key for the global, once-per-app handler-mapper customization that applies platform-specific
-    // password-entry configuration (autofill hints, content-type, etc.) to opted-in entries.
+    /// <summary>
+    /// The key of the handler mapping that applies the password configuration of the platform, such as autofill hints
+    /// and content type, to the entries that have a purpose.
+    /// </summary>
     public static string ConfigureMapperKey => "Xecrets.ConfigurePasswordEntry";
 
     private static readonly BindableProperty _purposeProperty = BindableProperty.CreateAttached(
         "Purpose", typeof(PasswordEntryPurpose?), typeof(PasswordEntryProperties), null);
 
+    /// <summary>
+    /// Gets the purpose of an entry.
+    /// </summary>
+    /// <param name="view">The entry.</param>
+    /// <returns>The purpose, or null if the entry is not for a password.</returns>
     public static PasswordEntryPurpose? GetPurpose(BindableObject view) =>
         (PasswordEntryPurpose?)view.GetValue(_purposeProperty);
 
+    /// <summary>
+    /// Sets the purpose of an entry.
+    /// </summary>
+    /// <param name="view">The entry.</param>
+    /// <param name="value">The purpose, or null if the entry is not for a password.</param>
     public static void SetPurpose(BindableObject view, PasswordEntryPurpose? value) =>
         view.SetValue(_purposeProperty, value);
 }

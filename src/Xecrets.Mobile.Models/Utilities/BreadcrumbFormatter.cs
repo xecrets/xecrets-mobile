@@ -33,12 +33,18 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Utilities;
 
+/// <summary>
+/// Builds breadcrumb trails.
+/// </summary>
 internal static class BreadcrumbFormatter
 {
     /// <summary>
-    /// Builds the trail shown at the top of a page, naming the pages where the user started and
-    /// the pages that lead to where they are, ending with it.
+    /// Builds a breadcrumb trail of the pages where the user started the flow, followed by the pages that lead to the
+    /// current page, ending with it, joined by <see cref="MobileTexts.BreadcrumbSeparator"/>.
     /// </summary>
+    /// <param name="origin">Where the user started the flow.</param>
+    /// <param name="pages">The breadcrumbs of the pages after the origin, the current page last.</param>
+    /// <returns>The breadcrumb trail.</returns>
     public static string Format(FlowOrigin origin, params string[] pages) =>
         string.Join(
             MobileTexts.BreadcrumbSeparator,

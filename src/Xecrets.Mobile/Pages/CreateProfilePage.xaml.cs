@@ -42,6 +42,9 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
+/// <summary>
+/// The page that creates the local profile, changes it, or deletes it.
+/// </summary>
 internal partial class CreateProfilePage : IQueryAttributable
 {
     private readonly IPlatformServices _platformServices;
@@ -49,8 +52,15 @@ internal partial class CreateProfilePage : IQueryAttributable
     private bool _isCompact;
     private bool _isAppeared;
 
+    /// <summary>
+    /// The entry of the new password.
+    /// </summary>
     public Entry PasswordTextEntry => NewPasswordControl.PasswordTextEntry;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CreateProfilePage"/> class, which creates the profile, with the
+    /// standard header.
+    /// </summary>
     public CreateProfilePage(
         CreateProfilePageModel model,
         IPlatformServices platformServices,
@@ -67,6 +77,11 @@ internal partial class CreateProfilePage : IQueryAttributable
         pageHeaderService.ApplyStandardHeader(this);
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// A <see cref="ProfileAction"/> payload makes the page create, change or delete the profile. Without one, the page
+    /// creates the profile.
+    /// </remarks>
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
         if (!query.TryGetValue(nameof(NavigationParameter.Payload), out object? payload))

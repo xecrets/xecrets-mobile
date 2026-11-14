@@ -38,6 +38,9 @@ namespace Xecrets.Mobile.Controls;
 /// </summary>
 internal sealed class ReadOnlyEditor : Editor
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ReadOnlyEditor"/> class, which is read-only.
+    /// </summary>
     public ReadOnlyEditor()
     {
         IsReadOnly = true;

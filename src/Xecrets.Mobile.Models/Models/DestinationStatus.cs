@@ -35,6 +35,13 @@ namespace Xecrets.Mobile.Models.Models;
 /// </summary>
 internal enum DestinationStatus
 {
+    /// <summary>
+    /// The user canceled.
+    /// </summary>
     Canceled,
+
+    /// <summary>
+    /// The operation failed, which is taken to be because access was denied.
+    /// </summary>
     AccessDenied,
 }

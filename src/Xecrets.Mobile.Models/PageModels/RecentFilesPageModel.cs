@@ -41,10 +41,10 @@ using Xecrets.Texts;
 namespace Xecrets.Mobile.Models.PageModels;
 
 /// <summary>
-/// The recent files, shown as listed without checking the files. A file is only checked when it is used: first that
-/// there is access to it, and then that it can be reached. A file changed from the list is reached through one of My
-/// folders, and the user is asked to add its folder when there is none. A file that cannot be reached is offered to be
-/// removed, since it may be gone or only offline for now, which the user knows best.
+/// The page model of the recent files, shown as listed without checking the files. A file is only checked when it is
+/// used: first that there is access to it, and then that it can be reached. A file changed from the list is reached
+/// through one of My folders, and the user is asked to add its folder when there is none. A file that cannot be reached
+/// is offered to be removed, since it may be gone or only offline for now, which the user knows best.
 /// </summary>
 public partial class RecentFilesPageModel(
     IRecentFilesService recentFilesService,
@@ -58,37 +58,61 @@ public partial class RecentFilesPageModel(
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel, IPageInformationPageModel
 {
+    /// <inheritdoc/>
     public string Heading => MobileTexts.RecentFilesContentTitle;
 
+    /// <inheritdoc/>
     public string Information => Description;
 
     private List<RecentFileEntry> _available = [];
 
+    /// <summary>
+    /// The listed files of the <see cref="SelectedState"/>.
+    /// </summary>
     public ObservableCollection<RecentFileEntry> Files { get; } = [];
 
+    /// <inheritdoc/>
     public string Breadcrumb =>
         string.Join(MobileTexts.BreadcrumbSeparator, MobileTexts.BreadcrumbHome, MobileTexts.BreadcrumbRecentFiles);
 
+    /// <inheritdoc/>
     [ObservableProperty] public partial string MessageText { get; set; } = "";
 
+    /// <inheritdoc/>
     [ObservableProperty] public partial string StatusText { get; set; } = "";
 
+    /// <summary>
+    /// The description of the recent files.
+    /// </summary>
     public string Description => MobileTexts.RecentFilesDescription;
 
     /// <summary>
-    /// The description, shown on the page itself while no files are listed, to make it easier to find.
+    /// The description while no files are listed, or "" while there are.
     /// </summary>
     [ObservableProperty] public partial string NoFilesText { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Which of the listed files are shown.
+    /// </summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsReverseAllVisible))]
     [NotifyPropertyChangedFor(nameof(ReverseAllEncrypts))]
     public partial SelectedFileState SelectedState { get; set; } = SelectedFileState.All;
 
+    /// <summary>
+    /// True if the files shown are all encrypted, or all decrypted, so that all of them can be reversed, false
+    /// otherwise.
+    /// </summary>
     public bool IsReverseAllVisible => SelectedState is SelectedFileState.Encrypted or SelectedFileState.Decrypted;
 
+    /// <summary>
+    /// True if reversing all the files shown encrypts them, false if it decrypts them.
+    /// </summary>
     public bool ReverseAllEncrypts => SelectedState == SelectedFileState.Decrypted;
 
+    /// <summary>
+    /// True while an operation of the page runs, false otherwise.
+    /// </summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(AddCommand))]
     [NotifyCanExecuteChangedFor(nameof(OpenCommand))]

@@ -34,8 +34,12 @@ using Xecrets.Mobile.Platforms.Apple;
 
 namespace Xecrets.Mobile.Platforms.MacCatalyst;
 
+/// <summary>
+/// The file service of Mac Catalyst.
+/// </summary>
 [SupportedOSPlatform("maccatalyst")]
 internal sealed class MacCatalystFileService : AppleFileService
 {
+    /// <inheritdoc/>
     public override string PlatformId => "maccatalyst";
 }

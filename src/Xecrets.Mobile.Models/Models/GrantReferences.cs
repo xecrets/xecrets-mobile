@@ -34,7 +34,13 @@ namespace Xecrets.Mobile.Models.Models;
 /// The grants still referenced on this device: the folder grants of My folders, and the files on the recent files
 /// lists that are only reached through a grant to the file itself. Any other grant held is no longer used.
 /// </summary>
+/// <param name="FolderGrantIds">The ids of the folder grants of My folders.</param>
+/// <param name="FileIds">The ids of the files on the recent files lists that are reached through a grant to the file
+/// itself.</param>
 public sealed record GrantReferences(IReadOnlySet<string> FolderGrantIds, IReadOnlySet<string> FileIds)
 {
+    /// <summary>
+    /// No grants referenced.
+    /// </summary>
     public static GrantReferences None { get; } = new(new HashSet<string>(), new HashSet<string>());
 }

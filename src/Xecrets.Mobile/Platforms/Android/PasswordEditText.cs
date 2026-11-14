@@ -41,18 +41,27 @@ namespace Xecrets.Mobile.Platforms.Android;
 /// a shown password copied or cut from it as sensitive, so that the system's confirmation of the copy does not show
 /// it. It can also be kept out of autofill entirely.
 /// </summary>
+/// <param name="context">The context of the view.</param>
 internal sealed class PasswordEditText(Context context) : MauiAppCompatEditText(context)
 {
     /// <summary>
-    /// Keeps the entry out of autofill, so nothing is suggested, filled or offered to be saved. Since Android 14,
-    /// autofill also triggers on views that are not important for autofill, but never on views without an autofill
-    /// type.
+    /// True to keep the entry out of autofill, so that nothing is suggested, filled or offered to be saved, false
+    /// otherwise.
     /// </summary>
     public bool IsAutofillExcluded { get; set; }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// None while <see cref="IsAutofillExcluded"/> is true. Since Android 14, autofill also triggers on views that are
+    /// not important for autofill, but never on views without an autofill type.
+    /// </remarks>
     public override AutofillType AutofillType => IsAutofillExcluded ? AutofillType.None : base.AutofillType;
 
-    // A hidden password is copied as the dots it is shown as, so only a shown one needs marking.
+    /// <inheritdoc/>
+    /// <remarks>
+    /// A shown password that is copied or cut is marked as sensitive. A hidden password is copied as the dots it is
+    /// shown as, so it needs no marking.
+    /// </remarks>
     public override bool OnTextContextMenuItem(int id) =>
         (TransformationMethod is not PasswordTransformationMethod && this.TryCopyOrCutAsSensitive(id))
         || base.OnTextContextMenuItem(id);

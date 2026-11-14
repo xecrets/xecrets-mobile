@@ -35,11 +35,16 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Services;
 
+/// <summary>
+/// The settings of the profile signed in, kept in its data store.
+/// </summary>
 internal sealed class ProfileSettingsService(ProfileSession profileSession) : IProfileSettingsService
 {
+    /// <inheritdoc/>
     public async Task<bool> ShouldShowAsync(DontShowAgain notice) =>
         (await profileSession.UserStore!.LoadDeviceSettingsAsync()).Value.ShouldShow(notice);
 
+    /// <inheritdoc/>
     public async Task SetDontShowAgainAsync(DontShowAgain notice)
     {
         await using IEditScope<ProfileDeviceSettings> settings =
@@ -47,9 +52,11 @@ internal sealed class ProfileSettingsService(ProfileSession profileSession) : IP
         settings.Value.SetDontShowAgain(notice);
     }
 
+    /// <inheritdoc/>
     public async Task<TextEditor> GetTextEditorSettingsAsync() =>
         (await profileSession.UserStore!.LoadSettingsAsync()).Value.TextEditor;
 
+    /// <inheritdoc/>
     public async Task SetTextEditorFontSizeAsync(double fontSize)
     {
         await using IEditScope<UserSettings> settings =
@@ -57,6 +64,7 @@ internal sealed class ProfileSettingsService(ProfileSession profileSession) : IP
         settings.Value.TextEditor.FontSize = fontSize;
     }
 
+    /// <inheritdoc/>
     public async Task SetTextEditorProportionalFontAsync(bool proportionalFont)
     {
         await using IEditScope<UserSettings> settings =

@@ -32,15 +32,25 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Abstractions;
 
+/// <summary>
+/// Wipes files, overwriting their contents before deleting them where that is meaningful.
+/// </summary>
 public interface IFileWiper
 {
     /// <summary>
-    /// Tells if there are the rights needed to wipe the file.
+    /// Tells if there are the rights needed to wipe a file.
     /// </summary>
+    /// <param name="file">The file.</param>
+    /// <returns>True if the file can be wiped, false otherwise.</returns>
     Task<bool> CanWipeAsync(IWritableFile file);
 
     /// <summary>
-    /// Wipes the file, overwriting it first only when it is on the device. Elsewhere it is only deleted.
+    /// Wipes a file, overwriting it first only when it is on the device. Elsewhere it is only deleted. If wiping fails,
+    /// the file is still deleted if possible.
     /// </summary>
+    /// <param name="file">The file.</param>
+    /// <param name="isOnDevice">True if the file is stored on the device, false if it is stored elsewhere, such as in
+    /// cloud storage or on removable media.</param>
+    /// <returns>How the file was wiped.</returns>
     Task<FileWipeStatus> WipeAsync(IWritableFile file, bool isOnDevice);
 }

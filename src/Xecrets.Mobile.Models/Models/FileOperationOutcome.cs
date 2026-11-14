@@ -42,13 +42,28 @@ public sealed record FileOperationOutcome
         Result = result;
     }
 
+    /// <summary>
+    /// What became of the operation.
+    /// </summary>
     public FileOperationStatus Status { get; }
 
+    /// <summary>
+    /// The resulting file if <see cref="Status"/> is <see cref="FileOperationStatus.Completed"/> and there is one, null
+    /// otherwise.
+    /// </summary>
     public FileReference? Result { get; }
 
+    /// <summary>
+    /// Creates the outcome of an operation that is done.
+    /// </summary>
+    /// <param name="result">The resulting file.</param>
+    /// <returns>The outcome, with the status <see cref="FileOperationStatus.Completed"/>.</returns>
     public static FileOperationOutcome Completed(FileReference result) =>
         new(FileOperationStatus.Completed, result);
 
+    /// <summary>
+    /// Nothing is done, and the user has been told why.
+    /// </summary>
     public static FileOperationOutcome NotDone { get; } = new(FileOperationStatus.NotDone);
 
     /// <summary>
@@ -57,7 +72,13 @@ public sealed record FileOperationOutcome
     /// </summary>
     public static FileOperationOutcome Skipped { get; } = new(FileOperationStatus.Skipped);
 
+    /// <summary>
+    /// The file needs a password that is not known.
+    /// </summary>
     public static FileOperationOutcome PasswordNeeded { get; } = new(FileOperationStatus.PasswordNeeded);
 
+    /// <summary>
+    /// The operation is canceled.
+    /// </summary>
     public static FileOperationOutcome Canceled { get; } = new(FileOperationStatus.Canceled);
 }

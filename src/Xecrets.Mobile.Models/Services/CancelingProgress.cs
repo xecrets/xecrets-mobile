@@ -37,8 +37,14 @@ namespace Xecrets.Mobile.Models.Services;
 /// canceled. The core reports the progress synchronously, as the data is read or written, and is canceled then, but
 /// not when it reports that a stream is done, since that is when the stream is disposed.
 /// </summary>
+/// <param name="token">Tells when to cancel.</param>
 internal sealed class CancelingProgress(CancellationToken token) : IProgress<Progress>
 {
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Throws <see cref="OperationCanceledException"/> when the token is canceled and data is reported read or
+    /// written.
+    /// </remarks>
     public void Report(Progress value)
     {
         if (value.Kind == ProgressKind.CountAdded)

@@ -40,6 +40,9 @@ using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
+/// <summary>
+/// The page model of the page that shows an encrypted copy, to save it or send it to another app.
+/// </summary>
 public partial class EncryptResultPageModel(
     IFileService fileService,
     FileOperationWorkflow fileOperationWorkflow,
@@ -50,10 +53,13 @@ public partial class EncryptResultPageModel(
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel, IPageInformationPageModel
 {
+    /// <inheritdoc/>
     public string Breadcrumb => BreadcrumbFormatter.Format(flowContext.Origin, Heading);
 
+    /// <inheritdoc/>
     public string Information => MobileTexts.DialogTextResult;
 
+    /// <inheritdoc/>
     public string Heading =>
         Result.EncryptCopyForSharing ? MobileTexts.BreadcrumbEncryptToShare : MobileTexts.BreadcrumbEncryptedCopy;
 
@@ -65,23 +71,38 @@ public partial class EncryptResultPageModel(
     // ReSharper disable once MemberCanBeMadeStatic.Local
     private partial EncryptionPreparationResult Result { get; set; } = EncryptionPreparationResult.Empty;
 
+    /// <summary>
+    /// The name of the encrypted file.
+    /// </summary>
     [ObservableProperty]
     public partial string FileNameText { get; set; } = "";
 
+    /// <summary>
+    /// The type and size of the encrypted file.
+    /// </summary>
     [ObservableProperty]
     public partial string MetadataText { get; set; } = "";
 
+    /// <inheritdoc/>
     [ObservableProperty]
     public partial string MessageText { get; set; } = "";
 
+    /// <inheritdoc/>
     [ObservableProperty]
     public partial string StatusText { get; set; } = "";
 
+    /// <summary>
+    /// True while an operation of the page runs, false otherwise.
+    /// </summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SaveAsCommand))]
     [NotifyCanExecuteChangedFor(nameof(SendToCommand))]
     public partial bool IsBusy { get; set; }
 
+    /// <summary>
+    /// Makes an encrypted copy the one shown, which <see cref="IEncryptedState"/> then owns.
+    /// </summary>
+    /// <param name="result">The encrypted copy.</param>
     public void Initialize(EncryptionPreparationResult result)
     {
         encryptedState.Set(result);

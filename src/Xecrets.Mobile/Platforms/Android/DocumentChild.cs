@@ -31,7 +31,11 @@
 namespace Xecrets.Mobile.Platforms.Android;
 
 /// <summary>
-/// A document listed in a folder, as its provider tells it, with its size in bytes, or 0 when the provider does not
-/// tell it.
+/// A document listed in a folder, as its provider tells it.
 /// </summary>
+/// <param name="Id">The document id.</param>
+/// <param name="Name">The display name, or "" if the provider does not tell it.</param>
+/// <param name="MimeType">The MIME type, which is that of a directory for a folder, or null if the provider does not
+/// tell it.</param>
+/// <param name="Size">The size in bytes, or 0 if the provider does not tell it.</param>
 internal sealed record DocumentChild(string Id, string Name, string? MimeType, long Size);

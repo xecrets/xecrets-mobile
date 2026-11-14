@@ -31,12 +31,27 @@
 namespace Xecrets.Mobile.Models.Models;
 
 /// <summary>
-/// What the profile pages are used for, when pushed with a navigation payload.
+/// An action on the local profile.
 /// </summary>
 public enum ProfileAction
 {
+    /// <summary>
+    /// The action is not known.
+    /// </summary>
     Unknown,
+
+    /// <summary>
+    /// Create the local profile.
+    /// </summary>
     Create,
+
+    /// <summary>
+    /// Change the local profile.
+    /// </summary>
     Change,
+
+    /// <summary>
+    /// Delete the local profile.
+    /// </summary>
     Delete,
 }

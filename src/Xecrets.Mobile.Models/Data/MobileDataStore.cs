@@ -39,6 +39,11 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Data;
 
+/// <summary>
+/// Keeps the app data, the device-specific settings and the save in progress in JSON files of their own, each replaced
+/// as a whole when written. App data or device-specific settings that are not valid JSON are read as new ones, after
+/// a crash log is written.
+/// </summary>
 public sealed class MobileDataStore(
     IFileService fileService,
     ICrashLogService crashLogService,
@@ -53,15 +58,24 @@ public sealed class MobileDataStore(
 
     #region IXecretsDataStore
 
+    /// <inheritdoc/>
     public async Task<IPersistentData<ApplicationSettings>> OpenApplicationSettingsAsync() =>
         ApplicationSettingsData(await ReadAsync(document => document.ApplicationSettings));
 
-    // Reads without _access, since a synchronous wait on it could deadlock. SaveAsync replaces the file atomically, so
-    // the read sees either the previous or the new document in full. On Windows, a save that overlaps this read fails,
-    // since a file that is open cannot be replaced there. This is in practice not an issue though as this is only called once on startup.
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Reads without waiting for other reads and writes to end, since a synchronous wait for them could deadlock. A
+    /// write replaces the file as a whole, so the read sees either the previous or the new document in full, except on
+    /// Windows, where a write that overlaps the read fails, since a file that is open cannot be replaced there.
+    /// </remarks>
     public IPersistentData<ApplicationSettings> OpenApplicationSettings() =>
         ApplicationSettingsData(Validate(JsonFile.Load<ApplicationData>(fileService.DataFilePath, OnInvalidJson)).ApplicationSettings);
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Profiles are listed in the order they were created. A display name that is used by an earlier profile gets the
+    /// number of its occurrence, such as "Name (2)".
+    /// </remarks>
     public async Task<IReadOnlyList<UserSummary>> GetUsersAsync()
     {
         List<LocalProfileData> users = await ReadAsync(document => document.Users.OrderBy(user => user.CreationOrder).ToList());
@@ -78,6 +92,7 @@ public sealed class MobileDataStore(
         return summaries;
     }
 
+    /// <inheritdoc/>
     public async Task<IUserDataStore> CreateUserAsync(NewUserData user)
     {
         UserId id = new(Guid.NewGuid().ToString("N"));
@@ -93,16 +108,24 @@ public sealed class MobileDataStore(
         return new MobileUserDataStore(this, id, timeProvider, protectedPayload);
     }
 
+    /// <inheritdoc/>
     public async Task<IUserDataStore> OpenUserAsync(UserId userId)
     {
         await ReadAsync(document => FindUser(document, userId));
         return new MobileUserDataStore(this, userId, timeProvider, protectedPayload);
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The device-specific settings are not exported.
+    /// </remarks>
     public async Task<ApplicationConfigurationPackage> ExportApplicationConfigurationAsync() =>
         new() { Settings = await ReadAsync(document => document.ApplicationSettings) };
 
-    // Importing all the settings replaces the device-specific settings too, which are never exported.
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The device-specific settings, which are not exported, are cleared.
+    /// </remarks>
     public async Task ImportApplicationConfigurationAsync(ApplicationConfigurationPackage package)
     {
         ValidateVersion("application configuration package", package.Version,
@@ -111,6 +134,11 @@ public sealed class MobileDataStore(
         await ClearDeviceSettingsAsync();
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The settings of the profile that only apply to it on this device are not exported. The extra credentials are
+    /// exported as they are protected in the store, so <paramref name="protection"/> is not used.
+    /// </remarks>
     public async Task<UserDataPackage> ExportUserAsync(UserId userId, IXecretsProtection protection)
     {
         LocalProfileData user = await ReadAsync(document => FindUser(document, userId));
@@ -126,6 +154,11 @@ public sealed class MobileDataStore(
         };
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The package is imported as a new profile. The extra credentials are imported as they are protected in the
+    /// package, so <paramref name="protection"/> is not used.
+    /// </remarks>
     public async Task<IUserDataStore> ImportUserAsync(UserDataPackage package, IXecretsProtection protection)
     {
         ValidateVersion("user data package", package.Version, UserDataPackage.SupportedVersion);
@@ -156,12 +189,21 @@ public sealed class MobileDataStore(
         return userStore;
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The device-specific settings are cleared too.
+    /// </remarks>
     public async Task ResetApplicationConfigurationAsync()
     {
         await UpdateAsync(document => document.ApplicationSettings = new ApplicationSettings());
         await ClearDeviceSettingsAsync();
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Removes the profile, together with its settings that only apply to it on this device and any save in progress
+    /// of it.
+    /// </remarks>
     public async Task ResetUserAsync(UserId userId)
     {
         await UpdateAsync(document => document.Users.Remove(FindUser(document, userId)));
@@ -172,6 +214,10 @@ public sealed class MobileDataStore(
         }
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Deletes the files of the app data, the device-specific settings and the save in progress.
+    /// </remarks>
     public async Task ResetStoreAsync()
     {
         await _access.WaitAsync();
@@ -193,6 +239,7 @@ public sealed class MobileDataStore(
 
     #region IDeviceSettingsStore
 
+    /// <inheritdoc/>
     public Task<GrantReferences> GetGrantReferencesAsync() =>
         ReadDeviceAsync(settings => new GrantReferences(
             settings.Profiles.Values
@@ -205,8 +252,10 @@ public sealed class MobileDataStore(
                 .Select(file => file.Id)
                 .ToHashSet()));
 
+    /// <inheritdoc/>
     public Task<DeviceSettings> ReadDeviceSettingsAsync() => ReadDeviceAsync(settings => settings);
 
+    /// <inheritdoc/>
     public async Task ReplaceDeviceSettingsAsync(DeviceSettings settings)
     {
         await _access.WaitAsync();
@@ -220,10 +269,14 @@ public sealed class MobileDataStore(
         }
     }
 
-    // Reads without _access, for the same reason as OpenApplicationSettings.
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Reads without waiting for other reads and writes to end, as <see cref="OpenApplicationSettings"/> does.
+    /// </remarks>
     public Dictionary<string, string> ReadDeviceValues() =>
         JsonFile.Load<DeviceSettings>(fileService.DeviceSettingsFilePath, OnInvalidDeviceJson).Values;
 
+    /// <inheritdoc/>
     public Task UpdateDeviceValuesAsync(Action<Dictionary<string, string>> update) =>
         UpdateDeviceAsync(settings => update(settings.Values));
 
@@ -231,15 +284,19 @@ public sealed class MobileDataStore(
 
     #region ILocalProfileStore
 
+    /// <inheritdoc/>
     public Task<LocalProfileData> ReadUserAsync(UserId userId) =>
         ReadAsync(document => FindUser(document, userId));
 
+    /// <inheritdoc/>
     public Task UpdateUserAsync(UserId userId, Action<LocalProfileData> update) =>
         UpdateAsync(document => update(FindUser(document, userId)));
 
+    /// <inheritdoc/>
     public Task<ProfileDeviceSettings> ReadProfileDeviceSettingsAsync(UserId userId) =>
         ReadDeviceAsync(settings => settings.Profiles.GetValueOrDefault(userId.Value) ?? new ProfileDeviceSettings());
 
+    /// <inheritdoc/>
     public Task UpdateProfileDeviceSettingsAsync(UserId userId, Action<ProfileDeviceSettings> update) =>
         UpdateDeviceAsync(deviceSettings =>
         {
@@ -256,6 +313,7 @@ public sealed class MobileDataStore(
 
     #region ISaveInProgressStore
 
+    /// <inheritdoc/>
     public async Task<SaveInProgress?> ReadSaveInProgressAsync()
     {
         await _access.WaitAsync();
@@ -273,6 +331,7 @@ public sealed class MobileDataStore(
         }
     }
 
+    /// <inheritdoc/>
     public async Task WriteSaveInProgressAsync(SaveInProgress save)
     {
         await _access.WaitAsync();
@@ -288,6 +347,7 @@ public sealed class MobileDataStore(
         }
     }
 
+    /// <inheritdoc/>
     public async Task ClearSaveInProgressAsync()
     {
         await _access.WaitAsync();

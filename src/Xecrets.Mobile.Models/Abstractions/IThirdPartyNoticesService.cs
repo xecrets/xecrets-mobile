@@ -36,5 +36,9 @@ namespace Xecrets.Mobile.Models.Abstractions;
 /// </summary>
 public interface IThirdPartyNoticesService
 {
+    /// <summary>
+    /// Reads the notices.
+    /// </summary>
+    /// <returns>The text of the notices.</returns>
     Task<string> GetThirdPartyNoticesAsync();
 }

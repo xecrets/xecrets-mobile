@@ -33,6 +33,9 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Services;
 
+/// <summary>
+/// Ends the session of the profile signed in.
+/// </summary>
 public sealed class SessionExitService(
     IPreviewService previewService,
     DecryptionPasswordRequestState passwordRequestState,
@@ -41,6 +44,10 @@ public sealed class SessionExitService(
     IProfileService profileService,
     IUserInterfaceService userInterfaceService)
 {
+    /// <summary>
+    /// Clears the preview and any file waiting for a password, starts wiping all temporary files, releases the unused
+    /// grants, signs out, and navigates to the page to sign in, or to the introduction if there is no profile.
+    /// </summary>
     public async Task ExitAsync()
     {
         previewService.Current.Clear();

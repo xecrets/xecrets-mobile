@@ -31,8 +31,18 @@
 
 namespace Xecrets.Mobile.Models.Models;
 
+/// <summary>
+/// An operation that replaces a file with the result where it is.
+/// </summary>
 public enum WorkFolderOperation
 {
+    /// <summary>
+    /// Encrypt the file.
+    /// </summary>
     Encrypt,
+
+    /// <summary>
+    /// Decrypt the file.
+    /// </summary>
     Decrypt,
 }

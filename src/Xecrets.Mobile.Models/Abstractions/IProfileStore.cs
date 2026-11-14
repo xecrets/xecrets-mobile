@@ -32,11 +32,26 @@ using Xecrets.Common.Models;
 
 namespace Xecrets.Mobile.Models.Abstractions;
 
+/// <summary>
+/// Keeps the sign-in key of the local profile.
+/// </summary>
 internal interface IProfileStore
 {
+    /// <summary>
+    /// Tells if there is a local profile.
+    /// </summary>
+    /// <returns>True if there is a local profile, false otherwise.</returns>
     Task<bool> HasProfileAsync();
 
+    /// <summary>
+    /// Loads the sign-in key of the local profile.
+    /// </summary>
+    /// <returns>The sign-in key, or null if there is no local profile.</returns>
     Task<SignInKey?> LoadAsync();
 
+    /// <summary>
+    /// Creates a local profile with a sign-in key, named by its email.
+    /// </summary>
+    /// <param name="signInKey">The sign-in key of the profile.</param>
     Task SaveAsync(SignInKey signInKey);
 }

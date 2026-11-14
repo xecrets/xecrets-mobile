@@ -32,15 +32,34 @@ using Xecrets.Mobile.Models.Services;
 
 namespace Xecrets.Mobile.Models.Abstractions;
 
+/// <summary>
+/// Encrypts copies of files to temporary files, which keep the name and times of the original file.
+/// </summary>
 public interface IEncryptionPreparationService
 {
+    /// <summary>
+    /// Encrypts a copy of a file with the password and the public key of the current profile.
+    /// </summary>
+    /// <param name="source">The file to encrypt.</param>
+    /// <returns>The encrypted copy.</returns>
     Task<EncryptionPreparationResult> EncryptWithCurrentProfileAsync(IReadableFile source);
 
+    /// <summary>
+    /// Encrypts a copy of a file with a password and the public key of the current profile.
+    /// </summary>
+    /// <param name="source">The file to encrypt.</param>
+    /// <param name="password">The password to encrypt with.</param>
+    /// <returns>The encrypted copy, with <see cref="EncryptionPreparationResult.EncryptCopyForSharing"/> true.</returns>
     Task<EncryptionPreparationResult> EncryptWithPasswordAsync(IReadableFile source, string password);
 
     /// <summary>
-    /// Encrypts a copy of an encrypted file with the password, for all that the file is encrypted for and for the current
-    /// profile. Returns null when none of the known passwords opens the file.
+    /// Encrypts a copy of an encrypted file with a password, for the recipients and master keys the file is encrypted
+    /// for, and for the public key of the current profile. The file is decrypted with the password of the current
+    /// profile or one of its extra passwords.
     /// </summary>
+    /// <param name="encryptedSource">The encrypted file.</param>
+    /// <param name="password">The password to encrypt with.</param>
+    /// <returns>The encrypted copy, with <see cref="EncryptionPreparationResult.EncryptCopyForSharing"/> true, or null
+    /// if none of the passwords decrypts the file.</returns>
     Task<EncryptionPreparationResult?> ReEncryptWithPasswordAsync(IReadableFile encryptedSource, string password);
 }

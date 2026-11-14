@@ -38,11 +38,32 @@ namespace Xecrets.Mobile.Models.Abstractions;
 /// </summary>
 internal interface ILocalProfileStore
 {
+    /// <summary>
+    /// Reads the stored data of a local profile.
+    /// </summary>
+    /// <param name="userId">The id of an existing local profile.</param>
+    /// <returns>The stored data of the profile.</returns>
     Task<LocalProfileData> ReadUserAsync(UserId userId);
 
+    /// <summary>
+    /// Updates the stored data of a local profile and persists it.
+    /// </summary>
+    /// <param name="userId">The id of an existing local profile.</param>
+    /// <param name="update">Changes the data given to it.</param>
     Task UpdateUserAsync(UserId userId, Action<LocalProfileData> update);
 
+    /// <summary>
+    /// Reads the settings of a local profile that only apply to it on this device.
+    /// </summary>
+    /// <param name="userId">The id of the local profile.</param>
+    /// <returns>The settings, or new settings if there are none.</returns>
     Task<ProfileDeviceSettings> ReadProfileDeviceSettingsAsync(UserId userId);
 
+    /// <summary>
+    /// Updates the settings of a local profile that only apply to it on this device, and persists them. Settings are
+    /// created for the profile if there are none.
+    /// </summary>
+    /// <param name="userId">The id of the local profile.</param>
+    /// <param name="update">Changes the settings given to it.</param>
     Task UpdateProfileDeviceSettingsAsync(UserId userId, Action<ProfileDeviceSettings> update);
 }

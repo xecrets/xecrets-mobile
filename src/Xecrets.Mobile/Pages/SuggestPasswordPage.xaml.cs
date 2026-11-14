@@ -39,8 +39,14 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
+/// <summary>
+/// The page that suggests passwords.
+/// </summary>
 internal partial class SuggestPasswordPage : IQueryAttributable
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SuggestPasswordPage"/> class with the standard header.
+    /// </summary>
     public SuggestPasswordPage(SuggestPasswordPageModel model, IPageHeaderService pageHeaderService)
         : base(model)
     {
@@ -48,6 +54,10 @@ internal partial class SuggestPasswordPage : IQueryAttributable
         pageHeaderService.ApplyStandardHeader(this);
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// A string payload is the breadcrumb trail of the page this page is opened on top of, which it continues.
+    /// </remarks>
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
         if (query.TryGetValue(nameof(NavigationParameter.Payload), out object? payload))

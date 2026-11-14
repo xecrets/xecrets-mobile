@@ -38,6 +38,10 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
+/// <summary>
+/// The page model of the page shown while the app starts, which goes on to the crash page, the page to sign in, or the
+/// introduction.
+/// </summary>
 public partial class StartupPageModel(
     IProfileService profileService,
     IIncomingFileService incomingFileService,

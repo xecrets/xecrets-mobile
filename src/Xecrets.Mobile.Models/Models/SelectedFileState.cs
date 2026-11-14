@@ -30,10 +30,28 @@
 
 namespace Xecrets.Mobile.Models.Models;
 
+/// <summary>
+/// Which of the recent files are shown.
+/// </summary>
 public enum SelectedFileState
 {
+    /// <summary>
+    /// The files encrypted in place.
+    /// </summary>
     Encrypted,
+
+    /// <summary>
+    /// The files decrypted in place.
+    /// </summary>
     Decrypted,
+
+    /// <summary>
+    /// All files.
+    /// </summary>
     All,
+
+    /// <summary>
+    /// The files that were not encrypted or decrypted in place.
+    /// </summary>
     Other,
 }

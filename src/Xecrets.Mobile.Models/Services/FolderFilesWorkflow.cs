@@ -51,6 +51,10 @@ public sealed class FolderFilesWorkflow(
     FileOperationWorkflow fileOperations,
     IUserInterfaceService userInterfaceService)
 {
+    /// <summary>
+    /// Lets the user pick a folder, and runs the operation on its files.
+    /// </summary>
+    /// <param name="request">The operation, and where to start picking the folder.</param>
     public async Task RunAsync(FolderFilesRequest request)
     {
         WorkFolder? folder = await folderAccess.PickWritableFolderAsync(

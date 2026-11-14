@@ -33,11 +33,22 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Services;
 
+/// <summary>
+/// A file referred to by the platform, read through <see cref="IFileAccess"/>.
+/// </summary>
+/// <param name="fileAccess">Reads the file.</param>
+/// <param name="file">The file.</param>
 internal sealed class ReferencedReadableFile(IFileAccess fileAccess, FileReference file) : IReadableFile
 {
+    /// <inheritdoc/>
     public string FileName => file.Name;
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Throws <see cref="FileNotAccessibleException"/> as <see cref="IFileAccess.OpenReadAsync"/> does.
+    /// </remarks>
     public Task<Stream> OpenReadAsync() => fileAccess.OpenReadAsync(file.Id);
 
+    /// <inheritdoc/>
     public Task<FileTimes> GetTimesAsync() => fileAccess.GetTimesAsync(file.Id);
 }

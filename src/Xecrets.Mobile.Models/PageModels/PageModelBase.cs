@@ -37,8 +37,14 @@ using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
+/// <summary>
+/// The base of the page models, with the commands of the menu that every page has.
+/// </summary>
 public abstract partial class PageModelBase(IUserInterfaceService userInterfaceService) : ObservableObject
 {
+    /// <summary>
+    /// The user interface of the page.
+    /// </summary>
     protected IUserInterfaceService UserInterfaceService => userInterfaceService;
 
     [RelayCommand]

@@ -33,17 +33,24 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Services;
 
+/// <summary>
+/// The encrypt or decrypt flow the user is currently in, held in memory.
+/// </summary>
 internal sealed class FlowContext : IFlowContext
 {
+    /// <inheritdoc/>
     public FlowOrigin Origin { get; private set; } = FlowOrigin.Home;
 
+    /// <inheritdoc/>
     public FileReference? Source { get; private set; }
 
+    /// <inheritdoc/>
     public void Begin(FlowOrigin origin, FileReference? source = null)
     {
         Origin = origin;
         Source = source;
     }
 
+    /// <inheritdoc/>
     public void UpdateSource(FileReference source) => Source = source;
 }

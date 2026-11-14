@@ -39,16 +39,25 @@ namespace Xecrets.Mobile.Controls;
 /// </summary>
 internal sealed partial class PageBreadcrumb
 {
+    /// <summary>
+    /// Identifies the <see cref="Text"/> bindable property.
+    /// </summary>
     public static readonly BindableProperty TextProperty = BindableProperty.Create(
         nameof(Text), typeof(string), typeof(PageBreadcrumb), string.Empty,
         propertyChanged: (bindable, _, newValue) => ((PageBreadcrumb)bindable).IsVisible = !string.IsNullOrEmpty((string?)newValue));
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PageBreadcrumb"/> class, hidden until it has a trail.
+    /// </summary>
     public PageBreadcrumb()
     {
         InitializeComponent();
         IsVisible = false;
     }
 
+    /// <summary>
+    /// The breadcrumb trail, or "" to hide the breadcrumb.
+    /// </summary>
     public string Text
     {
         get => (string)GetValue(TextProperty);

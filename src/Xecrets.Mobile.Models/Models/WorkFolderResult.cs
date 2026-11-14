@@ -32,6 +32,9 @@ using Xecrets.Common.Models;
 
 namespace Xecrets.Mobile.Models.Models;
 
+/// <summary>
+/// The result of picking a folder.
+/// </summary>
 public sealed record WorkFolderResult
 {
     private WorkFolderResult(WorkFolderResultStatus status, WorkFolder? folder = null)
@@ -40,16 +43,36 @@ public sealed record WorkFolderResult
         Folder = folder;
     }
 
+    /// <summary>
+    /// The outcome of picking the folder.
+    /// </summary>
     internal WorkFolderResultStatus Status { get; }
 
+    /// <summary>
+    /// The picked folder if <see cref="Status"/> is <see cref="WorkFolderResultStatus.IsValid"/>, null otherwise.
+    /// </summary>
     public WorkFolder? Folder { get; }
 
+    /// <summary>
+    /// Creates the result of a folder that was picked and can be used.
+    /// </summary>
+    /// <param name="folder">The picked folder.</param>
+    /// <returns>The result, with the status <see cref="WorkFolderResultStatus.IsValid"/>.</returns>
     public static WorkFolderResult Valid(WorkFolder folder) =>
         new(WorkFolderResultStatus.IsValid, folder);
 
+    /// <summary>
+    /// The result of a folder that was picked, but cannot be written to.
+    /// </summary>
     public static WorkFolderResult NoAccess { get; } = new(WorkFolderResultStatus.NoAccess);
 
+    /// <summary>
+    /// The result of picking something that is not a folder that can be used.
+    /// </summary>
     public static WorkFolderResult NotFolder { get; } = new(WorkFolderResultStatus.NotFolder);
 
+    /// <summary>
+    /// The result of the user canceling.
+    /// </summary>
     public static WorkFolderResult Canceled { get; } = new(WorkFolderResultStatus.Canceled);
 }

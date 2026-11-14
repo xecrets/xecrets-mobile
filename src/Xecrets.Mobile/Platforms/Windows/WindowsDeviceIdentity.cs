@@ -44,6 +44,7 @@ namespace Xecrets.Mobile.Platforms.Windows;
 [SupportedOSPlatform("windows10.0.19041")]
 internal sealed class WindowsDeviceIdentity : IDeviceIdentity
 {
+    /// <inheritdoc/>
     public string DeviceId
     {
         get

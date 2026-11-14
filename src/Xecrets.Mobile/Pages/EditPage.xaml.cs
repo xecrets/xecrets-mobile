@@ -33,10 +33,16 @@ using Xecrets.Mobile.Models.PageModels;
 
 namespace Xecrets.Mobile.Pages;
 
+/// <summary>
+/// The page that edits decrypted text, which is sensitive content while the page is shown.
+/// </summary>
 internal partial class EditPage
 {
     private readonly IPlatformServices _platformServices;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="EditPage"/> class with the standard header.
+    /// </summary>
     public EditPage(EditPageModel model, IPageHeaderService pageHeaderService, IPlatformServices platformServices)
         : base(model)
     {

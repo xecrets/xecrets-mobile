@@ -31,6 +31,8 @@
 namespace Xecrets.Mobile.Models.Models;
 
 /// <summary>
-/// A file listed in one of My folders, reached through the folder, with its size in bytes as the storage tells it.
+/// A file listed in one of My folders.
 /// </summary>
+/// <param name="File">The file, reached through the folder.</param>
+/// <param name="Size">The size of the file in bytes, as the storage tells it.</param>
 public sealed record FolderFile(FileReference File, long Size);

@@ -53,17 +53,21 @@ public sealed class RunningOperation(IUserInterfaceService userInterfaceService)
     /// </summary>
     public event EventHandler? IsRunningChanged;
 
+    /// <summary>
+    /// True if an operation runs, false otherwise.
+    /// </summary>
     public bool IsRunning => _current is not null;
 
     /// <summary>
-    /// Whether the operation running can be canceled, so that the user is asked when leaving its page.
+    /// True if an operation runs and can be canceled, false otherwise.
     /// </summary>
     public bool IsCancelable => _current is { IsCancelable: true };
 
     /// <summary>
-    /// Begins the operation of the page shown, which ends when the scope returned is disposed.
+    /// Begins the operation of the page shown.
     /// </summary>
-    /// <param name="cancelable">Whether the operation can be canceled.</param>
+    /// <param name="cancelable">True if the operation can be canceled, false otherwise.</param>
+    /// <returns>A scope that ends the operation when it is disposed.</returns>
     public IDisposable Begin(bool cancelable = true)
     {
         _current = new Scope(this, userInterfaceService.CurrentLocation, cancelable);
@@ -72,8 +76,11 @@ public sealed class RunningOperation(IUserInterfaceService userInterfaceService)
     }
 
     /// <summary>
-    /// Whether an operation runs on the page at the location, which leaving the page would cancel.
+    /// Tells if an operation runs on the page at a location.
     /// </summary>
+    /// <param name="location">The location of the page, as <see cref="IUserInterfaceService.CurrentLocation"/>
+    /// tells it.</param>
+    /// <returns>True if the operation running began on the page, false otherwise.</returns>
     public bool IsRunningAt(string location) => _current?.Location == location;
 
     /// <summary>
@@ -94,15 +101,17 @@ public sealed class RunningOperation(IUserInterfaceService userInterfaceService)
     }
 
     /// <summary>
-    /// Throws <see cref="OperationCanceledException"/> when the operation is canceled, as between the files.
+    /// Throws if the operation is canceled.
     /// </summary>
+    /// <exception cref="OperationCanceledException">The operation is canceled.</exception>
     public void ThrowIfCanceled() => Token.ThrowIfCancellationRequested();
 
     /// <summary>
-    /// Waits for the user's answer while the user is asked whether to cancel, and then throws
-    /// <see cref="OperationCanceledException"/> when the operation is canceled. The operation goes on while the user is
-    /// asked, so it waits here before it asks the user anything itself, such as for a password, or starts another file.
+    /// Waits for the answer of the user while the user is asked whether to cancel, and then throws if the operation is
+    /// canceled. The operation goes on while the user is asked, so it waits here before it asks the user anything
+    /// itself, such as for a password, or starts another file.
     /// </summary>
+    /// <exception cref="OperationCanceledException">The operation is canceled.</exception>
     public async Task ThrowIfCanceledAsync()
     {
         await _confirmation;
@@ -110,8 +119,9 @@ public sealed class RunningOperation(IUserInterfaceService userInterfaceService)
     }
 
     /// <summary>
-    /// The progress for encrypting or decrypting a file, which cancels it when the operation is canceled.
+    /// Creates the progress for encrypting or decrypting a file, which cancels it when the operation is canceled.
     /// </summary>
+    /// <returns>The progress, which never cancels if no operation runs.</returns>
     public IProgress<Progress> CreateProgress() => new CancelingProgress(Token);
 
     private CancellationToken Token => _current?.Token ?? CancellationToken.None;

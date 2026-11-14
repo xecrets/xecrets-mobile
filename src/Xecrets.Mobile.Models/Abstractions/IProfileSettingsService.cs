@@ -38,13 +38,34 @@ namespace Xecrets.Mobile.Models.Abstractions;
 /// </summary>
 public interface IProfileSettingsService
 {
+    /// <summary>
+    /// Tells if a notice is to be shown, which it is until the user chooses not to see it again on this device.
+    /// </summary>
+    /// <param name="notice">The notice.</param>
+    /// <returns>True if the notice is to be shown, false otherwise.</returns>
     Task<bool> ShouldShowAsync(DontShowAgain notice);
 
+    /// <summary>
+    /// Persists that a notice is not to be shown again on this device.
+    /// </summary>
+    /// <param name="notice">The notice.</param>
     Task SetDontShowAgainAsync(DontShowAgain notice);
 
+    /// <summary>
+    /// Gets the settings of the text editor, which follow the profile.
+    /// </summary>
+    /// <returns>The settings of the text editor.</returns>
     Task<TextEditor> GetTextEditorSettingsAsync();
 
+    /// <summary>
+    /// Persists the font size of the text editor.
+    /// </summary>
+    /// <param name="fontSize">The font size.</param>
     Task SetTextEditorFontSizeAsync(double fontSize);
 
+    /// <summary>
+    /// Persists whether the text editor uses a proportional font.
+    /// </summary>
+    /// <param name="proportionalFont">True for a proportional font, false for a monospaced font.</param>
     Task SetTextEditorProportionalFontAsync(bool proportionalFont);
 }

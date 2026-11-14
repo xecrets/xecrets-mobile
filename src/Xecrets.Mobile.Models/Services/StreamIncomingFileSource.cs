@@ -34,14 +34,19 @@ using Xecrets.Mobile.Models.Models;
 namespace Xecrets.Mobile.Models.Services;
 
 /// <summary>
-/// Imports a stream that remains owned by the caller.
+/// A file received from another app as a stream.
 /// </summary>
+/// <param name="inputStream">The stream of the received file, which the caller owns.</param>
+/// <param name="displayName">The name of the received file.</param>
+/// <param name="contentType">The MIME type of the received file.</param>
+/// <param name="transientFileService">Creates the temporary copy.</param>
 public sealed class StreamIncomingFileSource(
     Stream inputStream,
     string displayName,
     string contentType,
     ITransientFileService transientFileService) : IIncomingFileSource
 {
+    /// <inheritdoc/>
     public async Task<IncomingFileInfo> ImportAsync()
     {
         ITransientFile incomingFile = transientFileService.CreateIncomingFile(displayName);

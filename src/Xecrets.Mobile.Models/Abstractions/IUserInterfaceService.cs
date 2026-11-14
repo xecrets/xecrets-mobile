@@ -32,12 +32,24 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Abstractions;
 
+/// <summary>
+/// The user interface of the app: dialogs, messages, navigation between pages, the browser and the clipboard.
+/// </summary>
 public interface IUserInterfaceService
 {
+    /// <summary>
+    /// True if the app shell is shown in the window of the app, false otherwise.
+    /// </summary>
     bool IsShellAvailable { get; }
 
+    /// <summary>
+    /// True if a file received from another app can be handled now, false if it waits.
+    /// </summary>
     bool CanProcessIncomingFiles { get; }
 
+    /// <summary>
+    /// True if a file received from another app is accepted now, false if it is ignored.
+    /// </summary>
     bool CanReceiveIncomingFiles { get; }
 
     /// <summary>
@@ -46,7 +58,7 @@ public interface IUserInterfaceService
     string CurrentLocation { get; }
 
     /// <summary>
-    /// Whether the app navigates, as it does through this service, rather than the user, such as by going back.
+    /// True while a navigation through this service is not done, false otherwise, such as when the user goes back.
     /// </summary>
     bool IsNavigating { get; }
 
@@ -55,44 +67,84 @@ public interface IUserInterfaceService
     /// </summary>
     IReadOnlyDictionary<string, string> IconMap { get; }
 
+    /// <summary>
+    /// Runs an action on the main thread.
+    /// </summary>
+    /// <param name="action">The action.</param>
+    /// <returns>A task that completes when the action does.</returns>
     Task InvokeOnMainThreadAsync(Func<Task> action);
 
+    /// <summary>
+    /// Shows a message in a dialog, until the user dismisses it.
+    /// </summary>
+    /// <param name="message">The message.</param>
     Task DisplayMessageAsync(string message);
 
+    /// <summary>
+    /// Asks the user to confirm in a dialog.
+    /// </summary>
+    /// <param name="message">The question.</param>
+    /// <param name="accept">The text of the button that confirms.</param>
+    /// <param name="cancel">The text of the button that cancels.</param>
+    /// <returns>True if the user confirms, false otherwise.</returns>
     Task<bool> DisplayConfirmationAsync(string message, string accept, string cancel);
 
     /// <summary>
     /// Asks the user whether to save, discard or keep unsaved changes. Dismissing the question keeps them.
     /// </summary>
+    /// <param name="message">The question.</param>
+    /// <returns>The choice of the user, which is <see cref="SaveChangesChoice.Cancel"/> to keep the changes.</returns>
     Task<SaveChangesChoice> DisplaySaveChangesAsync(string message);
 
     /// <summary>
-    /// Asks the user for a line of text, starting from <paramref name="initialValue"/>. Returns null if
-    /// the user cancels.
+    /// Asks the user for a line of text.
     /// </summary>
+    /// <param name="message">The question.</param>
+    /// <param name="initialValue">The text to start from.</param>
+    /// <returns>The text, or null if the user cancels.</returns>
     Task<string?> DisplayPromptAsync(string message, string initialValue);
 
+    /// <summary>
+    /// Shows a message for a while, without the user having to dismiss it.
+    /// </summary>
+    /// <param name="message">The message.</param>
     Task DisplayTransientMessageAsync(string message);
 
     /// <summary>
-    /// Navigates to <paramref name="destination"/>, passing <paramref name="parameter"/> to it unless null. Without a
-    /// parameter, nothing is done if the current page already is the destination.
+    /// Navigates to a page. Without a parameter, nothing is done if the current page already is the destination.
     /// </summary>
+    /// <param name="destination">The page to navigate to.</param>
+    /// <param name="parameter">The parameter passed to the page as <see cref="NavigationParameter.Payload"/>, or null
+    /// for none.</param>
     Task NavigateToAsync(AppDestination destination, object? parameter);
 
     /// <summary>
-    /// Navigates to <paramref name="destination"/> in place of the current page, so that going back skips it, passing
-    /// <paramref name="parameter"/> to it unless null.
+    /// Navigates to a page in place of the current page, so that going back skips the current page.
     /// </summary>
+    /// <param name="destination">The page to navigate to.</param>
+    /// <param name="parameter">The parameter passed to the page as <see cref="NavigationParameter.Payload"/>, or null
+    /// for none.</param>
     Task NavigateReplacingAsync(AppDestination destination, object? parameter);
 
+    /// <summary>
+    /// Navigates back to the previous page.
+    /// </summary>
+    /// <param name="parameter">The parameter passed to the page as <see cref="NavigationParameter.Payload"/>, or null
+    /// for none.</param>
     Task GoBackAsync(object? parameter);
 
+    /// <summary>
+    /// Opens a page of the site of the app in the browser.
+    /// </summary>
+    /// <param name="url">The production URL of the page, rooted at https://www.axantum.com.</param>
     Task OpenBrowserAsync(string url);
 
     /// <summary>
     /// Copies text, such as a password or a crash report, to the clipboard, marked as sensitive where the platform
-    /// supports it. With <paramref name="confirm"/>, the user is told it was copied, unless the platform does so.
+    /// supports it.
     /// </summary>
+    /// <param name="text">The text.</param>
+    /// <param name="confirm">True to tell the user that the text is copied, unless the platform does so, false
+    /// otherwise.</param>
     Task SetSensitiveClipboardTextAsync(string text, bool confirm);
 }

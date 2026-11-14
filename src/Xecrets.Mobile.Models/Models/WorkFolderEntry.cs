@@ -35,12 +35,18 @@ using Xecrets.Common.Models;
 namespace Xecrets.Mobile.Models.Models;
 
 /// <summary>
-/// A folder in My folders as listed, with the items of its menu, which depend on what the page was opened for.
+/// A folder in My folders as listed, with the items of its menu.
 /// </summary>
+/// <param name="Folder">The folder.</param>
+/// <param name="OpenCommand">Opens the folder.</param>
+/// <param name="MenuItems">The items of the menu of the folder.</param>
 public sealed record WorkFolderEntry(
     WorkFolder Folder,
     IAsyncRelayCommand<WorkFolder> OpenCommand,
     IReadOnlyList<OverflowMenuItem> MenuItems)
 {
+    /// <summary>
+    /// The name of the folder as listed.
+    /// </summary>
     public string ListDisplayName => Folder.ListDisplayName;
 }

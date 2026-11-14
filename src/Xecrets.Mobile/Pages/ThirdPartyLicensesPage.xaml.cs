@@ -33,8 +33,14 @@ using Xecrets.Mobile.Models.PageModels;
 
 namespace Xecrets.Mobile.Pages;
 
+/// <summary>
+/// The page of the third-party licenses.
+/// </summary>
 internal partial class ThirdPartyLicensesPage
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ThirdPartyLicensesPage"/> class with the standard header.
+    /// </summary>
     public ThirdPartyLicensesPage(ThirdPartyLicensesPageModel model, IPageHeaderService pageHeaderService)
         : base(model)
     {

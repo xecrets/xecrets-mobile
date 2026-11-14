@@ -34,11 +34,17 @@ using Xecrets.Mobile.Models.Abstractions;
 
 namespace Xecrets.Mobile.Models.Data;
 
+/// <summary>
+/// Keeps the sign-in key of the local profile in the <see cref="IXecretsDataStore"/>, where the local profile is the
+/// first user.
+/// </summary>
 internal sealed class ProfileStore(IXecretsDataStore dataStore) : IProfileStore
 {
+    /// <inheritdoc/>
     public async Task<bool> HasProfileAsync() =>
         (await dataStore.GetUsersAsync()).Count > 0;
 
+    /// <inheritdoc/>
     public async Task<SignInKey?> LoadAsync()
     {
         UserSummary? user = (await dataStore.GetUsersAsync()).FirstOrDefault();
@@ -51,6 +57,7 @@ internal sealed class ProfileStore(IXecretsDataStore dataStore) : IProfileStore
         return (await userStore.GetSignInKeysAsync())[0];
     }
 
+    /// <inheritdoc/>
     public async Task SaveAsync(SignInKey signInKey)
     {
         await dataStore.CreateUserAsync(new NewUserData(signInKey.Email, signInKey.Email, signInKey));

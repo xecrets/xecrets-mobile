@@ -42,8 +42,14 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
+/// <summary>
+/// The page of the decryption passwords.
+/// </summary>
 internal partial class EnterPasswordPage : IQueryAttributable
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="EnterPasswordPage"/> class with the standard header.
+    /// </summary>
     public EnterPasswordPage(
         EnterPasswordPageModel model,
         IPlatformServices platformServices,
@@ -56,6 +62,10 @@ internal partial class EnterPasswordPage : IQueryAttributable
         pageHeaderService.ApplyStandardHeader(this);
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Requires a <see cref="DecryptionPasswordsPayload"/> payload.
+    /// </remarks>
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
         Model.Initialize((DecryptionPasswordsPayload)query[nameof(NavigationParameter.Payload)]);

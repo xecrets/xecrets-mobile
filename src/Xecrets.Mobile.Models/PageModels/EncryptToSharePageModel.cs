@@ -39,6 +39,9 @@ using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
+/// <summary>
+/// The page model of the page that encrypts a copy of a file with a password for sharing it.
+/// </summary>
 public partial class EncryptToSharePageModel(
     IProfileService profileService,
     IFileAccess fileAccess,
@@ -49,33 +52,50 @@ public partial class EncryptToSharePageModel(
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService), IStatusTextPageModel, IBreadcrumbPageModel, IPageInformationPageModel
 {
+    /// <inheritdoc/>
     public string Heading => MobileTexts.EncryptToShareContentTitle;
 
+    /// <inheritdoc/>
     public string Information => MobileTexts.EncryptToShareDescription;
 
     // The file a copy of is encrypted with the password, chosen on the page before.
     private FileReference _file = new("", "");
 
-    // The file has been chosen on the page before, which is named for sharing.
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The file has been chosen on the page before, which is named for sharing.
+    /// </remarks>
     public string Breadcrumb => BreadcrumbFormatter.Format(
         flowContext.Origin,
         MobileTexts.BreadcrumbEncryptToShare,
         MobileTexts.BreadcrumbPassword);
 
+    /// <summary>
+    /// The password entered to encrypt the copy with.
+    /// </summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SubmitCommand))]
     public partial string Password { get; set; } = string.Empty;
 
+    /// <inheritdoc/>
     [ObservableProperty]
     public partial string MessageText { get; set; } = string.Empty;
 
+    /// <inheritdoc/>
     [ObservableProperty]
     public partial string StatusText { get; set; } = string.Empty;
 
+    /// <summary>
+    /// True while an operation of the page runs, false otherwise.
+    /// </summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SubmitCommand))]
     public partial bool IsBusy { get; set; }
 
+    /// <summary>
+    /// Sets the file to encrypt a copy of.
+    /// </summary>
+    /// <param name="file">The file, which may be encrypted already.</param>
     public void Initialize(FileReference file)
     {
         _file = file;

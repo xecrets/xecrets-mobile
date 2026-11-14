@@ -39,8 +39,14 @@ using Xecrets.Mobile.Utilities;
 
 namespace Xecrets.Mobile.Pages;
 
+/// <summary>
+/// The page of My folders.
+/// </summary>
 internal partial class WorkFoldersPage : IQueryAttributable
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WorkFoldersPage"/> class with the standard header.
+    /// </summary>
     public WorkFoldersPage(WorkFoldersPageModel model, IPageHeaderService pageHeaderService)
         : base(model)
     {
@@ -48,6 +54,11 @@ internal partial class WorkFoldersPage : IQueryAttributable
         pageHeaderService.ApplyStandardHeader(this);
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// A <see cref="WorkFolderIntent"/> payload is what is done with a file picked in a folder, which is
+    /// <see cref="WorkFolderIntent.Auto"/> without one.
+    /// </remarks>
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
         Model.Initialize(

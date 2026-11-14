@@ -40,6 +40,9 @@ namespace Xecrets.Mobile.Controls;
 /// </summary>
 internal partial class FileStateSelector : View
 {
+    /// <summary>
+    /// Identifies the <see cref="SelectedState"/> bindable property.
+    /// </summary>
     public static readonly BindableProperty SelectedStateProperty = BindableProperty.Create(
         nameof(SelectedState),
         typeof(SelectedFileState),
@@ -47,6 +50,9 @@ internal partial class FileStateSelector : View
         SelectedFileState.All,
         BindingMode.TwoWay);
 
+    /// <summary>
+    /// Which recent files are selected, two-way bound by default.
+    /// </summary>
     public SelectedFileState SelectedState
     {
         get => (SelectedFileState)GetValue(SelectedStateProperty);

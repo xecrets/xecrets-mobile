@@ -35,9 +35,28 @@ namespace Xecrets.Mobile.Models.Abstractions;
 /// </summary>
 public enum EzLogLevel
 {
+    /// <summary>
+    /// The level is not known.
+    /// </summary>
     Unknown,
+
+    /// <summary>
+    /// A failure.
+    /// </summary>
     Error,
+
+    /// <summary>
+    /// An unexpected condition that is not a failure.
+    /// </summary>
     Warning,
+
+    /// <summary>
+    /// The progress of the app.
+    /// </summary>
     Information,
+
+    /// <summary>
+    /// Details for troubleshooting.
+    /// </summary>
     Debug,
 }

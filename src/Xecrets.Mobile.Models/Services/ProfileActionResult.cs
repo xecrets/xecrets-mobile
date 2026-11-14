@@ -30,7 +30,14 @@
 
 namespace Xecrets.Mobile.Models.Services;
 
+/// <summary>
+/// The result of an action on the local profile.
+/// </summary>
+/// <param name="Status">The outcome of the action.</param>
 public sealed record ProfileActionResult(ProfileActionStatus Status)
 {
+    /// <summary>
+    /// True if <see cref="Status"/> is <see cref="ProfileActionStatus.Success"/>, false otherwise.
+    /// </summary>
     public bool Succeeded => Status == ProfileActionStatus.Success;
 }

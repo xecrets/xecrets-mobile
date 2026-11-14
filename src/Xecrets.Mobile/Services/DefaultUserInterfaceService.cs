@@ -48,11 +48,17 @@ using Xecrets.Texts;
 
 namespace Xecrets.Mobile.Services;
 
+/// <summary>
+/// The user interface of the app with the MAUI <see cref="Shell"/>, for the platforms that need no more of their own.
+/// </summary>
 internal class DefaultUserInterfaceService(IBuildInformation buildInformation, EzAppShell ezAppShell) : IUserInterfaceService
 {
     // The navigations through this service that are not done yet.
     private int _navigationCount;
 
+    /// <summary>
+    /// The shell of the app.
+    /// </summary>
     protected Shell AppShell => ezAppShell.Shell;
 
     // The shell shown in the app's only window, or null while there is none, as before the shell is created or after
@@ -65,12 +71,16 @@ internal class DefaultUserInterfaceService(IBuildInformation buildInformation, E
         ? Routing.GetRoute(shellContent)
         : null;
 
+    /// <inheritdoc/>
     public bool IsShellAvailable => WindowShell is not null;
 
+    /// <inheritdoc/>
     public string CurrentLocation => AppShell.CurrentState.Location.OriginalString;
 
+    /// <inheritdoc/>
     public bool IsNavigating => _navigationCount > 0;
 
+    /// <inheritdoc/>
     public IReadOnlyDictionary<string, string> IconMap { get; } = new Dictionary<string, string>
     {
         ["(c)"] = FluentUI.person_add_24_regular,
@@ -83,18 +93,30 @@ internal class DefaultUserInterfaceService(IBuildInformation buildInformation, E
         ["(o)"] = FluentUI.cloud_off_24_regular,
     };
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// A received file can be handled on the home page, and on the pages to sign in or create a profile.
+    /// </remarks>
     public bool CanProcessIncomingFiles =>
         CurrentRoute is "home" or "login" or "introduction";
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// A received file is accepted while the shell is not shown yet, on the startup page, and on the pages where it can
+    /// be handled.
+    /// </remarks>
     public bool CanReceiveIncomingFiles =>
         WindowShell is null ||
         CurrentRoute is "startup" or "home" or "login" or "introduction";
 
+    /// <inheritdoc/>
     public Task InvokeOnMainThreadAsync(Func<Task> action) => MainThread.InvokeOnMainThreadAsync(action);
 
+    /// <inheritdoc/>
     public Task DisplayMessageAsync(string message) =>
         AppShell.DisplayAlertAsync(MobileTexts.DisplayNameProgram, message, MobileTexts.ButtonOk);
 
+    /// <inheritdoc/>
     public Task<bool> DisplayConfirmationAsync(string message, string accept, string cancel) =>
         AppShell.DisplayAlertAsync(
             MobileTexts.DisplayNameProgram,
@@ -102,6 +124,7 @@ internal class DefaultUserInterfaceService(IBuildInformation buildInformation, E
             accept,
             cancel);
 
+    /// <inheritdoc/>
     public async Task<SaveChangesChoice> DisplaySaveChangesAsync(string message)
     {
         string? choice = await AppShell.DisplayActionSheetAsync(
@@ -116,6 +139,7 @@ internal class DefaultUserInterfaceService(IBuildInformation buildInformation, E
             : SaveChangesChoice.Cancel;
     }
 
+    /// <inheritdoc/>
     public Task<string?> DisplayPromptAsync(string message, string initialValue) =>
         AppShell.DisplayPromptAsync(
             MobileTexts.DisplayNameProgram,
@@ -124,9 +148,14 @@ internal class DefaultUserInterfaceService(IBuildInformation buildInformation, E
             MobileTexts.LabelCancel,
             initialValue: initialValue);
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The message is shown as a toast, unless a platform overrides this.
+    /// </remarks>
     public virtual Task DisplayTransientMessageAsync(string message) =>
         Toast.Make(message, ToastDuration.Long).Show();
 
+    /// <inheritdoc/>
     public Task NavigateToAsync(AppDestination destination, object? parameter)
     {
         string route = GetRoute(destination);
@@ -144,6 +173,7 @@ internal class DefaultUserInterfaceService(IBuildInformation buildInformation, E
         return NavigateToRouteAsync(route);
     }
 
+    /// <inheritdoc/>
     public Task NavigateReplacingAsync(AppDestination destination, object? parameter)
     {
         string route = $"../{GetRoute(destination)}";
@@ -183,6 +213,7 @@ internal class DefaultUserInterfaceService(IBuildInformation buildInformation, E
         };
     }
 
+    /// <inheritdoc/>
     public Task GoBackAsync(object? parameter) => parameter is null
         ? NavigateToRouteAsync("..")
         : CountNavigationAsync(() => AppShell.GoToAsync(
@@ -192,9 +223,18 @@ internal class DefaultUserInterfaceService(IBuildInformation buildInformation, E
                 { nameof(NavigationParameter.Payload), parameter },
             }));
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// A Debug or beta build opens the page on the test site.
+    /// </remarks>
     public Task OpenBrowserAsync(string url) => Launcher.Default.OpenAsync(
         url.ToSite(buildInformation.IsDebug || buildInformation.IsBeta));
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The text is not marked as sensitive, and the user is told with a transient message, unless a platform
+    /// overrides this.
+    /// </remarks>
     public virtual async Task SetSensitiveClipboardTextAsync(string text, bool confirm)
     {
         await Clipboard.Default.SetTextAsync(text);

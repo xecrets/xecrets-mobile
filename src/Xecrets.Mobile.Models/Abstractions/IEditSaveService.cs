@@ -31,19 +31,26 @@
 namespace Xecrets.Mobile.Models.Abstractions;
 
 /// <summary>
-/// Saves the edited text of the text being previewed, encrypted.
+/// Saves edited text of the file being previewed, encrypted for what the file is encrypted for. Once saved, the saved
+/// text is the text of the file being previewed.
 /// </summary>
 public interface IEditSaveService
 {
     /// <summary>
-    /// Saves over the source of the flow, in its folder, which then refers to the saved file. Returns false, without
-    /// saving, when there already is a file with the backup name of the source, under which it is kept while saving.
+    /// Saves the text in place of the source file of the flow, in its folder. The source file of the flow then refers
+    /// to the saved file, which replaces the source file in the recent files. The source file is kept under its backup
+    /// name while saving, and gets its own name back if saving fails.
     /// </summary>
+    /// <param name="text">The edited text.</param>
+    /// <returns>True if the text is saved, false if nothing is saved, since there already is a file with the backup
+    /// name of the source file in its folder.</returns>
     Task<bool> SaveAsync(string text);
 
     /// <summary>
-    /// Saves a copy where the user chooses. A copy saved in one of My folders becomes the source of the flow. Returns
-    /// false if the user chose not to save after all.
+    /// Saves the text as a copy where the user chooses. A copy saved in one of My folders becomes the source file of
+    /// the flow and is added to the recent files.
     /// </summary>
+    /// <param name="text">The edited text.</param>
+    /// <returns>True if the copy is saved, false if the user cancels.</returns>
     Task<bool> SaveCopyAsync(string text);
 }

@@ -33,16 +33,23 @@ using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Models.Services;
 
+/// <summary>
+/// A file accessed by its path.
+/// </summary>
+/// <param name="path">The full path of the file.</param>
+/// <param name="fileName">The name of the file, which need not be that of the path.</param>
 internal sealed class LocalReadableFile(string path, string fileName) : IReadableFile
 {
+    /// <inheritdoc/>
     public string FileName => fileName;
 
+    /// <inheritdoc/>
     public Task<Stream> OpenReadAsync() => Task.FromResult<Stream>(File.OpenRead(path));
 
-    /// <summary>
-    /// The times of the local file itself. For a file shared with the app, these are the times of the copy it was
-    /// received as, which need not be those of the original.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The times are those of the file of the path, which for a copy need not be those of the original.
+    /// </remarks>
     public Task<FileTimes> GetTimesAsync() => Task.FromResult(new FileTimes(
         File.GetCreationTimeUtc(path),
         File.GetLastAccessTimeUtc(path),

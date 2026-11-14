@@ -28,6 +28,8 @@
 
 #endregion Copyright and GPL License
 
+#pragma warning disable CS1591
+
 using Xecrets.Mobile.Models.Models;
 using Xecrets.Texts;
 
@@ -35,6 +37,9 @@ using AppTexts = Xecrets.Texts.Texts;
 
 namespace Xecrets.Mobile.Models.Utilities;
 
+/// <summary>
+/// The texts of the app, either untranslated or from Xecrets.Texts.
+/// </summary>
 public static class MobileTexts
 {
     #region Untranslated texts
@@ -359,6 +364,12 @@ public static class MobileTexts
 
     #endregion Untranslated texts
 
+    /// <summary>
+    /// Splits the welcome text into its lines. A line that starts with a placeholder of the icon map is a bullet line
+    /// with the icon of the placeholder, and any other line is a paragraph.
+    /// </summary>
+    /// <param name="iconMap">The icon glyphs by placeholder, such as "(c)".</param>
+    /// <returns>The lines of the welcome text, without empty lines.</returns>
     internal static IReadOnlyList<WelcomeLine> WelcomeLines(IReadOnlyDictionary<string, string> iconMap) =>
     [
         .. WelcomeText

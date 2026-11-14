@@ -32,8 +32,14 @@ using Microsoft.Maui.Controls;
 
 namespace Xecrets.Mobile.Platforms.iOS;
 
+/// <summary>
+/// The configuration of the window on iOS, where it fills the screen as it is.
+/// </summary>
 internal static class PlatformWindow
 {
+    /// <summary>
+    /// Does nothing, since the window fills the screen.
+    /// </summary>
     public static void Configure(Window _)
     {
     }

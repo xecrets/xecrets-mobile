@@ -36,6 +36,9 @@ using Xecrets.Mobile.Models.Utilities;
 
 namespace Xecrets.Mobile.Models.PageModels;
 
+/// <summary>
+/// The page model of the home page.
+/// </summary>
 public partial class HomePageModel(
     IProfileService profileService,
     ITransientFileService transientFileService,
@@ -48,21 +51,32 @@ public partial class HomePageModel(
     // How long a handed-off file is kept after it is disposed, long enough for the other app to have read it.
     private readonly TimeSpan _handedOffFileMaxAge = !buildInformation.IsDebug ? TimeSpan.FromHours(1) : TimeSpan.FromMinutes(1);
 
+    /// <inheritdoc/>
     public string Heading => MobileTexts.HomeContentTitle;
 
+    /// <inheritdoc/>
     public string Information => MobileTexts.HomeDescription;
 
+    /// <inheritdoc/>
     public string Breadcrumb => MobileTexts.BreadcrumbHome;
 
+    /// <summary>
+    /// The email of the profile signed in.
+    /// </summary>
     [ObservableProperty]
     public partial string Email { get; set; } = profileService.CurrentEmail;
 
+    /// <inheritdoc/>
     [ObservableProperty]
     public partial string MessageText { get; set; } = string.Empty;
 
+    /// <inheritdoc/>
     [ObservableProperty]
     public partial string StatusText { get; set; } = string.Empty;
 
+    /// <summary>
+    /// True while an operation of the page runs, false otherwise.
+    /// </summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(MyFoldersCommand))]
     [NotifyCanExecuteChangedFor(nameof(RecentFilesCommand))]

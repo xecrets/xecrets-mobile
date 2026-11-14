@@ -33,23 +33,54 @@ using Microsoft.Maui.Controls;
 
 namespace Xecrets.Mobile.Utilities;
 
+/// <summary>
+/// The attached font weight of labels and buttons, which the handler mappings of each platform apply.
+/// </summary>
 internal static class Typography
 {
+    /// <summary>
+    /// Identifies the attached font weight property, which is <see cref="TypographyWeight.Regular"/> unless set.
+    /// </summary>
     public static readonly BindableProperty FontWeightProperty = BindableProperty.CreateAttached(
         "FontWeight", typeof(TypographyWeight), typeof(Typography), TypographyWeight.Regular);
 
+    /// <summary>
+    /// Gets the font weight of a view.
+    /// </summary>
+    /// <param name="view">The view.</param>
+    /// <returns>The font weight.</returns>
     public static TypographyWeight GetFontWeight(BindableObject view) =>
         (TypographyWeight)view.GetValue(FontWeightProperty);
 
+    /// <summary>
+    /// Tells if the font weight of a view is semibold.
+    /// </summary>
+    /// <param name="view">The view, which is a <see cref="BindableObject"/>.</param>
+    /// <returns>True if the font weight is semibold, false otherwise.</returns>
     public static bool IsSemibold(IView view) =>
         GetFontWeight((BindableObject)view) == TypographyWeight.Semibold;
 
+    /// <summary>
+    /// Sets the font weight of a view.
+    /// </summary>
+    /// <param name="view">The view.</param>
+    /// <param name="value">The font weight.</param>
     public static void SetFontWeight(BindableObject view, TypographyWeight value) =>
         view.SetValue(FontWeightProperty, value);
 }
 
+/// <summary>
+/// A font weight.
+/// </summary>
 internal enum TypographyWeight
 {
+    /// <summary>
+    /// The regular weight.
+    /// </summary>
     Regular,
+
+    /// <summary>
+    /// The semibold weight.
+    /// </summary>
     Semibold,
 }

@@ -30,10 +30,23 @@
 
 namespace Xecrets.Mobile.Models.Models;
 
+/// <summary>
+/// How a file was wiped.
+/// </summary>
 public enum FileWipeStatus
 {
+    /// <summary>
+    /// The file was overwritten and deleted.
+    /// </summary>
     Succeeded,
 
+    /// <summary>
+    /// The file was deleted without being overwritten.
+    /// </summary>
     OnlyDelete,
+
+    /// <summary>
+    /// The file was left as it is, since there are not the rights needed to wipe it.
+    /// </summary>
     InsufficientRights,
 }

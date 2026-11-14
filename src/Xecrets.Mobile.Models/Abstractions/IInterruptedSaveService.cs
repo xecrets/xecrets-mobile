@@ -33,18 +33,27 @@ using Xecrets.Mobile.Models.Models;
 namespace Xecrets.Mobile.Models.Abstractions;
 
 /// <summary>
-/// Saves results in My folders so that a save the app was ended in the middle of is undone when the user next signs in.
+/// Saves results in My folders so that a save that the app ended in the middle of can be undone.
 /// </summary>
 public interface IInterruptedSaveService
 {
     /// <summary>
-    /// Saves the complete file as <see cref="IFileAccess.SaveInFolderAsync"/> does, and returns the id of the saved
-    /// file. The save is kept until it is done, and the source must not be removed before.
+    /// Saves a complete file as <see cref="IFileAccess.SaveInFolderAsync"/> does, keeping the save on the device until
+    /// it is done, so that <see cref="RecoverAsync"/> can undo it. The source file of the save must not be removed
+    /// before this returns.
     /// </summary>
+    /// <param name="save">The save. Its <see cref="SaveInProgress.UserId"/> is not used, since the save is of the
+    /// profile signed in.</param>
+    /// <param name="completedFilePath">The full path of the complete file to save.</param>
+    /// <param name="existingId">The id of the file with the name in the folder, which is replaced, or null if there is
+    /// none.</param>
+    /// <returns>The id of the saved file.</returns>
     Task<string> SaveAsync(SaveInProgress save, string completedFilePath, string? existingId);
 
     /// <summary>
-    /// Undoes a save of the profile signed in that was not done, and tells the user.
+    /// Undoes a save of the profile signed in that was not done, if any. When the source file can be reached, the file
+    /// saved in part is removed, and the source file gets its name back if it was renamed. The user is told when the
+    /// files may have changed. The save is no longer kept afterwards, whether it could be undone or not.
     /// </summary>
     Task RecoverAsync();
 }
