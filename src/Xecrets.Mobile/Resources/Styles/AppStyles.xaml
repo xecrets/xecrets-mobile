@@ -684,15 +684,14 @@
     <x:Double x:Key="CompactEntryMinimumHeight">40</x:Double>
 
     <!-- The variants of the dynamic resource PasswordStrengthMargin, for the strength meter below a password text
-         field. The compact meter is on the underline of the text field, and with the stack spacing around it takes no
-         height, so the text fields above and below it are as far apart as any others. -->
+         field. The meter overlays the bottom of the field so it adds no height or spacing to the form. -->
     <OnIdiom x:Key="RegularPasswordStrengthMargin"
              x:TypeArguments="Thickness"
-             Default="16,-6,0,0">
-        <OnIdiom.Desktop>24,-8,0,0</OnIdiom.Desktop>
-        <OnIdiom.Tablet>24,-8,0,0</OnIdiom.Tablet>
+             Default="16,0,0,0">
+        <OnIdiom.Desktop>24,0,0,0</OnIdiom.Desktop>
+        <OnIdiom.Tablet>24,0,0,0</OnIdiom.Tablet>
     </OnIdiom>
-    <Thickness x:Key="CompactPasswordStrengthMargin">16,-22,0,-2</Thickness>
+    <Thickness x:Key="CompactPasswordStrengthMargin">16,0,0,-2</Thickness>
     <x:Double x:Key="CompactFormSpacing">8</x:Double>
     <Thickness x:Key="RegularFormMargin">0</Thickness>
     <Thickness x:Key="CompactFormMargin">0,-4,0,0</Thickness>

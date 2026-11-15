@@ -28,11 +28,16 @@
 
 #endregion Copyright and GPL License
 
+using System.Linq;
+
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Handlers;
 using Microsoft.Maui.Hosting;
+using Microsoft.Maui.Platform;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media;
 
 using WindowsPage = Microsoft.Maui.Controls.PlatformConfiguration.WindowsSpecific.Page;
 
@@ -70,6 +75,9 @@ internal static class MauiAppBuilderExtensions
             handlers.AddHandler<OverflowMenuButton, WindowsOverflowMenuButtonHandler>();
         });
         MapToolbarDynamicOverflow();
+        // WinUI takes the overflow button color from the command bar foreground, which MAUI leaves at its theme default.
+        ToolbarHandler.Mapper.AppendToMapping(nameof(Toolbar.IconColor), (handler, toolbar) =>
+            handler.PlatformView.Foreground = ((Toolbar)toolbar).IconColor.ToPlatform());
         return builder;
     }
 
@@ -84,5 +92,26 @@ internal static class MauiAppBuilderExtensions
         {
             handler.UpdateValue(WindowsPage.ToolbarDynamicOverflowEnabledProperty.PropertyName);
             handler.UpdateValue(nameof(Toolbar.ToolbarItems));
+            // The mapping can run repeatedly for the same toolbar; keep exactly one Loaded subscription.
+            handler.PlatformView.Loaded -= OnToolbarLoaded;
+            handler.PlatformView.Loaded += OnToolbarLoaded;
+            StretchToolbarTitle(handler.PlatformView);
         });
+
+    private static void OnToolbarLoaded(object sender, RoutedEventArgs args) => StretchToolbarTitle((MauiToolbar)sender);
+
+    // Dynamic overflow overrides the stretching title column with Auto and gives the commands a star column.
+    // Remove those width setters while retaining dynamic overflow and its menu icons.
+    private static void StretchToolbarTitle(MauiToolbar toolbar)
+    {
+        toolbar.ApplyTemplate();
+        FrameworkElement root = (FrameworkElement)VisualTreeHelper.GetChild(toolbar, 0);
+        Microsoft.UI.Xaml.VisualStateGroup overflowStates = Microsoft.UI.Xaml.VisualStateManager.GetVisualStateGroups(root)
+            .Single(group => group.Name == "DynamicOverflowStates");
+        Microsoft.UI.Xaml.VisualState overflowEnabled = overflowStates.States
+            .Single(state => state.Name == "DynamicOverflowEnabled");
+        Microsoft.UI.Xaml.VisualStateManager.GoToState(toolbar, "DynamicOverflowDisabled", false);
+        overflowEnabled.Setters.Clear();
+        Microsoft.UI.Xaml.VisualStateManager.GoToState(toolbar, "DynamicOverflowEnabled", false);
+    }
 }
