@@ -101,6 +101,12 @@
         <AndroidStripNativeLibraries>true</AndroidStripNativeLibraries>
         <!-- Preserve AOT symbols for the App Bundle metadata while packaging stripped copies. -->
         <_AndroidAotStripLibraries>false</_AndroidAotStripLibraries>
+
+        <!-- CommunityToolkit.Maui 16.0.0 registers a handler for Expander.ExpanderLayout in
+             UseMauiCommunityToolkit, which roots all of Expander, whose string-path bindings make
+             ILLink emit IL2112. This app does not use Expander. Remove when a toolkit release includes
+             the fix in https://github.com/CommunityToolkit/Maui/pull/3435. -->
+        <NoWarn>$(NoWarn);IL2112</NoWarn>
     </PropertyGroup>
 
     <!-- iOS builds use Native AOT, with detailed per-member trim warnings. -->
