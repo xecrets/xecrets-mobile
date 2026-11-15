@@ -52,4 +52,51 @@ internal abstract class PageBase<TModel> : ContentPage where TModel : class
     /// The page model, which is the binding context.
     /// </summary>
     public TModel Model => (TModel)BindingContext;
+
+    #region Facilitate clean screenshots on iOS simulator
+
+#if DEBUG
+    private TapGestureRecognizer? _backgroundFocusDismissal;
+
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+
+        if (_backgroundFocusDismissal is not null)
+        {
+            return;
+        }
+
+        _backgroundFocusDismissal = new TapGestureRecognizer();
+        _backgroundFocusDismissal.Tapped += OnPageTapped;
+        Content!.GestureRecognizers.Add(_backgroundFocusDismissal);
+    }
+
+    private void OnPageTapped(object? sender, TappedEventArgs e)
+    {
+        View content = Content!;
+        Microsoft.Maui.Graphics.Point? position = e.GetPosition(content);
+        if (!position.HasValue || IsWithinPageCard(content, position.Value))
+        {
+            return;
+        }
+
+        foreach (Microsoft.Maui.IVisualTreeElement descendant in Microsoft.Maui.VisualTreeElementExtensions
+                     .GetVisualTreeDescendants(this))
+        {
+            if (descendant is VisualElement { IsFocused: true } visualElement)
+            {
+                visualElement.Unfocus();
+                return;
+            }
+        }
+    }
+
+    private static bool IsWithinPageCard(View content, Microsoft.Maui.Graphics.Point position) =>
+        System.Linq.Enumerable.Any(
+            System.Linq.Enumerable.OfType<Controls.PageCard>(
+                Microsoft.Maui.VisualTreeElementExtensions.GetVisualTreeElements(content, position)));
+#endif
+
+    #endregion Facilitate clean screenshots on iOS simulator
 }
