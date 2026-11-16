@@ -71,7 +71,8 @@
                    Style="{StaticResource Title1}" />
             <Label Text="{Binding CurrentPath}"
                    Style="{StaticResource Body2}" />
-            <Grid ColumnDefinitions="*,*,*"
+            <!-- Up and Clear as wide as their content, and Refresh, the longest text, gets the rest of the row. -->
+            <Grid ColumnDefinitions="Auto,*,Auto"
                   ColumnSpacing="{StaticResource LayoutSpacing}">
                 <Button Text="Up"
                         ImageSource="{StaticResource IconUpButton}"
