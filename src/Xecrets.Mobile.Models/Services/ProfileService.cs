@@ -32,6 +32,8 @@ using System.Runtime.ExceptionServices;
 
 using Xecrets.Core.Abstractions;
 using Xecrets.Core.Models;
+using Xecrets.Core.Public;
+using Xecrets.Common;
 using Xecrets.Common.Abstractions;
 using Xecrets.Common.Implementation;
 using Xecrets.Common.Models;
@@ -326,8 +328,11 @@ internal sealed class ProfileService(
     {
         PrivateKeyData privateKeys = (await session.UserStore!.LoadPrivateKeysAsync()).Value;
 
-        // The profile key pair is always kept among the stored private keys once signed in, but is not an extra one.
-        return new PrivateKeyCounts(session.PrivateKeyPairs.Count, CountKeys(privateKeys) - 1);
+        string profilePublicKeyPem = session.ProfileKeyPair!.PublicKey.ToPem();
+        int extraKeys = privateKeys.Accounts.SelectMany(account => account.Keys)
+            .Count(key => !key.KeyPair.PublicKey.HasSamePublicKey(profilePublicKeyPem));
+
+        return new PrivateKeyCounts(session.PrivateKeyPairs.Count, extraKeys);
     }
 
     private static PasswordUsage? FindExtraPassword(ExtraCredentials credentials, string password) =>

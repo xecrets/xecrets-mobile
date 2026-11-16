@@ -216,6 +216,52 @@ public sealed class ProfileServiceTests
     }
 
     [Test]
+    public async Task MissingStoredProfileKeyDoesNotReduceTheExtraPrivateKeyCount()
+    {
+        _profileService.SignOut();
+        await _profileService.ResetProfileAsync("new password");
+        await _profileService.LoginAsync("new password");
+        await using (IEditScope<PrivateKeyData> privateKeys = (await _session.UserStore!.LoadPrivateKeysAsync()).BeginEdit())
+        {
+            foreach (PrivateKeyAccount account in privateKeys.Value.Accounts)
+            {
+                account.Keys.RemoveAll(key => key.Timestamp == _session.ProfileKeyPair!.CreatedUtc.UtcDateTime);
+            }
+        }
+
+        Assert.That(await _profileService.GetPrivateKeyCountsAsync(),
+            Is.EqualTo(new PrivateKeyCounts(Decryptable: 0, Total: 1)));
+    }
+
+    [Test]
+    public async Task EmptyStoredPrivateKeysHaveNoExtraPrivateKeys()
+    {
+        await using (IEditScope<PrivateKeyData> privateKeys = (await _session.UserStore!.LoadPrivateKeysAsync()).BeginEdit())
+        {
+            privateKeys.Value.Accounts.Clear();
+        }
+
+        Assert.That(await _profileService.GetPrivateKeyCountsAsync(),
+            Is.EqualTo(new PrivateKeyCounts(Decryptable: 0, Total: 0)));
+    }
+
+    [Test]
+    public async Task ProfileKeyWithDifferentMetadataAndPemFormattingIsNotCountedAsExtra()
+    {
+        await using (IEditScope<PrivateKeyData> privateKeys = (await _session.UserStore!.LoadPrivateKeysAsync()).BeginEdit())
+        {
+            EncryptedPrivateKey key = privateKeys.Value.Accounts.SelectMany(account => account.Keys).Single();
+            key.Email = "different@example.com";
+            key.Timestamp = DateTime.UnixEpoch;
+            key.KeyPair.PublicKey = key.KeyPair.PublicKey.Replace("\r\n", "\n", StringComparison.Ordinal)
+                .Replace("\n", "\r\n", StringComparison.Ordinal);
+        }
+
+        Assert.That(await _profileService.GetPrivateKeyCountsAsync(),
+            Is.EqualTo(new PrivateKeyCounts(Decryptable: 0, Total: 0)));
+    }
+
+    [Test]
     public async Task AfterResetProfileTheOldKeyPairIsCountedAsDecryptableOnceTheOldPasswordIsAdded()
     {
         _profileService.SignOut();
