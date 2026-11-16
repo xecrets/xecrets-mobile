@@ -47,10 +47,15 @@ public partial class DebugPageModel(
     IUserInterfaceService userInterfaceService)
     : PageModelBase(userInterfaceService)
 {
-    [RelayCommand]
+    // The files are only written when something is saved, and nothing is saved while the page is shown.
+    private bool SettingsJsonExists() => File.Exists(fileService.DataFilePath);
+
+    private bool DeviceSettingsJsonExists() => File.Exists(fileService.DeviceSettingsFilePath);
+
+    [RelayCommand(CanExecute = nameof(SettingsJsonExists))]
     private Task ViewSettingsJsonAsync() => ViewJsonAsync(fileService.DataFilePath);
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(DeviceSettingsJsonExists))]
     private Task ViewDeviceSettingsJsonAsync() => ViewJsonAsync(fileService.DeviceSettingsFilePath);
 
     private async Task ViewJsonAsync(string filePath)
