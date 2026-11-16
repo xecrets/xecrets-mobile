@@ -26,7 +26,7 @@
 -->
 <pages:PageBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                 xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-                xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
+                xmlns:f="clr-namespace:Fonts"
                 xmlns:models="clr-namespace:Xecrets.Mobile.Models.Models;assembly=Xecrets.Mobile.Models"
                 xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
                 xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
@@ -48,11 +48,24 @@
     <ContentPage.Resources>
         <ResourceDictionary>
             <utilities:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
+            <FontImageSource x:Key="IconUpButton"
+                             Glyph="{x:Static f:FluentUI.folder_arrow_up_24_regular}"
+                             FontFamily="{x:Static f:FluentUI.FontFamily}"
+                             Color="{StaticResource White}"
+                             Size="{StaticResource ActionButtonIconSize}" />
+            <FontImageSource x:Key="IconRefreshButton"
+                             Glyph="{x:Static f:FluentUI.arrow_sync_24_regular}"
+                             FontFamily="{x:Static f:FluentUI.FontFamily}"
+                             Color="{StaticResource White}"
+                             Size="{StaticResource ActionButtonIconSize}" />
         </ResourceDictionary>
     </ContentPage.Resources>
-    <controls:FadingScrollView FadeColor="{AppThemeBinding Light={StaticResource LightBackground}, Dark={StaticResource DarkBackground}}">
-        <VerticalStackLayout Padding="{StaticResource LayoutPadding}"
-                             Spacing="{StaticResource LayoutSpacing}">
+    <!-- A virtualized list of plain rows, since a folder such as the cache of images may hold thousands of files. The
+         list scrolls by itself and so is not in a scroll view, which would make it create all rows at once. -->
+    <Grid Padding="{StaticResource LayoutPadding}"
+          RowDefinitions="Auto,*"
+          RowSpacing="{StaticResource LayoutSpacing}">
+        <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
             <Label Text="Cache"
                    HorizontalOptions="Center"
                    Style="{StaticResource Title1}" />
@@ -61,28 +74,55 @@
             <Grid ColumnDefinitions="*,*,*"
                   ColumnSpacing="{StaticResource LayoutSpacing}">
                 <Button Text="Up"
+                        ImageSource="{StaticResource IconUpButton}"
+                        ContentLayout="Left,6"
                         Command="{Binding UpCommand}" />
                 <Button Grid.Column="1"
                         Text="Refresh"
+                        ImageSource="{StaticResource IconRefreshButton}"
+                        ContentLayout="Left,6"
                         Command="{Binding LoadCommand}" />
                 <Button Grid.Column="2"
                         Text="Clear"
+                        ImageSource="{StaticResource IconDeleteButton}"
+                        ContentLayout="Left,6"
                         Command="{Binding ClearCommand}" />
             </Grid>
             <Label Text="{Binding StatusText}"
                    IsVisible="{Binding StatusText, Converter={StaticResource StringNotEmptyConverter}}"
                    Style="{StaticResource Body2}" />
-            <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}"
-                                 BindableLayout.ItemsSource="{Binding Entries}">
-                <BindableLayout.ItemTemplate>
-                    <DataTemplate x:DataType="models:CacheBrowserEntry">
-                        <controls:ActionButton Title="{Binding DisplayName}"
-                                               Description="{Binding Details}"
-                                               Command="{Binding OpenCommand}"
-                                               CommandParameter="{Binding .}" />
-                    </DataTemplate>
-                </BindableLayout.ItemTemplate>
-            </VerticalStackLayout>
         </VerticalStackLayout>
-    </controls:FadingScrollView>
+        <CollectionView Grid.Row="1"
+                        ItemsSource="{Binding Entries}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:CacheBrowserEntry">
+                    <Grid Padding="0,8,0,0"
+                          RowDefinitions="Auto,Auto,Auto"
+                          RowSpacing="2">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding OpenCommand}"
+                                                  CommandParameter="{Binding .}" />
+                        </Grid.GestureRecognizers>
+                        <Grid.Triggers>
+                            <DataTrigger TargetType="Grid"
+                                         Binding="{Binding IsEnabled}"
+                                         Value="False">
+                                <Setter Property="Opacity" Value="0.4" />
+                            </DataTrigger>
+                        </Grid.Triggers>
+                        <Label Text="{Binding DisplayName}"
+                               LineBreakMode="MiddleTruncation"
+                               Style="{StaticResource Body2Strong}" />
+                        <Label Grid.Row="1"
+                               Text="{Binding Details}"
+                               Style="{StaticResource Caption1}" />
+                        <BoxView Grid.Row="2"
+                                 Margin="0,6,0,0"
+                                 HeightRequest="1"
+                                 Color="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}" />
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
 </pages:PageBase>

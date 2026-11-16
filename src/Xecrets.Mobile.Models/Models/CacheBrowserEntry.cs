@@ -42,6 +42,7 @@ namespace Xecrets.Mobile.Models.Models;
 /// <param name="IsDirectory">True for a folder, false for a file.</param>
 /// <param name="Size">The size of a file in bytes, not used for a folder.</param>
 /// <param name="LastWriteTimeUtc">When the file or folder was last written.</param>
+/// <param name="IsEnabled">False for a folder of the system that the app cannot open or delete.</param>
 /// <param name="OpenCommand">Opens the entry.</param>
 public sealed record CacheBrowserEntry(
     string FilePath,
@@ -49,6 +50,7 @@ public sealed record CacheBrowserEntry(
     bool IsDirectory,
     long Size,
     DateTime LastWriteTimeUtc,
+    bool IsEnabled,
     IAsyncRelayCommand<CacheBrowserEntry> OpenCommand)
 {
     /// <summary>

@@ -28,8 +28,6 @@
 
 #endregion Copyright and GPL License
 
-using System.Collections.ObjectModel;
-
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -45,6 +43,9 @@ namespace Xecrets.Mobile.Models.PageModels;
 /// </summary>
 public partial class CacheBrowserPageModel : PageModelBase
 {
+    // Where ART keeps its runtime image of the app on Android, which the app can neither list nor delete.
+    private const string SystemFolderName = "oat_primary";
+
     private readonly IFileService _fileService;
     private readonly ICrashLogService _crashLogService;
     private readonly IEzLogging _log;
@@ -76,9 +77,10 @@ public partial class CacheBrowserPageModel : PageModelBase
     }
 
     /// <summary>
-    /// The files and folders of the folder shown.
+    /// The files and folders of the folder shown, replaced as a whole so that a large folder is shown in one update.
     /// </summary>
-    public ObservableCollection<CacheBrowserEntry> Entries { get; } = [];
+    [ObservableProperty]
+    public partial IReadOnlyList<CacheBrowserEntry> Entries { get; set; } = [];
 
     /// <summary>
     /// The path of the folder shown, relative to the cache.
@@ -93,7 +95,7 @@ public partial class CacheBrowserPageModel : PageModelBase
     public partial string StatusText { get; set; } = string.Empty;
 
     [RelayCommand]
-    private Task LoadAsync()
+    private async Task LoadAsync()
     {
         try
         {
@@ -102,29 +104,47 @@ public partial class CacheBrowserPageModel : PageModelBase
                 _currentDirectory = _cacheDirectory;
             }
 
-            Entries.Clear();
-            foreach (DirectoryInfo directory in new DirectoryInfo(_currentDirectory).EnumerateDirectories()
-                         .OrderBy(directory => directory.Name, StringComparer.OrdinalIgnoreCase))
-            {
-                Entries.Add(new CacheBrowserEntry(directory.FullName, directory.Name, true, 0, directory.LastWriteTimeUtc, OpenCommand));
-            }
-
-            foreach (FileInfo file in new DirectoryInfo(_currentDirectory).EnumerateFiles()
-                         .OrderBy(file => file.Name, StringComparer.OrdinalIgnoreCase))
-            {
-                Entries.Add(new CacheBrowserEntry(file.FullName, file.Name, false, file.Length, file.LastWriteTimeUtc, OpenCommand));
-            }
-
+            // Off the UI thread, since a cache of images may hold thousands of files.
+            string directory = _currentDirectory;
+            IAsyncRelayCommand<CacheBrowserEntry> openCommand = OpenCommand;
+            Entries = await Task.Run(() => ListEntries(directory, openCommand));
             CurrentPath = GetCurrentPath();
             StatusText = string.Empty;
         }
         catch (Exception ex)
         {
             _crashLogService.WriteSwallowedException(ex);
+            Entries = [];
             StatusText = ex.FormatException();
         }
+    }
 
-        return Task.CompletedTask;
+    private static CacheBrowserEntry[] ListEntries(string directory, IAsyncRelayCommand<CacheBrowserEntry> openCommand)
+    {
+        DirectoryInfo info = new(directory);
+        return
+        [
+            .. info.EnumerateDirectories()
+                .OrderBy(folder => folder.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(folder => new CacheBrowserEntry(
+                    folder.FullName,
+                    folder.Name,
+                    true,
+                    0,
+                    folder.LastWriteTimeUtc,
+                    !string.Equals(folder.Name, SystemFolderName, StringComparison.Ordinal),
+                    openCommand)),
+            .. info.EnumerateFiles()
+                .OrderBy(file => file.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(file => new CacheBrowserEntry(
+                    file.FullName,
+                    file.Name,
+                    false,
+                    file.Length,
+                    file.LastWriteTimeUtc,
+                    true,
+                    openCommand)),
+        ];
     }
 
     [RelayCommand]
@@ -147,25 +167,9 @@ public partial class CacheBrowserPageModel : PageModelBase
         List<string> deleted = [];
         try
         {
-            foreach (CacheBrowserEntry entry in Entries)
-            {
-                if (entry.IsDirectory)
-                {
-                    foreach (string file in Directory.EnumerateFiles(entry.FilePath, "*", SearchOption.AllDirectories))
-                    {
-                        File.SetAttributes(file, FileAttributes.Normal);
-                    }
-
-                    Directory.Delete(entry.FilePath, recursive: true);
-                    deleted.Add($"Deleted folder {ToLogPath(entry.FilePath)}");
-                }
-                else
-                {
-                    File.SetAttributes(entry.FilePath, FileAttributes.Normal);
-                    File.Delete(entry.FilePath);
-                    deleted.Add($"Deleted {ToLogPath(entry.FilePath).MaskPath()}");
-                }
-            }
+            // Off the UI thread, since a cache of images may hold thousands of files.
+            CacheBrowserEntry[] entries = [.. Entries.Where(entry => entry.IsEnabled)];
+            await Task.Run(() => DeleteEntries(entries, deleted));
 
             if (!string.Equals(_currentDirectory, _cacheDirectory, StringComparison.Ordinal))
             {
@@ -196,7 +200,32 @@ public partial class CacheBrowserPageModel : PageModelBase
         }
     }
 
-    [RelayCommand]
+    private void DeleteEntries(IEnumerable<CacheBrowserEntry> entries, List<string> deleted)
+    {
+        foreach (CacheBrowserEntry entry in entries)
+        {
+            if (entry.IsDirectory)
+            {
+                foreach (string file in Directory.EnumerateFiles(entry.FilePath, "*", SearchOption.AllDirectories))
+                {
+                    File.SetAttributes(file, FileAttributes.Normal);
+                }
+
+                Directory.Delete(entry.FilePath, recursive: true);
+                deleted.Add($"Deleted folder {ToLogPath(entry.FilePath)}");
+            }
+            else
+            {
+                File.SetAttributes(entry.FilePath, FileAttributes.Normal);
+                File.Delete(entry.FilePath);
+                deleted.Add($"Deleted {ToLogPath(entry.FilePath).MaskPath()}");
+            }
+        }
+    }
+
+    private static bool CanOpen(CacheBrowserEntry entry) => entry.IsEnabled;
+
+    [RelayCommand(CanExecute = nameof(CanOpen))]
     private async Task OpenAsync(CacheBrowserEntry entry)
     {
         try
