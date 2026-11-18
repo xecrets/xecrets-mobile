@@ -97,6 +97,7 @@
     <PropertyGroup Condition="'$(Configuration)' == 'Release' And $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
         <TrimMode>full</TrimMode>
         <AndroidLinkTool>r8</AndroidLinkTool>
+        <AndroidR8ObfuscationMode>private-members</AndroidR8ObfuscationMode>
         <RuntimeIdentifiers>android-arm64</RuntimeIdentifiers>
         <AndroidStripNativeLibraries>true</AndroidStripNativeLibraries>
         <!-- Preserve AOT symbols for the App Bundle metadata while packaging stripped copies. -->
