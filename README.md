@@ -14,14 +14,10 @@ editing is intentionally limited to text files.
 Any type of file can also be opened in a compatible application installed on the phone or shared
 using the capabilities provided by Android or iOS and the applications installed there.
 
-## Development Status
+## Downloads and Release Notes
 
-The Xecrets Ez mobile apps are currently in development and available for closed beta testing. We
-are looking for beta testers who want to help us test the apps on Android and iOS and provide
-feedback before the public release.
-
-If you are interested in participating in the beta program, please
-[contact Axantum support](https://www.axantum.com/support).
+See the [Releases](https://github.com/xecrets/xecrets-mobile/releases) page for downloads and
+release notes.
 
 ## Support Development
 

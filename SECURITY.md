@@ -6,8 +6,8 @@ reports them responsibly.
 
 ## Supported Versions
 
-The apps are currently in closed beta. Only the latest published build (per platform)
-is supported with security fixes. There are no older major versions to maintain yet.
+Only the latest release for each platform is supported with security fixes. See the
+[Releases](https://github.com/xecrets/xecrets-mobile/releases) page for available versions.
 
 ## No Telemetry, No Servers
 
