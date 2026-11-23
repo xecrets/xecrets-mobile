@@ -58,6 +58,11 @@ public partial class ViewPageModel(
     /// </summary>
     public TextEditorFontModel Font { get; } = new(profileSettingsService);
 
+    /// <summary>
+    /// The search of the text.
+    /// </summary>
+    public TextSearchModel Search { get; } = new();
+
     // Once only, since the page appears again when returned to.
     private bool _initialized;
 
@@ -110,6 +115,8 @@ public partial class ViewPageModel(
     /// </summary>
     [ObservableProperty]
     public partial bool IsTextVisible { get; set; }
+
+    partial void OnTextChanged(string value) => Search.SetText(value);
 
     [RelayCommand]
     private async Task Initialize()

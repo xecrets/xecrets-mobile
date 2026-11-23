@@ -27,6 +27,7 @@
 <pages:PageBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                 xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                 xmlns:f="clr-namespace:Fonts"
+                xmlns:behaviors="clr-namespace:Xecrets.Mobile.Behaviors"
                 xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
                 xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
                 xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
@@ -52,6 +53,11 @@
                              FontFamily="{x:Static f:FluentUI.FontFamily}"
                              Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
                              Size="24" />
+            <FontImageSource x:Key="IconSearch"
+                             Glyph="{x:Static f:FluentUI.search_24_regular}"
+                             FontFamily="{x:Static f:FluentUI.FontFamily}"
+                             Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                             Size="24" />
         </ResourceDictionary>
     </ContentPage.Resources>
     <Grid>
@@ -74,6 +80,12 @@
                             </VerticalStackLayout>
                             <HorizontalStackLayout Grid.Column="1"
                                                    VerticalOptions="Start">
+                                <ImageButton VerticalOptions="Center"
+                                             Background="Transparent"
+                                             MinimumWidthRequest="36"
+                                             Padding="6,8"
+                                             Source="{StaticResource IconSearch}"
+                                             Command="{Binding Search.OpenCommand}" />
                                 <controls:TextFontButtons BindingContext="{Binding Font}" />
                                 <ImageButton VerticalOptions="Center"
                                              Background="Transparent"
@@ -84,6 +96,7 @@
                             </HorizontalStackLayout>
                         </Grid>
                     </Border>
+                    <controls:TextSearchBar BindingContext="{Binding Search}" />
                     <controls:PageMessages MessageText="{Binding MessageText}"
                                            StatusText="{Binding StatusText}" />
                 </VerticalStackLayout>
@@ -97,6 +110,13 @@
                         AutoSize="TextChanges"
                         BackgroundColor="Transparent"
                         FontSize="{Binding Font.FontSize}">
+                    <Editor.Behaviors>
+                        <behaviors:TextSearchHighlightBehavior x:DataType="pages:EditPage"
+                                                               BindingContext="{x:Reference PageRoot}"
+                                                               Result="{Binding Model.Search.Result}"
+                                                               MatchColor="{StaticResource TextMatch}"
+                                                               CurrentMatchColor="{StaticResource CurrentTextMatch}" />
+                    </Editor.Behaviors>
                     <Editor.Triggers>
                         <DataTrigger TargetType="Editor"
                                      Binding="{Binding Font.IsProportionalFont}"

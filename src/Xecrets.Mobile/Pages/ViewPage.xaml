@@ -26,6 +26,8 @@
 -->
 <pages:PageBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                 xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                xmlns:f="clr-namespace:Fonts"
+                xmlns:behaviors="clr-namespace:Xecrets.Mobile.Behaviors"
                 xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
                 xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
                 xmlns:pages="clr-namespace:Xecrets.Mobile.Pages"
@@ -44,6 +46,15 @@
                                         EventName="Appearing"
                                         Command="{Binding Model.InitializeCommand}" />
     </ContentPage.Behaviors>
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <FontImageSource x:Key="IconSearch"
+                             Glyph="{x:Static f:FluentUI.search_24_regular}"
+                             FontFamily="{x:Static f:FluentUI.FontFamily}"
+                             Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                             Size="24" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
     <!-- The same layout as the edit page. The card holds the file and the buttons, with no title since the
          breadcrumb names the page. The messages below it take no space when there are none, and the contents below
          them span the full page width, and are all that scrolls. -->
@@ -62,12 +73,19 @@
                                    Style="{StaticResource ExtraFileInfo}" />
                         </VerticalStackLayout>
                         <HorizontalStackLayout Grid.Column="1"
-                                               VerticalOptions="Start">
-                            <controls:TextFontButtons BindingContext="{Binding Font}"
-                                                      IsVisible="{Binding IsVisible, Source={x:Reference TextContent}, x:DataType=ScrollView}" />
+                                               VerticalOptions="Start"
+                                               IsVisible="{Binding IsVisible, Source={x:Reference TextContent}, x:DataType=ScrollView}">
+                            <ImageButton VerticalOptions="Center"
+                                         Background="Transparent"
+                                         MinimumWidthRequest="36"
+                                         Padding="6,8"
+                                         Source="{StaticResource IconSearch}"
+                                         Command="{Binding Search.OpenCommand}" />
+                            <controls:TextFontButtons BindingContext="{Binding Font}" />
                         </HorizontalStackLayout>
                     </Grid>
                 </Border>
+                <controls:TextSearchBar BindingContext="{Binding Search}" />
                 <controls:PageMessages MessageText="{Binding MessageText}"
                                        StatusText="{Binding StatusText}" />
             </VerticalStackLayout>
@@ -90,6 +108,13 @@
                                      AutoSize="TextChanges"
                                      BackgroundColor="Transparent"
                                      FontSize="{Binding Font.FontSize}">
+                <controls:ReadOnlyEditor.Behaviors>
+                    <behaviors:TextSearchHighlightBehavior x:DataType="pages:ViewPage"
+                                                           BindingContext="{x:Reference PageRoot}"
+                                                           Result="{Binding Model.Search.Result}"
+                                                           MatchColor="{StaticResource TextMatch}"
+                                                           CurrentMatchColor="{StaticResource CurrentTextMatch}" />
+                </controls:ReadOnlyEditor.Behaviors>
                 <controls:ReadOnlyEditor.Triggers>
                     <DataTrigger TargetType="controls:ReadOnlyEditor"
                                  Binding="{Binding Font.IsProportionalFont}"

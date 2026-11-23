@@ -63,6 +63,11 @@ public partial class EditPageModel(
     /// </summary>
     public TextEditorFontModel Font { get; } = new(profileSettingsService);
 
+    /// <summary>
+    /// The search of the text being edited.
+    /// </summary>
+    public TextSearchModel Search { get; } = new();
+
     // A hash rather than a copy of the saved text, so that no more copies of the plaintext are kept than needed.
     private byte[] _savedTextHash = [];
 
@@ -112,6 +117,14 @@ public partial class EditPageModel(
     /// True if the text differs from the text last saved, or decrypted, false otherwise.
     /// </summary>
     public bool HasUnsavedChanges => !HashText(Text).SequenceEqual(_savedTextHash);
+
+    // Highlighting the matches while the text is edited contends with the editing for the selection and the scroll
+    // position, so editing closes the search.
+    partial void OnTextChanged(string value)
+    {
+        Search.CloseCommand.Execute(null);
+        Search.SetText(value);
+    }
 
     [RelayCommand]
     private async Task Initialize()

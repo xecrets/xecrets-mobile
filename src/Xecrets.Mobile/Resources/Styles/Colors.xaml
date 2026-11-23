@@ -32,6 +32,9 @@
     <Color x:Key="DarkOutline">#3C4358</Color>
     <Color x:Key="LightMutedText">#5F6982</Color>
     <Color x:Key="DarkMutedText">#B5BED5</Color>
+    <!-- Translucent, so that the text stays readable on both the light and the dark background. -->
+    <Color x:Key="TextMatch">#59FFC107</Color>
+    <Color x:Key="CurrentTextMatch">#B3FF9800</Color>
 
     <Color x:Key="White">White</Color>
     <Color x:Key="Black">Black</Color>

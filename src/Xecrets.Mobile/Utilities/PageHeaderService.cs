@@ -141,8 +141,32 @@ internal sealed class PageHeaderService(
             CenterTitle(page, content, titleView, titleLayout);
         };
         titleView.Unloaded += (_, _) => content.BatchCommitted -= OnContentLaidOut;
+#if DEBUG
+        AddFocusDismissal(page, titleView);
+#endif
         Shell.SetTitleView(page, titleView);
     }
+
+#if DEBUG
+    // Facilitates clean screenshots on the iOS simulator: tapping the title takes the focus from the page, which hides
+    // the keyboard. Only the title reacts, so that taps on the controls of the page keep the focus they give.
+    private static void AddFocusDismissal(ContentPage page, View titleView)
+    {
+        TapGestureRecognizer focusDismissal = new();
+        focusDismissal.Tapped += (_, _) =>
+        {
+            foreach (IVisualTreeElement descendant in page.GetVisualTreeDescendants())
+            {
+                if (descendant is VisualElement { IsFocused: true } visualElement)
+                {
+                    visualElement.Unfocus();
+                    return;
+                }
+            }
+        };
+        titleView.GestureRecognizers.Add(focusDismissal);
+    }
+#endif
 
     // Shell places the title view between its own navigation button and toolbar, which differ in width. Pad the
     // narrower side so that the title is centered in the window, but only as much as leaves room for the whole title,

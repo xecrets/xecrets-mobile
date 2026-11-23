@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    Xecrets Ez Mobile - Copyright © 2026 Svante Seleborg, All Rights Reserved.
+
+    This code file is part of Xecrets Ez Mobile, an application that uses the Xecrets.Net library, parts of which in turn
+    are derived from AxCrypt as licensed under GPL v3 or later. This code is not derived from AxCrypt. It is separately
+    authored and copyrighted, and licensed only as follows unless explicitly licensed otherwise.
+
+    Xecrets Ez Mobile is free software: you can redistribute it and/or modify it under the terms of the GNU General
+    Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+    later version.
+
+    No additional permission is granted beyond that license. If you incorporate this code into a larger work and
+    distribute that work to others, you are responsible for complying with the GNU General Public License version 3 or
+    later. See https://www.gnu.org/licenses/ for more information.
+
+    Xecrets Ez Mobile is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+    implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+    details.
+
+    You should have received a copy of the GNU General Public License along with Xecrets Ez Mobile. If not, see
+    <https://www.gnu.org/licenses/>.
+
+    The source repository can be found at https://github.com/xecrets/xecrets-mobile please go there for more information,
+    suggestions and contributions. You may also visit https://www.axantum.com for more information about the author.
+-->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:f="clr-namespace:Fonts"
+             xmlns:controls="clr-namespace:Xecrets.Mobile.Controls"
+             xmlns:pageModels="clr-namespace:Xecrets.Mobile.Models.PageModels;assembly=Xecrets.Mobile.Models"
+             xmlns:modelUtilities="clr-namespace:Xecrets.Mobile.Models.Utilities;assembly=Xecrets.Mobile.Models"
+             xmlns:utilities="clr-namespace:Xecrets.Mobile.Utilities"
+             x:Class="Xecrets.Mobile.Controls.TextSearchBar"
+             x:ClassModifier="internal"
+             x:DataType="pageModels:TextSearchModel"
+             IsVisible="{Binding IsOpen}">
+    <ContentView.Resources>
+        <ResourceDictionary>
+            <utilities:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
+            <FontImageSource x:Key="IconFindPrevious"
+                             Glyph="{x:Static f:FluentUI.chevron_up_24_regular}"
+                             FontFamily="{x:Static f:FluentUI.FontFamily}"
+                             Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                             Size="24" />
+            <FontImageSource x:Key="IconFindNext"
+                             Glyph="{x:Static f:FluentUI.chevron_down_24_regular}"
+                             FontFamily="{x:Static f:FluentUI.FontFamily}"
+                             Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                             Size="24" />
+            <FontImageSource x:Key="IconClose"
+                             Glyph="{x:Static f:FluentUI.dismiss_24_regular}"
+                             FontFamily="{x:Static f:FluentUI.FontFamily}"
+                             Color="{AppThemeBinding Light={StaticResource DarkOnLightBackground}, Dark={StaticResource LightOnDarkBackground}}"
+                             Size="24" />
+        </ResourceDictionary>
+    </ContentView.Resources>
+    <!-- As the search panel of the desktop app: the text to search for, the previous and next match, and close, with
+         the position of the current match and the number of matches below them. -->
+    <Border Style="{StaticResource PageInformationCardStyle}">
+        <VerticalStackLayout Margin="{StaticResource IconRowBodyLeadingMargin}">
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                <!-- No taller than the buttons, rather than as tall as the entries of a form. -->
+                <controls:SearchTextEntry x:Name="SearchEntry"
+                                          MinimumHeightRequest="{StaticResource CompactEntryMinimumHeight}"
+                                          Text="{Binding SearchText}"
+                                          Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkFind}"
+                                          Keyboard="Plain"
+                                          IsSpellCheckEnabled="False"
+                                          IsTextPredictionEnabled="False"
+                                          ReturnType="Search"
+                                          ReturnCommand="{Binding FindNextCommand}"
+                                          VerticalOptions="Center" />
+                <!-- The same as the buttons of the font. -->
+                <ImageButton Grid.Column="1"
+                             VerticalOptions="Center"
+                             Background="Transparent"
+                             MinimumWidthRequest="36"
+                             Padding="6,8"
+                             Source="{StaticResource IconFindPrevious}"
+                             Command="{Binding FindPreviousCommand}" />
+                <ImageButton Grid.Column="2"
+                             VerticalOptions="Center"
+                             Background="Transparent"
+                             MinimumWidthRequest="36"
+                             Padding="6,8"
+                             Source="{StaticResource IconFindNext}"
+                             Command="{Binding FindNextCommand}" />
+                <ImageButton Grid.Column="3"
+                             VerticalOptions="Center"
+                             Background="Transparent"
+                             MinimumWidthRequest="36"
+                             Padding="6,8"
+                             Source="{StaticResource IconClose}"
+                             Command="{Binding CloseCommand}" />
+            </Grid>
+            <Label Text="{Binding CountText}"
+                   IsVisible="{Binding CountText, Converter={StaticResource StringNotEmptyConverter}}"
+                   Style="{StaticResource ExtraFileInfo}" />
+        </VerticalStackLayout>
+    </Border>
+</ContentView>

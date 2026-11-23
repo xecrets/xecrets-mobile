@@ -39,7 +39,7 @@ using Microsoft.Maui.Platform;
 namespace Xecrets.Mobile.Platforms.Android;
 
 /// <summary>
-/// Gives editors their own platform view, <see cref="SensitiveEditText"/>, and asks the keyboard not to learn from the
+/// Gives editors their own platform view, <see cref="SearchableEditText"/>, and asks the keyboard not to learn from the
 /// decrypted text in them.
 /// </summary>
 internal class AndroidEditorHandler : EditorHandler
@@ -59,7 +59,7 @@ internal class AndroidEditorHandler : EditorHandler
     // Set up as MAUI sets up its own platform view, which is otherwise only created there.
     protected override MauiAppCompatEditText CreatePlatformView()
     {
-        SensitiveEditText platformView = new(Context)
+        SearchableEditText platformView = new(Context)
         {
             ImeOptions = ImeAction.Done | (ImeAction)ImeFlags.NoPersonalizedLearning,
             TextAlignment = AndroidTextAlignment.ViewStart,

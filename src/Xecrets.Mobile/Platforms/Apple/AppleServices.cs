@@ -29,15 +29,24 @@
 #endregion Copyright and GPL License
 
 using System;
+using System.Collections.Generic;
+
+using CoreGraphics;
+
+using Foundation;
 
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
+using Microsoft.Maui.Platform;
 
 using UIKit;
 
 using Xecrets.Mobile.Abstractions;
+using Xecrets.Mobile.Controls;
 using Xecrets.Mobile.Models.Abstractions;
+using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Utilities;
 using Xecrets.Mobile.Services;
 using Xecrets.Mobile.Utilities;
@@ -74,6 +83,69 @@ internal abstract class AppleServices : PlatformServicesBase
     public override (double Left, double Right) GetWindowGaps(VisualElement view) => view.GetWindowGaps();
 
     /// <inheritdoc/>
+    public override (double Top, double Bottom) GetTextLineBounds(Editor editor, int index)
+    {
+        UITextView textView = (UITextView)editor.Handler!.PlatformView!;
+        CGRect caret = textView.GetCaretRectForPosition(textView.GetPosition(textView.BeginningOfDocument, index));
+        return (caret.Top, caret.Bottom);
+    }
+
+    /// <inheritdoc/>
+    public override int GetTextLineStart(Editor editor, double y)
+    {
+        UITextView textView = (UITextView)editor.Handler!.PlatformView!;
+        UITextPosition position = textView.GetClosestPositionToPoint(new CGPoint(0, y));
+        return (int)textView.GetOffsetFromPosition(textView.BeginningOfDocument, position);
+    }
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The highlights are attributes of the text storage, which are not part of the text of the editor. Only the ranges
+    /// of the matches highlighted before and now are edited, since TextKit then draws only those again. The highlights
+    /// from before are found in the text storage, where they have moved with the text if it was edited since.
+    /// </remarks>
+    public override void HighlightTextMatches(
+        Editor editor,
+        TextSearchResult result,
+        int first,
+        int end,
+        Color matchColor,
+        Color currentMatchColor)
+    {
+        NSTextStorage textStorage = ((UITextView)editor.Handler!.PlatformView!).TextStorage;
+        List<NSRange> highlighted = [];
+        textStorage.EnumerateAttribute(
+            UIStringAttributeKey.BackgroundColor,
+            new NSRange(0, textStorage.Length),
+            NSAttributedStringEnumeration.None,
+            (NSObject value, NSRange range, ref bool _) =>
+            {
+                if (value is not null)
+                {
+                    highlighted.Add(range);
+                }
+            });
+
+        UIColor platformMatchColor = matchColor.ToPlatform();
+        UIColor platformCurrentMatchColor = currentMatchColor.ToPlatform();
+        textStorage.BeginEditing();
+        foreach (NSRange range in highlighted)
+        {
+            textStorage.RemoveAttribute(UIStringAttributeKey.BackgroundColor, range);
+        }
+
+        for (int index = first; index < end; index++)
+        {
+            textStorage.AddAttribute(
+                UIStringAttributeKey.BackgroundColor,
+                index == result.CurrentIndex ? platformCurrentMatchColor : platformMatchColor,
+                new NSRange(result.Starts[index], result.Length));
+        }
+
+        textStorage.EndEditing();
+    }
+
+    /// <inheritdoc/>
     /// <remarks>
     /// The window is covered while the app is in the background and sensitive content is shown, since the snapshot is
     /// taken then.
@@ -96,18 +168,15 @@ internal abstract class AppleServices : PlatformServicesBase
         ButtonHandler.Mapper.AppendToMapping(nameof(ITextStyle.Font), (handler, view) =>
             ApplyFontWeight(view, handler.PlatformView.TitleLabel));
 
-        // Editors show decrypted text, so it is kept from inline predictions and Writing Tools, which have settings of
-        // their own, apart from autocorrection and spell checking.
-        EditorHandler.Mapper.AppendToMapping("Xecrets.ConfigureSensitiveText",(handler, _) =>
+        // Editors show decrypted text, and search entries take text from it, so it is kept from inline predictions and
+        // Writing Tools, which have settings of their own, apart from autocorrection and spell checking.
+        EditorHandler.Mapper.AppendToMapping("Xecrets.ConfigureSensitiveText", (handler, _) =>
+            ConfigureSensitiveText(handler.PlatformView));
+        EntryHandler.Mapper.AppendToMapping("Xecrets.ConfigureSensitiveText", (handler, view) =>
         {
-            if (OperatingSystem.IsIOSVersionAtLeast(17) || OperatingSystem.IsMacCatalyst())
+            if (view is SearchTextEntry)
             {
-                handler.PlatformView.SetInlinePredictionType(UITextInlinePredictionType.No);
-            }
-
-            if (OperatingSystem.IsIOSVersionAtLeast(18) || OperatingSystem.IsMacCatalystVersionAtLeast(18))
-            {
-                handler.PlatformView.WritingToolsBehavior = UIWritingToolsBehavior.None;
+                ConfigureSensitiveText(handler.PlatformView);
             }
         });
 
@@ -143,6 +212,19 @@ internal abstract class AppleServices : PlatformServicesBase
         UIWindow window = ((MauiUISceneDelegate)scene.Delegate!).Window!;
         _cover.Frame = window.Bounds;
         window.AddSubview(_cover);
+    }
+
+    private static void ConfigureSensitiveText(IUITextInputTraits platformView)
+    {
+        if (OperatingSystem.IsIOSVersionAtLeast(17) || OperatingSystem.IsMacCatalyst())
+        {
+            platformView.SetInlinePredictionType(UITextInlinePredictionType.No);
+        }
+
+        if (OperatingSystem.IsIOSVersionAtLeast(18) || OperatingSystem.IsMacCatalystVersionAtLeast(18))
+        {
+            platformView.SetWritingToolsBehavior(UIWritingToolsBehavior.None);
+        }
     }
 
     private static void ApplyFontWeight(IView view, UILabel platformView)

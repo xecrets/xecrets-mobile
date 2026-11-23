@@ -315,6 +315,10 @@ public static class MobileTexts
 
     public static string SuggestPasswordDescription => "Strong passwords that are easy to type and remember. Use » for a new suggestion, and the copy button to copy it.";
 
+    public static string TextSearchMatchOfCountFormat => "{0} of {1}";
+
+    public static string TextSearchNoMatches => "No matches";
+
     public static string ThirdPartyLicensesPageExplanation => "The app includes the following third-party software, used under these licenses.";
 
     // Also used as the overflow menu item text, see MenuThirdPartyLicenses.
@@ -497,6 +501,9 @@ public static class MobileTexts
 
     // "Email"
     public static string WatermarkEmail => AppTexts.WatermarkEmail;
+
+    // "Find…"
+    public static string WatermarkFind => AppTexts.WatermarkFind;
 
     // "Password"
     public static string WatermarkPassword => AppTexts.WatermarkPassword;

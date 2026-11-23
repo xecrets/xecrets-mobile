@@ -35,19 +35,24 @@ using Android.Runtime;
 using Android.Text;
 using Android.Graphics;
 using AndroidContentCaptureImportance = Android.Views.ViewImportantForContentCapture;
+using AndroidEditText = Android.Widget.EditText;
 using AndroidImportantForAutofill = Android.Views.ImportantForAutofill;
 using AndroidView = Android.Views.View;
 using AndroidWindow = Android.Views.Window;
 using AndroidWindowManagerFlags = Android.Views.WindowManagerFlags;
+using TextLayout = Android.Text.Layout;
 
 using Microsoft.Maui;
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Devices;
 using Microsoft.Maui.Handlers;
+using Microsoft.Maui.Platform;
+using MauiColor = Microsoft.Maui.Graphics.Color;
 
 using Xecrets.Mobile.Abstractions;
 using Xecrets.Mobile.Models.Abstractions;
+using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Services;
 using Xecrets.Mobile.Utilities;
 
@@ -90,6 +95,43 @@ internal class AndroidServices : PlatformServicesBase
         double density = DeviceDisplay.Current.MainDisplayInfo.Density;
         return (location[0] / density, (platformView.RootView!.Width - location[0] - platformView.Width) / density);
     }
+
+    /// <inheritdoc/>
+    public override (double Top, double Bottom) GetTextLineBounds(Editor editor, int index)
+    {
+        AndroidEditText platformView = (AndroidEditText)editor.Handler!.PlatformView!;
+        TextLayout layout = platformView.Layout!;
+        int line = layout.GetLineForOffset(index);
+        double density = DeviceDisplay.Current.MainDisplayInfo.Density;
+        return (
+            (platformView.ExtendedPaddingTop + layout.GetLineTop(line)) / density,
+            (platformView.ExtendedPaddingTop + layout.GetLineBottom(line)) / density);
+    }
+
+    /// <inheritdoc/>
+    public override int GetTextLineStart(Editor editor, double y)
+    {
+        AndroidEditText platformView = (AndroidEditText)editor.Handler!.PlatformView!;
+        TextLayout layout = platformView.Layout!;
+        double density = DeviceDisplay.Current.MainDisplayInfo.Density;
+        int vertical = (int)(y * density) - platformView.ExtendedPaddingTop;
+        return layout.GetLineStart(layout.GetLineForVertical(vertical));
+    }
+
+    /// <inheritdoc/>
+    public override void HighlightTextMatches(
+        Editor editor,
+        TextSearchResult result,
+        int first,
+        int end,
+        MauiColor matchColor,
+        MauiColor currentMatchColor) =>
+        ((SearchableEditText)editor.Handler!.PlatformView!).HighlightMatches(
+            result,
+            first,
+            end,
+            matchColor.ToPlatform(),
+            currentMatchColor.ToPlatform());
 
     /// <inheritdoc/>
     /// <remarks>

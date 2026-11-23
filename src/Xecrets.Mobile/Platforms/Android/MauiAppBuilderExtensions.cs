@@ -63,6 +63,7 @@ internal static class MauiAppBuilderExtensions
             handlers.AddHandler<Editor, AndroidEditorHandler>();
             handlers.AddHandler<ReadOnlyEditor, AndroidReadOnlyEditorHandler>();
             handlers.AddHandler<PasswordTextEntry, AndroidPasswordTextEntryHandler>();
+            handlers.AddHandler<SearchTextEntry, AndroidSearchTextEntryHandler>();
             handlers.AddHandler<Shell, AndroidShellRenderer>();
         });
         return builder;

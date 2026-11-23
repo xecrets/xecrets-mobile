@@ -39,11 +39,11 @@ using Microsoft.Maui.Platform;
 namespace Xecrets.Mobile.Platforms.Android;
 
 /// <summary>
-/// The platform view of an editor, which shows decrypted text. It is kept out of autofill, content capture, smart text
-/// selection and accessibility services other than accessibility tools, so that the text is not passed to them, and
-/// text copied from it is marked as sensitive.
+/// The platform view of an editor, which shows decrypted text, or of an entry of text to search for in it. It is kept
+/// out of autofill, content capture, smart text selection and accessibility services other than accessibility tools, so
+/// that the text is not passed to them, and text copied from it is marked as sensitive.
 /// </summary>
-internal sealed class SensitiveEditText : MauiAppCompatEditText
+internal class SensitiveEditText : MauiAppCompatEditText
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="SensitiveEditText"/> class, kept out of the services that the text

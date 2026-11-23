@@ -31,9 +31,11 @@
 using System;
 
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Graphics;
 
 using Xecrets.Mobile.Abstractions;
 using Xecrets.Mobile.Models.Abstractions;
+using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Services;
 
@@ -67,6 +69,21 @@ internal abstract class PlatformServicesBase : IPlatformServices
 
     /// <inheritdoc/>
     public abstract (double Left, double Right) GetWindowGaps(VisualElement view);
+
+    /// <inheritdoc/>
+    public abstract (double Top, double Bottom) GetTextLineBounds(Editor editor, int index);
+
+    /// <inheritdoc/>
+    public abstract int GetTextLineStart(Editor editor, double y);
+
+    /// <inheritdoc/>
+    public abstract void HighlightTextMatches(
+        Editor editor,
+        TextSearchResult result,
+        int first,
+        int end,
+        Color matchColor,
+        Color currentMatchColor);
 
     /// <inheritdoc/>
     /// <remarks>

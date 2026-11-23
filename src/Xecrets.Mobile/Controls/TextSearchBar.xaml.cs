@@ -1,0 +1,74 @@
+#region Copyright and GPL License
+
+/*
+ * Xecrets Ez Mobile - Copyright © 2026 Svante Seleborg, All Rights Reserved.
+ *
+ * This code file is part of Xecrets Ez Mobile, an application that uses the Xecrets.Net library, parts of which in turn
+ * are derived from AxCrypt as licensed under GPL v3 or later. This code is not derived from AxCrypt. It is separately
+ * authored and copyrighted, and licensed only as follows unless explicitly licensed otherwise.
+ *
+ * Xecrets Ez Mobile is free software: you can redistribute it and/or modify it under the terms of the GNU General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
+ *
+ * No additional permission is granted beyond that license. If you incorporate this code into a larger work and
+ * distribute that work to others, you are responsible for complying with the GNU General Public License version 3 or
+ * later. See https://www.gnu.org/licenses/ for more information.
+ *
+ * Xecrets Ez Mobile is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+ * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along with Xecrets Ez Mobile. If not, see
+ * <https://www.gnu.org/licenses/>.
+ *
+ * The source repository can be found at https://github.com/xecrets/xecrets-mobile please go there for more information,
+ * suggestions and contributions. You may also visit https://www.axantum.com for more information about the author.
+ */
+
+#endregion Copyright and GPL License
+
+using System.Runtime.CompilerServices;
+using System.Threading;
+
+using Microsoft.Maui;
+
+namespace Xecrets.Mobile.Controls;
+
+/// <summary>
+/// The search of the text in the view and edit pages, shown while it is open, bound to the
+/// <see cref="Models.PageModels.TextSearchModel"/> that is its binding context.
+/// </summary>
+internal sealed partial class TextSearchBar
+{
+    // Whether the entry had the focus before the search was hidden, which takes the focus from it.
+    private bool _wasEntryFocused;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TextSearchBar"/> class.
+    /// </summary>
+    public TextSearchBar()
+    {
+        InitializeComponent();
+    }
+
+    protected override void OnPropertyChanging([CallerMemberName] string? propertyName = null)
+    {
+        base.OnPropertyChanging(propertyName);
+        if (propertyName == nameof(IsVisible))
+        {
+            _wasEntryFocused = SearchEntry.IsFocused;
+        }
+    }
+
+    // Once the search is closed the keyboard has no use for it. When the search is closed by editing the text, the
+    // keyboard is still used for the editor, and is left.
+    protected override async void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        base.OnPropertyChanged(propertyName);
+        if (propertyName == nameof(IsVisible) && !IsVisible && _wasEntryFocused)
+        {
+            await SearchEntry.HideSoftInputAsync(CancellationToken.None);
+        }
+    }
+}
