@@ -48,6 +48,7 @@
     </ContentPage.Behaviors>
     <ContentPage.Resources>
         <ResourceDictionary>
+            <toolkit:InvertedBoolConverter x:Key="InvertedBoolConverter" />
             <FontImageSource x:Key="IconSearch"
                              Glyph="{x:Static f:FluentUI.search_24_regular}"
                              FontFamily="{x:Static f:FluentUI.FontFamily}"
@@ -63,7 +64,9 @@
         <VerticalStackLayout Padding="{StaticResource FullWidthTextHeaderPadding}">
             <controls:PageBreadcrumb Text="{Binding Breadcrumb}" />
             <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
-                <Border Style="{StaticResource PageInformationCardStyle}">
+                <!-- The search takes the place of the card while it is open, and the card returns when it is closed. -->
+                <Border Style="{StaticResource PageInformationCardStyle}"
+                        IsVisible="{Binding Search.IsOpen, Converter={StaticResource InvertedBoolConverter}}">
                     <Grid ColumnDefinitions="*,Auto">
                         <VerticalStackLayout Margin="{StaticResource IconRowBodyLeadingMargin}"
                                              VerticalOptions="Center">
@@ -74,7 +77,7 @@
                         </VerticalStackLayout>
                         <HorizontalStackLayout Grid.Column="1"
                                                VerticalOptions="Start"
-                                               IsVisible="{Binding IsVisible, Source={x:Reference TextContent}, x:DataType=ScrollView}">
+                                               IsVisible="{Binding IsVisible, Source={x:Reference TextContent}, x:DataType=controls:TextScrollHost}">
                             <ImageButton VerticalOptions="Center"
                                          Background="Transparent"
                                          MinimumWidthRequest="36"
@@ -97,15 +100,14 @@
                 <FileImageSource File="{Binding ImageFilePath}" />
             </Image.Source>
         </Image>
-        <!-- As on the edit page, the scroll view scrolls the text, since the editor's own scrolling does not fling.
-             It also keeps the start of the text in view, where the editor's own scrolling on Android follows the
-             cursor, which is put at the end of the text when it is set. -->
-        <ScrollView x:Name="TextContent"
-                    Grid.Row="1"
-                    IsVisible="{Binding IsTextVisible}"
-                    BackgroundColor="{AppThemeBinding Light={StaticResource LightSecondaryBackground}, Dark={StaticResource DarkSecondaryBackground}}">
+        <!-- As on the edit page, the host scrolls the text. On Android its scroll view also keeps the start of the
+             text in view, where the editor's own scrolling follows the cursor, which is put at the end of the text
+             when it is set. -->
+        <controls:TextScrollHost x:Name="TextContent"
+                                 Grid.Row="1"
+                                 IsVisible="{Binding IsTextVisible}"
+                                 BackgroundColor="{AppThemeBinding Light={StaticResource LightSecondaryBackground}, Dark={StaticResource DarkSecondaryBackground}}">
             <controls:ReadOnlyEditor Text="{Binding Text, Mode=OneWay}"
-                                     AutoSize="TextChanges"
                                      BackgroundColor="Transparent"
                                      FontSize="{Binding Font.FontSize}">
                 <controls:ReadOnlyEditor.Behaviors>
@@ -124,6 +126,6 @@
                     </DataTrigger>
                 </controls:ReadOnlyEditor.Triggers>
             </controls:ReadOnlyEditor>
-        </ScrollView>
+        </controls:TextScrollHost>
     </Grid>
 </pages:PageBase>

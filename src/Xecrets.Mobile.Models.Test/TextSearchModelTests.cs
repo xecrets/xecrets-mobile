@@ -111,6 +111,66 @@ public sealed class TextSearchModelTests
     }
 
     [Test]
+    public void NextAndPreviousContinueFromTheCaretWhenItWasMoved()
+    {
+        TextSearchModel search = Create("x x x x");
+        search.SearchText = "x";
+
+        search.CaretPosition = 3;
+        search.FindNextCommand.Execute(null);
+        Assert.That(search.Result.CurrentIndex, Is.EqualTo(2));
+
+        search.FindNextCommand.Execute(null);
+        Assert.That(search.Result.CurrentIndex, Is.EqualTo(3));
+
+        search.CaretPosition = 5;
+        search.FindPreviousCommand.Execute(null);
+        Assert.That(search.Result.CurrentIndex, Is.EqualTo(2));
+    }
+
+    [Test]
+    public void TheCaretAtTheCurrentMatchIsNotAMove()
+    {
+        TextSearchModel search = Create("x x x");
+        search.SearchText = "x";
+        search.FindNextCommand.Execute(null);
+
+        search.CaretPosition = 2;
+        search.FindNextCommand.Execute(null);
+
+        Assert.That(search.Result.CurrentIndex, Is.EqualTo(2));
+    }
+
+    [Test]
+    public void NextAndPreviousFromTheCaretWrapAround()
+    {
+        TextSearchModel search = Create("x x x");
+        search.SearchText = "x";
+
+        search.CaretPosition = 5;
+        search.FindNextCommand.Execute(null);
+        Assert.That(search.Result.CurrentIndex, Is.EqualTo(0));
+
+        search.CaretPosition = 0;
+        search.FindPreviousCommand.Execute(null);
+        Assert.That(search.Result.CurrentIndex, Is.EqualTo(2));
+    }
+
+    [Test]
+    public void SearchingAfterTheCaretWasMovedFindsFromTheCaret()
+    {
+        TextSearchModel search = Create("ab ab ab");
+        search.SearchText = "a";
+
+        search.CaretPosition = 4;
+        search.SearchText = "ab";
+        Assert.That(search.Result.CurrentIndex, Is.EqualTo(2));
+
+        search.FindNextCommand.Execute(null);
+        Assert.That(search.Result.CurrentIndex, Is.EqualTo(0));
+    }
+
+    [Test]
     public void MovingToTheOnlyMatchIsStillTold()
     {
         TextSearchModel search = Create("abc");

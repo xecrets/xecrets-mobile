@@ -38,12 +38,10 @@ using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
-using MauiColor = Microsoft.Maui.Graphics.Color;
-using WindowsSolidColorBrush = Microsoft.UI.Xaml.Media.SolidColorBrush;
 using WindowsThickness = Microsoft.UI.Xaml.Thickness;
 
+using Xecrets.Mobile.Abstractions;
 using Xecrets.Mobile.Controls;
-using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Services;
 using Xecrets.Mobile.Utilities;
 
@@ -87,62 +85,7 @@ internal class WindowsServices : PlatformServicesBase
     }
 
     /// <inheritdoc/>
-    public override (double Top, double Bottom) GetTextLineBounds(Editor editor, int index)
-    {
-        global::Windows.Foundation.Rect bounds =
-            ((TextBox)editor.Handler!.PlatformView!).GetRectFromCharacterIndex(index, false);
-        return (bounds.Top, bounds.Bottom);
-    }
-
-    /// <inheritdoc/>
-    /// <remarks>
-    /// A text box finds characters only by their index, so the first character below the position is searched for, which
-    /// is the first character of the line at it, since the lines are in the order of the text.
-    /// </remarks>
-    public override int GetTextLineStart(Editor editor, double y)
-    {
-        TextBox textBox = (TextBox)editor.Handler!.PlatformView!;
-        int low = 0;
-        int high = textBox.Text.Length;
-        while (low < high)
-        {
-            int middle = low + ((high - low) / 2);
-            if (textBox.GetRectFromCharacterIndex(middle, false).Bottom > y)
-            {
-                high = middle;
-            }
-            else
-            {
-                low = middle + 1;
-            }
-        }
-
-        return low;
-    }
-
-    /// <inheritdoc/>
-    /// <remarks>
-    /// Only the current match is highlighted, as the selection, since a text box cannot highlight more than one range.
-    /// </remarks>
-    public override void HighlightTextMatches(
-        Editor editor,
-        TextSearchResult result,
-        int first,
-        int end,
-        MauiColor matchColor,
-        MauiColor currentMatchColor)
-    {
-        TextBox textBox = (TextBox)editor.Handler!.PlatformView!;
-        textBox.SelectionHighlightColorWhenNotFocused = new WindowsSolidColorBrush(currentMatchColor.ToWindowsColor());
-        if (result.CurrentIndex >= first && result.CurrentIndex < end)
-        {
-            textBox.Select(result.Starts[result.CurrentIndex], result.Length);
-        }
-        else
-        {
-            textBox.Select(textBox.SelectionStart, 0);
-        }
-    }
+    public override ISearchableTextView CreateSearchableTextView(Editor editor) => new WindowsSearchableTextView(editor);
 
     private static void ApplyFontWeight(
         IView view,

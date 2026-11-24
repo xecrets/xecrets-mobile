@@ -29,15 +29,9 @@
 #endregion Copyright and GPL License
 
 using System;
-using System.Collections.Generic;
-
-using CoreGraphics;
-
-using Foundation;
 
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
 using Microsoft.Maui.Platform;
 
@@ -46,7 +40,6 @@ using UIKit;
 using Xecrets.Mobile.Abstractions;
 using Xecrets.Mobile.Controls;
 using Xecrets.Mobile.Models.Abstractions;
-using Xecrets.Mobile.Models.Models;
 using Xecrets.Mobile.Models.Utilities;
 using Xecrets.Mobile.Services;
 using Xecrets.Mobile.Utilities;
@@ -83,67 +76,14 @@ internal abstract class AppleServices : PlatformServicesBase
     public override (double Left, double Right) GetWindowGaps(VisualElement view) => view.GetWindowGaps();
 
     /// <inheritdoc/>
-    public override (double Top, double Bottom) GetTextLineBounds(Editor editor, int index)
-    {
-        UITextView textView = (UITextView)editor.Handler!.PlatformView!;
-        CGRect caret = textView.GetCaretRectForPosition(textView.GetPosition(textView.BeginningOfDocument, index));
-        return (caret.Top, caret.Bottom);
-    }
-
-    /// <inheritdoc/>
-    public override int GetTextLineStart(Editor editor, double y)
-    {
-        UITextView textView = (UITextView)editor.Handler!.PlatformView!;
-        UITextPosition position = textView.GetClosestPositionToPoint(new CGPoint(0, y));
-        return (int)textView.GetOffsetFromPosition(textView.BeginningOfDocument, position);
-    }
-
-    /// <inheritdoc/>
     /// <remarks>
-    /// The highlights are attributes of the text storage, which are not part of the text of the editor. Only the ranges
-    /// of the matches highlighted before and now are edited, since TextKit then draws only those again. The highlights
-    /// from before are found in the text storage, where they have moved with the text if it was edited since.
+    /// The editor itself, which scrolls its text, since an editor as tall as its text lays out and draws all of it,
+    /// which for a text of a couple of megabytes takes more memory than an iPhone allows an app.
     /// </remarks>
-    public override void HighlightTextMatches(
-        Editor editor,
-        TextSearchResult result,
-        int first,
-        int end,
-        Color matchColor,
-        Color currentMatchColor)
-    {
-        NSTextStorage textStorage = ((UITextView)editor.Handler!.PlatformView!).TextStorage;
-        List<NSRange> highlighted = [];
-        textStorage.EnumerateAttribute(
-            UIStringAttributeKey.BackgroundColor,
-            new NSRange(0, textStorage.Length),
-            NSAttributedStringEnumeration.None,
-            (NSObject value, NSRange range, ref bool _) =>
-            {
-                if (value is not null)
-                {
-                    highlighted.Add(range);
-                }
-            });
+    public override View CreateTextScroller(Editor editor) => editor;
 
-        UIColor platformMatchColor = matchColor.ToPlatform();
-        UIColor platformCurrentMatchColor = currentMatchColor.ToPlatform();
-        textStorage.BeginEditing();
-        foreach (NSRange range in highlighted)
-        {
-            textStorage.RemoveAttribute(UIStringAttributeKey.BackgroundColor, range);
-        }
-
-        for (int index = first; index < end; index++)
-        {
-            textStorage.AddAttribute(
-                UIStringAttributeKey.BackgroundColor,
-                index == result.CurrentIndex ? platformCurrentMatchColor : platformMatchColor,
-                new NSRange(result.Starts[index], result.Length));
-        }
-
-        textStorage.EndEditing();
-    }
+    /// <inheritdoc/>
+    public override ISearchableTextView CreateSearchableTextView(Editor editor) => new AppleSearchableTextView(editor);
 
     /// <inheritdoc/>
     /// <remarks>
@@ -177,6 +117,16 @@ internal abstract class AppleServices : PlatformServicesBase
             if (view is SearchTextEntry)
             {
                 ConfigureSensitiveText(handler.PlatformView);
+            }
+        });
+
+        // The done button that MAUI adds above the keyboard of entries also completes the entry, which finds the next
+        // match of a search, so the search entry gets one that only closes the keyboard. MAUI adds none on Mac Catalyst.
+        EntryHandler.Mapper.AppendToMapping("Xecrets.CloseKeyboardOnly", (handler, view) =>
+        {
+            if (view is SearchTextEntry && handler.PlatformView.InputAccessoryView is not null)
+            {
+                handler.PlatformView.InputAccessoryView = new KeyboardCloseAccessoryView(handler.PlatformView);
             }
         });
 

@@ -48,6 +48,7 @@
     </ContentPage.Behaviors>
     <ContentPage.Resources>
         <ResourceDictionary>
+            <toolkit:InvertedBoolConverter x:Key="InvertedBoolConverter" />
             <FontImageSource x:Key="IconSave"
                              Glyph="{x:Static f:FluentUI.save_24_regular}"
                              FontFamily="{x:Static f:FluentUI.FontFamily}"
@@ -69,7 +70,9 @@
             <VerticalStackLayout Padding="{StaticResource FullWidthTextHeaderPadding}">
                 <controls:PageBreadcrumb Text="{Binding Breadcrumb}" />
                 <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}">
-                    <Border Style="{StaticResource PageInformationCardStyle}">
+                    <!-- The search takes the place of the card while it is open, and the card returns when it is closed. -->
+                    <Border Style="{StaticResource PageInformationCardStyle}"
+                            IsVisible="{Binding Search.IsOpen, Converter={StaticResource InvertedBoolConverter}}">
                         <Grid ColumnDefinitions="*,Auto">
                             <VerticalStackLayout Margin="{StaticResource IconRowBodyLeadingMargin}"
                                                  VerticalOptions="Center">
@@ -101,13 +104,12 @@
                                            StatusText="{Binding StatusText}" />
                 </VerticalStackLayout>
             </VerticalStackLayout>
-            <!-- The scroll view scrolls the text, since the editor's own scrolling does not fling. -->
-            <ScrollView Grid.Row="1"
-                        BackgroundColor="{AppThemeBinding Light={StaticResource LightSecondaryBackground}, Dark={StaticResource DarkSecondaryBackground}}">
+            <controls:TextScrollHost Grid.Row="1"
+                                     BackgroundColor="{AppThemeBinding Light={StaticResource LightSecondaryBackground}, Dark={StaticResource DarkSecondaryBackground}}">
                 <Editor Text="{Binding Text, Mode=TwoWay}"
+                        CursorPosition="{Binding Search.CaretPosition, Mode=OneWayToSource}"
                         IsSpellCheckEnabled="False"
                         IsTextPredictionEnabled="False"
-                        AutoSize="TextChanges"
                         BackgroundColor="Transparent"
                         FontSize="{Binding Font.FontSize}">
                     <Editor.Behaviors>
@@ -126,7 +128,7 @@
                         </DataTrigger>
                     </Editor.Triggers>
                 </Editor>
-            </ScrollView>
+            </controls:TextScrollHost>
         </Grid>
         <ActivityIndicator IsRunning="{Binding IsBusy}"
                            IsVisible="{Binding IsBusy}"

@@ -56,47 +56,56 @@
         </ResourceDictionary>
     </ContentView.Resources>
     <!-- As the search panel of the desktop app: the text to search for, the previous and next match, and close, with
-         the position of the current match and the number of matches below them. -->
+         the position of the current match and the number of matches below the text. As in the find bar of Safari, the
+         previous and next match come before the text and close after it, so that close is not next to them. The
+         buttons are as large as the touch targets that Apple recommends, beside both the text and the count. -->
     <Border Style="{StaticResource PageInformationCardStyle}">
-        <VerticalStackLayout Margin="{StaticResource IconRowBodyLeadingMargin}">
-            <Grid ColumnDefinitions="*,Auto,Auto,Auto">
-                <!-- No taller than the buttons, rather than as tall as the entries of a form. -->
-                <controls:SearchTextEntry x:Name="SearchEntry"
-                                          MinimumHeightRequest="{StaticResource CompactEntryMinimumHeight}"
-                                          Text="{Binding SearchText}"
-                                          Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkFind}"
-                                          Keyboard="Plain"
-                                          IsSpellCheckEnabled="False"
-                                          IsTextPredictionEnabled="False"
-                                          ReturnType="Search"
-                                          ReturnCommand="{Binding FindNextCommand}"
-                                          VerticalOptions="Center" />
-                <!-- The same as the buttons of the font. -->
-                <ImageButton Grid.Column="1"
-                             VerticalOptions="Center"
-                             Background="Transparent"
-                             MinimumWidthRequest="36"
-                             Padding="6,8"
-                             Source="{StaticResource IconFindPrevious}"
-                             Command="{Binding FindPreviousCommand}" />
-                <ImageButton Grid.Column="2"
-                             VerticalOptions="Center"
-                             Background="Transparent"
-                             MinimumWidthRequest="36"
-                             Padding="6,8"
-                             Source="{StaticResource IconFindNext}"
-                             Command="{Binding FindNextCommand}" />
-                <ImageButton Grid.Column="3"
-                             VerticalOptions="Center"
-                             Background="Transparent"
-                             MinimumWidthRequest="36"
-                             Padding="6,8"
-                             Source="{StaticResource IconClose}"
-                             Command="{Binding CloseCommand}" />
-            </Grid>
-            <Label Text="{Binding CountText}"
+        <Grid Margin="{StaticResource IconRowBodyLeadingMargin}"
+              RowDefinitions="Auto,Auto"
+              ColumnDefinitions="Auto,Auto,*,Auto">
+            <ImageButton Grid.RowSpan="2"
+                         VerticalOptions="Center"
+                         Background="Transparent"
+                         WidthRequest="44"
+                         HeightRequest="44"
+                         Padding="10"
+                         Source="{StaticResource IconFindPrevious}"
+                         Command="{Binding FindPreviousCommand}" />
+            <ImageButton Grid.Column="1"
+                         Grid.RowSpan="2"
+                         VerticalOptions="Center"
+                         Background="Transparent"
+                         WidthRequest="44"
+                         HeightRequest="44"
+                         Padding="10"
+                         Source="{StaticResource IconFindNext}"
+                         Command="{Binding FindNextCommand}" />
+            <!-- No taller than the buttons, rather than as tall as the entries of a form. -->
+            <controls:SearchTextEntry x:Name="SearchEntry"
+                                      Grid.Column="2"
+                                      MinimumHeightRequest="{StaticResource CompactEntryMinimumHeight}"
+                                      Text="{Binding SearchText}"
+                                      Placeholder="{x:Static modelUtilities:MobileTexts.WatermarkFind}"
+                                      Keyboard="Plain"
+                                      IsSpellCheckEnabled="False"
+                                      IsTextPredictionEnabled="False"
+                                      ReturnType="Search"
+                                      ReturnCommand="{Binding FindNextCommand}"
+                                      VerticalOptions="Center" />
+            <Label Grid.Row="1"
+                   Grid.Column="2"
+                   Text="{Binding CountText}"
                    IsVisible="{Binding CountText, Converter={StaticResource StringNotEmptyConverter}}"
                    Style="{StaticResource ExtraFileInfo}" />
-        </VerticalStackLayout>
+            <ImageButton Grid.Column="3"
+                         Grid.RowSpan="2"
+                         VerticalOptions="Center"
+                         Background="Transparent"
+                         WidthRequest="44"
+                         HeightRequest="44"
+                         Padding="10"
+                         Source="{StaticResource IconClose}"
+                         Command="{Binding CloseCommand}" />
+        </Grid>
     </Border>
 </ContentView>

@@ -31,11 +31,9 @@
 using System;
 
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Graphics;
 
 using Xecrets.Mobile.Abstractions;
 using Xecrets.Mobile.Models.Abstractions;
-using Xecrets.Mobile.Models.Models;
 
 namespace Xecrets.Mobile.Services;
 
@@ -71,19 +69,18 @@ internal abstract class PlatformServicesBase : IPlatformServices
     public abstract (double Left, double Right) GetWindowGaps(VisualElement view);
 
     /// <inheritdoc/>
-    public abstract (double Top, double Bottom) GetTextLineBounds(Editor editor, int index);
+    /// <remarks>
+    /// A scroll view, in which the editor grows with its text, since the editor's own scrolling does not fling, unless a
+    /// platform overrides this.
+    /// </remarks>
+    public virtual View CreateTextScroller(Editor editor)
+    {
+        editor.AutoSize = EditorAutoSizeOption.TextChanges;
+        return new ScrollView { Content = editor };
+    }
 
     /// <inheritdoc/>
-    public abstract int GetTextLineStart(Editor editor, double y);
-
-    /// <inheritdoc/>
-    public abstract void HighlightTextMatches(
-        Editor editor,
-        TextSearchResult result,
-        int first,
-        int end,
-        Color matchColor,
-        Color currentMatchColor);
+    public abstract ISearchableTextView CreateSearchableTextView(Editor editor);
 
     /// <inheritdoc/>
     /// <remarks>

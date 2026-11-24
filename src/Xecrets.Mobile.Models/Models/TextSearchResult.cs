@@ -73,9 +73,16 @@ public sealed class TextSearchResult(IReadOnlyList<int> starts, int length, int 
     public (int First, int End) GetMatchesWithin(int startOffset, int endOffset)
     {
         int first = FirstIndexWhere(start => start + Length > startOffset);
-        int end = FirstIndexWhere(start => start >= endOffset);
+        int end = GetFirstMatchFrom(endOffset);
         return (first, Math.Max(first, end));
     }
+
+    /// <summary>
+    /// Gets the first match that starts at or after an index in the text.
+    /// </summary>
+    /// <param name="offset">The index in the text.</param>
+    /// <returns>The index in <see cref="Starts"/> of the match, or the number of matches if there is none.</returns>
+    public int GetFirstMatchFrom(int offset) => FirstIndexWhere(start => start >= offset);
 
     // The starts are in ascending order, so the predicate is false up to an index, and true from it.
     private int FirstIndexWhere(Func<int, bool> predicate)

@@ -41,12 +41,17 @@ using Xecrets.Mobile.Models.Models;
 namespace Xecrets.Mobile.Behaviors;
 
 /// <summary>
-/// Highlights the matches of a search in the text of an editor, and scrolls the current match into view in the scroll
-/// view that is the parent of the editor. Only the matches in the window around what is visible are highlighted, and
-/// they are highlighted again when what is visible leaves the window, the editor is resized or the result changes.
+/// Highlights the matches of a search in the text of an editor held by a <see cref="Controls.TextScrollHost"/>, and
+/// scrolls the current match into view. Only the matches in the window around what is visible are highlighted, and
+/// they are highlighted again when what is visible leaves the window, the text is laid out again or the result changes.
 /// </summary>
 internal sealed class TextSearchHighlightBehavior : Behavior<Editor>
 {
+    private const int MaxScrollAttempts = 3;
+
+    // The text is scrolled to whole pixels, so it may be scrolled a fraction of a unit from where it is scrolled to.
+    private const double ScrollTolerance = 1;
+
     /// <summary>
     /// Identifies the <see cref="Result"/> bindable property.
     /// </summary>
@@ -59,8 +64,8 @@ internal sealed class TextSearchHighlightBehavior : Behavior<Editor>
 
     private Editor? _editor;
 
-    // The editor is put in the scroll view after this is attached to it, so it is only known by the first search.
-    private ScrollView? _scrollView;
+    // The editor is put in its host after this is attached to it, so the text view is only created by the first search.
+    private ISearchableTextView? _textView;
 
     private TextSearchResult _highlightedResult = TextSearchResult.None;
 
@@ -85,52 +90,52 @@ internal sealed class TextSearchHighlightBehavior : Behavior<Editor>
     /// </summary>
     public Color CurrentMatchColor { get; set; } = Colors.Transparent;
 
-    private IPlatformServices PlatformServices =>
-        _editor!.Handler!.MauiContext!.Services.GetRequiredService<IPlatformServices>();
-
     protected override void OnAttachedTo(Editor bindable)
     {
         base.OnAttachedTo(bindable);
         _editor = bindable;
-        bindable.SizeChanged += OnEditorSizeChanged;
     }
 
     protected override void OnDetachingFrom(Editor bindable)
     {
-        bindable.SizeChanged -= OnEditorSizeChanged;
-        if (_scrollView is not null)
-        {
-            _scrollView.Scrolled -= OnScrolled;
-            _scrollView = null;
-        }
-
+        // There is no text view if nothing was searched for.
+        _textView?.Dispose();
+        _textView = null;
         _editor = null;
         base.OnDetachingFrom(bindable);
     }
 
-    // The result only changes by searching, which is done once the editor is shown in the scroll view.
+    // The result only changes by searching, which is done once the editor is shown in its host.
     private async void OnResultChanged()
     {
-        Editor editor = _editor!;
-        if (_scrollView is null)
+        if (_textView is null)
         {
-            _scrollView = (ScrollView)editor.Parent;
-            _scrollView.Scrolled += OnScrolled;
+            Editor editor = _editor!;
+            _textView = editor.Handler!.MauiContext!.Services.GetRequiredService<IPlatformServices>()
+                .CreateSearchableTextView(editor);
+            _textView.Scrolled += OnScrolled;
+            _textView.LayoutChanged += OnLayoutChanged;
         }
 
-        if (Result.CurrentIndex >= 0)
+        if (Result.CurrentIndex < 0)
         {
-            (double top, double bottom) = PlatformServices.GetTextLineBounds(editor, Result.Starts[Result.CurrentIndex]);
-            await ScrollIntoViewAsync(_scrollView, editor.Y + top, editor.Y + bottom);
+            UpdateHighlights();
+            return;
         }
 
+        int start = Result.Starts[Result.CurrentIndex];
+        await ScrollIntoViewAsync(_textView, start);
         UpdateHighlights();
+
+        // Highlighting may have the text in view laid out again, as it does on the Apple platforms to draw the
+        // highlights, which may move the match.
+        await ScrollIntoViewAsync(_textView, start);
     }
 
-    private void OnScrolled(object? sender, ScrolledEventArgs e) => UpdateHighlights();
+    private void OnScrolled(object? sender, EventArgs e) => UpdateHighlights();
 
-    // The lines move when the editor is resized, such as for another font size or width.
-    private void OnEditorSizeChanged(object? sender, EventArgs e)
+    // The lines move when the text is laid out again, such as for another font size or width.
+    private void OnLayoutChanged(object? sender, EventArgs e)
     {
         _window = TextHighlightWindow.None;
         UpdateHighlights();
@@ -138,12 +143,12 @@ internal sealed class TextSearchHighlightBehavior : Behavior<Editor>
 
     private void UpdateHighlights()
     {
-        Editor editor = _editor!;
+        ISearchableTextView textView = _textView!;
         if (Result.Starts.Count == 0)
         {
             if (_highlightedResult.Starts.Count > 0)
             {
-                PlatformServices.HighlightTextMatches(editor, Result, 0, 0, MatchColor, CurrentMatchColor);
+                textView.HighlightMatches(Result, 0, 0, MatchColor, CurrentMatchColor);
             }
 
             _highlightedResult = Result;
@@ -151,31 +156,43 @@ internal sealed class TextSearchHighlightBehavior : Behavior<Editor>
             return;
         }
 
-        ScrollView scrollView = _scrollView!;
-        double visibleTop = scrollView.ScrollY - editor.Y;
-        double visibleBottom = visibleTop + scrollView.Height;
-        if (Result == _highlightedResult && _window.Covers(visibleTop, visibleBottom, editor.Height))
+        double visibleTop = textView.Top;
+        double visibleBottom = visibleTop + textView.Height;
+        double textHeight = textView.TextHeight;
+        if (Result == _highlightedResult && _window.Covers(visibleTop, visibleBottom, textHeight))
         {
             return;
         }
 
-        TextHighlightWindow window = TextHighlightWindow.Around(visibleTop, visibleBottom, editor.Height);
-        int startOffset = PlatformServices.GetTextLineStart(editor, window.Top);
-        int endOffset = window.Bottom < editor.Height
-            ? PlatformServices.GetTextLineStart(editor, window.Bottom)
-            : int.MaxValue;
+        TextHighlightWindow window = TextHighlightWindow.Around(visibleTop, visibleBottom, textHeight);
+        int startOffset = textView.GetLineStart(window.Top);
+        int endOffset = window.Bottom < textHeight ? textView.GetLineStart(window.Bottom) : int.MaxValue;
         (int first, int end) = Result.GetMatchesWithin(startOffset, endOffset);
-        PlatformServices.HighlightTextMatches(editor, Result, first, end, MatchColor, CurrentMatchColor);
+        textView.HighlightMatches(Result, first, end, MatchColor, CurrentMatchColor);
         _highlightedResult = Result;
         _window = window;
     }
 
     // The pages are not resized for the keyboard, which is usually shown while searching and covers the lower part of
-    // the scroll view, so the match is kept in the upper third, a line from its top.
-    private static Task ScrollIntoViewAsync(ScrollView scrollView, double top, double bottom)
+    // the text, so the match is kept in the upper third, with a sixth of the height above it. Where the text is
+    // scrolled to may then be laid out, and the positions of text that is not drawn may only be estimates, as they are
+    // on the Apple platforms, so the match may move, or not be drawn, and is scrolled to again. The room above it allows
+    // for it moving a few more lines as the text around it is laid out. The attempts are limited, since a match near
+    // the end of the text cannot be scrolled up.
+    private static async Task ScrollIntoViewAsync(ISearchableTextView textView, int start)
     {
-        double margin = bottom - top;
-        bool isInView = top - margin >= scrollView.ScrollY && bottom <= scrollView.ScrollY + (scrollView.Height / 3);
-        return isInView ? Task.CompletedTask : scrollView.ScrollToAsync(0, Math.Max(0, top - margin), false);
+        for (int attempt = 0; attempt < MaxScrollAttempts; attempt++)
+        {
+            (double top, double bottom) = textView.GetLineBounds(start);
+            double room = textView.Height / 6;
+            if (textView.IsDrawn(start) &&
+                top - room >= textView.Top - ScrollTolerance &&
+                bottom <= textView.Top + (textView.Height / 3))
+            {
+                return;
+            }
+
+            await textView.ScrollToLineAsync(start, room);
+        }
     }
 }

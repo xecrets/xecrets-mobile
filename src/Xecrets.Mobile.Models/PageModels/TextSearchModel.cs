@@ -47,6 +47,9 @@ public partial class TextSearchModel : ObservableObject
     // Where the current match starts, kept while nothing is found, so that correcting the search returns there.
     private int _currentStart;
 
+    // Where the caret was moved to since the current match was found, or null if it was not moved.
+    private int? _movedCaret;
+
     /// <summary>
     /// True while the search is shown, false otherwise.
     /// </summary>
@@ -59,6 +62,14 @@ public partial class TextSearchModel : ObservableObject
     /// </summary>
     [ObservableProperty]
     public partial string SearchText { get; set; } = "";
+
+    /// <summary>
+    /// The position of the caret in the text. When it is moved, other than to the start of the current match, finding
+    /// the next match finds the first match at or after it, finding the previous match finds the last match before it,
+    /// and searching makes the first match at or after it current.
+    /// </summary>
+    [ObservableProperty]
+    public partial int CaretPosition { get; set; }
 
     /// <summary>
     /// The matches of the search, a new instance after each search and each move to another match.
@@ -93,6 +104,9 @@ public partial class TextSearchModel : ObservableObject
 
     partial void OnIsOpenChanged(bool value) => Search();
 
+    // A platform may select the current match to highlight it, which puts the caret at its start.
+    partial void OnCaretPositionChanged(int value) => _movedCaret = value == _currentStart ? null : value;
+
     [RelayCommand]
     private void Open() => IsOpen = true;
 
@@ -100,22 +114,33 @@ public partial class TextSearchModel : ObservableObject
     private void Close() => IsOpen = false;
 
     [RelayCommand(CanExecute = nameof(HasMatches))]
-    private void FindNext() => MoveTo((Result.CurrentIndex + 1) % Result.Starts.Count);
+    private void FindNext()
+    {
+        int index = _movedCaret is { } caret ? Result.GetFirstMatchFrom(caret) : Result.CurrentIndex + 1;
+        MoveTo(index % Result.Starts.Count);
+    }
 
     [RelayCommand(CanExecute = nameof(HasMatches))]
-    private void FindPrevious() => MoveTo((Result.CurrentIndex - 1 + Result.Starts.Count) % Result.Starts.Count);
+    private void FindPrevious()
+    {
+        int index = _movedCaret is { } caret ? Result.GetFirstMatchFrom(caret) : Result.CurrentIndex;
+        MoveTo((index - 1 + Result.Starts.Count) % Result.Starts.Count);
+    }
 
     private bool HasMatches() => Result.Starts.Count > 0;
 
     private void MoveTo(int index)
     {
         _currentStart = Result.Starts[index];
+        _movedCaret = null;
         Result = new TextSearchResult(Result.Starts, Result.Length, index);
     }
 
     // Ordinal, so that every match has the length of the text searched for, and matches never overlap.
     private void Search()
     {
+        _currentStart = _movedCaret ?? _currentStart;
+        _movedCaret = null;
         if (!IsOpen || SearchText.Length == 0)
         {
             Result = TextSearchResult.None;
